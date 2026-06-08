@@ -28,7 +28,13 @@
   }
 
   function sanitizeUsername(value) {
-    return String(value || '').trim().replace(/[^\w.\-@]/gi, '').slice(0, USERNAME_MAX);
+    return String(value || '')
+      .trim()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/\s+/g, '')
+      .replace(/[^\w.\-@]/gi, '')
+      .slice(0, USERNAME_MAX);
   }
 
   function bindOnce(el, event, handler) {

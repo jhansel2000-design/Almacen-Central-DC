@@ -337,6 +337,11 @@ html[data-theme="light"] body:not(.auth-locked) .platform-topbar {
 .auth-role-card .role-ripple-ring--operador,
 .desp-auth-role-card .role-ripple-ring--operador { border-color: rgba(110, 231, 183, 0.5) !important; }
 
+.auth-role-card .role-ripple--colaborador,
+.desp-auth-role-card .role-ripple--colaborador { background: rgba(144, 202, 249, 0.48) !important; }
+.auth-role-card .role-ripple-ring--colaborador,
+.desp-auth-role-card .role-ripple-ring--colaborador { border-color: rgba(144, 202, 249, 0.55) !important; }
+
 .auth-role-card .role-ripple--preparador,
 .desp-auth-role-card .role-ripple--preparador,
 .desp-auth-role-card .btn-ripple.role-ripple--preparador { background: rgba(255, 183, 77, 0.48) !important; }

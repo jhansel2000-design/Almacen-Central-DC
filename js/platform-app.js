@@ -528,6 +528,27 @@
     btn.disabled = loading;
   }
 
+  var ROLE_CARD_MAP = {
+    administrador: 'administrador',
+    supervisor: 'supervisor',
+    operador: 'operador',
+    colaborador: 'colaborador',
+    preparador: 'colaborador',
+    validador: 'colaborador'
+  };
+
+  function suggestRoleForUsername(username) {
+    var un = PC.sanitizeUsername(username);
+    if (!un || !global.PlatformAdmin) return;
+    var staff = global.PlatformAdmin.getStaffUsers().find(function (u) {
+      return String(u.username || '').toLowerCase() === un.toLowerCase();
+    });
+    if (!staff) return;
+    var roleKey = ROLE_CARD_MAP[staff.role] || 'colaborador';
+    var card = document.querySelector('.auth-role-card[data-role="' + roleKey + '"]');
+    if (card) applyRolePicker(card);
+  }
+
   function doLogin() {
     var username = PC.sanitizeUsername($('authUsername') && $('authUsername').value);
     var password = String(($('authPassword') && $('authPassword').value) || '').trim();
@@ -539,7 +560,7 @@
       return;
     }
     if (!username) {
-      showAuthError('Escribe el usuario.');
+      showAuthError('Escribe el usuario asignado (sin espacios). El área/rol es solo orientativa.');
       $('authUsername') && $('authUsername').focus();
       return;
     }
@@ -554,35 +575,42 @@
     }
 
     setLoginLoading(true);
-    try {
-      var hash = PC.sha256Sync(password);
-      var user = global.PlatformAdmin.authenticate(username, hash);
-      setLoginLoading(false);
-      if (!user) {
-        PC.recordLoginFailure();
-        var msg = 'Usuario o contraseña incorrectos.';
-        if (global.PlatformWebUsers && global.PlatformWebUsers.isPublicWeb &&
-            global.PlatformWebUsers.isPublicWeb() && !global.PlatformAdmin.isPrimaryLoginName(username)) {
-          msg += ' En la web pública el personal debe estar publicado por el administrador.';
+    function attemptLogin() {
+      try {
+        var hash = PC.sha256Sync(password);
+        var user = global.PlatformAdmin.authenticate(username, hash);
+        setLoginLoading(false);
+        if (!user) {
+          PC.recordLoginFailure();
+          var msg = 'Usuario o contraseña incorrectos.';
+          if (global.PlatformWebUsers && global.PlatformWebUsers.isPublicWeb &&
+              global.PlatformWebUsers.isPublicWeb() && !global.PlatformAdmin.isPrimaryLoginName(username)) {
+            msg = 'No pudimos validar tu acceso. Verifica usuario y contraseña. Si eres personal registrado, el administrador debe publicar usuarios en la web (publicar-usuarios-web.ps1).';
+          }
+          showAuthError(msg);
+          return;
         }
-        showAuthError(msg);
-        return;
+        PC.clearLoginAttempts();
+        var sessionPayload = user;
+        if (global.PlatformAdmin.isPrimaryAdminUser(user)) {
+          sessionPayload = Object.assign({}, user, {
+            username: '',
+            name: 'Administrador general'
+          });
+        }
+        PC.saveSession(sessionPayload);
+        enterApp(user);
+        var siteLabel = (global.PlatformSite && global.PlatformSite.product) || 'Almacén Central DC';
+        toastNotify('Bienvenido a ' + siteLabel + ', ' + global.PlatformAdmin.getDisplayName(user) + '.', 'ok');
+      } catch (err) {
+        setLoginLoading(false);
+        showAuthError('No se pudo validar la sesión. Intenta de nuevo.');
       }
-      PC.clearLoginAttempts();
-      var sessionPayload = user;
-      if (global.PlatformAdmin.isPrimaryAdminUser(user)) {
-        sessionPayload = Object.assign({}, user, {
-          username: '',
-          name: 'Administrador general'
-        });
-      }
-      PC.saveSession(sessionPayload);
-      enterApp(user);
-      var siteLabel = (global.PlatformSite && global.PlatformSite.product) || 'Almacén Central DC';
-      toastNotify('Bienvenido a ' + siteLabel + ', ' + global.PlatformAdmin.getDisplayName(user) + '.', 'ok');
-    } catch (err) {
-      setLoginLoading(false);
-      showAuthError('No se pudo validar la sesión. Intenta de nuevo.');
+    }
+    if (global.PlatformWebUsers && global.PlatformWebUsers.refresh) {
+      global.PlatformWebUsers.refresh().then(attemptLogin).catch(attemptLogin);
+    } else {
+      attemptLogin();
     }
   }
 
@@ -612,6 +640,12 @@
     var activeCard = document.querySelector('.auth-role-card.active');
     if (activeCard) applyRolePicker(activeCard);
     initPasswordToggle();
+    var userInput = $('authUsername');
+    if (userInput) {
+      bindOnce(userInput, 'blur', function () {
+        suggestRoleForUsername(userInput.value);
+      });
+    }
 
     if (!overlayIsHidden()) {
       syncAuthBgVideo(true);

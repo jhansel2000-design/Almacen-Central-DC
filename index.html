@@ -103,7 +103,7 @@
       <div class="auth-glass-card">
         <form id="authForm" class="auth-form" novalidate action="#" method="post">
           <h2 id="authTitle" class="auth-heading">Acceso ejecutivo</h2>
-          <p class="auth-subheading">1. Elige tu área · 2. Escribe el usuario que te asignó el administrador</p>
+          <p class="auth-subheading">Elige tu área (solo orientativo) · Escribe el usuario y contraseña que te dio el administrador</p>
           <div class="auth-role-picker" role="group" aria-label="Elige tu área de acceso">
             <button type="button" class="auth-role-card active" data-role="administrador" aria-pressed="true">
               <span class="role-check" aria-hidden="true">
@@ -135,6 +135,16 @@
               <strong>Operador</strong>
               <span class="role-desc">Solo visualización</span>
             </button>
+            <button type="button" class="auth-role-card" data-role="colaborador" aria-pressed="false">
+              <span class="role-check" aria-hidden="true">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+              </span>
+              <span class="role-icon-wrap" aria-hidden="true">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              </span>
+              <strong>Personal</strong>
+              <span class="role-desc">Colaborador / preparador</span>
+            </button>
           </div>
           <p class="auth-role-feedback" id="authRoleFeedback" aria-live="polite"></p>
           <div class="auth-field">
@@ -147,7 +157,7 @@
             <button type="button" class="auth-pwd-toggle" id="btnTogglePassword" aria-label="Mostrar contraseña" title="Mostrar/ocultar">Ver</button>
           </div>
           <button type="submit" class="btn btn-primary" id="authSubmit">Entrar a la plataforma</button>
-          <p class="auth-hint">Elige tu área y escribe el usuario asignado por el administrador.</p>
+          <p class="auth-hint">El área no bloquea el acceso: lo importante es usuario y contraseña correctos.</p>
           <p id="authError" class="auth-error" role="alert" aria-live="polite"></p>
         </form>
       </div>
@@ -502,7 +512,7 @@
   <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js" crossorigin="anonymous"></script>
   <script defer src="js/chart-premium-style.js"></script>
-  <script defer src="js/panel-core.js?v=9"></script>
+  <script defer src="js/panel-core.js?v=13"></script>
   <script defer src="js/platform-utils.js"></script>
   <script defer src="js/platform-store.js"></script>
   <script defer src="js/platform-lan-sync.js?v=10"></script>
@@ -533,8 +543,8 @@
   <script defer src="js/platform-ai.js"></script>
   <script defer src="js/platform-toast.js"></script>
   <script defer src="js/platform-shortcuts.js"></script>
-  <script defer src="js/platform-web-users.js?v=12"></script>
-  <script defer src="js/platform-app.js?v=12"></script>
+  <script defer src="js/platform-web-users.js?v=13"></script>
+  <script defer src="js/platform-app.js?v=13"></script>
   <script defer src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js" crossorigin="anonymous"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js" crossorigin="anonymous"></script>
 </body>
