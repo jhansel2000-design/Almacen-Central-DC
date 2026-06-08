@@ -14,7 +14,7 @@
   <script src="js/relay-bootstrap.js?v=1"></script>
   <link rel="preload" href="assets/img/login-dispatch-poster.jpg" as="image">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23ff9800'/%3E%3Ctext x='16' y='22' text-anchor='middle' font-size='14' font-weight='800' fill='%23041018' font-family='system-ui'%3ED%3C/text%3E%3C/svg%3E">
-  <link rel="stylesheet" href="css/platform.css?v=16">
+  <link rel="stylesheet" href="css/platform.css?v=20">
   <link rel="stylesheet" href="css/platform-enhance.css">
   <link rel="stylesheet" href="css/platform-gestures.css?v=16">
   <link rel="stylesheet" href="css/despacho-dashboard.css">
@@ -83,15 +83,19 @@
           <p class="auth-role-feedback desp-auth-role-feedback" id="despAuthRoleFeedback" aria-live="polite"></p>
           <div class="auth-field">
             <label for="despAuthUsername">Usuario asignado</label>
-            <input id="despAuthUsername" class="auth-field-input" type="text" name="desp_assigned_user" placeholder="Escribe tu usuario (no se autocompleta)" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="64" required>
+            <input id="despAuthUsername" class="auth-field-input" type="text" name="desp_assigned_user" placeholder="Tu usuario asignado" autocomplete="username" autocapitalize="off" spellcheck="false" maxlength="64" required>
           </div>
+          <label class="auth-remember" for="despAuthRememberUser">
+            <input type="checkbox" id="despAuthRememberUser" checked>
+            <span>Guardar mi usuario en este equipo</span>
+          </label>
           <div class="auth-field auth-field-password">
             <label for="despAuthPassword">Contraseña</label>
             <input id="despAuthPassword" class="auth-field-input" type="password" name="password" placeholder="Contraseña" autocomplete="current-password" maxlength="128" required>
             <button type="button" class="auth-pwd-toggle" id="despBtnTogglePassword" aria-label="Mostrar contraseña" title="Mostrar/ocultar">Ver</button>
           </div>
           <button type="submit" class="btn btn-primary" id="despAuthSubmit">Entrar al portal de despacho</button>
-          <p class="auth-hint desp-auth-hint">Elegir Validador o Preparador no escribe el usuario; debes teclear el que te dieron.</p>
+          <p class="auth-hint desp-auth-hint">La contraseña no se guarda en el equipo.</p>
           <p id="despAuthError" class="desp-auth-error" role="alert" aria-live="polite" hidden></p>
         </form>
       </div>
@@ -117,7 +121,7 @@
     </main>
   </div>
 
-  <script src="js/panel-core.js?v=9"></script>
+  <script src="js/panel-core.js?v=14"></script>
   <script src="js/platform-network-relay.js?v=1"></script>
   <script src="js/platform-store.js"></script>
   <script src="js/platform-admin.js?v=12"></script>
@@ -127,6 +131,6 @@
   <script src="js/platform-despacho-ui.js"></script>
   <script src="js/platform-despacho-auth.js"></script>
   <script src="js/platform-toast.js"></script>
-  <script src="js/platform-despacho-app.js?v=11"></script>
+  <script src="js/platform-despacho-app.js?v=12"></script>
 </body>
 </html>

@@ -159,6 +159,11 @@
         return;
       }
       PC.clearDespachoLoginAttempts();
+      PC.persistRememberedLoginUsername(
+        'despacho',
+        username,
+        !!($('despAuthRememberUser') && $('despAuthRememberUser').checked)
+      );
       PC.saveDespachoSession(user);
       enterApp(user);
       toast('Bienvenido al portal de despacho, ' + (user.name || user.username) + '.', 'ok');
@@ -201,9 +206,8 @@
       }, 320);
     }
     initPasswordToggle();
+    PC.applyRememberedLoginUsername('despacho', $('despAuthUsername'), $('despAuthRememberUser'));
   }
-
-  function tryRestoreSession() {
     var session = PC.getDespachoSession();
     if (!session) return false;
     var user = Auth.getUserById(session.userId);

@@ -664,6 +664,11 @@
           return;
         }
         PC.clearLoginAttempts();
+        PC.persistRememberedLoginUsername(
+          'wms',
+          username,
+          !!($('authRememberUser') && $('authRememberUser').checked)
+        );
         var sessionPayload = user;
         if (global.PlatformAdmin.isPrimaryAdminUser(user)) {
           sessionPayload = Object.assign({}, user, {
@@ -713,6 +718,7 @@
     var activeCard = document.querySelector('.auth-role-card.active');
     if (activeCard) applyRolePicker(activeCard);
     initPasswordToggle();
+    PC.applyRememberedLoginUsername('wms', $('authUsername'), $('authRememberUser'));
 
     if (!overlayIsHidden()) {
       syncAuthBgVideo(true);

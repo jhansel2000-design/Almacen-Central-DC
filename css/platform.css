@@ -225,6 +225,21 @@ html[data-theme="light"] .auth-field-input::placeholder{ color:#5a6d82; }
 .auth-heading{ margin:0 0 0.5rem; color:var(--text); }
 .auth-subheading{ margin:0 0 1rem; color:var(--muted); font-size:0.9rem; }
 .auth-hint{ margin:0 0 0.75rem; font-size:0.78rem; color:var(--muted); }
+.auth-remember{
+  display:flex; align-items:flex-start; gap:0.55rem;
+  margin:0.15rem 0 0.85rem; padding:0.55rem 0.65rem;
+  border-radius:10px; border:1px solid rgba(255,255,255,0.08);
+  background:rgba(255,255,255,0.03); cursor:pointer;
+  font-size:0.82rem; font-weight:600; color:var(--muted); line-height:1.45;
+}
+.auth-remember input{
+  margin-top:0.15rem; width:1rem; height:1rem; flex-shrink:0;
+  accent-color:var(--accent, #5eb3ff); cursor:pointer;
+}
+.auth-remember span{ flex:1; }
+html[data-theme="light"] .auth-remember{
+  background:rgba(15,36,64,0.04); border-color:rgba(15,36,64,0.1); color:#475569;
+}
 .admin-web-publish-card{
   margin:0.85rem 0 1rem;
   padding:1rem 1.1rem 1.05rem;

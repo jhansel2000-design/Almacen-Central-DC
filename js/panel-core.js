@@ -416,6 +416,58 @@
     });
   }
 
+  var REMEMBER_LOGIN_KEYS = {
+    wms: { user: 'almacen_saved_login_wms', enabled: 'almacen_saved_login_wms_on' },
+    despacho: { user: 'almacen_saved_login_desp', enabled: 'almacen_saved_login_desp_on' }
+  };
+
+  function getRememberLoginKeys(portal) {
+    return REMEMBER_LOGIN_KEYS[portal] || REMEMBER_LOGIN_KEYS.wms;
+  }
+
+  function isRememberLoginEnabled(portal) {
+    try {
+      if (!global.localStorage) return true;
+      var keys = getRememberLoginKeys(portal);
+      var stored = localStorage.getItem(keys.enabled);
+      if (stored === null) return true;
+      return stored === '1';
+    } catch (e) {
+      return true;
+    }
+  }
+
+  function getRememberedLoginUsername(portal) {
+    try {
+      if (!global.localStorage || !isRememberLoginEnabled(portal)) return '';
+      var keys = getRememberLoginKeys(portal);
+      return sanitizeUsername(localStorage.getItem(keys.user) || '');
+    } catch (e) {
+      return '';
+    }
+  }
+
+  function applyRememberedLoginUsername(portal, input, checkbox) {
+    if (!input) return;
+    var enabled = isRememberLoginEnabled(portal);
+    if (checkbox) checkbox.checked = enabled;
+    var saved = enabled ? getRememberedLoginUsername(portal) : '';
+    if (saved) input.value = saved;
+  }
+
+  function persistRememberedLoginUsername(portal, username, rememberEnabled) {
+    try {
+      if (!global.localStorage) return;
+      var keys = getRememberLoginKeys(portal);
+      localStorage.setItem(keys.enabled, rememberEnabled ? '1' : '0');
+      if (rememberEnabled && username) {
+        localStorage.setItem(keys.user, sanitizeUsername(username));
+      } else {
+        localStorage.removeItem(keys.user);
+      }
+    } catch (e) { /* noop */ }
+  }
+
   global.PanelCore = {
     SESSION_KEY: SESSION_KEY,
     DESPACHO_SESSION_KEY: DESPACHO_SESSION_KEY,
@@ -446,6 +498,10 @@
     initGestures: initGestures,
     initAuthRoleGestures: initAuthRoleGestures,
     spawnRipple: spawnRipple,
-    spawnRoleRipple: spawnRoleRipple
+    spawnRoleRipple: spawnRoleRipple,
+    isRememberLoginEnabled: isRememberLoginEnabled,
+    getRememberedLoginUsername: getRememberedLoginUsername,
+    applyRememberedLoginUsername: applyRememberedLoginUsername,
+    persistRememberedLoginUsername: persistRememberedLoginUsername
   };
 })(typeof window !== 'undefined' ? window : this);
