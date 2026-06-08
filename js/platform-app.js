@@ -55,6 +55,21 @@
     return PC.$(id);
   }
 
+  function userCan(permission) {
+    if (!state.user || !global.PlatformAdmin) return false;
+    return global.PlatformAdmin.can(state.user.role, permission, state.user);
+  }
+
+  function refreshSessionUser() {
+    if (!state.user || !global.PlatformAdmin) return;
+    var fresh = global.PlatformAdmin.getUsers().find(function (u) { return u.id === state.user.id; });
+    if (fresh) {
+      state.user = fresh;
+      applyPermissions();
+      updateRoleBadge();
+    }
+  }
+
   function esc(s) {
     return PC.esc(s);
   }
@@ -104,10 +119,9 @@
   }
 
   function getViewMeta() {
-    var role = state.user ? state.user.role : '';
     return {
       userName: state.user ? (state.user.name || state.user.username) : '',
-      canImport: global.PlatformAdmin && global.PlatformAdmin.can(role, 'data.import')
+      canImport: userCan('data.import')
     };
   }
 
@@ -185,7 +199,7 @@
 
     bindOnce(app, 'click', function (ev) {
       var adminBtn = ev.target.closest('[data-open-admin]');
-      if (adminBtn && state.user && global.PlatformAdmin.can(state.user.role, 'admin.panel')) {
+      if (adminBtn && state.user && global.PlatformAdmin.canAccessAdminModal(state.user)) {
         ev.preventDefault();
         openAdminModal();
         var tab = adminBtn.getAttribute('data-open-admin');
@@ -593,11 +607,29 @@
 
   function applyPermissions() {
     var role = state.user ? state.user.role : '';
+    var user = state.user;
     document.querySelectorAll('[data-perm]').forEach(function (el) {
       var perm = el.getAttribute('data-perm');
-      el.classList.toggle('perm-denied', !global.PlatformAdmin.can(role, perm));
+      el.classList.toggle('perm-denied', !global.PlatformAdmin.can(role, perm, user));
     });
+    updateRequestsBadge();
     if (global.PlatformUtils) global.PlatformUtils.applyRoleUi(state.user);
+  }
+
+  function updateRequestsBadge() {
+    var badge = $('adminRequestsBadge');
+    if (!badge || !global.PlatformAdmin) return;
+    if (!userCan('requests.manage')) {
+      badge.hidden = true;
+      return;
+    }
+    var n = global.PlatformAdmin.getPendingRequestsCount();
+    if (n > 0) {
+      badge.hidden = false;
+      badge.textContent = String(n);
+    } else {
+      badge.hidden = true;
+    }
   }
 
   function updateRoleBadge() {
@@ -651,7 +683,8 @@
   }
 
   function enterApp(user) {
-    state.user = user;
+    var fresh = global.PlatformAdmin.getUsers().find(function (u) { return u.id === user.id; });
+    state.user = fresh || user;
     state.config = global.PlatformStore.getConfig();
     state.dataOperaciones = applyOperacionesFilters(global.PlatformStore.getPublishedData('operaciones'));
     state.dataProductividad = applyProductividadFilters(global.PlatformStore.getPublishedData('productividad'));
@@ -1060,22 +1093,74 @@
     });
   }
 
+  function pickDefaultAdminTab() {
+    var order = ['excel', 'requests', 'accessRequest', 'sistema', 'herramientas', 'users', 'areas', 'config', 'logs', 'ai'];
+    for (var i = 0; i < order.length; i++) {
+      var tab = order[i];
+      var btn = document.querySelector('.admin-tab-btn[data-tab="' + tab + '"]');
+      if (btn && !btn.classList.contains('perm-denied')) {
+        global.PlatformAdminUI.switchTab(tab);
+        return tab;
+      }
+    }
+    return 'excel';
+  }
+
+  function refreshAccessRequestPanels() {
+    var reqHost = $('accessRequestHost');
+    if (reqHost && userCan('access.request') && global.PlatformAdminUI.renderAccessRequestForm) {
+      global.PlatformAdminUI.renderAccessRequestForm(reqHost, state.user, submitAccessRequestFromUi);
+    }
+    var queueHost = $('requestsQueueHost');
+    if (queueHost && userCan('requests.manage') && global.PlatformAdminUI.renderRequestsQueue) {
+      global.PlatformAdminUI.renderRequestsQueue(queueHost, reviewAccessRequestFromUi);
+    }
+    updateRequestsBadge();
+  }
+
+  function submitAccessRequestFromUi(reason) {
+    var res = global.PlatformAdmin.submitAccessRequest(state.user, 'config.save', reason);
+    if (!res.ok) {
+      toastNotify(res.message || 'No se pudo enviar la solicitud.', 'warn');
+      return;
+    }
+    toastNotify('Solicitud enviada. El administrador la revisará.', 'ok');
+    refreshAccessRequestPanels();
+  }
+
+  function reviewAccessRequestFromUi(id, approved) {
+    var note = '';
+    if (!approved) {
+      note = prompt('Motivo del rechazo (opcional):', '') || '';
+    }
+    var res = global.PlatformAdmin.reviewAccessRequest(id, approved, state.user.username, note);
+    if (!res.ok) {
+      toastNotify(res.message || 'No se pudo procesar.', 'warn');
+      return;
+    }
+    toastNotify(approved ? 'Solicitud aprobada. El usuario ya puede configurar.' : 'Solicitud rechazada.', 'ok');
+    refreshSessionUser();
+    refreshAccessRequestPanels();
+    refreshAdminTables();
+  }
+
   function openAdminModal() {
     var modal = $('adminModal');
-    if (!modal || !state.user || !global.PlatformAdmin.can(state.user.role, 'admin.panel')) return;
+    if (!modal || !state.user || !global.PlatformAdmin.canAccessAdminModal(state.user)) return;
     modal.classList.add('open');
     modal.setAttribute('aria-hidden', 'false');
+    pickDefaultAdminTab();
     refreshAdminPanels();
   }
 
   function refreshAdminPanels() {
     refreshAdminTables();
     var sysHost = $('adminSystemHost');
-    if (sysHost && global.PlatformAdminUI.renderSystemPanel) {
+    if (sysHost && userCan('admin.panel') && global.PlatformAdminUI.renderSystemPanel) {
       global.PlatformAdminUI.renderSystemPanel(sysHost);
     }
     var toolsHost = $('adminToolsHost');
-    if (toolsHost && global.PlatformAdminUI.renderToolsPanel) {
+    if (toolsHost && userCan('admin.panel') && global.PlatformAdminUI.renderToolsPanel) {
       global.PlatformAdminUI.renderToolsPanel(toolsHost, {
         onBackup: adminDownloadBackup,
         onRestore: adminRestoreBackup,
@@ -1085,6 +1170,7 @@
       });
     }
     loadConfigForm();
+    refreshAccessRequestPanels();
   }
 
   function setAdminToolsStatus(msg, isErr) {
@@ -1129,6 +1215,10 @@
   }
 
   function adminClearModuleData(module) {
+    if (!userCan('admin.panel')) {
+      toastNotify('No tienes permiso para esta acción.', 'warn');
+      return;
+    }
     var labels = {
       productividad: 'productividad',
       operaciones: 'operaciones',
@@ -1149,6 +1239,10 @@
   }
 
   function adminResetConfig() {
+    if (!userCan('config.save')) {
+      toastNotify('No tienes permiso. Envía una solicitud de acceso.', 'warn');
+      return;
+    }
     if (!confirm('¿Restablecer configuración a valores por defecto?')) return;
     var res = global.PlatformAdminTools.resetConfig();
     state.config = global.PlatformStore.getConfig();
@@ -1282,7 +1376,7 @@
   }
 
   function loadConfigForm() {
-    if (!state.config) return;
+    if (!state.config || !userCan('config.save')) return;
     var refreshInput = $('refreshSeconds');
     if (refreshInput) refreshInput.value = state.config.refreshSeconds || 20;
     var themeSel = $('configTheme');
@@ -1342,7 +1436,7 @@
           ((state.config.operacionesView || 'resumen') === id ? ' class="active"' : '') + '>' + esc(v.title) + '</button></li>';
       });
     } else if (mod === 'despacho') {
-      var canVal = state.user && global.PlatformAdmin && global.PlatformAdmin.can(state.user.role, 'despacho.validate');
+      var canVal = state.user && global.PlatformAdmin && global.PlatformAdmin.can(state.user.role, 'despacho.validate', state.user);
       Object.keys(DESP_VIEWS).forEach(function (id) {
         if (id === 'validador' && !canVal) return;
         var v = DESP_VIEWS[id];
@@ -1551,7 +1645,7 @@
     if (!host || !global.PlatformDespachoUI) return;
     state.dataDespacho = loadDespachoData();
     var role = state.user ? state.user.role : '';
-    var canValidate = global.PlatformAdmin && global.PlatformAdmin.can(role, 'despacho.validate');
+    var canValidate = global.PlatformAdmin && global.PlatformAdmin.can(role, 'despacho.validate', state.user);
     var view = state.config.despachoView || (canValidate ? 'combinado' : 'preparador');
     if (!canValidate) view = 'preparador';
     if (view === 'validador' && !canValidate) view = 'preparador';
@@ -1582,8 +1676,8 @@
     var host = $('module-facturas');
     if (!host || !global.PlatformFacturasUI) return;
     var role = state.user ? state.user.role : '';
-    var canImport = global.PlatformAdmin && global.PlatformAdmin.can(role, 'data.import');
-    var canEditMetas = global.PlatformAdmin && global.PlatformAdmin.can(role, 'config.save');
+    var canImport = global.PlatformAdmin && global.PlatformAdmin.can(role, 'data.import', state.user);
+    var canEditMetas = global.PlatformAdmin && global.PlatformAdmin.can(role, 'config.save', state.user);
 
     global.PlatformFacturasUI.render(host, state.dataFacturas, {
       canImport: canImport,
@@ -2104,7 +2198,7 @@
 
   function refreshAdminTables() {
     var usersHost = $('usersTableHost');
-    if (usersHost) {
+    if (usersHost && userCan('users.manage')) {
       global.PlatformAdminUI.renderUsersTable(usersHost, loadUserForEdit, deleteUserConfirm);
     }
     var areasHost = $('areasTableHost');
@@ -2179,6 +2273,8 @@
           var logsHost = $('logsHost');
           if (logsHost) global.PlatformAdminUI.renderLogs(logsHost);
         }
+        if (tab === 'accessRequest') refreshAccessRequestPanels();
+        if (tab === 'requests') refreshAccessRequestPanels();
       });
     });
 
@@ -2229,6 +2325,10 @@
   }
 
   function saveUserFromForm() {
+    if (!userCan('users.manage')) {
+      toastNotify('No tienes permiso para gestionar usuarios.', 'warn');
+      return;
+    }
     var editId = $('userEditId').value;
     var username = PC.sanitizeUsername($('userUsername').value);
     var password = $('userPassword').value;
@@ -2236,7 +2336,10 @@
       alert('El usuario es obligatorio.');
       return;
     }
-    var areasRaw = ($('userAreas').value || '').split(',').map(function (s) { return s.trim(); }).filter(Boolean);
+    if (payload.role === 'administrador' && state.user.role !== 'administrador') {
+      toastNotify('Solo un administrador puede asignar rol administrador.', 'warn');
+      return;
+    }
     var payload = {
       username: username,
       name: ($('userName').value || '').trim() || username,
@@ -2290,6 +2393,10 @@
   }
 
   function saveAreaFromForm() {
+    if (!userCan('areas.manage')) {
+      toastNotify('No tienes permiso para gestionar áreas.', 'warn');
+      return;
+    }
     var editId = $('areaEditId').value;
     var name = ($('areaName').value || '').trim();
     if (!name) {
@@ -2312,6 +2419,10 @@
   }
 
   function saveConfigFromUi() {
+    if (!userCan('config.save')) {
+      toastNotify('No tienes permiso para cambiar la configuración. Envía una solicitud en «Mi solicitud».', 'warn');
+      return;
+    }
     var sec = parseInt($('refreshSeconds').value, 10);
     if (isFinite(sec)) {
       state.config.refreshSeconds = Math.min(300, Math.max(10, sec));
@@ -2756,8 +2867,13 @@
   function bindLanSync() {
     if (state._lanSyncBound) return;
     state._lanSyncBound = true;
-    document.addEventListener('lan-sync', function () {
+    document.addEventListener('lan-sync', function (ev) {
       refreshPublishedDataFromStore();
+      var store = ev && ev.detail && ev.detail.store;
+      if (store === 'users' || store === 'accessRequests') {
+        refreshSessionUser();
+        refreshAccessRequestPanels();
+      }
     });
   }
 

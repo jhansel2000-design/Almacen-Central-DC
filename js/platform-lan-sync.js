@@ -19,7 +19,8 @@
     config: 'almacen_platform_config',
     users: 'almacen_users',
     areas: 'almacen_areas',
-    logs: 'almacen_logs'
+    logs: 'almacen_logs',
+    accessRequests: 'almacen_access_requests'
   };
 
   var LS_TO_STORE = {};

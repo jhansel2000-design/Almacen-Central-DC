@@ -71,9 +71,9 @@
 
   function applyRoleUi(user) {
     var role = user ? user.role : '';
-    var canExport = global.PlatformAdmin && global.PlatformAdmin.can(role, 'export.data');
-    var canImport = global.PlatformAdmin && global.PlatformAdmin.can(role, 'data.import');
-    var canAdmin = global.PlatformAdmin && global.PlatformAdmin.can(role, 'admin.panel');
+    var canExport = global.PlatformAdmin && global.PlatformAdmin.can(role, 'export.data', user);
+    var canImport = global.PlatformAdmin && global.PlatformAdmin.can(role, 'data.import', user);
+    var canAdmin = global.PlatformAdmin && global.PlatformAdmin.canAccessAdminModal(user);
     document.querySelectorAll('[data-perm="export.data"]').forEach(function (el) {
       el.classList.toggle('perm-denied', !canExport);
     });

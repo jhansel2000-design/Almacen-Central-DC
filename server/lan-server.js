@@ -55,10 +55,9 @@ const STORES = {
   config: { file: 'config.json', lsKey: 'almacen_platform_config' },
   users: { file: 'users.json', lsKey: 'almacen_users' },
   areas: { file: 'areas.json', lsKey: 'almacen_areas' },
-  logs: { file: 'logs.json', lsKey: 'almacen_logs' }
+  logs: { file: 'logs.json', lsKey: 'almacen_logs' },
+  accessRequests: { file: 'access-requests.json', lsKey: 'almacen_access_requests' }
 };
-
-const sseClients = new Set();
 let clientCounter = 0;
 
 function ensureDataDir() {

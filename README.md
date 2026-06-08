@@ -53,6 +53,7 @@ Varios dispositivos en el mismo WiFi comparten datos en tiempo real.
 | Administrador | `admin` | `JANSELCASTRO01` |
 | Supervisor | `supervisor` | `SUPERVISOR01` |
 | Operador | `operador` | `CASTRO01` |
+| Colaborador (paneles + Excel) | `colaborador` | `CASTRO01` |
 | Preparador despacho | `preparador` | `CASTRO01` |
 | Validador despacho | `validador` | `SUPERVISOR01` |
 

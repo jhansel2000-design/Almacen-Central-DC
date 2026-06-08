@@ -183,7 +183,7 @@
           <li><button type="button" class="nav-module-btn" data-module="facturas"><span class="nav-icon">$</span> Facturas</button></li>
           <li><button type="button" class="nav-module-btn" data-module="despacho" data-perm="despacho.use"><span class="nav-icon">🚚</span> Despacho</button></li>
           <li><button type="button" class="nav-module-btn" data-module="reportes"><span class="nav-icon">☰</span> Reportes</button></li>
-          <li><button type="button" class="nav-module-btn" data-module="administracion" data-perm="admin.panel"><span class="nav-icon">⚙</span> Administración</button></li>
+          <li><button type="button" class="nav-module-btn" data-module="administracion" data-perm="data.import"><span class="nav-icon">⚙</span> Administración</button></li>
         </ul>
         <p class="nav-section-label nav-section-sub" id="subnavLabel" hidden>Vistas</p>
         <ul class="nav-submodule-list" id="navSubmodules" hidden></ul>
@@ -286,6 +286,8 @@
         </header>
         <nav class="admin-tabs" role="tablist">
           <button type="button" class="admin-tab-btn active" data-tab="excel" data-perm="data.import">Datos Excel</button>
+          <button type="button" class="admin-tab-btn" data-tab="accessRequest" data-perm="access.request">Mi solicitud</button>
+          <button type="button" class="admin-tab-btn" data-tab="requests" data-perm="requests.manage">Solicitudes<span class="admin-tab-badge" id="adminRequestsBadge" hidden></span></button>
           <button type="button" class="admin-tab-btn" data-tab="sistema" data-perm="admin.panel">Sistema</button>
           <button type="button" class="admin-tab-btn" data-tab="herramientas" data-perm="admin.panel">Herramientas</button>
           <button type="button" class="admin-tab-btn" data-tab="users" data-perm="users.manage">Usuarios</button>
@@ -330,6 +332,12 @@
             <div id="adminPreviewFacturas" class="admin-excel-preview" aria-live="polite"></div>
             <div class="status-msg" id="adminStatus"></div>
           </div>
+          <div class="admin-tab-pane" id="adminPaneAccessRequest">
+            <div id="accessRequestHost"></div>
+          </div>
+          <div class="admin-tab-pane" id="adminPaneRequests">
+            <div id="requestsQueueHost"></div>
+          </div>
           <div class="admin-tab-pane" id="adminPaneSistema">
             <p class="admin-hint">Diagnóstico en tiempo real: módulos cargados, bibliotecas, almacenamiento y estado de datos.</p>
             <div id="adminSystemHost"></div>
@@ -338,6 +346,7 @@
             <div id="adminToolsHost"></div>
           </div>
           <div class="admin-tab-pane" id="adminPaneUsers">
+            <p class="admin-hint small">Registra colaboradores: acceden a todos los paneles e importan Excel. No pueden cambiar configuración hasta que apruebes su solicitud.</p>
             <form id="userForm" class="admin-form">
               <input type="hidden" id="userEditId">
               <div class="admin-form-row">
@@ -346,9 +355,10 @@
               </div>
               <div class="admin-form-row">
                 <select id="userRole">
-                  <option value="administrador">Administrador</option>
+                  <option value="colaborador">Colaborador (paneles + Excel)</option>
                   <option value="supervisor">Supervisor</option>
                   <option value="operador">Operador</option>
+                  <option value="administrador">Administrador</option>
                 </select>
                 <input id="userPassword" type="password" placeholder="Contraseña (nueva)" maxlength="128" autocomplete="new-password">
               </div>

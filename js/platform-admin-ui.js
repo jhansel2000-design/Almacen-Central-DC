@@ -16,7 +16,9 @@
     areas: 'adminPaneAreas',
     config: 'adminPaneConfig',
     logs: 'adminPaneLogs',
-    ai: 'adminPaneAi'
+    ai: 'adminPaneAi',
+    accessRequest: 'adminPaneAccessRequest',
+    requests: 'adminPaneRequests'
   };
 
   function statusTag(ok, text) {
@@ -231,6 +233,92 @@
     return tabId;
   }
 
+  function renderAccessRequestForm(container, user, onSubmit) {
+    if (!container || !user) return;
+    var requests = global.PlatformAdmin.getAccessRequests().filter(function (r) {
+      return r.userId === user.id;
+    });
+    var pending = requests.find(function (r) { return r.status === 'pending'; });
+    var hasConfig = global.PlatformAdmin.can(user.role, 'config.save', user);
+
+    var html = '<div class="admin-access-request">';
+    if (hasConfig) {
+      html += '<p class="admin-hint ok">Ya tienes acceso a la configuración del sistema.</p>';
+    } else if (pending) {
+      html += '<div class="admin-alert admin-alert-warn"><strong>Solicitud pendiente</strong><p>Enviada el ' +
+        esc(global.PanelCore.formatDateTime(new Date(pending.at))) + '.</p><p>' + esc(pending.reason || '—') + '</p></div>';
+    } else {
+      html += '<p class="admin-hint">Como colaborador puedes ver todos los paneles e importar Excel. ' +
+        'Para cambiar configuración del sistema, envía una solicitud al administrador.</p>' +
+        '<form id="accessRequestForm" class="admin-form">' +
+        '<label for="accessRequestReason">Motivo de la solicitud</label>' +
+        '<textarea id="accessRequestReason" rows="4" maxlength="500" placeholder="Ej.: necesito ajustar metas de facturación para el mes…" required></textarea>' +
+        '<button type="submit" class="btn btn-primary">Enviar solicitud de acceso a configuración</button>' +
+        '</form>';
+    }
+
+    if (requests.length) {
+      html += '<h4 class="admin-subtitle">Mis solicitudes</h4><div class="admin-table-wrap"><table class="data-table"><thead><tr>' +
+        '<th>Fecha</th><th>Permiso</th><th>Estado</th><th>Nota admin</th></tr></thead><tbody>';
+      requests.slice(0, 10).forEach(function (r) {
+        var statusLabel = r.status === 'pending' ? 'Pendiente' : (r.status === 'approved' ? 'Aprobada' : 'Rechazada');
+        html += '<tr><td>' + esc(global.PanelCore.formatDateTime(new Date(r.at))) + '</td><td>' +
+          esc(global.PlatformAdmin.PERMISSIONS[r.permission] || r.permission) + '</td><td>' +
+          esc(statusLabel) + '</td><td>' + esc(r.reviewNote || '—') + '</td></tr>';
+      });
+      html += '</tbody></table></div>';
+    }
+    html += '</div>';
+    container.innerHTML = html;
+
+    var form = container.querySelector('#accessRequestForm');
+    if (form && onSubmit) {
+      form.addEventListener('submit', function (ev) {
+        ev.preventDefault();
+        var reason = (container.querySelector('#accessRequestReason').value || '').trim();
+        onSubmit(reason);
+      });
+    }
+  }
+
+  function renderRequestsQueue(container, onReview) {
+    if (!container) return;
+    var list = global.PlatformAdmin.getAccessRequests();
+    if (!list.length) {
+      container.innerHTML = '<p class="admin-empty">No hay solicitudes de acceso.</p>';
+      return;
+    }
+    var html = '<p class="admin-hint">Aprueba o rechaza solicitudes. Al aprobar, el usuario recibe permiso de configuración.</p>' +
+      '<div class="admin-table-wrap"><table class="data-table"><thead><tr>' +
+      '<th>Fecha</th><th>Usuario</th><th>Permiso</th><th>Motivo</th><th>Estado</th><th></th></tr></thead><tbody>';
+    list.slice(0, 40).forEach(function (r) {
+      var statusLabel = r.status === 'pending' ? 'Pendiente' : (r.status === 'approved' ? 'Aprobada' : 'Rechazada');
+      html += '<tr><td>' + esc(global.PanelCore.formatDateTime(new Date(r.at))) + '</td><td>' +
+        esc(r.name || r.username) + '<br><span class="admin-hint small">' + esc(r.username) + '</span></td><td>' +
+        esc(global.PlatformAdmin.PERMISSIONS[r.permission] || r.permission) + '</td><td>' + esc(r.reason || '—') + '</td><td>' +
+        esc(statusLabel) + '</td><td class="admin-actions">';
+      if (r.status === 'pending') {
+        html += '<button type="button" class="btn btn-sm btn-primary" data-approve="' + esc(r.id) + '">Aprobar</button> ' +
+          '<button type="button" class="btn btn-sm" data-reject="' + esc(r.id) + '">Rechazar</button>';
+      } else {
+        html += '—';
+      }
+      html += '</td></tr>';
+    });
+    html += '</tbody></table></div>';
+    container.innerHTML = html;
+    container.querySelectorAll('[data-approve]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        if (onReview) onReview(btn.getAttribute('data-approve'), true);
+      });
+    });
+    container.querySelectorAll('[data-reject]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        if (onReview) onReview(btn.getAttribute('data-reject'), false);
+      });
+    });
+  }
+
   global.PlatformAdminUI = {
     TAB_PANE_IDS: TAB_PANE_IDS,
     renderUsersTable: renderUsersTable,
@@ -239,6 +327,8 @@
     renderSystemPanel: renderSystemPanel,
     renderToolsPanel: renderToolsPanel,
     renderExcelPreview: renderExcelPreview,
+    renderAccessRequestForm: renderAccessRequestForm,
+    renderRequestsQueue: renderRequestsQueue,
     switchTab: switchTab
   };
 })(typeof window !== 'undefined' ? window : this);
