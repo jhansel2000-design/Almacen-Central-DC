@@ -52,7 +52,14 @@
     if (!global.PlatformLanSync || !global.PlatformLanSync.isEnabled()) {
       return Promise.resolve({ ok: false, message: 'Activa el servidor local (serve-dashboard.ps1).' });
     }
-    return fetch('/api/publish-web-users', { method: 'POST' }).then(function (res) {
+    var users = global.PlatformAdmin && global.PlatformAdmin.getUsers
+      ? global.PlatformAdmin.getUsers()
+      : [];
+    return fetch('/api/publish-web-users', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ users: users })
+    }).then(function (res) {
       return res.json().catch(function () { return {}; }).then(function (body) {
         if (!res.ok || !body.ok) {
           throw new Error((body && body.error) || ('HTTP ' + res.status));

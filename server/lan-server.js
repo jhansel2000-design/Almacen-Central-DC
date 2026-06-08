@@ -243,14 +243,24 @@ function handleApi(req, res, url) {
   }
 
   if (req.method === 'POST' && p === '/api/publish-web-users') {
-    const row = readStore('users');
-    const users = row && row.data ? row.data : webUsersExport.readUsersFile(ROOT);
-    const exported = webUsersExport.writeWebUsersFile(ROOT, users);
-    return sendJson(res, 200, {
-      ok: true,
-      count: exported.payload.users.length,
-      updatedAt: exported.payload.updatedAt,
-      file: 'data/web-users.json'
+    return readBody(req).then(function (body) {
+      var users = body && Array.isArray(body.users) ? body.users : null;
+      if (!users) {
+        const row = readStore('users');
+        users = row && row.data ? row.data : webUsersExport.readUsersFile(ROOT);
+      }
+      if (Array.isArray(users) && users.length) {
+        try { writeStore('users', users); } catch (e) { /* noop */ }
+      }
+      const exported = webUsersExport.writeWebUsersFile(ROOT, users || []);
+      return sendJson(res, 200, {
+        ok: true,
+        count: exported.payload.users.length,
+        updatedAt: exported.payload.updatedAt,
+        file: 'data/web-users.json'
+      });
+    }).catch(function (e) {
+      return sendJson(res, 400, { ok: false, error: e.message });
     });
   }
 
