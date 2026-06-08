@@ -144,7 +144,9 @@
                     <button class="btn-toolbar-logout" onclick="handleLogout()">Salir</button>
                 </div>
                 <div class="av-sync-banner" id="avSyncBanner" hidden role="status">
-                    ⚠️ Sincronización cloud no configurada — los reportes no se comparten entre celulares. El administrador debe ejecutar <strong>setup-averias-cloud.ps1</strong> en el servidor.
+                    <span class="av-sync-banner-text">⚠️ Falta activar sync en tiempo real — cada celular guarda reportes por separado.</span>
+                    <button type="button" class="av-sync-banner-btn" id="btnActivateCloud" onclick="openCloudSetupModal()">Activar ahora</button>
+                    <span class="av-sync-banner-hint">Solución definitiva: en el PC ejecute <strong>SETUP-AVERIAS-CLOUD.bat</strong> (jsonbin.io gratis, 2 min).</span>
                 </div>
 
                 <div class="module-content">
@@ -465,20 +467,40 @@
                 <button class="modal-btn modal-btn-confirm" id="modalConfirmBtn" onclick="confirmModal()">Confirmar</button>
             </div>
         </div>
+    </div>
 
-  </div>
+    <!-- Activar nube JSONBin -->
+    <div id="cloudSetupModal" class="modal av-cloud-modal" hidden>
+        <div class="modal-content av-cloud-modal-content">
+            <div class="modal-title">Activar sincronización cloud</div>
+            <p class="av-cloud-help">Los celulares con internet compartirán los mismos reportes en ~2 segundos.</p>
+            <ol class="av-cloud-steps">
+                <li>Cree cuenta gratis en <a href="https://jsonbin.io" target="_blank" rel="noopener">jsonbin.io</a></li>
+                <li>Copie la <strong>Master Key</strong> (API Keys)</li>
+                <li>Péguela abajo y pulse Activar</li>
+            </ol>
+            <label class="av-cloud-label" for="cloudMasterKey">Master Key JSONBin</label>
+            <input type="password" id="cloudMasterKey" class="av-cloud-input" autocomplete="off" placeholder="Pegue su Master Key aquí">
+            <p class="av-cloud-note" id="cloudSetupNote">Desde el PC con <strong>serve-dashboard.ps1</strong> activa todos los celulares. Desde GitHub Pages solo este dispositivo hasta ejecutar el .bat en el servidor.</p>
+            <div class="modal-buttons">
+                <button class="modal-btn modal-btn-cancel" type="button" onclick="closeCloudSetupModal()">Cancelar</button>
+                <button class="modal-btn modal-btn-confirm" type="button" id="cloudSetupSubmit" onclick="submitCloudSetup()">Activar</button>
+            </div>
+            <p class="av-cloud-status" id="cloudSetupStatus" hidden></p>
+        </div>
+    </div>
 
   <script src="js/panel-core.js?v=16"></script>
   <script src="js/platform-network-relay.js?v=1"></script>
   <script src="js/platform-lan-sync.js?v=2"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
-  <script src="js/platform-averias-cloud-sync.js?v=3"></script>
+  <script src="js/platform-averias-cloud-sync.js?v=6"></script>
   <script src="js/platform-store.js"></script>
   <script src="js/platform-admin.js?v=12"></script>
   <script src="js/platform-web-users.js?v=11"></script>
   <script src="js/platform-toast.js"></script>
-  <script src="js/platform-averias-ui.js?v=7"></script>
+  <script src="js/platform-averias-ui.js?v=8"></script>
   <script src="js/platform-averias-app.js?v=1"></script>
 </body>
 </html>

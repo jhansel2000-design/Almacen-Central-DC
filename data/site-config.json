@@ -1,21 +1,22 @@
 ﻿{
-    "version":  1,
-    "updatedAt":  "2026-06-08T23:48:01.4310394Z",
-    "publicSyncBaseUrl":  "",
-    "githubPagesDataUrl":  "https://jhansel2000-design.github.io/Almacen-Central-DC/data/averias.json",
-    "pollSeconds":  2,
-    "realtime":  true,
-    "firebase":  {
-                     "enabled":  false,
-                     "apiKey":  "",
-                     "authDomain":  "",
-                     "databaseURL":  "",
-                     "projectId":  ""
-                 },
-    "averiasJsonBin":  {
-                           "binId":  "6a2754b1da38895dfe9cdf4b",
-                           "accessKey":  "$2a$10$QtkeZBCgSXuqFhEmaDkUlOotaT/0nQYmnACfqc7kMonTD0wZ7vE1K",
-                           "enabled":  true
-                       },
-    "help":  "Tiempo real para TODOS: ejecute SETUP-AVERIAS-CLOUD.bat (jsonbin.io gratis) o INICIAR-SYNC-TIEMPO-REAL.bat"
+  "version": 1,
+  "updatedAt": "2026-06-08T23:48:01.431Z",
+  "publicSyncBaseUrl": "",
+  "githubPagesDataUrl": "https://jhansel2000-design.github.io/Almacen-Central-DC/data/averias.json",
+  "pollSeconds": 1,
+  "realtime": true,
+  "firebase": {
+    "enabled": false,
+    "apiKey": "",
+    "authDomain": "",
+    "databaseURL": "",
+    "projectId": ""
+  },
+  "averiasJsonBin": {
+    "enabled": true,
+    "binId": "6a2754b1da38895dfe9cdf4b",
+    "accessKey": "$2a$10$QtkeZBCgSXuqFhEmaDkUlOotaT/0nQYmnACfqc7kMonTD0wZ7vE1K",
+    "keyType": "master"
+  },
+  "help": "Tiempo real activo via JSONBin. Recargue averias.html con Ctrl+F5."
 }

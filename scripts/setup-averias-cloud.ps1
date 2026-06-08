@@ -47,12 +47,15 @@ $cfg.averiasJsonBin = @{
   enabled = $true
   binId = $binId
   accessKey = $MasterKey
+  keyType = "master"
 }
 $cfg.pollSeconds = 2
 $cfg.realtime = $true
 $cfg.updatedAt = (Get-Date).ToUniversalTime().ToString("o")
 
-$cfg | ConvertTo-Json -Depth 6 | Set-Content $siteConfigPath -Encoding UTF8
+$json = $cfg | ConvertTo-Json -Depth 6
+$utf8NoBom = New-Object System.Text.UTF8Encoding $false
+[System.IO.File]::WriteAllText($siteConfigPath, $json, $utf8NoBom)
 
 Write-Host ""
 Write-Host "site-config.json actualizado." -ForegroundColor Green
