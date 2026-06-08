@@ -310,6 +310,70 @@
     cleanup(ring);
   }
 
+  function spawnRoleRipple(el, ev) {
+    var role = el.getAttribute('data-role') || '';
+    spawnRipple(el, ev);
+    var ripples = el.querySelectorAll('.btn-ripple');
+    if (ripples.length) {
+      ripples[ripples.length - 1].classList.add('role-ripple--' + role);
+    }
+    var rings = el.querySelectorAll('.gesture-ripple-ring');
+    if (rings.length) {
+      rings[rings.length - 1].classList.add('role-ripple-ring--' + role);
+    }
+  }
+
+  function initAuthRoleGestures(root, onSelect) {
+    if (!root) return;
+    var cards = root.querySelectorAll('.auth-role-card, .desp-auth-role-card');
+    cards.forEach(function (card) {
+      if (card.dataset.authRoleGesture === '1') return;
+      card.dataset.authRoleGesture = '1';
+      card.setAttribute('type', 'button');
+
+      var pressed = false;
+      var downX = 0;
+      var downY = 0;
+      var pointerId = null;
+
+      card.addEventListener('pointerdown', function (ev) {
+        if (ev.button !== 0 || card.disabled) return;
+        pressed = true;
+        pointerId = ev.pointerId;
+        downX = ev.clientX;
+        downY = ev.clientY;
+        if (card.setPointerCapture) {
+          try { card.setPointerCapture(pointerId); } catch (e) { /* noop */ }
+        }
+        card.classList.add('is-pressed');
+        spawnRoleRipple(card, ev);
+      });
+
+      function finish(ev) {
+        if (!pressed) return;
+        if (ev.pointerId != null && pointerId != null && ev.pointerId !== pointerId) return;
+        pressed = false;
+        pointerId = null;
+        card.classList.remove('is-pressed');
+        card.classList.add('is-released', 'role-pop');
+        setTimeout(function () {
+          card.classList.remove('is-released', 'role-pop');
+        }, 480);
+
+        var dx = Math.abs(ev.clientX - downX);
+        var dy = Math.abs(ev.clientY - downY);
+        if (dx < 16 && dy < 16 && onSelect) onSelect(card);
+      }
+
+      card.addEventListener('pointerup', finish);
+      card.addEventListener('pointercancel', function () {
+        pressed = false;
+        pointerId = null;
+        card.classList.remove('is-pressed', 'is-released', 'role-pop');
+      });
+    });
+  }
+
   function initGestures(root) {
     root = root || document;
     var selector = [
@@ -373,6 +437,8 @@
     saveDespachoSession: saveDespachoSession,
     clearDespachoSession: clearDespachoSession,
     touchDespachoSession: touchDespachoSession,
-    initGestures: initGestures
+    initGestures: initGestures,
+    initAuthRoleGestures: initAuthRoleGestures,
+    spawnRipple: spawnRipple
   };
 })(typeof window !== 'undefined' ? window : this);

@@ -69,15 +69,36 @@
     document.body.classList.toggle('despacho-dash-view', !visible);
   }
 
+  function showDespAuthRoleFeedback(card) {
+    var picker = card && card.closest('.auth-role-picker');
+    var fb = picker && picker.parentElement
+      ? picker.parentElement.querySelector('.auth-role-feedback')
+      : null;
+    if (picker) {
+      picker.classList.remove('role-area-pulse');
+      void picker.offsetWidth;
+      picker.classList.add('role-area-pulse');
+    }
+    if (fb) {
+      var labelEl = card.querySelector('strong');
+      var label = labelEl ? labelEl.textContent.trim() : '';
+      fb.textContent = label ? ('Área seleccionada: ' + label) : '';
+      fb.classList.toggle('is-visible', !!label);
+    }
+  }
+
   function applyRolePicker(card) {
     document.querySelectorAll('.desp-auth-role-card').forEach(function (btn) {
       var active = btn === card;
       btn.classList.toggle('active', active);
       btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+      btn.classList.toggle('role-select-in', active);
+      if (!active) btn.classList.remove('role-select-in');
     });
     if (card) {
       var form = $('despAuthForm');
       if (form) form.setAttribute('data-selected-area', card.getAttribute('data-role') || '');
+      showDespAuthRoleFeedback(card);
     }
   }
 
@@ -149,12 +170,19 @@
     var form = $('despAuthForm');
     if (!form) return;
 
-    PC.bindOnce(form, 'click', function (ev) {
-      var card = ev.target.closest('.desp-auth-role-card');
-      if (!card) return;
-      ev.preventDefault();
-      applyRolePicker(card);
-    });
+    var overlay = $('despAuthOverlay');
+    if (PC.initAuthRoleGestures && overlay) {
+      PC.initAuthRoleGestures(overlay, function (card) {
+        applyRolePicker(card);
+      });
+    } else {
+      PC.bindOnce(form, 'click', function (ev) {
+        var card = ev.target.closest('.desp-auth-role-card');
+        if (!card) return;
+        ev.preventDefault();
+        applyRolePicker(card);
+      });
+    }
 
     PC.bindOnce(form, 'submit', function (ev) {
       ev.preventDefault();

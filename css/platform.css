@@ -210,7 +210,8 @@ html[data-theme="light"] .auth-field-input::placeholder{ color:#5a6d82; }
 .auth-heading{ margin:0 0 0.5rem; color:var(--text); }
 .auth-subheading{ margin:0 0 1rem; color:var(--muted); font-size:0.9rem; }
 .auth-hint{ margin:0 0 0.75rem; font-size:0.78rem; color:var(--muted); }
-.auth-role-picker{ display:grid; grid-template-columns:repeat(3,1fr); gap:0.65rem; margin-bottom:1rem; position:relative; z-index:3; }
+.auth-role-picker{ display:grid; grid-template-columns:repeat(2,1fr); gap:0.65rem; margin-bottom:0.65rem; position:relative; z-index:3; }
+@media (min-width:720px){ .auth-role-picker{ grid-template-columns:repeat(4,1fr); } }
 @media (max-width:520px){ .auth-role-picker{ grid-template-columns:1fr; } }
 .auth-role-card{
   position:relative; z-index:3; overflow:hidden;

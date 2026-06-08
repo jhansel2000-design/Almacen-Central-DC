@@ -275,11 +275,71 @@ html[data-theme="light"] body:not(.auth-locked) .platform-topbar {
   100% { box-shadow: inset 0 0 0 0 rgba(94, 179, 255, 0); }
 }
 
+/* —— Login: gestos al elegir área/rol —— */
+.auth-role-picker.role-area-pulse {
+  animation: authRoleAreaPulse 0.55s var(--gesture-spring);
+}
+
+@keyframes authRoleAreaPulse {
+  0% { transform: scale(1); }
+  35% { transform: scale(1.015); }
+  100% { transform: scale(1); }
+}
+
+.auth-role-feedback {
+  min-height: 1.35rem;
+  margin: 0 0 0.85rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--accent);
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 0.28s var(--gesture-ease), transform 0.28s var(--gesture-ease);
+}
+
+.auth-role-feedback.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.auth-role-card.role-select-in {
+  animation: authRoleSelectIn 0.42s var(--gesture-spring);
+}
+
+@keyframes authRoleSelectIn {
+  0% { transform: scale(0.96); }
+  55% { transform: scale(1.03); }
+  100% { transform: scale(1); }
+}
+
+.auth-role-card .role-ripple--administrador,
+.auth-role-card .role-ripple--admin { background: rgba(94, 179, 255, 0.5) !important; }
+.auth-role-card .role-ripple-ring--administrador,
+.auth-role-card .role-ripple-ring--admin { border-color: rgba(94, 179, 255, 0.55) !important; }
+
+.auth-role-card .role-ripple--supervisor { background: rgba(255, 209, 102, 0.48) !important; }
+.auth-role-card .role-ripple-ring--supervisor { border-color: rgba(255, 209, 102, 0.55) !important; }
+
+.auth-role-card .role-ripple--validador { background: rgba(206, 147, 216, 0.48) !important; }
+.auth-role-card .role-ripple-ring--validador { border-color: rgba(206, 147, 216, 0.55) !important; }
+
+.auth-role-card .role-ripple--operador { background: rgba(110, 231, 183, 0.45) !important; }
+.auth-role-card .role-ripple-ring--operador { border-color: rgba(110, 231, 183, 0.5) !important; }
+
+.auth-role-card .role-ripple--preparador { background: rgba(255, 183, 77, 0.48) !important; }
+.auth-role-card .role-ripple-ring--preparador { border-color: rgba(255, 183, 77, 0.55) !important; }
+
+.desp-auth-role-feedback {
+  color: #ffb74d;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .gesture-swipe-track,
   .gesture-ripple,
   .gen-card--interactive.is-released,
-  body:not(.auth-locked) .platform-app::before {
+  body:not(.auth-locked) .platform-app::before,
+  .auth-role-picker.role-area-pulse,
+  .auth-role-card.role-select-in {
     animation: none !important;
     transition-duration: 0.01ms !important;
   }

@@ -488,17 +488,36 @@
     document.body.classList.toggle('auth-locked', visible);
   }
 
+  function showAuthRoleFeedback(card) {
+    var picker = card && card.closest('.auth-role-picker');
+    var fb = picker && picker.parentElement
+      ? picker.parentElement.querySelector('.auth-role-feedback')
+      : null;
+    if (picker) {
+      picker.classList.remove('role-area-pulse');
+      void picker.offsetWidth;
+      picker.classList.add('role-area-pulse');
+    }
+    if (fb) {
+      var labelEl = card.querySelector('strong');
+      var label = labelEl ? labelEl.textContent.trim() : '';
+      fb.textContent = label ? ('Área seleccionada: ' + label) : '';
+      fb.classList.toggle('is-visible', !!label);
+    }
+  }
+
   function applyRolePicker(card) {
     document.querySelectorAll('.auth-role-card').forEach(function (btn) {
       var active = btn === card;
       btn.classList.toggle('active', active);
       btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+      btn.classList.toggle('role-select-in', active);
+      if (!active) btn.classList.remove('role-select-in');
     });
     if (card) {
       var form = $('authForm');
       if (form) form.setAttribute('data-selected-area', card.getAttribute('data-role') || '');
-      card.classList.add('role-pop');
-      setTimeout(function () { card.classList.remove('role-pop'); }, 450);
+      showAuthRoleFeedback(card);
     }
   }
 
@@ -566,12 +585,19 @@
     var form = $('authForm');
     if (!form) return;
 
-    bindOnce(form, 'click', function (ev) {
-      var card = ev.target.closest('.auth-role-card');
-      if (!card) return;
-      ev.preventDefault();
-      applyRolePicker(card);
-    });
+    var overlay = $('authOverlay');
+    if (PC.initAuthRoleGestures && overlay) {
+      PC.initAuthRoleGestures(overlay, function (card) {
+        applyRolePicker(card);
+      });
+    } else {
+      bindOnce(form, 'click', function (ev) {
+        var card = ev.target.closest('.auth-role-card');
+        if (!card) return;
+        ev.preventDefault();
+        applyRolePicker(card);
+      });
+    }
 
     bindOnce(form, 'submit', function (ev) {
       ev.preventDefault();
