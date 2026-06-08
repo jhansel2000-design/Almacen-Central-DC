@@ -25,26 +25,53 @@
     return '<span class="admin-status-tag ' + (ok ? 'ok' : 'err') + '">' + esc(text) + '</span>';
   }
 
-  function renderUsersTable(container, onEdit, onDelete) {
-    var users = global.PlatformAdmin.getUsers();
-    var html = '<div class="admin-table-wrap"><table class="data-table"><thead><tr>' +
-      '<th>Usuario</th><th>Nombre</th><th>Rol</th><th>Áreas</th><th>Estado</th><th></th></tr></thead><tbody>';
+  function renderUsersPanel(primaryHost, staffHost, onEdit, onDelete, onEditPrimary) {
+    var primary = global.PlatformAdmin.getPrimaryAdmin();
+    if (primaryHost && primary) {
+      primaryHost.innerHTML =
+        '<section class="admin-primary-card">' +
+        '<div class="admin-primary-card-head">' +
+        '<span class="admin-primary-badge">Administrador del sistema</span>' +
+        statusTag(true, 'Único admin') +
+        '</div>' +
+        '<h4 class="admin-primary-name">' + esc(primary.name || primary.username) + '</h4>' +
+        '<p class="admin-hint small">Usuario: <strong>' + esc(primary.username) + '</strong> · Acceso total · Separado del resto del personal</p>' +
+        '<div class="admin-btn-row">' +
+        '<button type="button" class="btn btn-sm" id="btnEditPrimaryAdmin">Cambiar nombre / contraseña</button>' +
+        '</div></section>';
+      var editBtn = primaryHost.querySelector('#btnEditPrimaryAdmin');
+      if (editBtn && onEditPrimary) {
+        editBtn.addEventListener('click', function () { onEditPrimary(primary.id); });
+      }
+    }
+
+    if (!staffHost) return;
+    var users = global.PlatformAdmin.getStaffUsers();
+    if (!users.length) {
+      staffHost.innerHTML = '<p class="admin-empty">Aún no hay usuarios del almacén. Regístralos abajo.</p>';
+      return;
+    }
+    var html = '<div class="admin-table-wrap"><table class="data-table admin-staff-table"><thead><tr>' +
+      '<th>Usuario</th><th>Nombre</th><th>Rol</th><th>Estado</th><th></th></tr></thead><tbody>';
     users.forEach(function (u) {
       html += '<tr><td>' + esc(u.username) + '</td><td>' + esc(u.name) + '</td><td>' +
         esc(global.PlatformAdmin.ROLE_LABELS[u.role] || u.role) + '</td><td>' +
-        esc((u.areas || []).join(', ') || 'Todas') + '</td><td>' +
         (u.active ? 'Activo' : 'Inactivo') + '</td><td class="admin-actions">' +
         '<button type="button" class="btn btn-sm" data-edit="' + esc(u.id) + '">Editar</button> ' +
         '<button type="button" class="btn btn-sm" data-del="' + esc(u.id) + '">Eliminar</button></td></tr>';
     });
     html += '</tbody></table></div>';
-    container.innerHTML = html;
-    container.querySelectorAll('[data-edit]').forEach(function (btn) {
+    staffHost.innerHTML = html;
+    staffHost.querySelectorAll('[data-edit]').forEach(function (btn) {
       btn.addEventListener('click', function () { onEdit(btn.getAttribute('data-edit')); });
     });
-    container.querySelectorAll('[data-del]').forEach(function (btn) {
+    staffHost.querySelectorAll('[data-del]').forEach(function (btn) {
       btn.addEventListener('click', function () { onDelete(btn.getAttribute('data-del')); });
     });
+  }
+
+  function renderUsersTable(container, onEdit, onDelete) {
+    renderUsersPanel(null, container, onEdit, onDelete, null);
   }
 
   function renderAreasTable(container, onEdit, onDelete) {
@@ -321,6 +348,7 @@
 
   global.PlatformAdminUI = {
     TAB_PANE_IDS: TAB_PANE_IDS,
+    renderUsersPanel: renderUsersPanel,
     renderUsersTable: renderUsersTable,
     renderAreasTable: renderAreasTable,
     renderLogs: renderLogs,

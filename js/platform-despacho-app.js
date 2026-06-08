@@ -149,20 +149,11 @@
     var form = $('despAuthForm');
     if (!form) return;
 
-    PC.bindOnce(form, 'click', function (ev) {
-      var card = ev.target.closest('.desp-auth-role-card');
-      if (!card) return;
-      ev.preventDefault();
-      applyRolePicker(card);
-    });
-
     PC.bindOnce(form, 'submit', function (ev) {
       ev.preventDefault();
       doLogin();
     });
 
-    var activeCard = document.querySelector('.desp-auth-role-card.active');
-    if (activeCard) applyRolePicker(activeCard);
     initPasswordToggle();
   }
 

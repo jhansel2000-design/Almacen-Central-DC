@@ -43,11 +43,21 @@
     operador: 'Operador'
   };
 
+  var PRIMARY_ADMIN_USERNAME = 'janselcastro51192';
+  var ADMIN_DEFAULT_PASSWORD_HASH = '449e3a3f84a49db5dffa682fc37613d6916da3a74dfe43c071bbdb9d2113e4bf';
+
   var DEFAULT_USERS = [
-    { id: 'u1', username: 'admin', name: 'Administrador', role: 'administrador', passwordHash: '449e3a3f84a49db5dffa682fc37613d6916da3a74dfe43c071bbdb9d2113e4bf', areas: [], active: true, extraPermissions: [] },
-    { id: 'u2', username: 'supervisor', name: 'Supervisor', role: 'supervisor', passwordHash: '436fd78d0e9c9b19dcbd24b853b01f06032da2239b9d590424b87549a91c68da', areas: [], active: true, extraPermissions: [] },
-    { id: 'u3', username: 'operador', name: 'Operador', role: 'operador', passwordHash: 'bc94e593460eb3d9601b27509c484088def83c9572f57d7bd3a703c32853b33a', areas: [], active: true, extraPermissions: [] },
-    { id: 'u4', username: 'colaborador', name: 'Colaborador demo', role: 'colaborador', passwordHash: 'bc94e593460eb3d9601b27509c484088def83c9572f57d7bd3a703c32853b33a', areas: [], active: true, extraPermissions: [] }
+    {
+      id: 'u_primary_admin',
+      username: PRIMARY_ADMIN_USERNAME,
+      name: 'Jansel Castro',
+      role: 'administrador',
+      passwordHash: ADMIN_DEFAULT_PASSWORD_HASH,
+      areas: [],
+      active: true,
+      extraPermissions: [],
+      isPrimaryAdmin: true
+    }
   ];
 
   var DEFAULT_AREAS = [
@@ -70,14 +80,76 @@
     return u;
   }
 
+  function isPrimaryAdminUser(user) {
+    if (!user) return false;
+    if (user.isPrimaryAdmin) return true;
+    return String(user.username || '').toLowerCase() === PRIMARY_ADMIN_USERNAME.toLowerCase();
+  }
+
+  function ensureUserRegistry(list) {
+    var primaryKey = PRIMARY_ADMIN_USERNAME.toLowerCase();
+    var staff = [];
+    var primary = null;
+    var legacyAdmin = null;
+
+    (list || []).forEach(function (u) {
+      var un = String(u.username || '').toLowerCase();
+      if (un === primaryKey) {
+        primary = normalizeUser(Object.assign({}, u, {
+          role: 'administrador',
+          active: true,
+          isPrimaryAdmin: true,
+          username: PRIMARY_ADMIN_USERNAME
+        }));
+        return;
+      }
+      if (un === 'admin' && u.role === 'administrador') {
+        legacyAdmin = u;
+        return;
+      }
+      var copy = Object.assign({}, u);
+      if (copy.role === 'administrador') copy.role = 'supervisor';
+      staff.push(normalizeUser(copy));
+    });
+
+    if (!primary) {
+      primary = normalizeUser({
+        id: 'u_primary_admin',
+        username: PRIMARY_ADMIN_USERNAME,
+        name: 'Jansel Castro',
+        role: 'administrador',
+        passwordHash: legacyAdmin ? legacyAdmin.passwordHash : ADMIN_DEFAULT_PASSWORD_HASH,
+        areas: [],
+        active: true,
+        extraPermissions: [],
+        isPrimaryAdmin: true
+      });
+    }
+
+    return [primary].concat(staff);
+  }
+
   function getUsers() {
-    if (!global.localStorage) return DEFAULT_USERS.map(function (u) { return Object.assign({}, u); });
+    if (!global.localStorage) {
+      return ensureUserRegistry(DEFAULT_USERS).map(function (u) { return Object.assign({}, u); });
+    }
     var list = parse(localStorage.getItem(KEYS.users), null);
     if (!list || !list.length) {
-      saveUsers(DEFAULT_USERS);
-      return DEFAULT_USERS.map(function (u) { return Object.assign({}, u); });
+      var seeded = ensureUserRegistry(DEFAULT_USERS);
+      saveUsers(seeded);
+      return seeded.map(function (u) { return Object.assign({}, u); });
     }
-    return list.map(normalizeUser);
+    var normalized = ensureUserRegistry(list);
+    if (JSON.stringify(normalized) !== JSON.stringify(list)) saveUsers(normalized);
+    return normalized.map(function (u) { return Object.assign({}, u); });
+  }
+
+  function getPrimaryAdmin() {
+    return getUsers().find(isPrimaryAdminUser) || null;
+  }
+
+  function getStaffUsers() {
+    return getUsers().filter(function (u) { return !isPrimaryAdminUser(u); });
   }
 
   function saveUsers(users) {
@@ -159,6 +231,12 @@
   }
 
   function createUser(data) {
+    if (data.role === 'administrador') {
+      return { ok: false, message: 'Solo existe un administrador del sistema. Registra colaboradores u otros roles.' };
+    }
+    if (String(data.username || '').toLowerCase() === PRIMARY_ADMIN_USERNAME.toLowerCase()) {
+      return { ok: false, message: 'Ese nombre está reservado para el administrador del sistema.' };
+    }
     var users = getUsers();
     if (users.some(function (u) { return u.username.toLowerCase() === data.username.toLowerCase(); })) {
       return { ok: false, message: 'El usuario ya existe.' };
@@ -182,6 +260,21 @@
     var users = getUsers();
     var idx = users.findIndex(function (u) { return u.id === id; });
     if (idx < 0) return { ok: false, message: 'Usuario no encontrado.' };
+    if (isPrimaryAdminUser(users[idx])) {
+      if (patch.role && patch.role !== 'administrador') {
+        return { ok: false, message: 'No se puede cambiar el rol del administrador principal.' };
+      }
+      if (patch.username && String(patch.username).toLowerCase() !== PRIMARY_ADMIN_USERNAME.toLowerCase()) {
+        return { ok: false, message: 'No se puede cambiar el usuario del administrador principal.' };
+      }
+      patch = Object.assign({}, patch, {
+        role: 'administrador',
+        username: PRIMARY_ADMIN_USERNAME,
+        isPrimaryAdmin: true
+      });
+    } else if (patch.role === 'administrador') {
+      return { ok: false, message: 'No se pueden crear más administradores.' };
+    }
     if (patch.username && users.some(function (u, i) { return i !== idx && u.username.toLowerCase() === patch.username.toLowerCase(); })) {
       return { ok: false, message: 'Nombre de usuario en uso.' };
     }
@@ -192,6 +285,10 @@
   }
 
   function deleteUser(id) {
+    var target = findUserById(id);
+    if (target && isPrimaryAdminUser(target)) {
+      return { ok: false, message: 'No se puede eliminar al administrador principal.' };
+    }
     var users = getUsers().filter(function (u) { return u.id !== id; });
     if (users.length === getUsers().length) return { ok: false };
     if (users.filter(function (u) { return u.role === 'administrador'; }).length === 0) {
@@ -299,7 +396,11 @@
     PERMISSIONS: PERMISSIONS,
     ROLE_PERMISSIONS: ROLE_PERMISSIONS,
     ROLE_LABELS: ROLE_LABELS,
+    PRIMARY_ADMIN_USERNAME: PRIMARY_ADMIN_USERNAME,
     getUsers: getUsers,
+    getPrimaryAdmin: getPrimaryAdmin,
+    getStaffUsers: getStaffUsers,
+    isPrimaryAdminUser: isPrimaryAdminUser,
     saveUsers: saveUsers,
     getAreas: getAreas,
     saveAreas: saveAreas,

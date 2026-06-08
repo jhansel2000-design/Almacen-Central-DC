@@ -50,10 +50,8 @@ Varios dispositivos en el mismo WiFi comparten datos en tiempo real.
 
 | Rol | Usuario | Contraseña |
 |-----|---------|------------|
-| Administrador | `admin` | `JANSELCASTRO01` |
-| Supervisor | `supervisor` | `SUPERVISOR01` |
-| Operador | `operador` | `CASTRO01` |
-| Colaborador (paneles + Excel) | `colaborador` | `CASTRO01` |
+| Administrador (único) | `janselcastro51192` | `JANSELCASTRO01` |
+| Colaborador (ejemplo si lo registras) | *(el que tú crees)* | *(la que asignes)* |
 | Preparador despacho | `preparador` | `CASTRO01` |
 | Validador despacho | `validador` | `SUPERVISOR01` |
 

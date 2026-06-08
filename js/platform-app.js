@@ -551,20 +551,11 @@
     var form = $('authForm');
     if (!form) return;
 
-    bindOnce(form, 'click', function (ev) {
-      var card = ev.target.closest('.auth-role-card');
-      if (!card) return;
-      ev.preventDefault();
-      applyRolePicker(card);
-    });
-
     bindOnce(form, 'submit', function (ev) {
       ev.preventDefault();
       doLogin();
     });
 
-    var activeCard = document.querySelector('.auth-role-card.active');
-    if (activeCard) applyRolePicker(activeCard);
     initPasswordToggle();
 
     if (!overlayIsHidden()) {
@@ -2197,9 +2188,16 @@
   }
 
   function refreshAdminTables() {
-    var usersHost = $('usersTableHost');
-    if (usersHost && userCan('users.manage')) {
-      global.PlatformAdminUI.renderUsersTable(usersHost, loadUserForEdit, deleteUserConfirm);
+    var primaryHost = $('primaryAdminHost');
+    var staffHost = $('staffUsersHost');
+    if (userCan('users.manage') && global.PlatformAdminUI.renderUsersPanel) {
+      global.PlatformAdminUI.renderUsersPanel(
+        primaryHost,
+        staffHost,
+        loadUserForEdit,
+        deleteUserConfirm,
+        loadPrimaryAdminForEdit
+      );
     }
     var areasHost = $('areasTableHost');
     if (areasHost) {
@@ -2209,15 +2207,59 @@
     if (logsHost) global.PlatformAdminUI.renderLogs(logsHost);
   }
 
-  function loadUserForEdit(id) {
+  function resetStaffUserForm() {
+    var form = $('userForm');
+    if (form) form.reset();
+    if ($('userEditId')) $('userEditId').value = '';
+    if ($('userRole')) $('userRole').value = 'colaborador';
+    if ($('userUsername')) $('userUsername').disabled = false;
+    if ($('userRole')) $('userRole').disabled = false;
+    var cancelBtn = $('btnCancelUserEdit');
+    if (cancelBtn) cancelBtn.hidden = true;
+    var saveBtn = $('btnSaveUser');
+    if (saveBtn) saveBtn.textContent = 'Guardar usuario';
+  }
+
+  function loadPrimaryAdminForEdit(id) {
     var user = global.PlatformAdmin.getUsers().find(function (u) { return u.id === id; });
-    if (!user) return;
+    if (!user || !global.PlatformAdmin.isPrimaryAdminUser(user)) return;
     $('userEditId').value = user.id;
     $('userUsername').value = user.username;
+    $('userUsername').disabled = true;
+    $('userName').value = user.name;
+    $('userRole').value = 'administrador';
+    $('userRole').disabled = true;
+    $('userPassword').value = '';
+    $('userPassword').placeholder = 'Nueva contraseña (opcional)';
+    var cancelBtn = $('btnCancelUserEdit');
+    if (cancelBtn) cancelBtn.hidden = false;
+    var saveBtn = $('btnSaveUser');
+    if (saveBtn) saveBtn.textContent = 'Actualizar administrador';
+    global.PlatformAdminUI.switchTab('users');
+    var formEl = $('userForm');
+    if (formEl && formEl.scrollIntoView) formEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function loadUserForEdit(id) {
+    var user = global.PlatformAdmin.getStaffUsers().find(function (u) { return u.id === id; });
+    if (!user) {
+      if (global.PlatformAdmin.isPrimaryAdminUser(global.PlatformAdmin.findUserById(id))) {
+        loadPrimaryAdminForEdit(id);
+      }
+      return;
+    }
+    $('userEditId').value = user.id;
+    $('userUsername').value = user.username;
+    $('userUsername').disabled = false;
     $('userName').value = user.name;
     $('userRole').value = user.role;
-    $('userAreas').value = (user.areas || []).join(', ');
+    $('userRole').disabled = false;
     $('userPassword').value = '';
+    $('userPassword').placeholder = 'Contraseña (nueva)';
+    var cancelBtn = $('btnCancelUserEdit');
+    if (cancelBtn) cancelBtn.hidden = false;
+    var saveBtn = $('btnSaveUser');
+    if (saveBtn) saveBtn.textContent = 'Actualizar usuario';
     global.PlatformAdminUI.switchTab('users');
   }
 
@@ -2307,6 +2349,8 @@
       });
     }
 
+    bindOnce($('btnCancelUserEdit'), 'click', resetStaffUserForm);
+
     bindOnce($('btnSaveConfig'), 'click', saveConfigFromUi);
     bindOnce($('btnSaveOpenai'), 'click', saveOpenaiFromUi);
     bindOnce($('btnTestAiVoice'), 'click', function () {
@@ -2332,23 +2376,32 @@
     var editId = $('userEditId').value;
     var username = PC.sanitizeUsername($('userUsername').value);
     var password = $('userPassword').value;
-    if (!username) {
+    if (!username && !editId) {
       alert('El usuario es obligatorio.');
-      return;
-    }
-    if (payload.role === 'administrador' && state.user.role !== 'administrador') {
-      toastNotify('Solo un administrador puede asignar rol administrador.', 'warn');
       return;
     }
     var payload = {
       username: username,
       name: ($('userName').value || '').trim() || username,
       role: $('userRole').value,
-      areas: areasRaw
+      areas: []
     };
 
     if (editId) {
-      var patch = { username: payload.username, name: payload.name, role: payload.role, areas: payload.areas };
+      var existing = global.PlatformAdmin.findUserById(editId);
+      var patch = { name: payload.name, areas: [] };
+      if (existing && global.PlatformAdmin.isPrimaryAdminUser(existing)) {
+        if (password) {
+          PC.sha256(password).then(function (hash) {
+            finishUserSave(editId, { name: payload.name, passwordHash: hash });
+          });
+        } else {
+          finishUserSave(editId, patch);
+        }
+        return;
+      }
+      patch.username = payload.username;
+      patch.role = payload.role;
       if (password) {
         PC.sha256(password).then(function (hash) {
           patch.passwordHash = hash;
@@ -2360,6 +2413,10 @@
       return;
     }
 
+    if (!username) {
+      alert('El usuario es obligatorio.');
+      return;
+    }
     if (!password) {
       alert('La contraseña es obligatoria para usuarios nuevos.');
       return;
@@ -2369,16 +2426,16 @@
         username: payload.username,
         name: payload.name,
         role: payload.role,
-        areas: payload.areas,
+        areas: [],
         passwordHash: hash
       });
       if (!res.ok) {
         alert(res.message || 'Error al crear usuario.');
         return;
       }
-      $('userForm').reset();
-      $('userEditId').value = '';
+      resetStaffUserForm();
       refreshAdminTables();
+      toastNotify('Usuario registrado correctamente.', 'ok');
     });
   }
 
@@ -2388,8 +2445,14 @@
       alert(res.message || 'Error al actualizar.');
       return;
     }
-    $('userPassword').value = '';
+    if (state.user && state.user.id === editId) {
+      state.user = res.user;
+      applyPermissions();
+      updateRoleBadge();
+    }
+    resetStaffUserForm();
     refreshAdminTables();
+    toastNotify('Usuario actualizado.', 'ok');
   }
 
   function saveAreaFromForm() {
