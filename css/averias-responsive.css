@@ -1,0 +1,427 @@
+/* Operaciones de Piso — móvil + PC/tablet */
+
+/* ── Base móvil (prioridad piso / teléfono) ── */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body.averias-dash-view {
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+.averias-app {
+  min-height: 100vh;
+  min-height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
+  font-family: 'DM Sans', 'Segoe UI', system-ui, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.averias-app #mainApp {
+  flex: 1;
+  min-height: 0;
+  max-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+.averias-app .app-shell {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.averias-app .module-content {
+  flex: 1;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  padding: 12px clamp(12px, 3vw, 20px) calc(20px + env(safe-area-inset-bottom, 0px));
+}
+
+.averias-app .app-toolbar {
+  padding: max(10px, env(safe-area-inset-top, 0px)) 12px 10px;
+  min-height: 52px;
+  position: sticky;
+  top: 0;
+  z-index: 30;
+}
+
+.averias-app .btn-menu {
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: manipulation;
+}
+
+.averias-app .btn-toolbar-logout {
+  min-height: 44px;
+  padding: 10px 14px;
+  touch-action: manipulation;
+}
+
+.averias-app .toolbar-title {
+  font-size: clamp(0.9rem, 3.5vw, 1.05rem);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Inputs táctiles — evita zoom iOS */
+.averias-app input,
+.averias-app select,
+.averias-app textarea,
+.averias-app .btn,
+.averias-app .btn-action,
+.averias-app .severity-btn,
+.averias-app .btn-area,
+.averias-app .btn-correct-incidence {
+  font-size: 16px;
+  touch-action: manipulation;
+}
+
+.averias-app .form-field input,
+.averias-app .form-field select,
+.averias-app .form-field textarea {
+  min-height: 48px;
+  padding: 12px 14px;
+  width: 100%;
+}
+
+.averias-app .form-field textarea {
+  min-height: 96px;
+}
+
+.averias-app .btn-action,
+.averias-app .btn-primary,
+.averias-app .btn-secondary {
+  min-height: 48px;
+  width: 100%;
+}
+
+.averias-app .severity-buttons {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+
+.averias-app .severity-btn {
+  min-height: 48px;
+  padding: 12px;
+}
+
+.averias-app .area-buttons {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+.averias-app .btn-area {
+  min-height: 52px;
+  padding: 14px;
+}
+
+.averias-app .dashboard-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.averias-app .stat-card {
+  padding: 14px 10px;
+}
+
+.averias-app .stat-number {
+  font-size: clamp(1.5rem, 6vw, 2.25rem);
+}
+
+.averias-app .welcome-title {
+  font-size: clamp(1.65rem, 7vw, 2.1rem);
+}
+
+.averias-app .welcome-question {
+  font-size: clamp(1.1rem, 4.5vw, 1.35rem);
+}
+
+/* Drawer móvil */
+.averias-app .drawer {
+  width: min(320px, 88vw);
+  max-width: 100%;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  z-index: 1200;
+}
+
+.averias-app .drawer-item {
+  min-height: 56px;
+  padding: 12px 14px;
+  touch-action: manipulation;
+}
+
+.averias-app .drawer-overlay {
+  z-index: 1100;
+}
+
+/* Modal — pantalla completa en móvil */
+.averias-app .modal {
+  position: fixed !important;
+  inset: 0 !important;
+  left: 0 !important;
+  top: 0 !important;
+  width: 100% !important;
+  max-width: none !important;
+  height: 100% !important;
+  max-height: 100dvh !important;
+  transform: none !important;
+  border: none !important;
+  border-radius: 0 !important;
+  margin: 0 !important;
+  padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom)) !important;
+  background: rgba(0, 0, 0, 0.88) !important;
+  z-index: 3000 !important;
+}
+
+.averias-app .modal-content {
+  width: min(100%, 400px);
+  max-width: 100%;
+}
+
+.averias-app .modal-btn {
+  min-height: 48px;
+}
+
+.averias-app .equipment-check-row .si-no-btn {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+.averias-app .checklist-item {
+  min-height: 52px;
+  padding: 12px 14px;
+}
+
+.averias-app .toggle-switch {
+  min-width: 48px;
+  min-height: 28px;
+  flex-shrink: 0;
+}
+
+.averias-app .incidence-card {
+  padding: 14px;
+}
+
+.averias-app .filter-row {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.averias-app .filter-row select {
+  min-height: 48px;
+  width: 100%;
+}
+
+/* ── Teléfono pequeño ── */
+@media (max-width: 380px) {
+  .averias-app .dashboard-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .averias-app .stat-label {
+    font-size: 0.68rem;
+  }
+}
+
+/* ── Teléfono landscape / phablet ── */
+@media (min-width: 480px) and (max-width: 899px) {
+  .averias-app .severity-buttons {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .averias-app .area-buttons {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .averias-app .dashboard-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .averias-app .action-buttons {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+  }
+
+  .averias-app .filter-row {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .averias-app .filter-row select {
+    flex: 1;
+    min-width: 140px;
+  }
+}
+
+/* ── Tablet ── */
+@media (min-width: 768px) {
+  .averias-app .module-content {
+    padding: 20px clamp(20px, 4vw, 32px) 28px;
+  }
+
+  .averias-app .welcome-screen {
+    max-width: 720px;
+    margin: 0 auto;
+  }
+
+  .averias-app .sub-panel {
+    max-width: 820px;
+    margin: 0 auto;
+  }
+
+  .averias-app .action-buttons {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+  }
+
+  .averias-app .modal.show {
+    align-items: center;
+  }
+
+  .averias-app .modal-content {
+    border-radius: 20px;
+  }
+}
+
+/* ── PC / pantalla grande — menú lateral fijo ── */
+@media (min-width: 960px) {
+  body.averias-dash-view {
+    overflow: hidden;
+  }
+
+  .averias-app #mainApp {
+    flex-direction: row;
+    align-items: stretch;
+  }
+
+  .averias-app .drawer-overlay {
+    display: none !important;
+  }
+
+  .averias-app .drawer {
+    position: relative;
+    transform: translateX(0) !important;
+    width: min(280px, 26vw);
+    min-width: 240px;
+    max-width: 300px;
+    flex-shrink: 0;
+    height: auto;
+    max-height: 100dvh;
+    border-right: 1px solid #333;
+    box-shadow: none;
+  }
+
+  .averias-app .btn-menu {
+    display: none;
+  }
+
+  .averias-app .app-shell {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .averias-app .module-content {
+    padding: 24px clamp(24px, 3vw, 48px) 32px;
+  }
+
+  .averias-app .module-panel > .sub-panel:not(.hidden) {
+    max-width: min(960px, 100%);
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .averias-app .dashboard-grid {
+    gap: 16px;
+  }
+
+  .averias-app .stat-card {
+    padding: 22px 16px;
+  }
+
+  .averias-app .welcome-screen {
+    max-width: 880px;
+  }
+
+  .averias-app .welcome-hero {
+    padding: 32px 28px;
+  }
+
+  /* Dos columnas en formularios largos (equipos) */
+  .averias-app #equipmentFormPanel .form-field:nth-child(-n+6) {
+    display: inline-block;
+    width: calc(50% - 8px);
+    vertical-align: top;
+    margin-right: 8px;
+  }
+}
+
+@media (min-width: 1200px) {
+  .averias-app .module-content {
+    display: block;
+  }
+
+  .averias-app .module-panel > .sub-panel:not(.hidden) {
+    max-width: 1040px;
+  }
+
+  .averias-app .incidences-list-grid,
+  .averias-app #incidencesList {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 12px;
+    align-items: start;
+  }
+
+  .averias-app #equipmentListContainer {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 12px;
+  }
+}
+
+/* Login del portal — móvil y PC */
+@media (max-width: 899px) {
+  .av-auth-overlay .auth-layout {
+    max-width: 440px;
+  }
+
+  .av-auth-hero {
+    display: none;
+  }
+
+  .av-auth-glass {
+    padding: 1.25rem;
+  }
+}
+
+@media (min-width: 900px) {
+  .av-auth-overlay .auth-glass-card .auth-field-input {
+    min-height: 48px;
+  }
+}
+
+/* Hover solo donde hay puntero fino */
+@media (hover: none) {
+  .averias-app .stat-card:hover,
+  .averias-app .btn-action:hover,
+  .averias-app .incidence-card:hover {
+    transform: none;
+  }
+}
