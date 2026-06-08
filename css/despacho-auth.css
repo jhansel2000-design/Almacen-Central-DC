@@ -246,8 +246,37 @@ html[data-theme="light"] .auth-portal-body span {
   line-height: 1.45;
 }
 
+body.auth-locked .desp-auth-overlay {
+  pointer-events: auto;
+}
+
+body.auth-locked .desp-auth-overlay .auth-layout,
+body.auth-locked .desp-auth-overlay .auth-glass-card,
+body.auth-locked .desp-auth-overlay .auth-form {
+  pointer-events: auto;
+}
+
 .desp-auth-role-picker {
   grid-template-columns: 1fr 1fr;
+  pointer-events: auto;
+  z-index: 10;
+}
+
+.desp-auth-role-option {
+  display: contents;
+}
+
+.desp-auth-role-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+  pointer-events: none;
 }
 
 .desp-auth-role-card {
@@ -257,6 +286,8 @@ html[data-theme="light"] .auth-portal-body span {
   touch-action: manipulation;
   pointer-events: auto;
   z-index: 3;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 .desp-auth-role-card.role-pop {
@@ -267,26 +298,38 @@ html[data-theme="light"] .auth-portal-body span {
   transform: scale(1.08);
 }
 
-.desp-auth-role-card.active {
+.desp-auth-role-card.active,
+.desp-auth-role-input:checked + .desp-auth-role-card {
   border-color: rgba(255, 183, 77, 0.55);
   background: rgba(255, 152, 0, 0.12);
   box-shadow: 0 0 0 1px rgba(255, 183, 77, 0.28), 0 12px 32px rgba(255, 152, 0, 0.12);
 }
 
-.desp-auth-role-card[data-role="validador"].active {
+.desp-auth-role-card[data-role="validador"].active,
+.desp-auth-role-input:checked + .desp-auth-role-card[data-role="validador"] {
   border-color: rgba(206, 147, 216, 0.55);
   background: rgba(156, 39, 176, 0.1);
   box-shadow: 0 0 0 1px rgba(206, 147, 216, 0.28), 0 12px 32px rgba(156, 39, 176, 0.12);
 }
 
-.desp-auth-role-card[data-role="validador"].active .role-check {
+.desp-auth-role-card[data-role="validador"].active .role-check,
+.desp-auth-role-input:checked + .desp-auth-role-card[data-role="validador"] .role-check {
+  opacity: 1;
+  transform: scale(1);
   background: linear-gradient(135deg, #ce93d8, #ab47bc);
   color: #1a081f;
 }
 
-.desp-auth-role-card[data-role="preparador"].active .role-check {
+.desp-auth-role-card[data-role="preparador"].active .role-check,
+.desp-auth-role-input:checked + .desp-auth-role-card[data-role="preparador"] .role-check {
+  opacity: 1;
+  transform: scale(1);
   background: linear-gradient(135deg, #ffb74d, #ff9800);
   color: #2a1800;
+}
+
+.desp-auth-role-input:checked + .desp-auth-role-card .role-icon-wrap {
+  transform: scale(1.08);
 }
 
 .desp-auth-role-card .role-icon-wrap {

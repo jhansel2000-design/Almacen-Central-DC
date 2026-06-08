@@ -18,7 +18,7 @@
   <link rel="stylesheet" href="css/platform-enhance.css">
   <link rel="stylesheet" href="css/platform-gestures.css?v=16">
   <link rel="stylesheet" href="css/despacho-dashboard.css">
-  <link rel="stylesheet" href="css/despacho-auth.css?v=18">
+  <link rel="stylesheet" href="css/despacho-auth.css?v=19">
   <link rel="stylesheet" href="css/auth-cinematic.css?v=16">
   <link rel="stylesheet" href="css/theme-light.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -58,27 +58,33 @@
         <form id="despAuthForm" class="auth-form" novalidate action="#" method="post">
           <h2 id="despAuthTitle" class="auth-heading desp-auth-heading">Acceso a despacho</h2>
           <p class="auth-subheading desp-auth-subheading">1. Elige tu área · 2. Escribe el usuario que te asignó el administrador</p>
-          <div class="auth-role-picker desp-auth-role-picker" role="group" aria-label="Elige tu rol en despacho">
-            <button type="button" class="auth-role-card desp-auth-role-card active" data-role="preparador" aria-pressed="true">
-              <span class="role-check" aria-hidden="true">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
-              </span>
-              <span class="role-icon-wrap" aria-hidden="true">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
-              </span>
-              <strong>Preparador</strong>
-              <span class="role-desc">Registra IDC y jaula</span>
-            </button>
-            <button type="button" class="auth-role-card desp-auth-role-card" data-role="validador" aria-pressed="false">
-              <span class="role-check" aria-hidden="true">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
-              </span>
-              <span class="role-icon-wrap" aria-hidden="true">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-              </span>
-              <strong>Validador</strong>
-              <span class="role-desc">Valida y libera pedidos</span>
-            </button>
+          <div class="auth-role-picker desp-auth-role-picker" role="radiogroup" aria-label="Elige tu rol en despacho">
+            <div class="desp-auth-role-option">
+              <input class="desp-auth-role-input" type="radio" name="despAuthArea" id="despAuthAreaPrep" value="preparador" checked>
+              <label class="auth-role-card desp-auth-role-card active" for="despAuthAreaPrep" data-role="preparador">
+                <span class="role-check" aria-hidden="true">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+                </span>
+                <span class="role-icon-wrap" aria-hidden="true">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+                </span>
+                <strong>Preparador</strong>
+                <span class="role-desc">Registra IDC y jaula</span>
+              </label>
+            </div>
+            <div class="desp-auth-role-option">
+              <input class="desp-auth-role-input" type="radio" name="despAuthArea" id="despAuthAreaVal" value="validador">
+              <label class="auth-role-card desp-auth-role-card" for="despAuthAreaVal" data-role="validador">
+                <span class="role-check" aria-hidden="true">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+                </span>
+                <span class="role-icon-wrap" aria-hidden="true">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                </span>
+                <strong>Validador</strong>
+                <span class="role-desc">Valida y libera pedidos</span>
+              </label>
+            </div>
           </div>
           <p class="auth-role-feedback desp-auth-role-feedback" id="despAuthRoleFeedback" aria-live="polite" hidden></p>
           <div class="auth-field">
@@ -131,6 +137,6 @@
   <script src="js/platform-despacho-ui.js"></script>
   <script src="js/platform-despacho-auth.js"></script>
   <script src="js/platform-toast.js"></script>
-  <script src="js/platform-despacho-app.js?v=13"></script>
+  <script src="js/platform-despacho-app.js?v=14"></script>
 </body>
 </html>

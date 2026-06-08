@@ -78,7 +78,24 @@
     }
   }
 
+  function getSelectedAuthArea() {
+    var checked = document.querySelector('input[name="despAuthArea"]:checked');
+    return checked ? String(checked.value || '').trim() : 'preparador';
+  }
+
+  function syncRolePickerFromInput() {
+    var checked = document.querySelector('input[name="despAuthArea"]:checked');
+    if (!checked) return;
+    var label = document.querySelector('label.desp-auth-role-card[for="' + checked.id + '"]');
+    if (label) applyRolePicker(label);
+  }
+
   function applyRolePicker(card) {
+    if (!card) return;
+    var role = card.getAttribute('data-role') || '';
+    var radio = card.getAttribute('for') ? document.getElementById(card.getAttribute('for')) : null;
+    if (radio && !radio.checked) radio.checked = true;
+
     document.querySelectorAll('.desp-auth-role-card').forEach(function (btn) {
       var active = btn === card;
       btn.classList.toggle('active', active);
@@ -86,11 +103,9 @@
       btn.classList.toggle('role-select-in', active);
       if (!active) btn.classList.remove('role-select-in');
     });
-    if (card) {
-      var form = $('despAuthForm');
-      if (form) form.setAttribute('data-selected-area', card.getAttribute('data-role') || '');
-      showDespAuthRoleFeedback(card);
-    }
+    var form = $('despAuthForm');
+    if (form) form.setAttribute('data-selected-area', role);
+    showDespAuthRoleFeedback(card);
   }
 
   function setLoginLoading(loading) {
@@ -148,6 +163,11 @@
         showAuthError('Usuario o contraseña incorrectos.');
         return;
       }
+      var area = getSelectedAuthArea();
+      if (area === 'validador' && !Auth.canValidate(user.role)) {
+        showAuthError('Tu usuario no tiene acceso como Validador. Elige Preparador.');
+        return;
+      }
       PC.clearDespachoLoginAttempts();
       PC.persistRememberedLoginUsername(
         'despacho',
@@ -167,28 +187,27 @@
     var form = $('despAuthForm');
     if (!form) return;
 
-    var overlay = $('despAuthOverlay');
-    if (PC.initAuthRoleGestures && overlay) {
-      PC.initAuthRoleGestures(overlay, function (card) {
-        applyRolePicker(card);
+    document.querySelectorAll('input[name="despAuthArea"]').forEach(function (radio) {
+      radio.addEventListener('change', syncRolePickerFromInput);
+    });
+
+    document.querySelectorAll('.desp-auth-role-card').forEach(function (label) {
+      label.addEventListener('click', function () {
+        var id = label.getAttribute('for');
+        var radio = id ? document.getElementById(id) : null;
+        if (radio && !radio.checked) {
+          radio.checked = true;
+          applyRolePicker(label);
+        }
       });
-    }
-    bindDespRolePickerClicks(form);
+    });
 
     PC.bindOnce(form, 'submit', function (ev) {
       ev.preventDefault();
       doLogin();
     });
 
-    var activeCard = document.querySelector('.desp-auth-role-card.active');
-    if (activeCard) {
-      applyRolePicker(activeCard);
-      setTimeout(function () {
-        if (PC.spawnRoleRipple) {
-          PC.spawnRoleRipple(activeCard, null);
-        }
-      }, 320);
-    }
+    syncRolePickerFromInput();
     initPasswordToggle();
     PC.applyRememberedLoginUsername('despacho', $('despAuthUsername'), $('despAuthRememberUser'));
   }
@@ -203,25 +222,6 @@
     }
     enterApp(user);
     return true;
-  }
-
-  function bindDespRolePickerClicks(form) {
-    if (!form || form.dataset.despRoleClickBound === '1') return;
-    form.dataset.despRoleClickBound = '1';
-    form.addEventListener('click', function (ev) {
-      var card = ev.target.closest('.desp-auth-role-card');
-      if (!card) return;
-      ev.preventDefault();
-      applyRolePicker(card);
-    });
-    document.querySelectorAll('.desp-auth-role-card').forEach(function (card) {
-      if (card.dataset.despRoleTapBound === '1') return;
-      card.dataset.despRoleTapBound = '1';
-      card.addEventListener('click', function (ev) {
-        ev.preventDefault();
-        applyRolePicker(card);
-      });
-    });
   }
 
   function bindSessionTouch() {
@@ -280,7 +280,14 @@
 
   function enterApp(user) {
     state.user = user;
-    state.view = Auth.canValidate(user.role) ? 'combinado' : 'preparador';
+    var area = getSelectedAuthArea();
+    if (area === 'validador' && Auth.canValidate(user.role)) {
+      state.view = 'validador';
+    } else if (area === 'preparador') {
+      state.view = 'preparador';
+    } else {
+      state.view = Auth.canValidate(user.role) ? 'combinado' : 'preparador';
+    }
     setAuthVisible(false);
     updateRoleBadge();
     renderDespacho();
