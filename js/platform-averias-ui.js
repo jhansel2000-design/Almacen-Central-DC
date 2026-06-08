@@ -29,6 +29,12 @@
     initEquipmentFormDefaults();
     buildEquipmentChecklist();
     loadData();
+    if (global.PlatformAveriasCloudSync && global.PlatformAveriasCloudSync.pull) {
+      global.PlatformAveriasCloudSync.pull().then(function () {
+        loadData();
+        refreshCurrentView();
+      });
+    }
     if (typeof closeDrawer === 'function') closeDrawer();
     initFitScreen();
     showWelcome();
@@ -199,7 +205,11 @@
             try {
                 applyingRemoteSnapshot = true;
                 writeIndividualKeys();
-                localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(buildSnapshot()));
+                var snap = buildSnapshot();
+                localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(snap));
+                if (global.PlatformAveriasCloudSync && global.PlatformAveriasCloudSync.push) {
+                    global.PlatformAveriasCloudSync.push(snap);
+                }
             } finally {
                 applyingRemoteSnapshot = false;
             }
@@ -266,20 +276,25 @@
 
         function syncAveriasData() {
             playSelectFeedback();
-            if (global.PlatformLanSync && global.PlatformLanSync.isEnabled()) {
-                global.PlatformLanSync.forcePull().then(function (ok) {
-                    reloadFromSync();
-                    if (global.PlatformToast) {
-                        global.PlatformToast.success(ok ? 'Reportes sincronizados desde la red' : 'No se pudo sincronizar', 3500);
-                    } else {
-                        alert(ok ? '✅ Reportes sincronizados' : 'No se pudo sincronizar');
-                    }
-                });
-                return;
+            var tasks = [];
+            if (global.PlatformAveriasCloudSync && global.PlatformAveriasCloudSync.pull) {
+                tasks.push(global.PlatformAveriasCloudSync.pull());
             }
-            var msg = 'Sin servidor LAN activo.\n\nLos reportes de cada celular solo se ven en ese mismo equipo.\n\nPara ver todos los reportes:\n1. Abra serve-dashboard.ps1 en el PC servidor\n2. En el celular entre a http://IP-DEL-PC:8080/averias.html\n3. Misma red WiFi\n4. Toque ↻ para sincronizar';
-            if (global.PlatformToast) global.PlatformToast.warn('Sin LAN — reportes solo en este dispositivo', 6000);
-            alert(msg);
+            if (global.PlatformLanSync && global.PlatformLanSync.forcePull) {
+                tasks.push(global.PlatformLanSync.forcePull());
+            }
+            Promise.all(tasks.length ? tasks : [Promise.resolve()]).then(function () {
+                reloadFromSync();
+                var cloud = global.PlatformAveriasCloudSync && global.PlatformAveriasCloudSync.isCloudConfigured && global.PlatformAveriasCloudSync.isCloudConfigured();
+                var msg = cloud
+                    ? 'Reportes sincronizados — todos los usuarios ven los mismos datos'
+                    : 'Datos actualizados desde GitHub. Para tiempo real configure publicSyncBaseUrl en site-config.json';
+                if (global.PlatformToast) {
+                    global.PlatformToast.success(msg, 4000);
+                } else {
+                    alert('✅ ' + msg);
+                }
+            });
         }
 
         function initAveriasSync() {

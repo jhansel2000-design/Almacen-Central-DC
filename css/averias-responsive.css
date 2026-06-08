@@ -318,6 +318,12 @@ body.averias-dash-view {
     transform: scale(0.96);
   }
 
+  .averias-app .btn-sync-data.cloud-active {
+    border-color: rgba(63, 185, 80, 0.55);
+    background: rgba(46, 125, 50, 0.22);
+    color: #81c784;
+  }
+
   .averias-app .lan-sync-badge {
     margin-right: 6px;
     font-size: 0.65rem;

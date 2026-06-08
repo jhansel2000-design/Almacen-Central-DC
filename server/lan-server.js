@@ -17,6 +17,10 @@ const os = require('os');
 const { URL } = require('url');
 const webUsersExport = require('../scripts/export-web-users.js');
 const { pushWebUsersGit } = require('../scripts/push-web-users-git.js');
+const averiasExport = require('../scripts/export-averias.js');
+const { pushAveriasGit } = require('../scripts/push-averias-git.js');
+
+var averiasGitPushTimer = null;
 
 const args = process.argv.slice(2);
 function argValue(flag, fallback) {
@@ -127,8 +131,27 @@ function writeStore(name, data) {
       console.warn('[LAN] No se pudo exportar web-users.json:', e.message);
     }
   }
+  if (name === 'averias') {
+    try {
+      averiasExport.writeAveriasFile(ROOT, data);
+      scheduleAveriasGitPush();
+    } catch (e) {
+      console.warn('[LAN] No se pudo exportar averias.json:', e.message);
+    }
+  }
   const stat = fs.statSync(fp);
   return { mtime: stat.mtimeMs, size: stat.size };
+}
+
+function scheduleAveriasGitPush() {
+  clearTimeout(averiasGitPushTimer);
+  averiasGitPushTimer = setTimeout(function () {
+    pushAveriasGit(ROOT).then(function (r) {
+      if (r && r.pushed) console.log('[LAN] Reportes publicados a GitHub (data/averias.json)');
+    }).catch(function (e) {
+      console.warn('[LAN] Git push averias omitido:', String(e.stderr || e.message || e));
+    });
+  }, 45000);
 }
 
 function broadcast(event, payload) {
@@ -311,6 +334,41 @@ function handleApi(req, res, url) {
           file: 'data/web-users.json',
           gitError: String(gitErr.stderr || gitErr.message || gitErr),
           hint: 'Archivo exportado en disco. Revisa git push o ejecuta publicar-usuarios-web.ps1'
+        });
+      });
+    }).catch(function (e) {
+      return sendJson(res, 400, { ok: false, error: e.message });
+    });
+  }
+
+  if (req.method === 'POST' && p === '/api/publish-averias-live') {
+    return readBody(req).then(function (body) {
+      var snap = body && body.data ? body.data : null;
+      if (!snap) {
+        const row = readStore('averias');
+        snap = row && row.data ? row.data : averiasExport.readAveriasFile(ROOT);
+      }
+      if (snap) {
+        try { writeStore('averias', snap); } catch (e) { /* noop */ }
+      }
+      const exported = averiasExport.writeAveriasFile(ROOT, snap || averiasExport.emptySnapshot());
+      return pushAveriasGit(ROOT).then(function (gitResult) {
+        return sendJson(res, 200, {
+          ok: true,
+          live: true,
+          updatedAt: exported.payload.updatedAt,
+          committed: !!gitResult.committed,
+          pushed: !!gitResult.pushed,
+          file: 'data/averias.json',
+          webUrl: 'https://jhansel2000-design.github.io/Almacen-Central-DC/data/averias.json'
+        });
+      }).catch(function (gitErr) {
+        return sendJson(res, 200, {
+          ok: true,
+          live: false,
+          updatedAt: exported.payload.updatedAt,
+          file: 'data/averias.json',
+          gitError: String(gitErr.stderr || gitErr.message || gitErr)
         });
       });
     }).catch(function (e) {
