@@ -29,6 +29,7 @@
     initEquipmentFormDefaults();
     buildEquipmentChecklist();
     loadData();
+    if (typeof closeDrawer === 'function') closeDrawer();
     showWelcome();
   }
 // Data Management
@@ -298,13 +299,32 @@
 
         function toggleDrawer() {
             playSelectFeedback();
-            document.getElementById('drawer').classList.toggle('open');
-            document.getElementById('drawerOverlay').classList.toggle('show');
+            var drawer = document.getElementById('drawer');
+            var overlay = document.getElementById('drawerOverlay');
+            if (!drawer || !overlay) return;
+            var open = !drawer.classList.contains('open');
+            drawer.classList.toggle('open', open);
+            overlay.classList.toggle('show', open);
+            document.body.classList.toggle('averias-drawer-open', open);
         }
 
         function closeDrawer() {
-            document.getElementById('drawer').classList.remove('open');
-            document.getElementById('drawerOverlay').classList.remove('show');
+            var drawer = document.getElementById('drawer');
+            var overlay = document.getElementById('drawerOverlay');
+            if (drawer) drawer.classList.remove('open');
+            if (overlay) overlay.classList.remove('show');
+            document.body.classList.remove('averias-drawer-open');
+        }
+
+        if (!global._averiasDrawerResizeBound) {
+            global._averiasDrawerResizeBound = true;
+            global.addEventListener('resize', function () {
+                if (global.innerWidth >= 1100) {
+                    document.body.classList.remove('averias-drawer-open');
+                } else {
+                    closeDrawer();
+                }
+            }, { passive: true });
         }
 
         function navigateToModule(module) {
