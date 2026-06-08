@@ -275,6 +275,8 @@
             else if (currentModule === 'equipment') showEquipmentDashboard();
         }
 
+        var reloadSyncTimer = null;
+
         function reloadFromSync() {
             applyingRemoteSnapshot = true;
             try {
@@ -283,6 +285,11 @@
                 applyingRemoteSnapshot = false;
             }
             refreshCurrentView();
+        }
+
+        function reloadFromSyncDebounced() {
+            clearTimeout(reloadSyncTimer);
+            reloadSyncTimer = setTimeout(reloadFromSync, 80);
         }
 
         function syncAveriasData() {
@@ -311,17 +318,21 @@
 
         function initAveriasSync() {
             document.addEventListener('lan-sync', function (ev) {
-                if (ev.detail && ev.detail.store === 'averias') reloadFromSync();
+                if (ev.detail && ev.detail.store === 'averias') reloadFromSyncDebounced();
             });
-            document.addEventListener('averias-updated', function () { reloadFromSync(); });
+            document.addEventListener('averias-updated', function () { reloadFromSyncDebounced(); });
             document.addEventListener('lan-ready', function () {
                 if (global.PlatformLanSync && global.PlatformLanSync.forcePull) {
-                    global.PlatformLanSync.forcePull().then(function () { reloadFromSync(); });
+                    global.PlatformLanSync.forcePull().then(function () { reloadFromSyncDebounced(); });
                 }
             });
             global.addEventListener('visibilitychange', function () {
-                if (document.visibilityState === 'visible' && global.PlatformLanSync && global.PlatformLanSync.isEnabled()) {
-                    global.PlatformLanSync.forcePull().then(function () { reloadFromSync(); });
+                if (document.visibilityState === 'visible') {
+                    if (global.PlatformAveriasCloudSync && global.PlatformAveriasCloudSync.pull) {
+                        global.PlatformAveriasCloudSync.pull().then(reloadFromSyncDebounced);
+                    } else if (global.PlatformLanSync && global.PlatformLanSync.isEnabled()) {
+                        global.PlatformLanSync.forcePull().then(function () { reloadFromSyncDebounced(); });
+                    }
                 }
             }, { passive: true });
         }

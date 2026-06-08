@@ -48,7 +48,8 @@ $cfg.averiasJsonBin = @{
   binId = $binId
   accessKey = $MasterKey
 }
-$cfg.pollSeconds = 5
+$cfg.pollSeconds = 2
+$cfg.realtime = $true
 $cfg.updatedAt = (Get-Date).ToUniversalTime().ToString("o")
 
 $cfg | ConvertTo-Json -Depth 6 | Set-Content $siteConfigPath -Encoding UTF8

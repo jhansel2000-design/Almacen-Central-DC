@@ -1,5 +1,5 @@
 /**
- * Sincronización de reportes — Internet en tiempo real (Firebase + servidor + JSONBin + GitHub)
+ * Sincronización casi en tiempo real — Firebase + SSE + JSONBin + servidor
  */
 (function (global) {
   'use strict';
@@ -19,12 +19,22 @@
   var siteConfig = null;
   var publicBase = '';
   var pollTimer = null;
+  var pollSlowTimer = null;
   var eventSource = null;
+  var sseRetryTimer = null;
   var pushing = false;
+  var pulling = false;
   var lastPullAt = 0;
   var lastAppliedJson = '';
   var firebaseDb = null;
   var firebaseBound = false;
+  var staticPollCounter = 0;
+
+  function pollIntervalMs() {
+    var sec = (siteConfig && siteConfig.pollSeconds) || 2;
+    if (siteConfig && siteConfig.realtime === false) sec = 8;
+    return Math.max(2, sec) * 1000;
+  }
 
   function mergeAveriasSnapshots(local, remote) {
     if (!remote) return local || EMPTY;
@@ -99,6 +109,7 @@
       global.localStorage.setItem('averias_dc_equipmentRegistry', JSON.stringify(snap.equipmentRegistry || {}));
       lastAppliedJson = json;
       if (!silent) notifyUpdated('apply');
+      updateLiveIndicator(true);
       return true;
     } catch (e) {
       return false;
@@ -225,6 +236,11 @@
   }
 
   function pullFromStatic() {
+    staticPollCounter += 1;
+    var hasFastSource = isCloudConfigured() || canUseServerApi();
+    if (hasFastSource && staticPollCounter % 3 !== 0) {
+      return Promise.resolve(null);
+    }
     return fetchJson(staticDataUrl() + '?t=' + Date.now()).catch(function () { return null; });
   }
 
@@ -243,19 +259,21 @@
     }).catch(function () { return null; });
   }
 
-  function pullFromFirebase() {
-    if (!firebaseDb) return Promise.resolve(null);
+  function pullFromFirebaseOnce() {
+    if (!firebaseDb || firebaseBound) return Promise.resolve(null);
     return firebaseDb.ref('averias/snapshot').once('value').then(function (snap) {
       return snap.val() || null;
     }).catch(function () { return null; });
   }
 
   function pullAll() {
+    if (pulling) return Promise.resolve(getLocalSnapshot());
+    pulling = true;
     return Promise.all([
       pullFromServer(),
       pullFromStatic(),
       pullFromJsonBin(),
-      pullFromFirebase()
+      pullFromFirebaseOnce()
     ]).then(function (parts) {
       var merged = getLocalSnapshot() || EMPTY;
       parts.forEach(function (part) {
@@ -266,6 +284,14 @@
         lastPullAt = Date.now();
       }
       return merged;
+    }).finally(function () {
+      pulling = false;
+    });
+  }
+
+  function schedulePullBurst() {
+    [350, 900, 1800, 3500].forEach(function (ms) {
+      global.setTimeout(function () { pullAll(); }, ms);
     });
   }
 
@@ -303,11 +329,16 @@
 
   function pushSnapshot(snap, retries) {
     if (!snap) return Promise.resolve({ ok: false, reason: 'empty' });
-    if (pushing) return Promise.resolve({ ok: false, reason: 'busy' });
+    if (pushing) {
+      return new Promise(function (resolve) {
+        global.setTimeout(function () { resolve(pushSnapshot(snap, retries)); }, 200);
+      });
+    }
     pushing = true;
-    retries = retries == null ? 2 : retries;
+    retries = retries == null ? 3 : retries;
     snap.updatedAt = new Date().toISOString();
     applySnapshotToLocal(snap, true);
+    notifyUpdated('push-local');
 
     function attempt(n) {
       return Promise.all([
@@ -324,11 +355,13 @@
               body: JSON.stringify({ data: snap })
             }).catch(function () { /* noop */ });
           }
+          schedulePullBurst();
+          notifyUpdated('push-ok');
           return { ok: true };
         }
         if (n < retries) {
           return new Promise(function (resolve) {
-            global.setTimeout(function () { resolve(attempt(n + 1)); }, 800);
+            global.setTimeout(function () { resolve(attempt(n + 1)); }, 400);
           });
         }
         return { ok: false, reason: 'no-cloud' };
@@ -340,28 +373,50 @@
     });
   }
 
-  function startSSE() {
+  function sseEndpoint() {
     var base = resolvePublicBase();
-    if (!base || !global.EventSource) return;
+    if (base) return base + '/api/events';
+    if (isLanHost()) return '/api/events';
+    return '';
+  }
+
+  function startSSE() {
+    var url = sseEndpoint();
+    if (!url || !global.EventSource) return;
     if (eventSource) {
       try { eventSource.close(); } catch (e) { /* noop */ }
+      eventSource = null;
     }
+    clearTimeout(sseRetryTimer);
     try {
-      eventSource = new global.EventSource(base + '/api/events');
+      eventSource = new global.EventSource(url);
       eventSource.addEventListener('update', function (ev) {
         var payload;
         try { payload = JSON.parse(ev.data); } catch (e) { return; }
         if (payload && payload.store === 'averias') pullAll();
       });
-    } catch (e) { /* noop */ }
+      eventSource.onerror = function () {
+        try { eventSource.close(); } catch (e) { /* noop */ }
+        eventSource = null;
+        sseRetryTimer = global.setTimeout(startSSE, 3000);
+      };
+    } catch (e) {
+      sseRetryTimer = global.setTimeout(startSSE, 3000);
+    }
+  }
+
+  function tickPoll() {
+    if (document.visibilityState !== 'visible') return;
+    pullAll();
   }
 
   function startPolling() {
     clearInterval(pollTimer);
-    var sec = (siteConfig && siteConfig.pollSeconds) || 5;
-    pollTimer = global.setInterval(function () {
-      if (document.visibilityState === 'visible') pullAll();
-    }, Math.max(4, sec) * 1000);
+    clearInterval(pollSlowTimer);
+    pollTimer = global.setInterval(tickPoll, pollIntervalMs());
+    pollSlowTimer = global.setInterval(function () {
+      if (document.visibilityState === 'hidden') pullAll();
+    }, 20000);
   }
 
   function isCloudConfigured() {
@@ -369,9 +424,16 @@
     var fb = siteConfig && siteConfig.firebase;
     return !!(
       resolvePublicBase() ||
+      isLanHost() ||
       (jb && jb.enabled && jb.binId && jb.accessKey) ||
       (fb && fb.enabled && fb.databaseURL)
     );
+  }
+
+  function updateLiveIndicator(active) {
+    var btn = global.document.getElementById('btnSyncAverias');
+    if (!btn) return;
+    btn.classList.toggle('sync-live', !!active && isCloudConfigured());
   }
 
   function updateSyncUi() {
@@ -379,13 +441,17 @@
     if (btn) {
       var online = isCloudConfigured();
       btn.title = online
-        ? 'Sincronizar reportes (nube activa)'
+        ? 'Tiempo real activo — sincroniza cada ' + ((siteConfig && siteConfig.pollSeconds) || 2) + 's'
         : 'Sin nube — ejecute setup-averias-cloud.ps1 en el servidor';
       btn.classList.toggle('cloud-active', online);
     }
     var banner = global.document.getElementById('avSyncBanner');
     if (banner) {
       banner.hidden = isCloudConfigured();
+    }
+    var live = global.document.getElementById('avSyncLive');
+    if (live) {
+      live.hidden = !isCloudConfigured();
     }
   }
 
@@ -404,8 +470,12 @@
       startPolling();
       startSSE();
       global.addEventListener('visibilitychange', function () {
-        if (document.visibilityState === 'visible') pullAll();
+        if (document.visibilityState === 'visible') {
+          pullAll();
+          startSSE();
+        }
       }, { passive: true });
+      global.addEventListener('focus', function () { pullAll(); }, { passive: true });
       document.addEventListener('lan-ready', function () {
         publicBase = resolvePublicBase();
         pullAll();
@@ -413,8 +483,14 @@
         updateSyncUi();
       });
       document.addEventListener('lan-sync', function (ev) {
-        if (ev.detail && ev.detail.store === 'averias') notifyUpdated('lan');
+        if (ev.detail && ev.detail.store === 'averias') {
+          pullAll();
+        }
       });
+      global.setInterval(function () {
+        if (Date.now() - lastPullAt < 8000) updateLiveIndicator(true);
+        else updateLiveIndicator(false);
+      }, 2000);
     });
   }
 
@@ -432,6 +508,7 @@
     push: pushSnapshot,
     isCloudConfigured: isCloudConfigured,
     getPublicBase: function () { return resolvePublicBase(); },
-    getLastPullAt: function () { return lastPullAt; }
+    getLastPullAt: function () { return lastPullAt; },
+    schedulePullBurst: schedulePullBurst
   };
 })(typeof window !== 'undefined' ? window : this);

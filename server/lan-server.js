@@ -151,7 +151,7 @@ function scheduleAveriasGitPush() {
     }).catch(function (e) {
       console.warn('[LAN] Git push averias omitido:', String(e.stderr || e.message || e));
     });
-  }, 8000);
+  }, 3000);
 }
 
 function broadcast(event, payload) {

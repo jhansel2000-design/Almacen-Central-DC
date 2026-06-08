@@ -324,6 +324,33 @@ body.averias-dash-view {
     color: #81c784;
   }
 
+  .averias-app .btn-sync-data.sync-live {
+    box-shadow: 0 0 12px rgba(63, 185, 80, 0.45);
+    animation: avSyncPulse 2s ease-in-out infinite;
+  }
+
+  @keyframes avSyncPulse {
+    0%, 100% { box-shadow: 0 0 8px rgba(63, 185, 80, 0.35); }
+    50% { box-shadow: 0 0 16px rgba(63, 185, 80, 0.65); }
+  }
+
+  .averias-app .av-sync-live {
+    flex-shrink: 0;
+    font-size: 0.62rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    color: #3fb950;
+    padding: 4px 8px;
+    border-radius: 999px;
+    background: rgba(63, 185, 80, 0.15);
+    border: 1px solid rgba(63, 185, 80, 0.35);
+    animation: avSyncPulse 2s ease-in-out infinite;
+  }
+
+  .averias-app .av-sync-live[hidden] {
+    display: none !important;
+  }
+
   .averias-app .lan-sync-badge {
     margin-right: 6px;
     font-size: 0.65rem;
