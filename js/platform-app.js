@@ -506,7 +506,7 @@
 
   function doLogin() {
     var username = PC.sanitizeUsername($('authUsername') && $('authUsername').value);
-    var password = ($('authPassword') && $('authPassword').value) || '';
+    var password = String(($('authPassword') && $('authPassword').value) || '').trim();
 
     showAuthError('');
     var allowed = PC.checkLoginAllowed();
@@ -530,7 +530,8 @@
     }
 
     setLoginLoading(true);
-    PC.sha256(password).then(function (hash) {
+    try {
+      var hash = PC.sha256Sync(password);
       var user = global.PlatformAdmin.authenticate(username, hash);
       setLoginLoading(false);
       if (!user) {
@@ -543,10 +544,10 @@
       enterApp(user);
       var siteLabel = (global.PlatformSite && global.PlatformSite.product) || 'Almacén Central DC';
       toastNotify('Bienvenido a ' + siteLabel + ', ' + (user.name || user.username) + '.', 'ok');
-    }).catch(function () {
+    } catch (err) {
       setLoginLoading(false);
       showAuthError('No se pudo validar la sesión. Intenta de nuevo.');
-    });
+    }
   }
 
   function initAuth() {
@@ -585,6 +586,12 @@
     var user = global.PlatformAdmin.getUsers().find(function (u) {
       return u.id === session.userId && u.active;
     });
+    if (!user && session.username && global.PlatformAdmin.isPrimaryLoginName &&
+        global.PlatformAdmin.isPrimaryLoginName(session.username)) {
+      user = global.PlatformAdmin.getUsers().find(function (u) {
+        return u.active && global.PlatformAdmin.isPrimaryAdminUser(u);
+      });
+    }
     if (!user) {
       PC.clearSession();
       return false;

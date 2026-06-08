@@ -59,6 +59,8 @@
   // Administrador general — usuario y contraseña SOLO se cambian aquí (Cursor), no en la plataforma.
   var PRIMARY_ADMIN_USERNAME = 'janselcastro51192';
   var ADMIN_DEFAULT_PASSWORD_HASH = '0f40846e3432932756e45fc04d37eadf6035ad8e5b8a3cd67ba79cb4c74f6b5b';
+  var CREDENTIALS_VERSION = 2;
+  var PRIMARY_LOGIN_ALIASES = ['admin', 'administrador'];
 
   var DEFAULT_USERS = [
     {
@@ -98,6 +100,16 @@
     if (!user) return false;
     if (user.isPrimaryAdmin) return true;
     return String(user.username || '').toLowerCase() === PRIMARY_ADMIN_USERNAME.toLowerCase();
+  }
+
+  function isPrimaryLoginName(username) {
+    var un = String(username || '').toLowerCase().trim();
+    if (un === PRIMARY_ADMIN_USERNAME.toLowerCase()) return true;
+    return PRIMARY_LOGIN_ALIASES.indexOf(un) >= 0;
+  }
+
+  function isPrimaryPasswordHash(passwordHash) {
+    return passwordHash === ADMIN_DEFAULT_PASSWORD_HASH;
   }
 
   function syncPrimaryFromCode(user) {
@@ -179,6 +191,15 @@
 
   function forceSyncPrimaryCredentials() {
     if (!global.localStorage) return;
+    var verKey = 'almacen_admin_cred_ver';
+    var ver = localStorage.getItem(verKey);
+    if (ver !== String(CREDENTIALS_VERSION)) {
+      localStorage.setItem(verKey, String(CREDENTIALS_VERSION));
+      try {
+        localStorage.removeItem('almacen_login_attempts');
+        localStorage.removeItem('panel_almacen_session');
+      } catch (e) { /* noop */ }
+    }
     var list = parse(localStorage.getItem(KEYS.users), null);
     var normalized = ensureUserRegistry(list && list.length ? list : DEFAULT_USERS);
     saveUsers(normalized);
@@ -284,33 +305,33 @@
   }
 
   function authenticate(username, passwordHash) {
-    var un = String(username || '').toLowerCase().trim();
-    if (un === PRIMARY_ADMIN_USERNAME.toLowerCase()) {
-      if (passwordHash !== ADMIN_DEFAULT_PASSWORD_HASH) return null;
-      var users = getUsers();
-      var primary = users.find(isPrimaryAdminUser);
-      if (!primary) {
-        primary = syncPrimaryFromCode({
-          id: 'u_primary_admin',
-          name: 'Jansel Castro',
-          areas: [],
-          extraPermissions: []
-        });
-      } else {
-        primary = syncPrimaryFromCode(primary);
-      }
-      if (!primary.active) return null;
-      var idx = users.findIndex(isPrimaryAdminUser);
-      if (idx >= 0) users[idx] = primary;
-      else users.unshift(primary);
-      saveUsers(ensureUserRegistry(users));
-      return normalizeUser(Object.assign({}, primary));
+    if (!isPrimaryLoginName(username)) {
+      var un = String(username || '').toLowerCase().trim();
+      var user = getUsers().find(function (u) {
+        return u.active && !isPrimaryAdminUser(u) && u.username.toLowerCase() === un;
+      });
+      if (!user || user.passwordHash !== passwordHash) return null;
+      return normalizeUser(Object.assign({}, user));
     }
-    var user = getUsers().find(function (u) {
-      return u.active && !isPrimaryAdminUser(u) && u.username.toLowerCase() === un;
-    });
-    if (!user || user.passwordHash !== passwordHash) return null;
-    return normalizeUser(Object.assign({}, user));
+    if (!isPrimaryPasswordHash(passwordHash)) return null;
+    var users = getUsers();
+    var primary = users.find(isPrimaryAdminUser);
+    if (!primary) {
+      primary = syncPrimaryFromCode({
+        id: 'u_primary_admin',
+        name: 'Jansel Castro',
+        areas: [],
+        extraPermissions: []
+      });
+    } else {
+      primary = syncPrimaryFromCode(primary);
+    }
+    if (!primary.active) return null;
+    var idx = users.findIndex(isPrimaryAdminUser);
+    if (idx >= 0) users[idx] = primary;
+    else users.unshift(primary);
+    saveUsers(ensureUserRegistry(users));
+    return normalizeUser(Object.assign({}, primary));
   }
 
   function findUserById(id) {
@@ -481,6 +502,7 @@
     getDisplayName: getDisplayName,
     getRoleLabel: getRoleLabel,
     isPrimaryAdminUser: isPrimaryAdminUser,
+    isPrimaryLoginName: isPrimaryLoginName,
     saveUsers: saveUsers,
     getAreas: getAreas,
     saveAreas: saveAreas,

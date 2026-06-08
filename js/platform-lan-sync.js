@@ -125,6 +125,9 @@
           pushToServer(lsKey, localRaw);
         }
       }
+      if (store === 'users' && global.PlatformAdmin && global.PlatformAdmin.forceSyncPrimaryCredentials) {
+        global.PlatformAdmin.forceSyncPrimaryCredentials();
+      }
     });
   }
 
@@ -141,6 +144,9 @@
       apiFetch('/api/data/' + payload.store).then(function (res) {
         if (res && res.data != null) {
           applyRemote(STORE_TO_LS[payload.store], res.data, payload.store);
+          if (payload.store === 'users' && global.PlatformAdmin && global.PlatformAdmin.forceSyncPrimaryCredentials) {
+            global.PlatformAdmin.forceSyncPrimaryCredentials();
+          }
         }
       }).catch(function () { /* ignore */ });
     });
