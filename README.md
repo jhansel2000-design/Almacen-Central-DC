@@ -1,4 +1,4 @@
-# WMS Control — Almacén Central
+# Almacén Central DC
 
 Plataforma web de **control ejecutivo de almacén**: importación Excel, dashboards, modo TV, **despacho** (preparador/validador) y **red local (LAN)** para varios dispositivos en el mismo WiFi.
 

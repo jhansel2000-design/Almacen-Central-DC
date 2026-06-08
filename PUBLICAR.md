@@ -1,4 +1,4 @@
-# Cómo está publicado tu WMS
+# Cómo está publicado Almacén Central DC
 
 ## 1. Código en GitHub (ya hecho)
 

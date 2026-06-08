@@ -1,4 +1,4 @@
-# Servidor WMS — Red local (LAN) + archivos estáticos
+# Servidor Almacén Central DC — Red local (LAN) + archivos estáticos
 # Varios dispositivos en el mismo WiFi acceden por http://IP:PUERTO
 param(
     [int]$Port = 8080

@@ -1,4 +1,4 @@
-# WMS Almacén Central — Guía de red local (LAN)
+# Almacén Central DC — Guía de red local (LAN)
 
 Sistema interno para varios dispositivos en el **mismo WiFi**: PCs, laptops y celulares abren la web desde la **IP del servidor** y comparten datos en tiempo real.
 
@@ -34,7 +34,7 @@ Al iniciar verás algo como:
 
 ```
 ========================================
-  WMS Almacén Central — Servidor LAN
+  Almacén Central DC — Servidor LAN
 ========================================
 Escuchando en: 0.0.0.0:8080
 

@@ -521,7 +521,7 @@
       PC.clearLoginAttempts();
       PC.saveSession(user);
       enterApp(user);
-      var siteLabel = (global.PlatformSite && global.PlatformSite.warehouse) || 'Almacén Central';
+      var siteLabel = (global.PlatformSite && global.PlatformSite.product) || 'Almacén Central DC';
       toastNotify('Bienvenido a ' + siteLabel + ', ' + (user.name || user.username) + '.', 'ok');
     }).catch(function () {
       setLoginLoading(false);
@@ -1535,11 +1535,11 @@
   function bindReportExportButtons() {
     bindOnce($('btnReportExportPdf'), 'click', function () {
       var data = state.dataOperaciones || state.dataProductividad;
-      global.PlatformExport.exportReportPdf(data, 'reporte_wms.pdf', 'WMS Control');
+      global.PlatformExport.exportReportPdf(data, 'reporte_wms.pdf', 'Almacén Central DC');
     });
     bindOnce($('btnReportExportTxt'), 'click', function () {
       var data = state.dataOperaciones || state.dataProductividad;
-      global.PlatformExport.exportReportTxt(data, 'reporte_wms.txt', 'WMS Control');
+      global.PlatformExport.exportReportTxt(data, 'reporte_wms.txt', 'Almacén Central DC');
     });
   }
 
@@ -2447,7 +2447,7 @@
     var hist = global.PlatformAI.getChatHistory();
     if (!hist.length) {
       appendAiMsg(
-        'Soy su asistente de Almacén Central. Pregunte sobre operaciones, facturas, línea de trabajo o productividad. ' +
+        'Soy su asistente de Almacén Central DC. Pregunte sobre operaciones, facturas o productividad. ' +
           'Puede usar las sugerencias o escribir libremente.',
         'bot',
         { source: 'welcome' }

@@ -69,7 +69,7 @@
   };
 
   var MODULE_LABELS = {
-    general: '300-001 · Centro de mando',
+    general: 'Almacén Central DC',
     productividad: 'Productividad',
     operaciones: 'Operaciones',
     facturas: 'Facturas',

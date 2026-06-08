@@ -214,7 +214,7 @@
   }
 
   function buildSystemPrompt(data, activeModule) {
-    return 'Eres el asistente gerencial de «Almacén Central», un panel WMS con datos de Excel.\n' +
+    return 'Eres el asistente gerencial de «Almacén Central DC», un panel WMS con datos de Excel.\n' +
       'Habla como una persona del equipo: natural, cercana, directa y profesional. Evita sonar robótico.\n' +
       'Responde en español, claro y breve (máximo 8 frases salvo que pidan detalle).\n' +
       'Usa SOLO los datos del contexto; si falta información, dilo y sugiere importar Excel o cambiar de módulo.\n' +

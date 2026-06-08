@@ -92,7 +92,7 @@
 
   var SITE = {
     warehouse: '300-001 (CENTRAL)',
-    product: 'WMS Control',
+    product: 'Almacén Central DC',
     shortLabel: '300-001 CENTRAL',
     code: '300-001'
   };

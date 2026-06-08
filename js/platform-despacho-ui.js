@@ -221,7 +221,7 @@
     host.innerHTML =
       '<div class="desp-dashboard" id="despDashboard">' +
       '<header class="desp-dash-header">' +
-      '<div><span class="desp-dash-eyebrow">300-001 · Despacho</span>' +
+      '<div><span class="desp-dash-eyebrow">Almacén Central DC · Despacho</span>' +
       '<h2 class="desp-dash-title">Preparador ↔ Validador</h2>' +
       '<p class="desp-dash-sub">Sincronización automática · ' + esc(String((data.pedidos || []).length)) + ' pedido(s)</p></div>' +
       flujoHtml() +

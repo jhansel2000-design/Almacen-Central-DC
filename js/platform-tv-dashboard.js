@@ -90,7 +90,7 @@
 
   function collectSnapshot(opsData, facData, tipoCambio, facturasMetas, config) {
     config = config || (global.PlatformStore && global.PlatformStore.getConfig && global.PlatformStore.getConfig()) || {};
-    var siteTitle = '300-001 (CENTRAL)';
+    var siteTitle = (global.PlatformSite && global.PlatformSite.product) || 'Almacén Central DC';
     var SF = global.PlatformSiteFilter;
     if (SF) {
       var filtered = SF.applySiteFilter({ operaciones: opsData, facturas: facData, config: config });
@@ -350,7 +350,7 @@
       ? global.PlatformLayout.getTvSlideLabels(opts.config || (global.PlatformStore && global.PlatformStore.getConfig && global.PlatformStore.getConfig()) || {})
       : 'Operación → Facturas';
 
-    var wallTitle = (snapshot.siteTitle || '300-001 (CENTRAL)') + ' · TV';
+    var wallTitle = (snapshot.siteTitle || 'Almacén Central DC') + ' · TV';
 
     var slidesHtml = TV_SLIDES.map(function (id) {
       return renderSlide(id, snapshot);

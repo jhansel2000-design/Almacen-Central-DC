@@ -1,7 +1,7 @@
 {
   "name": "wms-almacen-central",
   "version": "1.0.0",
-  "description": "WMS Control — Almacén Central (LAN)",
+  "description": "Almacén Central DC — WMS (LAN)",
   "private": true,
   "scripts": {
     "start": "node server/lan-server.js --port 8080",

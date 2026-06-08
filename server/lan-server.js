@@ -294,7 +294,7 @@ server.listen(PORT, HOST, function () {
   const ips = getLanAddresses();
   console.log('');
   console.log('========================================');
-  console.log('  WMS Almacén Central — Servidor LAN');
+  console.log('  Almacén Central DC — Servidor LAN');
   console.log('========================================');
   console.log('Escuchando en: ' + HOST + ':' + PORT);
   console.log('');
