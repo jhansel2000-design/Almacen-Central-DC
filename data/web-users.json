@@ -1,5 +1,16 @@
 {
   "version": 1,
-  "updatedAt": "2026-06-08T20:18:27.573Z",
-  "users": []
+  "updatedAt": "2026-06-08T22:00:00.000Z",
+  "users": [
+    {
+      "id": "u_enmanuel_vasquez",
+      "username": "ENMANUEL.VASQUEZ",
+      "name": "Enmanuel Vasquez",
+      "role": "colaborador",
+      "passwordHash": "6c6621b5fe070f7a6a97cc7f80567d70101887c50a80cb53a7619bef95a0bad4",
+      "areas": [],
+      "active": true,
+      "extraPermissions": []
+    }
+  ]
 }
