@@ -264,7 +264,9 @@
       }
     };
     if (global.PlatformAdmin) {
-      backup.users = global.PlatformAdmin.getUsers();
+      backup.users = global.PlatformAdmin.getVisibleUsers
+        ? global.PlatformAdmin.getVisibleUsers()
+        : global.PlatformAdmin.getStaffUsers();
       backup.areas = global.PlatformAdmin.getAreas();
       backup.logs = global.PlatformAdmin.getLogs();
     }

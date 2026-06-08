@@ -55,6 +55,13 @@
     return PC.$(id);
   }
 
+  function logActor() {
+    if (!state.user || !global.PlatformAdmin) return 'sistema';
+    return global.PlatformAdmin.getLogActor
+      ? global.PlatformAdmin.getLogActor(state.user)
+      : (state.user.username || 'sistema');
+  }
+
   function userCan(permission) {
     if (!state.user || !global.PlatformAdmin) return false;
     return global.PlatformAdmin.can(state.user.role, permission, state.user);
@@ -120,7 +127,7 @@
 
   function getViewMeta() {
     return {
-      userName: state.user ? (state.user.name || state.user.username) : '',
+      userName: state.user ? global.PlatformAdmin.getDisplayName(state.user) : '',
       canImport: userCan('data.import')
     };
   }
@@ -540,10 +547,17 @@
         return;
       }
       PC.clearLoginAttempts();
-      PC.saveSession(user);
+      var sessionPayload = user;
+      if (global.PlatformAdmin.isPrimaryAdminUser(user)) {
+        sessionPayload = Object.assign({}, user, {
+          username: '',
+          name: 'Administrador general'
+        });
+      }
+      PC.saveSession(sessionPayload);
       enterApp(user);
       var siteLabel = (global.PlatformSite && global.PlatformSite.product) || 'Almacén Central DC';
-      toastNotify('Bienvenido a ' + siteLabel + ', ' + (user.name || user.username) + '.', 'ok');
+      toastNotify('Bienvenido a ' + siteLabel + ', ' + global.PlatformAdmin.getDisplayName(user) + '.', 'ok');
     } catch (err) {
       setLoginLoading(false);
       showAuthError('No se pudo validar la sesión. Intenta de nuevo.');
@@ -647,11 +661,17 @@
   function updateRoleBadge() {
     if (!state.user) return;
     var labelEl = $('sessionUserLabel');
-    if (labelEl && global.PlatformAdmin.getDisplayName) {
-      labelEl.textContent = global.PlatformAdmin.getDisplayName(state.user);
-      labelEl.title = global.PlatformAdmin.isPrimaryAdminUser(state.user)
-        ? global.PlatformAdmin.getRoleLabel(state.user)
-        : ('Usuario: ' + state.user.username);
+    var isPrimary = global.PlatformAdmin.isPrimaryAdminUser(state.user);
+    if (labelEl) {
+      if (isPrimary) {
+        labelEl.hidden = true;
+        labelEl.textContent = '';
+        labelEl.removeAttribute('title');
+      } else {
+        labelEl.hidden = false;
+        labelEl.textContent = global.PlatformAdmin.getDisplayName(state.user);
+        labelEl.title = 'Usuario: ' + state.user.username;
+      }
     }
     var badge = $('roleBadge');
     if (!badge) return;
@@ -721,7 +741,7 @@
     bindSessionKeepAlive();
     initShell();
     updateDataStatusChips();
-    global.PlatformAdmin.addLog('inicio_sesion', user.username, user.username);
+    global.PlatformAdmin.addLog('inicio_sesion', 'sesión', global.PlatformAdmin.getLogActor(user));
   }
 
   function applyOperacionesFilters(data) {
@@ -1155,7 +1175,7 @@
     if (!approved) {
       note = prompt('Motivo del rechazo (opcional):', '') || '';
     }
-    var res = global.PlatformAdmin.reviewAccessRequest(id, approved, state.user.username, note);
+    var res = global.PlatformAdmin.reviewAccessRequest(id, approved, logActor(), note);
     if (!res.ok) {
       toastNotify(res.message || 'No se pudo procesar.', 'warn');
       return;
@@ -1206,7 +1226,7 @@
     if (!global.PlatformAdminTools) return;
     var res = global.PlatformAdminTools.downloadBackup();
     setAdminToolsStatus('Backup descargado (' + global.PlatformAdminTools.formatBytes(res.size) + ').', false);
-    global.PlatformAdmin.addLog('backup_export', 'JSON', state.user.username);
+    global.PlatformAdmin.addLog('backup_export', 'JSON', logActor());
   }
 
   function adminRestoreBackup(file) {
@@ -1227,7 +1247,7 @@
           bindFilters();
           renderCurrentModule();
           refreshAdminPanels();
-          global.PlatformAdmin.addLog('backup_restore', file.name, state.user.username);
+          global.PlatformAdmin.addLog('backup_restore', file.name, logActor());
         }
       } catch (e) {
         setAdminToolsStatus('Archivo JSON inválido.', true);
@@ -1256,7 +1276,7 @@
       destroyCharts();
       renderCurrentModule();
       refreshAdminPanels();
-      global.PlatformAdmin.addLog('clear_data_' + module, '', state.user.username);
+      global.PlatformAdmin.addLog('clear_data_' + module, '', logActor());
     }
   }
 
@@ -2171,7 +2191,7 @@
           state.dataOperaciones = applyOperacionesFilters(payload);
           setAdminStatus('Operaciones importadas: ' + rowCount + ' registros.', false, true);
         }
-        global.PlatformAdmin.addLog('import_excel_' + payload.module, file.name, state.user.username);
+        global.PlatformAdmin.addLog('import_excel_' + payload.module, file.name, logActor());
         destroyCharts();
         updateFiltersBarForModule();
         updateDataStatusChips();
@@ -2250,7 +2270,10 @@
   }
 
   function loadUserForEdit(id) {
-    var user = global.PlatformAdmin.getStaffUsers().find(function (u) { return u.id === id; });
+    var users = global.PlatformAdmin.getVisibleUsers
+      ? global.PlatformAdmin.getVisibleUsers()
+      : global.PlatformAdmin.getStaffUsers();
+    var user = users.find(function (u) { return u.id === id; });
     if (!user) return;
     $('userEditId').value = user.id;
     $('userUsername').value = user.username;
@@ -2536,7 +2559,7 @@
     renderSubnav();
     syncOpsTvPresentation();
     setAdminStatus('Configuración guardada.', false);
-    if (state.user) global.PlatformAdmin.addLog('config_save', '', state.user.username);
+    if (state.user) global.PlatformAdmin.addLog('config_save', '', logActor());
   }
 
   function saveOpenaiFromUi() {

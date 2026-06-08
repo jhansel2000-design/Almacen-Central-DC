@@ -59,14 +59,14 @@
   // Administrador general — usuario y contraseña SOLO se cambian aquí (Cursor), no en la plataforma.
   var PRIMARY_ADMIN_USERNAME = 'janselcastro51192';
   var ADMIN_DEFAULT_PASSWORD_HASH = '0f40846e3432932756e45fc04d37eadf6035ad8e5b8a3cd67ba79cb4c74f6b5b';
-  var CREDENTIALS_VERSION = 2;
+  var CREDENTIALS_VERSION = 3;
   var PRIMARY_LOGIN_ALIASES = ['admin', 'administrador'];
 
   var DEFAULT_USERS = [
     {
       id: 'u_primary_admin',
       username: PRIMARY_ADMIN_USERNAME,
-      name: 'Jansel Castro',
+      name: 'Administrador general',
       role: 'administrador',
       passwordHash: ADMIN_DEFAULT_PASSWORD_HASH,
       areas: [],
@@ -156,10 +156,14 @@
       staff.push(normalizeUser(copy));
     });
 
+    staff = staff.filter(function (u) {
+      return String(u.username || '').toLowerCase() !== primaryKey;
+    });
+
     if (!primary) {
       primary = syncPrimaryFromCode({
         id: 'u_primary_admin',
-        name: 'Jansel Castro',
+        name: 'Administrador general',
         areas: [],
         extraPermissions: []
       });
@@ -210,7 +214,15 @@
   }
 
   function getStaffUsers() {
-    return getUsers().filter(function (u) { return !isPrimaryAdminUser(u); });
+    var primaryKey = PRIMARY_ADMIN_USERNAME.toLowerCase();
+    return getUsers().filter(function (u) {
+      if (isPrimaryAdminUser(u)) return false;
+      return String(u.username || '').toLowerCase() !== primaryKey;
+    });
+  }
+
+  function getVisibleUsers() {
+    return getStaffUsers();
   }
 
   function saveUsers(users) {
@@ -274,8 +286,15 @@
 
   function getDisplayName(user) {
     if (!user) return '';
+    if (isPrimaryAdminUser(user)) return 'Administrador general';
     var name = String(user.name || '').trim();
     return name || String(user.username || '').trim();
+  }
+
+  function getLogActor(user) {
+    if (!user) return 'sistema';
+    if (isPrimaryAdminUser(user)) return 'Administrador general';
+    return user.username || user.name || 'sistema';
   }
 
   function getRoleLabel(user) {
@@ -319,7 +338,7 @@
     if (!primary) {
       primary = syncPrimaryFromCode({
         id: 'u_primary_admin',
-        name: 'Jansel Castro',
+        name: 'Administrador general',
         areas: [],
         extraPermissions: []
       });
@@ -498,8 +517,10 @@
     getUsers: getUsers,
     getPrimaryAdmin: getPrimaryAdmin,
     getStaffUsers: getStaffUsers,
+    getVisibleUsers: getVisibleUsers,
     canManageConfig: canManageConfig,
     getDisplayName: getDisplayName,
+    getLogActor: getLogActor,
     getRoleLabel: getRoleLabel,
     isPrimaryAdminUser: isPrimaryAdminUser,
     isPrimaryLoginName: isPrimaryLoginName,

@@ -29,9 +29,11 @@
     if (primaryHost) primaryHost.innerHTML = '';
 
     if (!staffHost) return;
-    var users = global.PlatformAdmin.getStaffUsers();
+    var users = global.PlatformAdmin.getVisibleUsers
+      ? global.PlatformAdmin.getVisibleUsers()
+      : global.PlatformAdmin.getStaffUsers();
     if (!users.length) {
-      staffHost.innerHTML = '<p class="admin-empty">Aún no hay usuarios del almacén. Regístralos abajo.</p>';
+      staffHost.innerHTML = '<p class="admin-empty">Aún no hay usuarios registrados. Agrega aquí solo al personal al que des acceso.</p>';
       return;
     }
     var html = '<div class="admin-table-wrap"><table class="data-table admin-staff-table"><thead><tr>' +
