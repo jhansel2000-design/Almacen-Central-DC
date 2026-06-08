@@ -264,6 +264,7 @@
                             </div>
                             <div class="action-buttons">
                                 <button class="btn-action btn-report" onclick="playSelectFeedback(); showDamagesForm()">⚠️ REGISTRAR AVERÍA</button>
+                                <button class="btn-action btn-correct" onclick="handleDamagesCorrectButton()">✅ CORREGIR AVERÍA</button>
                                 <button class="btn-action btn-export" onclick="playSelectFeedback(); exportDamagesCSV()">📊 EXPORTAR CSV</button>
                             </div>
                         </div>
@@ -295,6 +296,15 @@
                                 <button class="btn btn-secondary" style="margin-top:8px;" onclick="resetDamageArea()">Cambiar área</button>
                             </div>
                         </div>
+                        <div id="damagesCorrect" class="sub-panel hidden">
+                            <button class="btn btn-small" onclick="showDamagesDashboard()" style="margin-bottom:16px;">← Volver</button>
+                            <div class="form-field">
+                                <label>Filtrar por código (opcional)</label>
+                                <input type="text" id="damagesCorrectFilter" placeholder="Ver todas si está vacío" onkeyup="filterDamagesPending()">
+                            </div>
+                            <div style="font-size:14px;color:#B3B3B3;margin-bottom:12px;">Pendientes (<span id="damagesPendingCount">0</span>)</div>
+                            <div id="damagesCorrectList"></div>
+                        </div>
                     </div>
 
                     <!-- MÓDULO SEGURIDAD -->
@@ -313,6 +323,7 @@
                             </div>
                             <div class="action-buttons">
                                 <button class="btn-action btn-report" onclick="playSelectFeedback(); showSecurityForm()">🛡️ NUEVA INCIDENCIA</button>
+                                <button class="btn-action btn-correct" onclick="handleSecurityCorrectButton()">✅ CORREGIR INCIDENCIA</button>
                                 <button class="btn-action btn-export" onclick="playSelectFeedback(); exportSecurityCSV()">📊 EXPORTAR CSV</button>
                             </div>
                         </div>
@@ -343,6 +354,15 @@
                             </div>
                             <button class="btn btn-primary" onclick="saveSecurity()">GUARDAR INCIDENCIA</button>
                         </div>
+                        <div id="securityCorrect" class="sub-panel hidden">
+                            <button class="btn btn-small" onclick="showSecurityDashboard()" style="margin-bottom:16px;">← Volver</button>
+                            <div class="form-field">
+                                <label>Filtrar por área (opcional)</label>
+                                <input type="text" id="securityCorrectFilter" placeholder="Ver todas si está vacío" onkeyup="filterSecurityPending()">
+                            </div>
+                            <div style="font-size:14px;color:#B3B3B3;margin-bottom:12px;">Pendientes (<span id="securityPendingCount">0</span>)</div>
+                            <div id="securityCorrectList"></div>
+                        </div>
                     </div>
 
                     <!-- MÓDULO AUDITORÍA 5S -->
@@ -361,6 +381,7 @@
                             </div>
                             <div class="action-buttons">
                                 <button class="btn-action btn-report" onclick="playSelectFeedback(); showAuditForm()">📋 NUEVA AUDITORÍA</button>
+                                <button class="btn-action btn-correct" onclick="handleAuditCorrectButton()">✅ CORREGIR HALLAZGO</button>
                                 <button class="btn-action btn-export" onclick="playSelectFeedback(); exportAuditCSV()">📊 EXPORTAR CSV</button>
                             </div>
                         </div>
@@ -384,6 +405,15 @@
                             <div class="checklist-item" id="chkAcuracidad"><span>5. Acuracidad (teórico vs físico)</span><div class="toggle-switch" onclick="toggleCheck(this)"></div></div>
                             <button class="btn btn-primary" style="margin-top:16px;" onclick="saveAudit()">GUARDAR AUDITORÍA</button>
                         </div>
+                        <div id="auditCorrect" class="sub-panel hidden">
+                            <button class="btn btn-small" onclick="showAuditDashboard()" style="margin-bottom:16px;">← Volver</button>
+                            <div class="form-field">
+                                <label>Filtrar por pasillo (opcional)</label>
+                                <input type="text" id="auditCorrectFilter" placeholder="Ver todas si está vacío" onkeyup="filterAuditPending()">
+                            </div>
+                            <div style="font-size:14px;color:#B3B3B3;margin-bottom:12px;">Pendientes (<span id="auditPendingCount">0</span>)</div>
+                            <div id="auditCorrectList"></div>
+                        </div>
                     </div>
 
                     <!-- MÓDULO INSPECCIÓN DE EQUIPOS -->
@@ -402,6 +432,7 @@
                             </div>
                             <div class="action-buttons">
                                 <button class="btn-action btn-report" onclick="playSelectFeedback(); showEquipmentForm()">NUEVA INSPECCIÓN</button>
+                                <button class="btn-action btn-correct" onclick="handleEquipmentCorrectButton()">✅ CORREGIR EQUIPO</button>
                                 <button class="btn-action btn-correct" onclick="playSelectFeedback(); showEquipmentList()">VER EQUIPOS</button>
                                 <button class="btn-action btn-export" onclick="playSelectFeedback(); exportEquipmentCSV()">EXPORTAR CSV</button>
                             </div>
@@ -446,6 +477,11 @@
                                 </select>
                             </div>
                             <div id="equipmentListContainer"></div>
+                        </div>
+                        <div id="equipmentCorrect" class="sub-panel hidden">
+                            <button class="btn btn-small" onclick="showEquipmentDashboard()" style="margin-bottom:16px;">← Volver</button>
+                            <p style="color:#888;font-size:13px;margin-bottom:12px;">Equipos no disponibles — marque como corregido cuando estén listos</p>
+                            <div id="equipmentCorrectList"></div>
                         </div>
                     </div>
                 </div>
@@ -500,7 +536,7 @@
   <script src="js/platform-admin.js?v=12"></script>
   <script src="js/platform-web-users.js?v=11"></script>
   <script src="js/platform-toast.js"></script>
-  <script src="js/platform-averias-ui.js?v=8"></script>
+  <script src="js/platform-averias-ui.js?v=9"></script>
   <script src="js/platform-averias-app.js?v=1"></script>
 </body>
 </html>

@@ -80,6 +80,7 @@
         let securityClass = 'No urgente';
         let selectedTurno = 'A';
         let hasPhoto = false;
+        let pendingCorrection = null;
 
         const moduleTitles = {
             home: 'Almacén Central',
@@ -188,7 +189,23 @@
             allAudits = Array.isArray(snap.audits5s) ? snap.audits5s : [];
             allEquipmentInspections = Array.isArray(snap.equipmentInspections) ? snap.equipmentInspections : [];
             equipmentRegistry = snap.equipmentRegistry && typeof snap.equipmentRegistry === 'object' ? snap.equipmentRegistry : {};
+            ensureRecordStatuses();
             return true;
+        }
+
+        function ensureRecordStatuses() {
+            allIncidences.forEach(function (r) {
+                if (!r.status) r.status = 'PENDIENTE';
+            });
+            allDamages.forEach(function (r) {
+                if (!r.status) r.status = 'PENDIENTE';
+            });
+            allSecurity.forEach(function (r) {
+                if (!r.status) r.status = 'PENDIENTE';
+            });
+            allAudits.forEach(function (r) {
+                if (!r.status) r.status = 'PENDIENTE';
+            });
         }
 
         function writeIndividualKeys() {
@@ -252,6 +269,7 @@
                 } catch (e) { /* fallback legacy */ }
             }
             loadDataFromLegacyKeys();
+            ensureRecordStatuses();
             persistSnapshot();
             updateAllStats();
         }
@@ -269,10 +287,24 @@
                 if (!document.getElementById('palletsCorrect').classList.contains('hidden')) filterIncidences();
                 else if (!document.getElementById('palletsReport').classList.contains('hidden')) { /* form */ }
                 else showPalletsDashboard();
-            } else if (currentModule === 'damages') showDamagesDashboard();
-            else if (currentModule === 'security') showSecurityDashboard();
-            else if (currentModule === 'audit') showAuditDashboard();
-            else if (currentModule === 'equipment') showEquipmentDashboard();
+            } else if (currentModule === 'damages') {
+                if (!document.getElementById('damagesCorrect').classList.contains('hidden')) filterDamagesPending();
+                else if (!document.getElementById('damagesFormPanel').classList.contains('hidden')) { /* form */ }
+                else showDamagesDashboard();
+            } else if (currentModule === 'security') {
+                if (!document.getElementById('securityCorrect').classList.contains('hidden')) filterSecurityPending();
+                else if (!document.getElementById('securityFormPanel').classList.contains('hidden')) { /* form */ }
+                else showSecurityDashboard();
+            } else if (currentModule === 'audit') {
+                if (!document.getElementById('auditCorrect').classList.contains('hidden')) filterAuditPending();
+                else if (!document.getElementById('auditFormPanel').classList.contains('hidden')) { /* form */ }
+                else showAuditDashboard();
+            } else if (currentModule === 'equipment') {
+                if (!document.getElementById('equipmentCorrect').classList.contains('hidden')) renderEquipmentCorrectList();
+                else if (!document.getElementById('equipmentListPanel').classList.contains('hidden')) renderEquipmentList();
+                else if (!document.getElementById('equipmentFormPanel').classList.contains('hidden')) { /* form */ }
+                else showEquipmentDashboard();
+            }
         }
 
         var reloadSyncTimer = null;
@@ -307,12 +339,79 @@
                     global.PlatformAveriasCloudSync.isCloudConfigured();
                 var msg = cloud
                     ? 'Reportes sincronizados — todos ven los mismos datos'
-                    : 'Sin nube activa. El admin debe ejecutar setup-averias-cloud.ps1 en el PC servidor.';
+                    : 'Sin nube activa. Pulse «Activar nube» en el banner o ejecute SETUP-AVERIAS-CLOUD.bat en el PC.';
                 if (global.PlatformToast) {
                     global.PlatformToast[cloud ? 'success' : 'warn'](msg, 4500);
                 } else {
                     alert(cloud ? '✅ ' + msg : '⚠️ ' + msg);
                 }
+            });
+        }
+
+        function openCloudSetupModal() {
+            playSelectFeedback();
+            var modal = document.getElementById('cloudSetupModal');
+            var input = document.getElementById('cloudMasterKey');
+            var status = document.getElementById('cloudSetupStatus');
+            if (status) {
+                status.hidden = true;
+                status.textContent = '';
+                status.className = 'av-cloud-status';
+            }
+            if (input) input.value = '';
+            if (modal) modal.hidden = false;
+            if (input) global.setTimeout(function () { input.focus(); }, 100);
+        }
+
+        function closeCloudSetupModal() {
+            var modal = document.getElementById('cloudSetupModal');
+            if (modal) modal.hidden = true;
+        }
+
+        function submitCloudSetup() {
+            var input = document.getElementById('cloudMasterKey');
+            var submit = document.getElementById('cloudSetupSubmit');
+            var status = document.getElementById('cloudSetupStatus');
+            var key = input ? String(input.value || '').trim() : '';
+            if (!key) {
+                if (status) {
+                    status.hidden = false;
+                    status.className = 'av-cloud-status err';
+                    status.textContent = 'Ingrese la Master Key de jsonbin.io';
+                }
+                return;
+            }
+            if (!global.PlatformAveriasCloudSync || !global.PlatformAveriasCloudSync.activateCloud) {
+                alert('Actualice la página e intente de nuevo.');
+                return;
+            }
+            if (submit) submit.disabled = true;
+            if (status) {
+                status.hidden = false;
+                status.className = 'av-cloud-status';
+                status.textContent = 'Activando nube…';
+            }
+            global.PlatformAveriasCloudSync.activateCloud(key).then(function (result) {
+                reloadFromSync();
+                if (status) {
+                    status.className = 'av-cloud-status ok';
+                    status.textContent = result.localOnly
+                        ? ('✅ Activo en este celular (bin ' + result.binId + '). Para todos: SETUP-AVERIAS-CLOUD.bat en el PC.')
+                        : ('✅ Nube activa — bin ' + result.binId + '. Espere ~2 min y recargue en los demás celulares.');
+                }
+                if (global.PlatformToast) {
+                    global.PlatformToast.success(result.localOnly ? result.hint : 'Nube activada para todos los celulares', 6000);
+                }
+                global.setTimeout(function () {
+                    closeCloudSetupModal();
+                }, result.localOnly ? 4000 : 2500);
+            }).catch(function (err) {
+                if (status) {
+                    status.className = 'av-cloud-status err';
+                    status.textContent = 'Error: ' + (err.message || err);
+                }
+            }).finally(function () {
+                if (submit) submit.disabled = false;
             });
         }
 
@@ -606,8 +705,17 @@
         function showDamagesDashboard() {
             document.getElementById('damagesDashboard').classList.remove('hidden');
             document.getElementById('damagesFormPanel').classList.add('hidden');
+            document.getElementById('damagesCorrect').classList.add('hidden');
             resetDamageArea();
             updateDamagesStats();
+        }
+
+        function handleDamagesCorrectButton() {
+            playSelectFeedback();
+            document.getElementById('damagesDashboard').classList.add('hidden');
+            document.getElementById('damagesFormPanel').classList.add('hidden');
+            document.getElementById('damagesCorrect').classList.remove('hidden');
+            filterDamagesPending();
         }
 
         function showDamagesForm() {
@@ -619,7 +727,16 @@
         function showSecurityDashboard() {
             document.getElementById('securityDashboard').classList.remove('hidden');
             document.getElementById('securityFormPanel').classList.add('hidden');
+            document.getElementById('securityCorrect').classList.add('hidden');
             updateSecurityStats();
+        }
+
+        function handleSecurityCorrectButton() {
+            playSelectFeedback();
+            document.getElementById('securityDashboard').classList.add('hidden');
+            document.getElementById('securityFormPanel').classList.add('hidden');
+            document.getElementById('securityCorrect').classList.remove('hidden');
+            filterSecurityPending();
         }
 
         function showSecurityForm() {
@@ -630,7 +747,16 @@
         function showAuditDashboard() {
             document.getElementById('auditDashboard').classList.remove('hidden');
             document.getElementById('auditFormPanel').classList.add('hidden');
+            document.getElementById('auditCorrect').classList.add('hidden');
             updateAuditStats();
+        }
+
+        function handleAuditCorrectButton() {
+            playSelectFeedback();
+            document.getElementById('auditDashboard').classList.add('hidden');
+            document.getElementById('auditFormPanel').classList.add('hidden');
+            document.getElementById('auditCorrect').classList.remove('hidden');
+            filterAuditPending();
         }
 
         function showAuditForm() {
@@ -643,7 +769,17 @@
             document.getElementById('equipmentDashboard').classList.remove('hidden');
             document.getElementById('equipmentFormPanel').classList.add('hidden');
             document.getElementById('equipmentListPanel').classList.add('hidden');
+            document.getElementById('equipmentCorrect').classList.add('hidden');
             updateEquipmentStats();
+        }
+
+        function handleEquipmentCorrectButton() {
+            playSelectFeedback();
+            document.getElementById('equipmentDashboard').classList.add('hidden');
+            document.getElementById('equipmentFormPanel').classList.add('hidden');
+            document.getElementById('equipmentListPanel').classList.add('hidden');
+            document.getElementById('equipmentCorrect').classList.remove('hidden');
+            renderEquipmentCorrectList();
         }
 
         function showEquipmentForm() {
@@ -786,7 +922,10 @@
                 fecha: document.getElementById('damageFecha').value,
                 condicion: document.getElementById('damageCondicion').value,
                 usuario: currentEmployee.name,
-                fechaRegistro: new Date().toLocaleString('es-ES')
+                fechaRegistro: new Date().toLocaleString('es-ES'),
+                status: 'PENDIENTE',
+                correctedBy: null,
+                correctionDate: null
             });
             saveDamagesData();
             updateDamagesStats();
@@ -823,7 +962,10 @@
                 clasificacion: securityClass,
                 foto: hasPhoto,
                 usuario: currentEmployee.name,
-                fecha: new Date().toLocaleString('es-ES')
+                fecha: new Date().toLocaleString('es-ES'),
+                status: 'PENDIENTE',
+                correctedBy: null,
+                correctionDate: null
             });
             saveSecurityData();
             updateSecurityStats();
@@ -870,7 +1012,10 @@
                 sinPaletasRotas: document.querySelector('#chkPaletas .toggle-switch').classList.contains('on'),
                 acuracidad: document.querySelector('#chkAcuracidad .toggle-switch').classList.contains('on'),
                 usuario: currentEmployee.name,
-                fecha: new Date().toLocaleString('es-ES')
+                fecha: new Date().toLocaleString('es-ES'),
+                status: 'PENDIENTE',
+                correctedBy: null,
+                correctionDate: null
             });
             saveAuditsData();
             updateAuditStats();
@@ -959,7 +1104,52 @@
             document.getElementById('reportObservation').value = observations[severity];
         }
 
-        // Correct Handler
+        // Correct Handler (todos los módulos)
+        function correctionTimestamp() {
+            return new Date().toLocaleDateString('es-ES') + ' ' +
+                new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+        }
+
+        function markRecordCorrected(module, id) {
+            playSelectFeedback();
+            pendingCorrection = { module: module, id: id };
+            var title = 'Confirmar corrección';
+            var message = '¿Confirmar que este registro fue corregido?';
+
+            if (module === 'pallets') {
+                var inc = allIncidences.find(function (i) { return i.id === id; });
+                title = 'Corregir paleta';
+                message = inc
+                    ? '¿Confirmar corrección de la incidencia en ' + inc.location + ' (' + inc.product + ')?'
+                    : message;
+            } else if (module === 'damages') {
+                var d = allDamages.find(function (x) { return x.id === id; });
+                title = 'Corregir avería';
+                message = d
+                    ? '¿Confirmar corrección de avería ' + d.codigo + ' en ' + d.area + '?'
+                    : message;
+            } else if (module === 'security') {
+                var s = allSecurity.find(function (x) { return x.id === id; });
+                title = 'Corregir incidencia de seguridad';
+                message = s
+                    ? '¿Confirmar corrección en ' + s.area + ' (' + s.tipo + ')?'
+                    : message;
+            } else if (module === 'audit') {
+                var a = allAudits.find(function (x) { return x.id === id; });
+                title = 'Corregir hallazgo 5S';
+                message = a
+                    ? '¿Confirmar corrección del pasillo ' + a.pasillo + ' (turno ' + a.turno + ')?'
+                    : message;
+            } else if (module === 'equipment') {
+                title = 'Corregir equipo';
+                message = '¿Marcar equipo ' + id + ' como DISPONIBLE?';
+            }
+
+            document.getElementById('modalTitle').textContent = title;
+            document.getElementById('modalMessage').textContent = message;
+            document.getElementById('modal').classList.add('show');
+        }
+
         function filterIncidences() {
             const locationFilter = document.getElementById('correctLocation').value.toUpperCase();
             incidences = allIncidences.filter(inc => 
@@ -1009,35 +1199,180 @@
                         <span class="incidence-card-label">Fecha:</span>
                         <span class="incidence-card-value">${inc.reportDate}</span>
                     </div>
-                    <button class="btn-correct-incidence" onclick="markCorrected(${inc.id})">✅ Paleta corregida</button>
+                    <button class="btn-correct-incidence" onclick="markRecordCorrected('pallets', ${inc.id})">✅ Paleta corregida</button>
                 </div>
             `).join('');
         }
 
-        let pendingCorrectionId = null;
+        function filterDamagesPending() {
+            var filterEl = document.getElementById('damagesCorrectFilter');
+            var filter = filterEl ? filterEl.value.toUpperCase() : '';
+            var pending = allDamages.filter(function (d) {
+                return d.status === 'PENDIENTE' && String(d.codigo || '').toUpperCase().indexOf(filter) !== -1;
+            });
+            var countEl = document.getElementById('damagesPendingCount');
+            if (countEl) countEl.textContent = pending.length;
+            var list = document.getElementById('damagesCorrectList');
+            if (!list) return;
+            if (pending.length === 0) {
+                list.innerHTML = '<div style="color: #999; text-align: center; padding: 24px;">No hay averías pendientes</div>';
+                return;
+            }
+            list.innerHTML = pending.map(function (d) {
+                return '<div class="incidence-card medio">' +
+                    '<div class="incidence-card-row"><span class="incidence-card-label">Área:</span><span class="incidence-card-value">' + d.area + '</span></div>' +
+                    '<div class="incidence-card-row"><span class="incidence-card-label">Código:</span><span class="incidence-card-value">' + d.codigo + '</span></div>' +
+                    '<div class="incidence-card-row"><span class="incidence-card-label">Cantidad:</span><span class="incidence-card-value">' + d.cantidad + '</span></div>' +
+                    '<div class="incidence-card-row"><span class="incidence-card-label">Condición:</span><span class="incidence-card-value">' + d.condicion + '</span></div>' +
+                    '<div class="incidence-card-row"><span class="incidence-card-label">Por:</span><span class="incidence-card-value">' + (d.usuario || '').split(' ')[0] + '</span></div>' +
+                    '<div class="incidence-card-row"><span class="incidence-card-label">Fecha:</span><span class="incidence-card-value">' + (d.fechaRegistro || d.fecha) + '</span></div>' +
+                    '<button class="btn-correct-incidence" onclick="markRecordCorrected(\'damages\', ' + d.id + ')">✅ Avería corregida</button>' +
+                    '</div>';
+            }).join('');
+        }
+
+        function filterSecurityPending() {
+            var filterEl = document.getElementById('securityCorrectFilter');
+            var filter = filterEl ? filterEl.value.toUpperCase() : '';
+            var pending = allSecurity.filter(function (s) {
+                return s.status === 'PENDIENTE' && String(s.area || '').toUpperCase().indexOf(filter) !== -1;
+            });
+            var countEl = document.getElementById('securityPendingCount');
+            if (countEl) countEl.textContent = pending.length;
+            var list = document.getElementById('securityCorrectList');
+            if (!list) return;
+            if (pending.length === 0) {
+                list.innerHTML = '<div style="color: #999; text-align: center; padding: 24px;">No hay incidencias pendientes</div>';
+                return;
+            }
+            list.innerHTML = pending.map(function (s) {
+                var urg = s.clasificacion === 'Urgente' ? 'alto' : 'medio';
+                return '<div class="incidence-card ' + urg + '">' +
+                    '<div class="incidence-card-row"><span class="incidence-card-label">Tipo:</span><span class="incidence-card-value">' + s.tipo + '</span></div>' +
+                    '<div class="incidence-card-row"><span class="incidence-card-label">Área:</span><span class="incidence-card-value">' + s.area + '</span></div>' +
+                    '<div class="incidence-card-row"><span class="incidence-card-label">Detalle:</span><span class="incidence-card-value">' + s.detalle + '</span></div>' +
+                    '<div class="incidence-card-row"><span class="incidence-card-label">Clasif.:</span><span class="incidence-card-value">' + s.clasificacion + '</span></div>' +
+                    '<div class="incidence-card-row"><span class="incidence-card-label">Por:</span><span class="incidence-card-value">' + (s.usuario || '').split(' ')[0] + '</span></div>' +
+                    '<div class="incidence-card-row"><span class="incidence-card-label">Fecha:</span><span class="incidence-card-value">' + s.fecha + '</span></div>' +
+                    '<button class="btn-correct-incidence" onclick="markRecordCorrected(\'security\', ' + s.id + ')">✅ Incidencia corregida</button>' +
+                    '</div>';
+            }).join('');
+        }
+
+        function auditFailedCount(a) {
+            return [a.obstruccionesPasillo, a.sinSkuAveriado, a.iluminacion, a.sinPaletasRotas, a.acuracidad]
+                .filter(Boolean).length;
+        }
+
+        function filterAuditPending() {
+            var filterEl = document.getElementById('auditCorrectFilter');
+            var filter = filterEl ? filterEl.value.toUpperCase() : '';
+            var pending = allAudits.filter(function (a) {
+                return a.status === 'PENDIENTE' && String(a.pasillo || '').toUpperCase().indexOf(filter) !== -1;
+            });
+            var countEl = document.getElementById('auditPendingCount');
+            if (countEl) countEl.textContent = pending.length;
+            var list = document.getElementById('auditCorrectList');
+            if (!list) return;
+            if (pending.length === 0) {
+                list.innerHTML = '<div style="color: #999; text-align: center; padding: 24px;">No hay hallazgos pendientes</div>';
+                return;
+            }
+            list.innerHTML = pending.map(function (a) {
+                var ok = auditFailedCount(a);
+                var pct = Math.round((ok / 5) * 100);
+                return '<div class="incidence-card ' + (pct < 60 ? 'alto' : 'medio') + '">' +
+                    '<div class="incidence-card-row"><span class="incidence-card-label">Pasillo:</span><span class="incidence-card-value">' + a.pasillo + '</span></div>' +
+                    '<div class="incidence-card-row"><span class="incidence-card-label">Auditor:</span><span class="incidence-card-value">' + a.auditor + '</span></div>' +
+                    '<div class="incidence-card-row"><span class="incidence-card-label">Turno:</span><span class="incidence-card-value">' + a.turno + '</span></div>' +
+                    '<div class="incidence-card-row"><span class="incidence-card-label">Cumplimiento:</span><span class="incidence-card-value">' + pct + '% (' + ok + '/5)</span></div>' +
+                    '<div class="incidence-card-row"><span class="incidence-card-label">Fecha:</span><span class="incidence-card-value">' + a.fecha + '</span></div>' +
+                    '<button class="btn-correct-incidence" onclick="markRecordCorrected(\'audit\', ' + a.id + ')">✅ Hallazgo corregido</button>' +
+                    '</div>';
+            }).join('');
+        }
+
+        function renderEquipmentCorrectList() {
+            var equipos = Object.entries(equipmentRegistry)
+                .map(function (entry) { return { codigo: entry[0], data: entry[1] }; })
+                .filter(function (e) { return e.data && e.data.estado === 'NO_DISPONIBLE'; })
+                .sort(function (a, b) { return a.codigo.localeCompare(b.codigo); });
+            var list = document.getElementById('equipmentCorrectList');
+            if (!list) return;
+            if (equipos.length === 0) {
+                list.innerHTML = '<div style="color: #999; text-align: center; padding: 24px;">No hay equipos pendientes de corrección</div>';
+                return;
+            }
+            list.innerHTML = equipos.map(function (e) {
+                return '<div class="incidence-card alto">' +
+                    '<div class="incidence-card-row"><span class="incidence-card-label">Código:</span><span class="incidence-card-value">' + e.codigo + '</span></div>' +
+                    '<div class="incidence-card-row"><span class="incidence-card-label">Tipo:</span><span class="incidence-card-value">' + e.data.tipo + '</span></div>' +
+                    '<div class="incidence-card-row"><span class="incidence-card-label">Estado:</span><span class="incidence-card-value">No disponible</span></div>' +
+                    '<div class="incidence-card-row"><span class="incidence-card-label">Actualizado:</span><span class="incidence-card-value">' + (e.data.ultimaActualizacion || '—') + '</span></div>' +
+                    '<button class="btn-correct-incidence" onclick="markRecordCorrected(\'equipment\', \'' + e.codigo.replace(/'/g, "\\'") + '\')">✅ Equipo corregido</button>' +
+                    '</div>';
+            }).join('');
+        }
 
         function markCorrected(id) {
-            playSelectFeedback();
-            pendingCorrectionId = id;
-            const inc = allIncidences.find(i => i.id === id);
-            document.getElementById('modalTitle').textContent = 'Corregir paleta';
-            document.getElementById('modalMessage').textContent =
-                `¿Confirmar corrección de la incidencia en ${inc.location} (${inc.product})?`;
-            document.getElementById('modal').classList.add('show');
+            markRecordCorrected('pallets', id);
         }
 
         function confirmCorrection() {
-            if (pendingCorrectionId == null) return;
-            const inc = allIncidences.find(i => i.id === pendingCorrectionId);
-            if (inc) {
-                inc.status = 'CORREGIDO';
-                inc.correctedBy = currentEmployee.name;
-                inc.correctionDate = new Date().toLocaleDateString('es-ES') + ' ' +
-                    new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
-                saveData();
-                filterIncidences();
+            if (!pendingCorrection) return;
+            var module = pendingCorrection.module;
+            var id = pendingCorrection.id;
+            var ts = correctionTimestamp();
+
+            if (module === 'pallets') {
+                var inc = allIncidences.find(function (i) { return i.id === id; });
+                if (inc) {
+                    inc.status = 'CORREGIDO';
+                    inc.correctedBy = currentEmployee.name;
+                    inc.correctionDate = ts;
+                    saveData();
+                    filterIncidences();
+                }
+            } else if (module === 'damages') {
+                var dmg = allDamages.find(function (d) { return d.id === id; });
+                if (dmg) {
+                    dmg.status = 'CORREGIDO';
+                    dmg.correctedBy = currentEmployee.name;
+                    dmg.correctionDate = ts;
+                    saveDamagesData();
+                    filterDamagesPending();
+                }
+            } else if (module === 'security') {
+                var sec = allSecurity.find(function (s) { return s.id === id; });
+                if (sec) {
+                    sec.status = 'CORREGIDO';
+                    sec.correctedBy = currentEmployee.name;
+                    sec.correctionDate = ts;
+                    saveSecurityData();
+                    filterSecurityPending();
+                }
+            } else if (module === 'audit') {
+                var aud = allAudits.find(function (a) { return a.id === id; });
+                if (aud) {
+                    aud.status = 'CORREGIDO';
+                    aud.correctedBy = currentEmployee.name;
+                    aud.correctionDate = ts;
+                    saveAuditsData();
+                    filterAuditPending();
+                }
+            } else if (module === 'equipment') {
+                var eq = equipmentRegistry[id];
+                if (eq) {
+                    eq.estado = 'DISPONIBLE';
+                    eq.ultimaActualizacion = ts;
+                    eq.correctedBy = currentEmployee.name;
+                    saveEquipmentData();
+                    updateEquipmentStats();
+                    renderEquipmentCorrectList();
+                }
             }
-            pendingCorrectionId = null;
+
+            pendingCorrection = null;
             closeModal();
         }
 
@@ -1065,6 +1400,7 @@
 
         function updateDamagesStats() {
             const today = new Date().toISOString().split('T')[0];
+            const pending = allDamages.filter(d => d.status === 'PENDIENTE').length;
             const total = allDamages.length;
             const almacen = allDamages.filter(d => d.area === 'Almacén').length;
             const devolucion = allDamages.filter(d => d.area === 'Devolución').length;
@@ -1075,7 +1411,7 @@
             if (el('statDamAlmacen')) el('statDamAlmacen').textContent = almacen;
             if (el('statDamDevolucion')) el('statDamDevolucion').textContent = devolucion;
             if (el('statDamRecuperacion')) el('statDamRecuperacion').textContent = recuperacion;
-            if (el('statDamToday')) el('statDamToday').textContent = registrosHoy;
+            if (el('statDamToday')) el('statDamToday').textContent = registrosHoy + (pending > 0 ? ' · ' + pending + ' pend.' : '');
         }
 
         function updateSecurityStats() {
@@ -1236,12 +1572,12 @@
 
         // Modal
         function closeModal() {
-            pendingCorrectionId = null;
+            pendingCorrection = null;
             document.getElementById('modal').classList.remove('show');
         }
 
         function confirmModal() {
-            if (pendingCorrectionId != null) {
+            if (pendingCorrection) {
                 confirmCorrection();
                 return;
             }
@@ -1260,8 +1596,19 @@
   global.closeDrawer = closeDrawer;
   global.toggleFitScreen = toggleFitScreen;
   global.syncAveriasData = syncAveriasData;
+  global.openCloudSetupModal = openCloudSetupModal;
+  global.closeCloudSetupModal = closeCloudSetupModal;
+  global.submitCloudSetup = submitCloudSetup;
   global.handleReportButton = handleReportButton;
   global.handleCorrectButton = handleCorrectButton;
+  global.handleDamagesCorrectButton = handleDamagesCorrectButton;
+  global.handleSecurityCorrectButton = handleSecurityCorrectButton;
+  global.handleAuditCorrectButton = handleAuditCorrectButton;
+  global.handleEquipmentCorrectButton = handleEquipmentCorrectButton;
+  global.filterDamagesPending = filterDamagesPending;
+  global.filterSecurityPending = filterSecurityPending;
+  global.filterAuditPending = filterAuditPending;
+  global.markRecordCorrected = markRecordCorrected;
   global.showPalletsDashboard = showPalletsDashboard;
   global.handleReport = handleReport;
   global.selectSeverity = selectSeverity;
