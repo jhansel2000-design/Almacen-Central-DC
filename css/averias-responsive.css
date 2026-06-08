@@ -456,15 +456,282 @@ body.averias-dash-view {
   width: 100%;
 }
 
-/* ── Teléfono pequeño ── */
-@media (max-width: 380px) {
+/* ── Solo celular (Android / iPhone) — PC y tablet sin cambios ── */
+@media (max-width: 599px) {
+  .averias-app {
+    font-size: 17px;
+  }
+
+  .averias-app .app-toolbar {
+    min-height: 60px;
+    padding: max(12px, env(safe-area-inset-top, 0px)) 14px 12px;
+  }
+
+  .averias-app .toolbar-title {
+    font-size: 1.25rem !important;
+  }
+
+  .averias-app .btn-menu {
+    font-size: 30px;
+    min-width: 52px;
+    min-height: 52px;
+  }
+
+  .averias-app .btn-toolbar-logout {
+    font-size: 1rem;
+    min-height: 48px;
+    padding: 12px 18px;
+  }
+
+  .averias-app .module-content {
+    padding: 16px 14px calc(28px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .averias-app .module-panel h3 {
+    font-size: 1.65rem !important;
+    margin-bottom: 16px !important;
+  }
+
+  .averias-app .module-panel:not(.hidden) > .sub-panel:not(.hidden) {
+    min-height: calc(100dvh - 60px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+    gap: 14px;
+  }
+
+  /* Menú ☰ — módulos más grandes */
+  .averias-app .drawer {
+    width: min(360px, 94vw) !important;
+  }
+
+  .averias-app .drawer-item {
+    min-height: 72px;
+    padding: 16px 14px;
+    margin-bottom: 12px;
+    border-radius: 16px;
+  }
+
+  .averias-app .drawer-icon-wrap {
+    width: 56px;
+    height: 56px;
+    font-size: 28px;
+  }
+
+  .averias-app .drawer-icon-wrap svg {
+    width: 28px;
+    height: 28px;
+  }
+
+  .averias-app .drawer-item-title {
+    font-size: 1.15rem;
+  }
+
+  .averias-app .drawer-item-desc {
+    font-size: 0.88rem;
+  }
+
+  /* Dashboard KPIs y botones */
   .averias-app .dashboard-grid {
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
+    min-height: 44vh;
+    gap: 16px;
+  }
+
+  .averias-app .stat-card {
+    padding: clamp(20px, 5vh, 32px) 14px;
+  }
+
+  .averias-app .stat-number {
+    font-size: clamp(2.75rem, 15vw, 4rem) !important;
   }
 
   .averias-app .stat-label {
-    font-size: 0.68rem;
+    font-size: 0.95rem !important;
+    font-weight: 700;
+  }
+
+  .averias-app .dash-kpi-banner {
+    padding: clamp(22px, 5vh, 32px) 16px !important;
+  }
+
+  .averias-app .dash-kpi-banner > div:first-child {
+    font-size: 0.95rem !important;
+  }
+
+  .averias-app .dash-kpi-banner > div:last-child {
+    font-size: clamp(2.5rem, 14vw, 3.5rem) !important;
+  }
+
+  .averias-app .action-buttons {
+    min-height: 38vh;
+    gap: 16px;
+  }
+
+  .averias-app .btn-action {
+    min-height: clamp(64px, 12vh, 92px);
+    font-size: 1.2rem;
+    font-weight: 800;
+    border-radius: 18px;
+    padding: clamp(18px, 3.5vh, 24px) 20px;
+  }
+
+  /* Formularios y listas */
+  .averias-app .form-field {
+    margin-bottom: 20px;
+  }
+
+  .averias-app .form-field label {
+    font-size: 1rem;
+    margin-bottom: 12px;
+  }
+
+  .averias-app .form-field input,
+  .averias-app .form-field select,
+  .averias-app .form-field textarea {
+    font-size: 18px;
+    min-height: 52px;
+    padding: 14px 16px;
+  }
+
+  .averias-app .form-field textarea {
+    min-height: 120px;
+  }
+
+  .averias-app .severity-btn {
+    min-height: 56px;
+    font-size: 1rem;
+    padding: 14px;
+  }
+
+  .averias-app .btn-primary,
+  .averias-app .btn-secondary {
+    min-height: 54px;
+    font-size: 1.05rem;
+    padding: 16px 20px;
+  }
+
+  .averias-app .btn-small {
+    min-height: 48px;
+    font-size: 0.95rem;
+    padding: 12px 16px;
+  }
+
+  .averias-app .btn-area {
+    min-height: 60px;
+    font-size: 1.1rem;
+    padding: 18px;
+  }
+
+  .averias-app .btn-correct-incidence {
+    min-height: 52px;
+    font-size: 1rem;
+    padding: 14px 18px;
+  }
+
+  /* Pantalla de inicio */
+  .averias-app .welcome-hero {
+    padding: 28px 20px;
+    border-radius: 22px;
+  }
+
+  .averias-app .welcome-greeting {
+    font-size: 0.9rem;
+  }
+
+  .averias-app .welcome-title {
+    font-size: clamp(2rem, 9vw, 2.5rem);
+  }
+
+  .averias-app .welcome-question {
+    font-size: clamp(1.25rem, 5.5vw, 1.5rem);
+  }
+
+  .averias-app .welcome-subtitle {
+    font-size: 1rem;
+  }
+
+  .averias-app .welcome-user-card {
+    padding: 16px;
+  }
+
+  .averias-app .welcome-user-name {
+    font-size: 1.2rem;
+  }
+
+  .averias-app .welcome-user-role {
+    font-size: 0.95rem;
+  }
+
+  .averias-app .welcome-hint {
+    font-size: 1rem;
+    padding: 16px;
+    line-height: 1.45;
+  }
+
+  .averias-app .welcome-hint-icon {
+    font-size: 1.4rem;
+  }
+
+  /* Tarjetas de incidencias y equipos */
+  .averias-app .incidence-card {
+    padding: 18px;
+    margin-bottom: 14px;
+    border-radius: 16px;
+  }
+
+  .averias-app .incidence-card-row {
+    font-size: 15px;
+    margin-bottom: 10px;
+  }
+
+  .averias-app .equipment-check-row {
+    padding: 16px;
+    margin-bottom: 10px;
+  }
+
+  .averias-app .equipment-check-row .check-label {
+    font-size: 1rem;
+  }
+
+  .averias-app .si-no-btn {
+    min-height: 48px;
+    font-size: 15px;
+    padding: 12px 16px;
+  }
+
+  .averias-app .equipment-list-item {
+    padding: 16px 18px;
+  }
+
+  .averias-app .equipment-list-item .eq-code {
+    font-size: 1.05rem;
+  }
+
+  .averias-app .equipment-list-item .eq-type {
+    font-size: 0.88rem;
+  }
+
+  .averias-app .checklist-item {
+    min-height: 58px;
+    font-size: 1rem;
+    padding: 14px 16px;
+  }
+
+  .averias-app .modal-btn {
+    min-height: 52px;
+    font-size: 1rem;
+  }
+}
+
+/* ── Teléfono pequeño ── */
+@media (max-width: 380px) {
+  .averias-app .dashboard-grid {
+    gap: 12px;
+  }
+
+  .averias-app .stat-label {
+    font-size: 0.88rem !important;
+  }
+
+  .averias-app .drawer {
+    width: min(340px, 96vw) !important;
   }
 }
 
