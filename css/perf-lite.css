@@ -9,7 +9,7 @@
   position: absolute;
   inset: 0;
   z-index: 0;
-  background: url('../assets/video/login-operation-poster.jpg') center 42% / cover no-repeat;
+  background: url('../assets/img/login-wms-poster.jpg') center 44% / cover no-repeat;
   transform: scale(1);
   will-change: transform;
 }
@@ -22,7 +22,7 @@
 
 @keyframes authPosterKen {
   from { transform: scale(1); }
-  to { transform: scale(1.05); }
+  to { transform: scale(1.045); }
 }
 
 .auth-video-wrap--poster .auth-video {

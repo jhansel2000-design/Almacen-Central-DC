@@ -10,7 +10,11 @@ Video principal (pantalla de inicio de sesión):
   login-operation-full.mp4 — montaje completo (~118 s, ~20 MB) solo LAN local
   Secuencia: pasillos/racks → montacargas (3 tomas) → inspección de inventario
 
-  login-operation-poster.jpg — vista previa
+  login-operation-poster.jpg — vista previa (legacy)
+
+Imagen login WMS principal (index.html):
+
+  ../img/login-wms-poster.jpg — almacén ejecutivo, tono azul DC
 
 Imagen portal Despacho (despacho.html):
 
