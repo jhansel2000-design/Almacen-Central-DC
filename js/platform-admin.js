@@ -275,6 +275,42 @@
     });
   }
 
+  function mergeWebUsersFromRemote(localList, remoteList) {
+    var map = Object.create(null);
+    var byUsername = Object.create(null);
+
+    (Array.isArray(localList) ? localList : []).forEach(function (u) {
+      if (!u || !u.id) return;
+      var copy = normalizeUser(Object.assign({}, u));
+      map[u.id] = copy;
+      var un = String(u.username || '').toLowerCase().trim();
+      if (un) byUsername[un] = copy;
+    });
+
+    (Array.isArray(remoteList) ? remoteList : []).forEach(function (u) {
+      if (!u || !u.username) return;
+      var un = String(u.username).toLowerCase().trim();
+      var target = (u.id && map[u.id]) || byUsername[un] || null;
+      if (target) {
+        var merged = normalizeUser(Object.assign({}, target, u, {
+          id: target.id,
+          username: u.username || target.username,
+          isPrimaryAdmin: false
+        }));
+        if (merged.role === 'administrador') merged.isPrimaryAdmin = false;
+        map[target.id] = merged;
+        byUsername[un] = merged;
+        return;
+      }
+      var created = normalizeUser(Object.assign({}, u));
+      if (created.role === 'administrador') created.isPrimaryAdmin = false;
+      map[created.id] = created;
+      if (un) byUsername[un] = created;
+    });
+
+    return ensureUserRegistry(Object.values(map));
+  }
+
   function importWebUsers(payload) {
     var remote = [];
     var updatedAt = '';
@@ -288,7 +324,7 @@
       return { count: 0, updatedAt: updatedAt };
     }
     var local = getUsers();
-    var merged = mergeUserRegistries(local, remote);
+    var merged = mergeWebUsersFromRemote(local, remote);
     saveUsers(merged);
     if (updatedAt && global.localStorage) {
       localStorage.setItem(KEYS.users + '_web', updatedAt);
