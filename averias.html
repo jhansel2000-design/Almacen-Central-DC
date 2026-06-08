@@ -9,14 +9,14 @@
   <meta name="description" content="Portal Operaciones de Piso — Reporte de averías, 5S, seguridad y equipos.">
   <meta name="theme-color" content="#050810">
   <title>Operaciones de Piso — Almacén Central DC</title>
-  <script src="js/relay-bootstrap.js?v=1"></script>
+  <link rel="preload" href="assets/img/login-averias-poster.jpg" as="image">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%234caf50'/%3E%3Ctext x='16' y='22' text-anchor='middle' font-size='14' font-weight='800' fill='%23041018' font-family='system-ui'%3EA%3C/text%3E%3C/svg%3E">
   <link rel="stylesheet" href="css/platform.css?v=20">
   <link rel="stylesheet" href="css/platform-enhance.css">
-  <link rel="stylesheet" href="css/averias-auth.css?v=1">
+  <link rel="stylesheet" href="css/averias-auth.css?v=2">
   <link rel="stylesheet" href="css/auth-cinematic.css?v=16">
   <link rel="stylesheet" href="css/averias-portal.css?v=2">
-  <link rel="stylesheet" href="css/averias-responsive.css?v=3">
+  <link rel="stylesheet" href="css/averias-responsive.css?v=4">
   <link rel="stylesheet" href="css/theme-light.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -186,7 +186,7 @@
                                     <div class="stat-label">Total PL</div>
                                 </div>
                             </div>
-                            <div style="text-align:center;padding:16px;background:#2A2A2A;border-radius:12px;margin-bottom:20px;">
+                            <div class="dash-kpi-banner">
                                 <div style="font-size:12px;color:#B3B3B3;">% Completado</div>
                                 <div style="font-size:32px;font-weight:700;color:#2A7F2A;" id="statCompletion">0%</div>
                             </div>
@@ -249,7 +249,7 @@
                                 <div class="stat-card"><div class="stat-number" id="statDamDevolucion">0</div><div class="stat-label">Devolución</div></div>
                                 <div class="stat-card"><div class="stat-number" id="statDamRecuperacion">0</div><div class="stat-label">Recuperación</div></div>
                             </div>
-                            <div style="text-align:center;padding:16px;background:#2A2A2A;border-radius:12px;margin-bottom:20px;">
+                            <div class="dash-kpi-banner">
                                 <div style="font-size:12px;color:#B3B3B3;">Registros hoy</div>
                                 <div style="font-size:32px;font-weight:700;color:#2A7F2A;" id="statDamToday">0</div>
                             </div>
@@ -298,7 +298,7 @@
                                 <div class="stat-card"><div class="stat-number" id="statSecNonUrgent">0</div><div class="stat-label">No urgentes</div></div>
                                 <div class="stat-card"><div class="stat-number" id="statSecPhoto">0</div><div class="stat-label">Con foto</div></div>
                             </div>
-                            <div style="text-align:center;padding:16px;background:#2A2A2A;border-radius:12px;margin-bottom:20px;">
+                            <div class="dash-kpi-banner">
                                 <div style="font-size:12px;color:#B3B3B3;">% Urgentes</div>
                                 <div style="font-size:32px;font-weight:700;color:#EF5350;" id="statSecPctUrgent">0%</div>
                             </div>
@@ -346,7 +346,7 @@
                                 <div class="stat-card"><div class="stat-number" id="statAuditTurnoB">0</div><div class="stat-label">Turno B</div></div>
                                 <div class="stat-card"><div class="stat-number" id="statAuditPasillos">0</div><div class="stat-label">Pasillos</div></div>
                             </div>
-                            <div style="text-align:center;padding:16px;background:#2A2A2A;border-radius:12px;margin-bottom:20px;">
+                            <div class="dash-kpi-banner">
                                 <div style="font-size:12px;color:#B3B3B3;">% Cumplimiento checklist</div>
                                 <div style="font-size:32px;font-weight:700;color:#2A7F2A;" id="statAuditCompliance">0%</div>
                             </div>
@@ -387,7 +387,7 @@
                                 <div class="stat-card"><div class="stat-number" id="statEqUnaMano">0</div><div class="stat-label">Uñas de mano</div></div>
                                 <div class="stat-card"><div class="stat-number" id="statEqDisponibles" style="color:#2E7D32;">0</div><div class="stat-label">Disponibles</div></div>
                             </div>
-                            <div style="text-align:center;padding:16px;background:#2A2A2A;border-radius:12px;margin-bottom:20px;">
+                            <div class="dash-kpi-banner">
                                 <div style="font-size:12px;color:#B3B3B3;">Equipos no disponibles</div>
                                 <div style="font-size:32px;font-weight:700;color:#C62828;" id="statEqNoDisponibles">0</div>
                             </div>

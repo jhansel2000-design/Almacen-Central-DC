@@ -20,6 +20,10 @@ Imagen portal Despacho (despacho.html):
 
   ../img/login-dispatch-poster.jpg — muelle / carga, tono ámbar
 
+Imagen portal Operaciones de Piso / Reportes (averias.html):
+
+  ../img/login-averias-poster.jpg — piso almacén, paletas, tono verde
+
 Clips del montaje (Mixkit — almacén / montacargas / racks):
 
   clip-racks.mp4           — recorrido en almacén (23010)

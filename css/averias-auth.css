@@ -10,8 +10,20 @@
   inset: 0;
   z-index: 0;
   background:
-    linear-gradient(135deg, rgba(4, 20, 12, 0.92) 0%, rgba(8, 24, 16, 0.78) 50%, rgba(6, 14, 10, 0.94) 100%),
-    radial-gradient(ellipse 70% 60% at 30% 40%, rgba(46, 125, 50, 0.18), transparent 68%);
+    url('../assets/img/login-averias-poster.jpg') center 42% / cover no-repeat;
+  transform: scale(1);
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .av-auth-bg-wrap::before {
+    animation: avAuthKen 34s ease-in-out infinite alternate;
+  }
+}
+
+@keyframes avAuthKen {
+  from { transform: scale(1); }
+  to { transform: scale(1.055); }
 }
 
 .av-auth-scrim {
@@ -140,8 +152,12 @@ body:not(.auth-locked) .auth-external-portals {
 }
 
 .auth-portal-card--averias .auth-portal-icon {
-  background: linear-gradient(135deg, rgba(76, 175, 80, 0.25), rgba(46, 125, 50, 0.15));
+  background:
+    linear-gradient(135deg, rgba(0, 0, 0, 0.25), rgba(46, 125, 50, 0.2)),
+    url('../assets/img/login-averias-poster.jpg') center 40% / cover no-repeat;
   border-color: rgba(129, 199, 132, 0.3);
+  font-size: 0;
+  overflow: hidden;
 }
 
 .auth-portal-card--averias .auth-portal-cta {
