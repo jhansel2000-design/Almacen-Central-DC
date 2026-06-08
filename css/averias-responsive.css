@@ -6,6 +6,10 @@ html {
   text-size-adjust: 100%;
 }
 
+body.averias-drawer-open {
+  overflow: hidden;
+}
+
 body.averias-dash-view {
   min-height: 100vh;
   min-height: 100dvh;
