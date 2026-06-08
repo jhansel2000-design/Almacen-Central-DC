@@ -71,20 +71,10 @@
 
   function showDespAuthRoleFeedback(card) {
     var picker = card && card.closest('.auth-role-picker');
-    var fb = $('despAuthRoleFeedback');
-    if (!fb && picker && picker.parentElement) {
-      fb = picker.parentElement.querySelector('.auth-role-feedback');
-    }
     if (picker) {
       picker.classList.remove('role-area-pulse');
       void picker.offsetWidth;
       picker.classList.add('role-area-pulse');
-    }
-    if (fb) {
-      var labelEl = card.querySelector('strong');
-      var label = labelEl ? labelEl.textContent.trim() : '';
-      fb.textContent = label ? ('Área seleccionada: ' + label) : '';
-      fb.classList.toggle('is-visible', !!label);
     }
   }
 
@@ -182,14 +172,8 @@
       PC.initAuthRoleGestures(overlay, function (card) {
         applyRolePicker(card);
       });
-    } else {
-      PC.bindOnce(form, 'click', function (ev) {
-        var card = ev.target.closest('.desp-auth-role-card');
-        if (!card) return;
-        ev.preventDefault();
-        applyRolePicker(card);
-      });
     }
+    bindDespRolePickerClicks(form);
 
     PC.bindOnce(form, 'submit', function (ev) {
       ev.preventDefault();
@@ -208,6 +192,8 @@
     initPasswordToggle();
     PC.applyRememberedLoginUsername('despacho', $('despAuthUsername'), $('despAuthRememberUser'));
   }
+
+  function tryRestoreSession() {
     var session = PC.getDespachoSession();
     if (!session) return false;
     var user = Auth.getUserById(session.userId);
@@ -217,6 +203,25 @@
     }
     enterApp(user);
     return true;
+  }
+
+  function bindDespRolePickerClicks(form) {
+    if (!form || form.dataset.despRoleClickBound === '1') return;
+    form.dataset.despRoleClickBound = '1';
+    form.addEventListener('click', function (ev) {
+      var card = ev.target.closest('.desp-auth-role-card');
+      if (!card) return;
+      ev.preventDefault();
+      applyRolePicker(card);
+    });
+    document.querySelectorAll('.desp-auth-role-card').forEach(function (card) {
+      if (card.dataset.despRoleTapBound === '1') return;
+      card.dataset.despRoleTapBound = '1';
+      card.addEventListener('click', function (ev) {
+        ev.preventDefault();
+        applyRolePicker(card);
+      });
+    });
   }
 
   function bindSessionTouch() {

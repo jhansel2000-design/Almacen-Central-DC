@@ -366,9 +366,7 @@
           card.classList.remove('is-released', 'role-pop');
         }, 480);
 
-        var dx = Math.abs(ev.clientX - downX);
-        var dy = Math.abs(ev.clientY - downY);
-        if (dx < 16 && dy < 16 && onSelect) onSelect(card);
+        if (onSelect) onSelect(card);
       }
 
       card.addEventListener('pointerup', finish);
