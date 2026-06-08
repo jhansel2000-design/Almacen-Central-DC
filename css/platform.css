@@ -175,6 +175,9 @@ body.auth-locked .auth-layout{
 }
 @media (min-width:901px){
   body.auth-locked .auth-layout{ padding-bottom:clamp(1.25rem, 4vw, 3rem); }
+  body.auth-locked:has(#authDespachoPortal) .auth-layout{
+    padding-bottom:calc(5.75rem + env(safe-area-inset-bottom, 0px));
+  }
 }
 body.auth-locked #platformApp{
   display:none !important;

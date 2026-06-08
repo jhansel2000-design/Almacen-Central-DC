@@ -1,9 +1,11 @@
 /* Login cinematográfico — video visible + panel ejecutivo */
 
 .auth-overlay {
-  align-items: stretch;
-  justify-content: flex-end;
-  padding: 0;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(1rem, 3vw, 2rem);
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .auth-video {
@@ -35,10 +37,14 @@
   align-items: center;
   gap: clamp(1.25rem, 3vw, 2.75rem);
   width: min(100%, 1240px);
-  min-height: 100vh;
+  min-height: auto;
   margin: 0 auto;
   padding: clamp(1.25rem, 4vw, 3rem);
   pointer-events: none;
+}
+
+.desp-auth-overlay .auth-layout {
+  width: min(100%, 960px);
 }
 
 .auth-hero {

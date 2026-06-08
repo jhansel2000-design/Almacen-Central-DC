@@ -12,6 +12,10 @@ Video principal (pantalla de inicio de sesión):
 
   login-operation-poster.jpg — vista previa
 
+Imagen portal Despacho (despacho.html):
+
+  ../img/login-dispatch-poster.jpg — muelle / carga, tono ámbar
+
 Clips del montaje (Mixkit — almacén / montacargas / racks):
 
   clip-racks.mp4           — recorrido en almacén (23010)

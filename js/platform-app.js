@@ -462,10 +462,28 @@
     setActiveAuthClip(authBgVideoState.index);
   }
 
+  function clearModuleViewClasses() {
+    document.body.classList.remove(
+      'ops-dash-view', 'facturas-dash-view', 'despacho-dash-view', 'general-panel-view',
+      'ops-tv-active', 'facturas-tv-active', 'tv-unified-active'
+    );
+  }
+
+  function resetAuthLayout() {
+    if (!document.body.classList.contains('auth-locked')) return;
+    var overlay = $('authOverlay');
+    if (overlay) overlay.scrollTop = 0;
+    if (typeof window.scrollTo === 'function') window.scrollTo(0, 0);
+  }
+
   function setAuthVisible(visible) {
     var overlay = $('authOverlay');
     var app = $('platformApp');
     var portal = $('authDespachoPortal');
+    if (visible) {
+      clearModuleViewClasses();
+      resetAuthLayout();
+    }
     if (portal) {
       portal.hidden = !visible;
       portal.setAttribute('aria-hidden', visible ? 'false' : 'true');
@@ -618,6 +636,16 @@
 
     if (!overlayIsHidden()) {
       syncAuthBgVideo(true);
+    }
+
+    if (!initAuth._pageshowBound) {
+      initAuth._pageshowBound = true;
+      window.addEventListener('pageshow', function () {
+        if (document.body.classList.contains('auth-locked')) {
+          clearModuleViewClasses();
+          resetAuthLayout();
+        }
+      });
     }
   }
 

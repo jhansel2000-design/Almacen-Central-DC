@@ -1,5 +1,62 @@
 /* Portal Despacho — login independiente + tarjeta externa en WMS */
 
+/* Fondo cinematográfico — muelle / despacho */
+.desp-auth-bg-wrap {
+  background: #06080e;
+}
+
+.desp-auth-bg-wrap::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background:
+    url('../assets/img/login-dispatch-poster.jpg') center 46% / cover no-repeat;
+  transform: scale(1);
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .desp-auth-bg-wrap::before {
+    animation: despAuthKen 34s ease-in-out infinite alternate;
+  }
+}
+
+@keyframes despAuthKen {
+  from { transform: scale(1); }
+  to { transform: scale(1.055); }
+}
+
+.desp-auth-scrim {
+  z-index: 1;
+  background:
+    linear-gradient(90deg,
+      rgba(6, 8, 14, 0.9) 0%,
+      rgba(10, 8, 6, 0.68) 40%,
+      rgba(16, 10, 6, 0.78) 56%,
+      rgba(5, 8, 16, 0.94) 100%),
+    linear-gradient(0deg, rgba(3, 5, 10, 0.72) 0%, transparent 38%),
+    radial-gradient(ellipse 70% 75% at 24% 52%, rgba(255, 152, 0, 0.14), transparent 70%),
+    radial-gradient(ellipse 55% 45% at 88% 88%, rgba(255, 87, 34, 0.1), transparent 62%) !important;
+}
+
+html[data-theme="light"] .desp-auth-scrim {
+  background:
+    linear-gradient(90deg,
+      rgba(232, 236, 244, 0.94) 0%,
+      rgba(248, 244, 238, 0.82) 42%,
+      rgba(240, 236, 230, 0.88) 58%,
+      rgba(228, 234, 244, 0.96) 100%),
+    linear-gradient(0deg, rgba(15, 30, 60, 0.06) 0%, transparent 40%),
+    radial-gradient(ellipse 70% 60% at 30% 50%, rgba(255, 152, 0, 0.08), transparent 68%) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .desp-auth-bg-wrap::before {
+    animation: none !important;
+  }
+}
+
 /* Tarjeta fuera del formulario ejecutivo (index.html) */
 .auth-external-portal {
   position: fixed;
@@ -96,10 +153,11 @@ html[data-theme="light"] .auth-portal-body span {
   color: #475569;
 }
 
-/* Login standalone despacho.html */
+/* Login standalone despacho.html — reglas solo dentro del portal despacho */
 .desp-auth-overlay .auth-layout {
   grid-template-columns: minmax(0, 1fr) minmax(300px, 400px);
   max-width: 960px;
+  width: min(100%, 960px);
 }
 
 .desp-auth-hero {

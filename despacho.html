@@ -11,13 +11,14 @@
   <meta http-equiv="X-Content-Type-Options" content="nosniff">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self'; img-src 'self' data:; media-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'">
   <title>Despacho — Almacén Central DC</title>
+  <link rel="preload" href="assets/img/login-dispatch-poster.jpg" as="image">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23ff9800'/%3E%3Ctext x='16' y='22' text-anchor='middle' font-size='14' font-weight='800' fill='%23041018' font-family='system-ui'%3ED%3C/text%3E%3C/svg%3E">
-  <link rel="stylesheet" href="css/platform.css?v=9">
+  <link rel="stylesheet" href="css/platform.css?v=16">
   <link rel="stylesheet" href="css/platform-enhance.css">
-  <link rel="stylesheet" href="css/platform-gestures.css?v=9">
+  <link rel="stylesheet" href="css/platform-gestures.css?v=16">
   <link rel="stylesheet" href="css/despacho-dashboard.css">
-  <link rel="stylesheet" href="css/despacho-auth.css?v=9">
-  <link rel="stylesheet" href="css/auth-cinematic.css">
+  <link rel="stylesheet" href="css/despacho-auth.css?v=17">
+  <link rel="stylesheet" href="css/auth-cinematic.css?v=16">
   <link rel="stylesheet" href="css/theme-light.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -27,8 +28,8 @@
   <noscript><p class="noscript-msg">Activa JavaScript para usar el portal de despacho.</p></noscript>
 
   <div class="auth-overlay desp-auth-overlay" id="despAuthOverlay" role="dialog" aria-labelledby="despAuthTitle">
-    <div class="auth-video-wrap" aria-hidden="true">
-      <div class="auth-video-scrim" style="background: linear-gradient(135deg, rgba(8,12,20,0.95) 0%, rgba(20,14,8,0.92) 50%, rgba(8,12,20,0.96) 100%);"></div>
+    <div class="auth-video-wrap desp-auth-bg-wrap" aria-hidden="true">
+      <div class="auth-video-scrim desp-auth-scrim"></div>
     </div>
     <div class="auth-layout">
       <aside class="auth-hero desp-auth-hero">
