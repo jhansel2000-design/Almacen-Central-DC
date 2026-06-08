@@ -6,9 +6,11 @@
 
   var SESSION_KEY = 'panel_almacen_session';
   var DESPACHO_SESSION_KEY = 'panel_despacho_session';
+  var AVERIAS_SESSION_KEY = 'panel_averias_session';
   var SESSION_MS = 12 * 60 * 60 * 1000;
   var LOGIN_ATTEMPTS_KEY = 'almacen_login_attempts';
   var DESPACHO_LOGIN_ATTEMPTS_KEY = 'almacen_despacho_login_attempts';
+  var AVERIAS_LOGIN_ATTEMPTS_KEY = 'almacen_averias_login_attempts';
   var MAX_LOGIN_ATTEMPTS = 5;
   var LOCKOUT_MS = 15 * 60 * 1000;
   var USERNAME_MAX = 64;
@@ -285,6 +287,84 @@
     saveDespachoSession(user);
   }
 
+  function getAveriasLoginAttempts() {
+    if (!global.localStorage) return { count: 0, lockedUntil: 0 };
+    try {
+      return JSON.parse(localStorage.getItem(AVERIAS_LOGIN_ATTEMPTS_KEY)) || { count: 0, lockedUntil: 0 };
+    } catch (e) {
+      return { count: 0, lockedUntil: 0 };
+    }
+  }
+
+  function saveAveriasLoginAttempts(data) {
+    if (global.localStorage) {
+      localStorage.setItem(AVERIAS_LOGIN_ATTEMPTS_KEY, JSON.stringify(data));
+    }
+  }
+
+  function checkAveriasLoginAllowed() {
+    var att = getAveriasLoginAttempts();
+    if (att.lockedUntil && Date.now() < att.lockedUntil) {
+      var mins = Math.ceil((att.lockedUntil - Date.now()) / 60000);
+      return { ok: false, message: 'Demasiados intentos. Espera ' + mins + ' min.' };
+    }
+    if (att.lockedUntil && Date.now() >= att.lockedUntil) {
+      saveAveriasLoginAttempts({ count: 0, lockedUntil: 0 });
+    }
+    return { ok: true };
+  }
+
+  function recordAveriasLoginFailure() {
+    var att = getAveriasLoginAttempts();
+    att.count = (att.count || 0) + 1;
+    if (att.count >= MAX_LOGIN_ATTEMPTS) {
+      att.lockedUntil = Date.now() + LOCKOUT_MS;
+    }
+    saveAveriasLoginAttempts(att);
+  }
+
+  function clearAveriasLoginAttempts() {
+    saveAveriasLoginAttempts({ count: 0, lockedUntil: 0 });
+  }
+
+  function getAveriasSession() {
+    if (!global.localStorage) return null;
+    try {
+      var raw = localStorage.getItem(AVERIAS_SESSION_KEY);
+      if (!raw) return null;
+      var s = JSON.parse(raw);
+      if (!s || !s.expiresAt || Date.now() > s.expiresAt) {
+        localStorage.removeItem(AVERIAS_SESSION_KEY);
+        return null;
+      }
+      return s;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function saveAveriasSession(user) {
+    if (!global.localStorage || !user) return;
+    localStorage.setItem(AVERIAS_SESSION_KEY, JSON.stringify({
+      userId: user.id,
+      username: user.username,
+      name: user.name,
+      role: user.role,
+      expiresAt: Date.now() + SESSION_MS
+    }));
+  }
+
+  function clearAveriasSession() {
+    if (global.localStorage) localStorage.removeItem(AVERIAS_SESSION_KEY);
+  }
+
+  function touchAveriasSession(user) {
+    if (!user || !user.id) return;
+    var s = getAveriasSession();
+    if (!s || s.userId !== user.id) return;
+    saveAveriasSession(user);
+  }
+
   function spawnRipple(el, ev) {
     var rect = el.getBoundingClientRect();
     var size = Math.max(rect.width, rect.height) * 1.15;
@@ -416,7 +496,8 @@
 
   var REMEMBER_LOGIN_KEYS = {
     wms: { user: 'almacen_saved_login_wms', enabled: 'almacen_saved_login_wms_on' },
-    despacho: { user: 'almacen_saved_login_desp', enabled: 'almacen_saved_login_desp_on' }
+    despacho: { user: 'almacen_saved_login_desp', enabled: 'almacen_saved_login_desp_on' },
+    averias: { user: 'almacen_saved_login_averias', enabled: 'almacen_saved_login_averias_on' }
   };
 
   function getRememberLoginKeys(portal) {
@@ -493,6 +574,13 @@
     saveDespachoSession: saveDespachoSession,
     clearDespachoSession: clearDespachoSession,
     touchDespachoSession: touchDespachoSession,
+    getAveriasSession: getAveriasSession,
+    saveAveriasSession: saveAveriasSession,
+    clearAveriasSession: clearAveriasSession,
+    touchAveriasSession: touchAveriasSession,
+    checkAveriasLoginAllowed: checkAveriasLoginAllowed,
+    recordAveriasLoginFailure: recordAveriasLoginFailure,
+    clearAveriasLoginAttempts: clearAveriasLoginAttempts,
     initGestures: initGestures,
     initAuthRoleGestures: initAuthRoleGestures,
     spawnRipple: spawnRipple,
