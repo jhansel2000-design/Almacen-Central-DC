@@ -103,10 +103,42 @@
       <div class="auth-glass-card">
         <form id="authForm" class="auth-form" novalidate action="#" method="post">
           <h2 id="authTitle" class="auth-heading">Acceso ejecutivo</h2>
-          <p class="auth-subheading">Ingresa tu usuario y contraseña asignados</p>
+          <p class="auth-subheading">Identifícate para entrar al centro de mando · selección rápida por rol</p>
           <div class="auth-field">
             <label for="authUsername">Usuario</label>
             <input id="authUsername" class="auth-field-input" type="text" name="username" placeholder="Tu usuario" autocomplete="username" maxlength="64" required>
+          </div>
+          <div class="auth-role-picker" role="group" aria-label="Acceso rápido por rol">
+            <button type="button" class="auth-role-card active" data-role="administrador" aria-pressed="true">
+              <span class="role-check" aria-hidden="true">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+              </span>
+              <span class="role-icon-wrap" aria-hidden="true">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 15v2m-6 4h12a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2z"/><path d="M12 11V7a4 4 0 1 0-8 0v4h8z"/></svg>
+              </span>
+              <strong>Administrador</strong>
+              <span class="role-desc">Control total</span>
+            </button>
+            <button type="button" class="auth-role-card" data-role="supervisor" data-user="supervisor" aria-pressed="false">
+              <span class="role-check" aria-hidden="true">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+              </span>
+              <span class="role-icon-wrap" aria-hidden="true">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              </span>
+              <strong>Supervisor</strong>
+              <span class="role-desc">Importar y supervisar</span>
+            </button>
+            <button type="button" class="auth-role-card" data-role="operador" data-user="operador" aria-pressed="false">
+              <span class="role-check" aria-hidden="true">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+              </span>
+              <span class="role-icon-wrap" aria-hidden="true">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              </span>
+              <strong>Operador</strong>
+              <span class="role-desc">Solo visualización</span>
+            </button>
           </div>
           <div class="auth-field auth-field-password">
             <label for="authPassword">Contraseña</label>
@@ -114,6 +146,7 @@
             <button type="button" class="auth-pwd-toggle" id="btnTogglePassword" aria-label="Mostrar contraseña" title="Mostrar/ocultar">Ver</button>
           </div>
           <button type="submit" class="btn btn-primary" id="authSubmit">Entrar a la plataforma</button>
+          <p class="auth-hint">Credenciales demo en documentación interna (README).</p>
           <p id="authError" class="auth-error" role="alert" aria-live="polite"></p>
         </form>
       </div>
@@ -150,7 +183,7 @@
           <li><button type="button" class="nav-module-btn" data-module="facturas"><span class="nav-icon">$</span> Facturas</button></li>
           <li><button type="button" class="nav-module-btn" data-module="despacho" data-perm="despacho.use"><span class="nav-icon">🚚</span> Despacho</button></li>
           <li><button type="button" class="nav-module-btn" data-module="reportes"><span class="nav-icon">☰</span> Reportes</button></li>
-          <li><button type="button" class="nav-module-btn" data-module="administracion" data-perm="data.import"><span class="nav-icon">⚙</span> Administración</button></li>
+          <li><button type="button" class="nav-module-btn" data-module="administracion"><span class="nav-icon">⚙</span> Administración</button></li>
         </ul>
         <p class="nav-section-label nav-section-sub" id="subnavLabel" hidden>Vistas</p>
         <ul class="nav-submodule-list" id="navSubmodules" hidden></ul>
@@ -181,6 +214,7 @@
           <button type="button" class="btn-ghost" id="btnRefreshView" title="Actualizar vista (R)">↻ Actualizar</button>
           <button type="button" class="btn-ghost" id="btnShortcutsHelp" title="Atajos de teclado (?)">?</button>
           <span class="chip-live" id="liveChip">En vivo</span>
+          <span class="session-user-label" id="sessionUserLabel" title="Usuario en sesión">—</span>
           <span class="role-badge user" id="roleBadge">Usuario</span>
           <button type="button" class="btn btn-icon" id="btnMenuMobile" title="Menú" aria-label="Abrir menú">☰</button>
         </div>
@@ -313,20 +347,21 @@
             <div id="adminToolsHost"></div>
           </div>
           <div class="admin-tab-pane" id="adminPaneUsers">
-            <div id="primaryAdminHost"></div>
-            <hr class="admin-divider">
             <h4 class="admin-subtitle">Usuarios del almacén</h4>
-            <p class="admin-hint small">Registra colaboradores, supervisores u operadores. Ellos inician sesión con el usuario que tú asignes.</p>
+            <p class="admin-hint small">Registra personal con el nombre y rol que elijas (Administrador, Supervisor, Validador, etc.). El nombre aparece tal cual en la plataforma.</p>
             <form id="userForm" class="admin-form admin-staff-form">
               <input type="hidden" id="userEditId">
               <div class="admin-form-row">
                 <input id="userUsername" placeholder="Usuario de acceso" maxlength="64" required>
-                <input id="userName" placeholder="Nombre completo" maxlength="120">
+                <input id="userName" placeholder="Nombre completo (como aparecerá)" maxlength="120" required>
               </div>
               <div class="admin-form-row">
                 <select id="userRole">
-                  <option value="colaborador">Colaborador (paneles + Excel)</option>
+                  <option value="administrador">Administrador</option>
                   <option value="supervisor">Supervisor</option>
+                  <option value="validador">Validador</option>
+                  <option value="preparador">Preparador</option>
+                  <option value="colaborador">Colaborador</option>
                   <option value="operador">Operador</option>
                 </select>
                 <input id="userPassword" type="password" placeholder="Contraseña (nueva)" maxlength="128" autocomplete="new-password">

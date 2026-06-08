@@ -489,7 +489,9 @@
     });
     if (card) {
       var userInput = $('authUsername');
-      if (userInput) userInput.value = card.getAttribute('data-user') || '';
+      if (userInput && card.hasAttribute('data-user')) {
+        userInput.value = card.getAttribute('data-user') || '';
+      }
       card.classList.add('role-pop');
       setTimeout(function () { card.classList.remove('role-pop'); }, 450);
     }
@@ -551,11 +553,20 @@
     var form = $('authForm');
     if (!form) return;
 
+    bindOnce(form, 'click', function (ev) {
+      var card = ev.target.closest('.auth-role-card');
+      if (!card) return;
+      ev.preventDefault();
+      applyRolePicker(card);
+    });
+
     bindOnce(form, 'submit', function (ev) {
       ev.preventDefault();
       doLogin();
     });
 
+    var activeCard = document.querySelector('.auth-role-card.active');
+    if (activeCard) applyRolePicker(activeCard);
     initPasswordToggle();
 
     if (!overlayIsHidden()) {
@@ -603,6 +614,9 @@
       var perm = el.getAttribute('data-perm');
       el.classList.toggle('perm-denied', !global.PlatformAdmin.can(role, perm, user));
     });
+    document.querySelectorAll('.nav-module-btn[data-module="administracion"]').forEach(function (el) {
+      el.classList.toggle('perm-denied', !(userCan('admin.panel') || userCan('data.import')));
+    });
     updateRequestsBadge();
     if (global.PlatformUtils) global.PlatformUtils.applyRoleUi(state.user);
   }
@@ -624,10 +638,20 @@
   }
 
   function updateRoleBadge() {
+    if (!state.user) return;
+    var labelEl = $('sessionUserLabel');
+    if (labelEl && global.PlatformAdmin.getDisplayName) {
+      labelEl.textContent = global.PlatformAdmin.getDisplayName(state.user);
+      labelEl.title = global.PlatformAdmin.isPrimaryAdminUser(state.user)
+        ? global.PlatformAdmin.getRoleLabel(state.user)
+        : ('Usuario: ' + state.user.username);
+    }
     var badge = $('roleBadge');
-    if (!badge || !state.user) return;
-    badge.textContent = global.PlatformAdmin.ROLE_LABELS[state.user.role] || state.user.role;
-    badge.className = 'role-badge ' + state.user.role;
+    if (!badge) return;
+    badge.textContent = global.PlatformAdmin.getRoleLabel
+      ? global.PlatformAdmin.getRoleLabel(state.user)
+      : (global.PlatformAdmin.ROLE_LABELS[state.user.role] || state.user.role);
+    badge.className = 'role-badge ' + state.user.role + (global.PlatformAdmin.isPrimaryAdminUser(state.user) ? ' primary-admin' : '');
   }
 
   function setPublishedSyncSubtitle() {
@@ -2188,19 +2212,17 @@
   }
 
   function refreshAdminTables() {
-    var primaryHost = $('primaryAdminHost');
     var staffHost = $('staffUsersHost');
     if (userCan('users.manage') && global.PlatformAdminUI.renderUsersPanel) {
       global.PlatformAdminUI.renderUsersPanel(
-        primaryHost,
+        null,
         staffHost,
         loadUserForEdit,
-        deleteUserConfirm,
-        loadPrimaryAdminForEdit
+        deleteUserConfirm
       );
     }
     var areasHost = $('areasTableHost');
-    if (areasHost) {
+    if (areasHost && userCan('areas.manage')) {
       global.PlatformAdminUI.renderAreasTable(areasHost, loadAreaForEdit, deleteAreaConfirm);
     }
     var logsHost = $('logsHost');
@@ -2220,34 +2242,9 @@
     if (saveBtn) saveBtn.textContent = 'Guardar usuario';
   }
 
-  function loadPrimaryAdminForEdit(id) {
-    var user = global.PlatformAdmin.getUsers().find(function (u) { return u.id === id; });
-    if (!user || !global.PlatformAdmin.isPrimaryAdminUser(user)) return;
-    $('userEditId').value = user.id;
-    $('userUsername').value = user.username;
-    $('userUsername').disabled = true;
-    $('userName').value = user.name;
-    $('userRole').value = 'administrador';
-    $('userRole').disabled = true;
-    $('userPassword').value = '';
-    $('userPassword').placeholder = 'Nueva contraseña (opcional)';
-    var cancelBtn = $('btnCancelUserEdit');
-    if (cancelBtn) cancelBtn.hidden = false;
-    var saveBtn = $('btnSaveUser');
-    if (saveBtn) saveBtn.textContent = 'Actualizar administrador';
-    global.PlatformAdminUI.switchTab('users');
-    var formEl = $('userForm');
-    if (formEl && formEl.scrollIntoView) formEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }
-
   function loadUserForEdit(id) {
     var user = global.PlatformAdmin.getStaffUsers().find(function (u) { return u.id === id; });
-    if (!user) {
-      if (global.PlatformAdmin.isPrimaryAdminUser(global.PlatformAdmin.findUserById(id))) {
-        loadPrimaryAdminForEdit(id);
-      }
-      return;
-    }
+    if (!user) return;
     $('userEditId').value = user.id;
     $('userUsername').value = user.username;
     $('userUsername').disabled = false;
@@ -2264,6 +2261,10 @@
   }
 
   function deleteUserConfirm(id) {
+    if (!userCan('users.manage')) {
+      toastNotify('No tienes permiso para gestionar usuarios.', 'warn');
+      return;
+    }
     if (!confirm('¿Eliminar este usuario?')) return;
     var res = global.PlatformAdmin.deleteUser(id);
     if (!res.ok) {
@@ -2376,30 +2377,29 @@
     var editId = $('userEditId').value;
     var username = PC.sanitizeUsername($('userUsername').value);
     var password = $('userPassword').value;
+    var displayName = ($('userName').value || '').trim();
     if (!username && !editId) {
       alert('El usuario es obligatorio.');
       return;
     }
+    if (!displayName && !editId) {
+      alert('El nombre completo es obligatorio. Aparecerá tal cual en la plataforma.');
+      return;
+    }
     var payload = {
       username: username,
-      name: ($('userName').value || '').trim() || username,
+      name: displayName || username,
       role: $('userRole').value,
       areas: []
     };
 
     if (editId) {
       var existing = global.PlatformAdmin.findUserById(editId);
-      var patch = { name: payload.name, areas: [] };
       if (existing && global.PlatformAdmin.isPrimaryAdminUser(existing)) {
-        if (password) {
-          PC.sha256(password).then(function (hash) {
-            finishUserSave(editId, { name: payload.name, passwordHash: hash });
-          });
-        } else {
-          finishUserSave(editId, patch);
-        }
+        toastNotify('La cuenta del administrador general no se edita desde la plataforma.', 'warn');
         return;
       }
+      var patch = { name: payload.name, areas: [] };
       patch.username = payload.username;
       patch.role = payload.role;
       if (password) {

@@ -54,10 +54,20 @@
       <div class="auth-glass-card desp-auth-glass">
         <form id="despAuthForm" class="auth-form" novalidate action="#" method="post">
           <h2 id="despAuthTitle" class="auth-heading desp-auth-heading">Acceso a despacho</h2>
-          <p class="auth-subheading desp-auth-subheading">Ingresa tu usuario y contraseña asignados</p>
+          <p class="auth-subheading desp-auth-subheading">Sesión propia · preparador o validador</p>
           <div class="auth-field">
             <label for="despAuthUsername">Usuario</label>
             <input id="despAuthUsername" class="auth-field-input" type="text" name="username" placeholder="Tu usuario" autocomplete="username" maxlength="64" required>
+          </div>
+          <div class="auth-role-picker desp-auth-role-picker" role="group" aria-label="Acceso rápido por rol">
+            <button type="button" class="auth-role-card desp-auth-role-card active" data-role="preparador" data-user="preparador" aria-pressed="true">
+              <strong>Preparador</strong>
+              <span class="role-desc">Registra IDC y jaula</span>
+            </button>
+            <button type="button" class="auth-role-card desp-auth-role-card" data-role="validador" data-user="validador" aria-pressed="false">
+              <strong>Validador</strong>
+              <span class="role-desc">Valida y libera pedidos</span>
+            </button>
           </div>
           <div class="auth-field auth-field-password">
             <label for="despAuthPassword">Contraseña</label>
@@ -65,6 +75,7 @@
             <button type="button" class="auth-pwd-toggle" id="despBtnTogglePassword" aria-label="Mostrar contraseña" title="Mostrar/ocultar">Ver</button>
           </div>
           <button type="submit" class="btn btn-primary" id="despAuthSubmit">Entrar al portal de despacho</button>
+          <p class="auth-hint desp-auth-hint">Demo: preparador o operador / CASTRO01 · validador o supervisor / SUPERVISOR01</p>
           <p id="despAuthError" class="desp-auth-error" role="alert" aria-live="polite" hidden></p>
         </form>
       </div>
@@ -91,6 +102,7 @@
   </div>
 
   <script src="js/panel-core.js"></script>
+  <script src="js/platform-admin.js"></script>
   <script src="js/platform-despacho-store.js"></script>
   <script src="js/platform-lan-sync.js"></script>
   <script src="js/platform-despacho-ui.js"></script>

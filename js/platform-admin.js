@@ -29,22 +29,36 @@
     'requests.manage': 'Gestionar solicitudes de acceso'
   };
 
+  var SECONDARY_ADMIN_PERMISSIONS = [
+    'dashboard.view', 'filter.apply', 'data.import', 'export.data',
+    'ai.use', 'tv.mode', 'despacho.use', 'despacho.validate', 'logs.view'
+  ];
+
+  var PRIMARY_ONLY_PERMISSIONS = [
+    'config.save', 'users.manage', 'areas.manage', 'requests.manage', 'admin.panel'
+  ];
+
   var ROLE_PERMISSIONS = {
-    administrador: Object.keys(PERMISSIONS),
-    supervisor: ['dashboard.view', 'filter.apply', 'data.import', 'export.data', 'logs.view', 'ai.use', 'tv.mode', 'admin.panel', 'config.save', 'despacho.use', 'despacho.validate'],
+    administrador: SECONDARY_ADMIN_PERMISSIONS,
+    supervisor: ['dashboard.view', 'filter.apply', 'data.import', 'export.data', 'logs.view', 'ai.use', 'tv.mode', 'despacho.use', 'despacho.validate'],
     colaborador: ['dashboard.view', 'filter.apply', 'data.import', 'export.data', 'ai.use', 'tv.mode', 'despacho.use', 'despacho.validate', 'access.request'],
-    operador: ['dashboard.view', 'tv.mode', 'despacho.use']
+    operador: ['dashboard.view', 'tv.mode', 'despacho.use'],
+    preparador: ['dashboard.view', 'tv.mode', 'despacho.use'],
+    validador: ['dashboard.view', 'tv.mode', 'despacho.use', 'despacho.validate']
   };
 
   var ROLE_LABELS = {
     administrador: 'Administrador',
     supervisor: 'Supervisor',
     colaborador: 'Colaborador',
-    operador: 'Operador'
+    operador: 'Operador',
+    preparador: 'Preparador',
+    validador: 'Validador'
   };
 
+  // Administrador general — usuario y contraseña SOLO se cambian aquí (Cursor), no en la plataforma.
   var PRIMARY_ADMIN_USERNAME = 'janselcastro51192';
-  var ADMIN_DEFAULT_PASSWORD_HASH = '449e3a3f84a49db5dffa682fc37613d6916da3a74dfe43c071bbdb9d2113e4bf';
+  var ADMIN_DEFAULT_PASSWORD_HASH = '0f40846e3432932756e45fc04d37eadf6035ad8e5b8a3cd67ba79cb4c74f6b5b';
 
   var DEFAULT_USERS = [
     {
@@ -86,43 +100,56 @@
     return String(user.username || '').toLowerCase() === PRIMARY_ADMIN_USERNAME.toLowerCase();
   }
 
+  function syncPrimaryFromCode(user) {
+    return normalizeUser(Object.assign({}, user, {
+      role: 'administrador',
+      active: true,
+      isPrimaryAdmin: true,
+      username: PRIMARY_ADMIN_USERNAME,
+      passwordHash: ADMIN_DEFAULT_PASSWORD_HASH
+    }));
+  }
+
+  function maskLogIdentity(value) {
+    if (value == null || value === '') return value;
+    var str = String(value);
+    if (str.toLowerCase() === PRIMARY_ADMIN_USERNAME.toLowerCase()) {
+      var primary = getPrimaryAdmin();
+      return primary ? (getDisplayName(primary) || 'Administrador general') : 'Administrador general';
+    }
+    return str;
+  }
+
   function ensureUserRegistry(list) {
     var primaryKey = PRIMARY_ADMIN_USERNAME.toLowerCase();
     var staff = [];
     var primary = null;
-    var legacyAdmin = null;
 
     (list || []).forEach(function (u) {
       var un = String(u.username || '').toLowerCase();
       if (un === primaryKey) {
-        primary = normalizeUser(Object.assign({}, u, {
-          role: 'administrador',
-          active: true,
-          isPrimaryAdmin: true,
-          username: PRIMARY_ADMIN_USERNAME
-        }));
+        primary = syncPrimaryFromCode(u);
         return;
       }
       if (un === 'admin' && u.role === 'administrador') {
-        legacyAdmin = u;
+        return;
+      }
+      if (u.isPrimaryAdmin) {
         return;
       }
       var copy = Object.assign({}, u);
-      if (copy.role === 'administrador') copy.role = 'supervisor';
+      if (copy.role === 'administrador') {
+        copy.isPrimaryAdmin = false;
+      }
       staff.push(normalizeUser(copy));
     });
 
     if (!primary) {
-      primary = normalizeUser({
+      primary = syncPrimaryFromCode({
         id: 'u_primary_admin',
-        username: PRIMARY_ADMIN_USERNAME,
         name: 'Jansel Castro',
-        role: 'administrador',
-        passwordHash: legacyAdmin ? legacyAdmin.passwordHash : ADMIN_DEFAULT_PASSWORD_HASH,
         areas: [],
-        active: true,
-        extraPermissions: [],
-        isPrimaryAdmin: true
+        extraPermissions: []
       });
     }
 
@@ -140,8 +167,21 @@
       return seeded.map(function (u) { return Object.assign({}, u); });
     }
     var normalized = ensureUserRegistry(list);
-    if (JSON.stringify(normalized) !== JSON.stringify(list)) saveUsers(normalized);
+    var primary = normalized.find(isPrimaryAdminUser);
+    var mustSave = JSON.stringify(normalized) !== JSON.stringify(list);
+    if (primary && primary.passwordHash !== ADMIN_DEFAULT_PASSWORD_HASH) {
+      mustSave = true;
+      normalized = ensureUserRegistry(normalized);
+    }
+    if (mustSave) saveUsers(normalized);
     return normalized.map(function (u) { return Object.assign({}, u); });
+  }
+
+  function forceSyncPrimaryCredentials() {
+    if (!global.localStorage) return;
+    var list = parse(localStorage.getItem(KEYS.users), null);
+    var normalized = ensureUserRegistry(list && list.length ? list : DEFAULT_USERS);
+    saveUsers(normalized);
   }
 
   function getPrimaryAdmin() {
@@ -195,8 +235,8 @@
       id: uid(),
       at: new Date().toISOString(),
       action: action,
-      detail: detail || '',
-      user: username || 'sistema'
+      detail: maskLogIdentity(detail || ''),
+      user: maskLogIdentity(username || 'sistema')
     });
     if (logs.length > 200) logs = logs.slice(0, 200);
     if (global.localStorage) localStorage.setItem(KEYS.logs, JSON.stringify(logs));
@@ -207,8 +247,33 @@
     return user.extraPermissions;
   }
 
+  function canManageConfig(user) {
+    return isPrimaryAdminUser(user);
+  }
+
+  function getDisplayName(user) {
+    if (!user) return '';
+    var name = String(user.name || '').trim();
+    return name || String(user.username || '').trim();
+  }
+
+  function getRoleLabel(user) {
+    if (!user) return '';
+    if (isPrimaryAdminUser(user)) return 'Administrador general';
+    return ROLE_LABELS[user.role] || user.role;
+  }
+
   function can(role, permission, user) {
-    if (user && userExtraPermissions(user).indexOf(permission) >= 0) return true;
+    if (PRIMARY_ONLY_PERMISSIONS.indexOf(permission) >= 0) {
+      return isPrimaryAdminUser(user);
+    }
+    if (user && userExtraPermissions(user).indexOf(permission) >= 0) {
+      if (PRIMARY_ONLY_PERMISSIONS.indexOf(permission) >= 0) return isPrimaryAdminUser(user);
+      return true;
+    }
+    if (role === 'administrador' && isPrimaryAdminUser(user)) {
+      return true;
+    }
     var perms = ROLE_PERMISSIONS[role] || [];
     return perms.indexOf(permission) >= 0;
   }
@@ -219,8 +284,30 @@
   }
 
   function authenticate(username, passwordHash) {
+    var un = String(username || '').toLowerCase().trim();
+    if (un === PRIMARY_ADMIN_USERNAME.toLowerCase()) {
+      if (passwordHash !== ADMIN_DEFAULT_PASSWORD_HASH) return null;
+      var users = getUsers();
+      var primary = users.find(isPrimaryAdminUser);
+      if (!primary) {
+        primary = syncPrimaryFromCode({
+          id: 'u_primary_admin',
+          name: 'Jansel Castro',
+          areas: [],
+          extraPermissions: []
+        });
+      } else {
+        primary = syncPrimaryFromCode(primary);
+      }
+      if (!primary.active) return null;
+      var idx = users.findIndex(isPrimaryAdminUser);
+      if (idx >= 0) users[idx] = primary;
+      else users.unshift(primary);
+      saveUsers(ensureUserRegistry(users));
+      return normalizeUser(Object.assign({}, primary));
+    }
     var user = getUsers().find(function (u) {
-      return u.active && u.username.toLowerCase() === String(username).toLowerCase().trim();
+      return u.active && !isPrimaryAdminUser(u) && u.username.toLowerCase() === un;
     });
     if (!user || user.passwordHash !== passwordHash) return null;
     return normalizeUser(Object.assign({}, user));
@@ -231,11 +318,11 @@
   }
 
   function createUser(data) {
-    if (data.role === 'administrador') {
-      return { ok: false, message: 'Solo existe un administrador del sistema. Registra colaboradores u otros roles.' };
-    }
     if (String(data.username || '').toLowerCase() === PRIMARY_ADMIN_USERNAME.toLowerCase()) {
-      return { ok: false, message: 'Ese nombre está reservado para el administrador del sistema.' };
+      return { ok: false, message: 'Ese nombre está reservado para el administrador general.' };
+    }
+    if (data.role === 'administrador') {
+      data.isPrimaryAdmin = false;
     }
     var users = getUsers();
     if (users.some(function (u) { return u.username.toLowerCase() === data.username.toLowerCase(); })) {
@@ -249,7 +336,8 @@
       passwordHash: data.passwordHash,
       areas: data.areas || [],
       active: data.active !== false,
-      extraPermissions: data.extraPermissions || []
+      extraPermissions: data.extraPermissions || [],
+      isPrimaryAdmin: data.role === 'administrador' ? false : undefined
     });
     users.push(user);
     saveUsers(users);
@@ -261,19 +349,9 @@
     var idx = users.findIndex(function (u) { return u.id === id; });
     if (idx < 0) return { ok: false, message: 'Usuario no encontrado.' };
     if (isPrimaryAdminUser(users[idx])) {
-      if (patch.role && patch.role !== 'administrador') {
-        return { ok: false, message: 'No se puede cambiar el rol del administrador principal.' };
-      }
-      if (patch.username && String(patch.username).toLowerCase() !== PRIMARY_ADMIN_USERNAME.toLowerCase()) {
-        return { ok: false, message: 'No se puede cambiar el usuario del administrador principal.' };
-      }
-      patch = Object.assign({}, patch, {
-        role: 'administrador',
-        username: PRIMARY_ADMIN_USERNAME,
-        isPrimaryAdmin: true
-      });
+      return { ok: false, message: 'La cuenta del administrador general no se edita desde la plataforma.' };
     } else if (patch.role === 'administrador') {
-      return { ok: false, message: 'No se pueden crear más administradores.' };
+      patch.isPrimaryAdmin = false;
     }
     if (patch.username && users.some(function (u, i) { return i !== idx && u.username.toLowerCase() === patch.username.toLowerCase(); })) {
       return { ok: false, message: 'Nombre de usuario en uso.' };
@@ -396,10 +474,12 @@
     PERMISSIONS: PERMISSIONS,
     ROLE_PERMISSIONS: ROLE_PERMISSIONS,
     ROLE_LABELS: ROLE_LABELS,
-    PRIMARY_ADMIN_USERNAME: PRIMARY_ADMIN_USERNAME,
     getUsers: getUsers,
     getPrimaryAdmin: getPrimaryAdmin,
     getStaffUsers: getStaffUsers,
+    canManageConfig: canManageConfig,
+    getDisplayName: getDisplayName,
+    getRoleLabel: getRoleLabel,
     isPrimaryAdminUser: isPrimaryAdminUser,
     saveUsers: saveUsers,
     getAreas: getAreas,
@@ -422,6 +502,17 @@
     createArea: createArea,
     updateArea: updateArea,
     deleteArea: deleteArea,
-    uid: uid
+    uid: uid,
+    forceSyncPrimaryCredentials: forceSyncPrimaryCredentials
   };
+
+  forceSyncPrimaryCredentials();
+
+  if (typeof global.addEventListener === 'function') {
+    global.addEventListener('lan-sync', function (ev) {
+      if (ev.detail && ev.detail.store === 'users') {
+        forceSyncPrimaryCredentials();
+      }
+    });
+  }
 })(typeof window !== 'undefined' ? window : this);

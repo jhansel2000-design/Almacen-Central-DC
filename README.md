@@ -50,10 +50,15 @@ Varios dispositivos en el mismo WiFi comparten datos en tiempo real.
 
 | Rol | Usuario | Contraseña |
 |-----|---------|------------|
-| Administrador (único) | `janselcastro51192` | `JANSELCASTRO01` |
-| Colaborador (ejemplo si lo registras) | *(el que tú crees)* | *(la que asignes)* |
-| Preparador despacho | `preparador` | `CASTRO01` |
-| Validador despacho | `validador` | `SUPERVISOR01` |
+| Administrador general | *(configurado en código — no visible en la plataforma)* | *(configurado en código)* |
+| Personal del almacén | *(lo creas en Configuración → Usuarios)* | *(la que asignes)* |
+| Preparador despacho (demo) | `preparador` | `CASTRO01` |
+| Validador despacho (demo) | `validador` | `SUPERVISOR01` |
+
+**Roles en el WMS**
+
+- **Administrador general**: acceso total; usuario y contraseña solo se cambian en `js/platform-admin.js` (Cursor), nunca desde la plataforma.
+- **Administrador, supervisor, validador, etc.**: los registras tú en Usuarios con nombre y rol visibles.
 
 - Sesión: 12 h en el navegador.
 - Bloqueo tras 5 intentos fallidos (15 min).

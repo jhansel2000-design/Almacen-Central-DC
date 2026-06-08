@@ -77,7 +77,9 @@
     });
     if (card) {
       var userInput = $('despAuthUsername');
-      if (userInput) userInput.value = card.getAttribute('data-user') || '';
+      if (userInput && card.hasAttribute('data-user')) {
+        userInput.value = card.getAttribute('data-user') || '';
+      }
     }
   }
 
@@ -149,11 +151,20 @@
     var form = $('despAuthForm');
     if (!form) return;
 
+    PC.bindOnce(form, 'click', function (ev) {
+      var card = ev.target.closest('.desp-auth-role-card');
+      if (!card) return;
+      ev.preventDefault();
+      applyRolePicker(card);
+    });
+
     PC.bindOnce(form, 'submit', function (ev) {
       ev.preventDefault();
       doLogin();
     });
 
+    var activeCard = document.querySelector('.desp-auth-role-card.active');
+    if (activeCard) applyRolePicker(activeCard);
     initPasswordToggle();
   }
 
@@ -180,9 +191,18 @@
   }
 
   function updateRoleBadge() {
+    if (!state.user) return;
+    var userEl = $('despUserName');
+    if (userEl) {
+      userEl.textContent = Auth.getDisplayName
+        ? Auth.getDisplayName(state.user)
+        : (state.user.name || state.user.username);
+    }
     var badge = $('despRoleBadge');
-    if (!badge || !state.user) return;
-    badge.textContent = Auth.ROLE_LABELS[state.user.role] || state.user.role;
+    if (!badge) return;
+    badge.textContent = Auth.getRoleLabel
+      ? Auth.getRoleLabel(state.user)
+      : (Auth.ROLE_LABELS[state.user.role] || state.user.role);
     badge.className = 'role-badge desp-role-' + state.user.role;
   }
 
@@ -219,8 +239,6 @@
     state.view = Auth.canValidate(user.role) ? 'combinado' : 'preparador';
     setAuthVisible(false);
     updateRoleBadge();
-    var userEl = $('despUserName');
-    if (userEl) userEl.textContent = user.name || user.username;
     renderDespacho();
     bindSessionTouch();
     if (PC.initGestures) PC.initGestures($('despApp'));

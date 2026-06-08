@@ -766,11 +766,15 @@ button:focus-visible,.btn:focus-visible,.auth-role-card:focus-visible,.admin-tab
 .status-msg.ok{ background:rgba(61,211,154,0.12); color:var(--success); border:1px solid rgba(61,211,154,0.3); }
 .status-msg.err{ background:rgba(255,107,122,0.12); color:var(--danger); border:1px solid rgba(255,107,122,0.3); }
 
+.session-user-label{ font-size:0.82rem; font-weight:600; color:var(--text); max-width:12rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .role-badge{ padding:0.35rem 0.75rem; border-radius:999px; font-size:0.78rem; font-weight:700; }
 .role-badge.administrador,.role-badge.admin{ background:rgba(94,179,255,0.15); color:var(--accent); }
 .role-badge.supervisor{ background:rgba(255,209,102,0.15); color:var(--warning); }
 .role-badge.operador,.role-badge.user{ background:rgba(61,211,154,0.12); color:var(--success); }
 .role-badge.colaborador{ background:rgba(99,102,241,0.14); color:#a5b4fc; }
+.role-badge.preparador{ background:rgba(255,152,0,0.14); color:#ffb74d; }
+.role-badge.validador{ background:rgba(156,39,176,0.14); color:#ce93d8; }
+.role-badge.primary-admin{ background:rgba(201,169,98,0.18); color:#e8d5a3; border:1px solid rgba(201,169,98,0.35); }
 .admin-tab-badge{
   display:inline-flex; min-width:1.1rem; height:1.1rem; margin-left:0.35rem; padding:0 0.3rem;
   border-radius:999px; background:var(--danger); color:#fff; font-size:0.65rem; font-weight:800;

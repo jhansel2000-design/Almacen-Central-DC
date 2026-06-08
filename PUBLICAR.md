@@ -1,8 +1,31 @@
 # Cómo está publicado Almacén Central DC
 
-## 1. Código en GitHub (ya hecho)
+## URL pública (GitHub Pages)
 
-https://github.com/jhansel2000-design/mi-web-DC
+**https://jhansel2000-design.github.io/Almacen-Central-DC/**
+
+La URL depende del **nombre del repositorio** en GitHub (`Almacen-Central-DC`).
+
+### Si aún ves `mi-web-DC` en la URL — renombrar en GitHub (1 minuto)
+
+1. Abre: https://github.com/jhansel2000-design/mi-web-DC/settings  
+   (o ejecuta `RENOMBRAR-URL-GITHUB.bat` en esta carpeta)
+2. Arriba, en **Repository name**, escribe: **`Almacen-Central-DC`**
+3. Pulsa **Rename**
+4. En PowerShell, en esta carpeta:
+
+```powershell
+git remote set-url origin https://github.com/jhansel2000-design/Almacen-Central-DC.git
+git push origin main
+```
+
+La web quedará en la nueva URL en **2–5 minutos**. La antigua (`…/mi-web-DC/`) redirige un tiempo.
+
+---
+
+## 1. Código en GitHub
+
+https://github.com/jhansel2000-design/Almacen-Central-DC
 
 ---
 
@@ -10,7 +33,7 @@ https://github.com/jhansel2000-design/mi-web-DC
 
 **URL:**
 
-https://jhansel2000-design.github.io/mi-web-DC/
+https://jhansel2000-design.github.io/Almacen-Central-DC/
 
 La primera publicación tarda **2–5 minutos** después de cada cambio en `main`.
 

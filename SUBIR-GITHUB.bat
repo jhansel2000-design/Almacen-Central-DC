@@ -6,14 +6,14 @@ echo.
 echo ========================================
 echo   SUBIR TODO A GITHUB
 echo   Cuenta: jhansel2000-design
-echo   Repo:   mi-web-DC
+echo   Repo:   Almacen-Central-DC
 echo ========================================
 echo.
 echo Tu PC esta usando OTRA cuenta (luisjoserodriguezcorripio-creator).
 echo Debes borrarla primero (ver instrucciones si falla).
 echo.
 
-git remote set-url origin https://github.com/jhansel2000-design/mi-web-DC.git
+git remote set-url origin https://github.com/jhansel2000-design/Almacen-Central-DC.git
 
 echo Subiendo archivos...
 git push -u origin main --force
@@ -43,6 +43,7 @@ echo ========================================
 echo   LISTO - Todo subido a GitHub
 echo ========================================
 echo.
-echo Abre: https://github.com/jhansel2000-design/mi-web-DC
+echo Abre: https://github.com/jhansel2000-design/Almacen-Central-DC
+echo Web:  https://jhansel2000-design.github.io/Almacen-Central-DC/
 echo.
 pause

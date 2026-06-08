@@ -1,5 +1,6 @@
 /**
- * Autenticación independiente — Portal Despacho (sesión separada del WMS)
+ * Autenticación — Portal Despacho (sesión separada del WMS)
+ * Usuarios registrados en Administración + cuentas demo legacy
  */
 (function (global) {
   'use strict';
@@ -9,7 +10,7 @@
     validador: 'Validador'
   };
 
-  var USERS = [
+  var LEGACY_USERS = [
     {
       id: 'd1',
       username: 'preparador',
@@ -28,10 +29,6 @@
     }
   ];
 
-  function getUsers() {
-    return USERS.slice();
-  }
-
   var USER_ALIASES = {
     operador: 'preparador',
     supervisor: 'validador'
@@ -42,9 +39,56 @@
     return USER_ALIASES[key] || key;
   }
 
-  function authenticate(username, passwordHash) {
+  function getDisplayName(user) {
+    if (!user) return '';
+    var name = String(user.name || '').trim();
+    return name || String(user.username || '').trim();
+  }
+
+  function getRoleLabel(user) {
+    if (!user) return '';
+    if (global.PlatformAdmin && global.PlatformAdmin.getRoleLabel) {
+      return global.PlatformAdmin.getRoleLabel({
+        role: user.registeredRole || user.role,
+        username: user.username,
+        isPrimaryAdmin: user.isPrimaryAdmin
+      });
+    }
+    return ROLE_LABELS[user.role] || user.role;
+  }
+
+  function mapWmsToDespachoRole(wmsUser) {
+    if (!global.PlatformAdmin) return null;
+    if (!global.PlatformAdmin.can(wmsUser.role, 'despacho.use', wmsUser)) return null;
+    if (wmsUser.role === 'validador') return 'validador';
+    if (wmsUser.role === 'preparador') return 'preparador';
+    if (global.PlatformAdmin.can(wmsUser.role, 'despacho.validate', wmsUser)) return 'validador';
+    return 'preparador';
+  }
+
+  function sessionFromWmsUser(wmsUser) {
+    var despRole = mapWmsToDespachoRole(wmsUser);
+    if (!despRole) return null;
+    return {
+      id: wmsUser.id,
+      username: wmsUser.username,
+      name: getDisplayName(wmsUser),
+      role: despRole,
+      registeredRole: wmsUser.role,
+      isPrimaryAdmin: wmsUser.isPrimaryAdmin
+    };
+  }
+
+  function authenticateWms(username, passwordHash) {
+    if (!global.PlatformAdmin) return null;
+    var wmsUser = global.PlatformAdmin.authenticate(username, passwordHash);
+    if (!wmsUser) return null;
+    return sessionFromWmsUser(wmsUser);
+  }
+
+  function authenticateLegacy(username, passwordHash) {
     var resolved = resolveUsername(username);
-    var user = USERS.find(function (u) {
+    var user = LEGACY_USERS.find(function (u) {
       return u.active && u.username.toLowerCase() === resolved;
     });
     if (!user || user.passwordHash !== passwordHash) return null;
@@ -56,8 +100,19 @@
     };
   }
 
+  function authenticate(username, passwordHash) {
+    return authenticateWms(username, passwordHash) || authenticateLegacy(username, passwordHash);
+  }
+
   function getUserById(id) {
-    var user = USERS.find(function (u) { return u.id === id && u.active; });
+    if (global.PlatformAdmin) {
+      var wmsUser = global.PlatformAdmin.findUserById(id);
+      if (wmsUser) {
+        var session = sessionFromWmsUser(wmsUser);
+        if (session) return session;
+      }
+    }
+    var user = LEGACY_USERS.find(function (u) { return u.id === id && u.active; });
     if (!user) return null;
     return {
       id: user.id,
@@ -71,9 +126,15 @@
     return role === 'validador';
   }
 
+  function getUsers() {
+    return LEGACY_USERS.slice();
+  }
+
   global.PlatformDespachoAuth = {
     ROLE_LABELS: ROLE_LABELS,
     getUsers: getUsers,
+    getDisplayName: getDisplayName,
+    getRoleLabel: getRoleLabel,
     authenticate: authenticate,
     getUserById: getUserById,
     canValidate: canValidate

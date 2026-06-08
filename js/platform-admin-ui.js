@@ -25,25 +25,8 @@
     return '<span class="admin-status-tag ' + (ok ? 'ok' : 'err') + '">' + esc(text) + '</span>';
   }
 
-  function renderUsersPanel(primaryHost, staffHost, onEdit, onDelete, onEditPrimary) {
-    var primary = global.PlatformAdmin.getPrimaryAdmin();
-    if (primaryHost && primary) {
-      primaryHost.innerHTML =
-        '<section class="admin-primary-card">' +
-        '<div class="admin-primary-card-head">' +
-        '<span class="admin-primary-badge">Administrador del sistema</span>' +
-        statusTag(true, 'Único admin') +
-        '</div>' +
-        '<h4 class="admin-primary-name">' + esc(primary.name || primary.username) + '</h4>' +
-        '<p class="admin-hint small">Usuario: <strong>' + esc(primary.username) + '</strong> · Acceso total · Separado del resto del personal</p>' +
-        '<div class="admin-btn-row">' +
-        '<button type="button" class="btn btn-sm" id="btnEditPrimaryAdmin">Cambiar nombre / contraseña</button>' +
-        '</div></section>';
-      var editBtn = primaryHost.querySelector('#btnEditPrimaryAdmin');
-      if (editBtn && onEditPrimary) {
-        editBtn.addEventListener('click', function () { onEditPrimary(primary.id); });
-      }
-    }
+  function renderUsersPanel(primaryHost, staffHost, onEdit, onDelete) {
+    if (primaryHost) primaryHost.innerHTML = '';
 
     if (!staffHost) return;
     var users = global.PlatformAdmin.getStaffUsers();
@@ -54,8 +37,11 @@
     var html = '<div class="admin-table-wrap"><table class="data-table admin-staff-table"><thead><tr>' +
       '<th>Usuario</th><th>Nombre</th><th>Rol</th><th>Estado</th><th></th></tr></thead><tbody>';
     users.forEach(function (u) {
-      html += '<tr><td>' + esc(u.username) + '</td><td>' + esc(u.name) + '</td><td>' +
-        esc(global.PlatformAdmin.ROLE_LABELS[u.role] || u.role) + '</td><td>' +
+      var roleLabel = global.PlatformAdmin.getRoleLabel
+        ? global.PlatformAdmin.getRoleLabel(u)
+        : (global.PlatformAdmin.ROLE_LABELS[u.role] || u.role);
+      html += '<tr><td>' + esc(u.username) + '</td><td>' + esc(global.PlatformAdmin.getDisplayName ? global.PlatformAdmin.getDisplayName(u) : (u.name || u.username)) + '</td><td>' +
+        esc(roleLabel) + '</td><td>' +
         (u.active ? 'Activo' : 'Inactivo') + '</td><td class="admin-actions">' +
         '<button type="button" class="btn btn-sm" data-edit="' + esc(u.id) + '">Editar</button> ' +
         '<button type="button" class="btn btn-sm" data-del="' + esc(u.id) + '">Eliminar</button></td></tr>';
@@ -71,7 +57,7 @@
   }
 
   function renderUsersTable(container, onEdit, onDelete) {
-    renderUsersPanel(null, container, onEdit, onDelete, null);
+    renderUsersPanel(null, container, onEdit, onDelete);
   }
 
   function renderAreasTable(container, onEdit, onDelete) {
