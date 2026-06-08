@@ -1,0 +1,88 @@
+/**
+ * Usuarios publicados en la web (GitHub Pages) — data/web-users.json
+ * Permite que el personal entre desde jhansel2000-design.github.io
+ */
+(function (global) {
+  'use strict';
+
+  var WEB_USERS_URL = 'data/web-users.json';
+  var readyPromise = null;
+
+  function isPublicWeb() {
+    if (global.PlatformPerf && global.PlatformPerf.isPublicWeb) {
+      return global.PlatformPerf.isPublicWeb();
+    }
+    var h = global.location && global.location.hostname;
+    return !!(h && (h.indexOf('github.io') !== -1 || h.indexOf('githubusercontent.com') !== -1));
+  }
+
+  function fetchWebUsersPayload() {
+    var url = WEB_USERS_URL + '?v=' + encodeURIComponent(String(Date.now()));
+    return fetch(url, { cache: 'no-store' }).then(function (res) {
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      return res.json();
+    });
+  }
+
+  function importFromWeb() {
+    if (!global.PlatformAdmin || !global.PlatformAdmin.importWebUsers) {
+      return Promise.resolve({ ok: false, reason: 'no-admin' });
+    }
+    return fetchWebUsersPayload().then(function (payload) {
+      var result = global.PlatformAdmin.importWebUsers(payload);
+      return { ok: true, count: result.count, updatedAt: result.updatedAt };
+    }).catch(function (err) {
+      return { ok: false, reason: err && err.message ? err.message : 'fetch-failed' };
+    });
+  }
+
+  function ready() {
+    if (!readyPromise) {
+      readyPromise = importFromWeb().then(function (result) {
+        if (result.ok && result.count > 0 && global.PlatformToast) {
+          global.PlatformToast.info('Usuarios de la web cargados (' + result.count + ').', 3500);
+        }
+        return result;
+      });
+    }
+    return readyPromise;
+  }
+
+  function publishToDisk() {
+    if (!global.PlatformLanSync || !global.PlatformLanSync.isEnabled()) {
+      return Promise.resolve({ ok: false, message: 'Activa el servidor local (serve-dashboard.ps1).' });
+    }
+    return fetch('/api/publish-web-users', { method: 'POST' }).then(function (res) {
+      return res.json().catch(function () { return {}; }).then(function (body) {
+        if (!res.ok || !body.ok) {
+          throw new Error((body && body.error) || ('HTTP ' + res.status));
+        }
+        return body;
+      });
+    });
+  }
+
+  function downloadWebUsersExport() {
+    if (!global.PlatformAdmin || !global.PlatformAdmin.exportStaffForWeb) return;
+    var payload = {
+      version: 1,
+      updatedAt: new Date().toISOString(),
+      users: global.PlatformAdmin.exportStaffForWeb()
+    };
+    var blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'web-users.json';
+    a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 500);
+  }
+
+  global.PlatformWebUsers = {
+    isPublicWeb: isPublicWeb,
+    ready: ready,
+    refresh: importFromWeb,
+    publishToDisk: publishToDisk,
+    downloadWebUsersExport: downloadWebUsersExport,
+    WEB_USERS_URL: WEB_USERS_URL
+  };
+})(typeof window !== 'undefined' ? window : this);

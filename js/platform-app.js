@@ -2405,6 +2405,10 @@
     }
 
     bindOnce($('btnCancelUserEdit'), 'click', resetStaffUserForm);
+    bindOnce($('btnPublishWebUsers'), 'click', publishWebUsersFromAdmin);
+    bindOnce($('btnDownloadWebUsers'), 'click', function () {
+      if (global.PlatformWebUsers) global.PlatformWebUsers.downloadWebUsersExport();
+    });
 
     bindOnce($('btnSaveConfig'), 'click', saveConfigFromUi);
     bindOnce($('btnSaveOpenai'), 'click', saveOpenaiFromUi);
@@ -2492,6 +2496,7 @@
     resetStaffUserForm();
     refreshAdminTables();
     toastNotify('Usuario registrado correctamente.', 'ok');
+    promptPublishWebUsersIfNeeded();
   }
 
   function finishUserSave(editId, patch) {
@@ -2508,6 +2513,45 @@
     resetStaffUserForm();
     refreshAdminTables();
     toastNotify('Usuario actualizado.', 'ok');
+    promptPublishWebUsersIfNeeded();
+  }
+
+  function promptPublishWebUsersIfNeeded() {
+    if (!userCan('users.manage')) return;
+    toastNotify('Recuerda: ejecuta .\\scripts\\publicar-usuarios-web.ps1 para que entren desde la web pública.', 'info');
+  }
+
+  function publishWebUsersFromAdmin() {
+    if (!userCan('users.manage')) {
+      toastNotify('No tienes permiso para publicar usuarios.', 'warn');
+      return;
+    }
+    if (!global.PlatformWebUsers) {
+      toastNotify('Módulo web-users no cargado.', 'warn');
+      return;
+    }
+    var staffCount = global.PlatformAdmin.getStaffUsers().length;
+    if (!staffCount) {
+      alert('No hay personal registrado para publicar.');
+      return;
+    }
+    global.PlatformWebUsers.publishToDisk().then(function (body) {
+      var msg = 'Usuarios exportados (' + (body.count || staffCount) + ').\n\n' +
+        'Ahora ejecuta en PowerShell:\n\n' +
+        '  .\\scripts\\publicar-usuarios-web.ps1\n\n' +
+        'En 2-5 minutos podrán entrar desde:\n' +
+        'https://jhansel2000-design.github.io/Almacen-Central-DC/';
+      alert(msg);
+      toastNotify('Export listo. Ejecuta publicar-usuarios-web.ps1', 'ok');
+    }).catch(function () {
+      global.PlatformWebUsers.downloadWebUsersExport();
+      alert(
+        'Servidor local no detectado.\n\n' +
+        '1. Se descargó web-users.json\n' +
+        '2. Colócalo en la carpeta data/ del proyecto\n' +
+        '3. Ejecuta: .\\scripts\\publicar-usuarios-web.ps1'
+      );
+    });
   }
 
   function saveAreaFromForm() {
@@ -3040,14 +3084,21 @@
 
   function scheduleBoot() {
     function run() {
-      try {
-        boot();
-      } catch (err) {
-        console.error('Error al iniciar:', err);
-        if (global.PanelCore) {
-          PC = global.PanelCore;
-          setAuthVisible(true);
+      var start = function () {
+        try {
+          boot();
+        } catch (err) {
+          console.error('Error al iniciar:', err);
+          if (global.PanelCore) {
+            PC = global.PanelCore;
+            setAuthVisible(true);
+          }
         }
+      };
+      if (global.PlatformWebUsers && global.PlatformWebUsers.ready) {
+        global.PlatformWebUsers.ready().then(start).catch(start);
+      } else {
+        start();
       }
     }
     if (document.readyState === 'loading') {

@@ -286,7 +286,13 @@ else ok('TV dashboard: slides=' + g.PlatformTvDashboard.TV_SLIDES.join(','));
   if (!merged.some(function (u) { return u.username === 'remoto1'; })) fail('mergeUserRegistries dropped remote staff user');
   PA.deleteUser(created.user.id);
   PA.deleteUser(merged.find(function (u) { return u.username === 'remoto1'; }).id);
-  ok('Staff users: createUser + authenticate + LAN merge');
+  var webImport = PA.importWebUsers({
+    updatedAt: new Date().toISOString(),
+    users: [{ id: 'u_web_only', username: 'webuser1', name: 'Web User', role: 'operador', passwordHash: hash, active: true, areas: [], extraPermissions: [] }]
+  });
+  if (!webImport.count) fail('importWebUsers failed');
+  if (!PA.authenticate('webuser1', hash)) fail('authenticate after importWebUsers failed');
+  ok('Staff users: createUser + authenticate + LAN merge + web import');
 })();
 
 // 6. Admin diagnostics — no missing required globals for Linea

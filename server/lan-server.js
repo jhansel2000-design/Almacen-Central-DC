@@ -15,6 +15,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const { URL } = require('url');
+const webUsersExport = require('../scripts/export-web-users.js');
 
 const args = process.argv.slice(2);
 function argValue(flag, fallback) {
@@ -117,6 +118,13 @@ function writeStore(name, data) {
   if (!fp) throw new Error('Store desconocido: ' + name);
   const json = JSON.stringify(data, null, 2);
   fs.writeFileSync(fp, json, 'utf8');
+  if (name === 'users' && Array.isArray(data)) {
+    try {
+      webUsersExport.writeWebUsersFile(ROOT, data);
+    } catch (e) {
+      console.warn('[LAN] No se pudo exportar web-users.json:', e.message);
+    }
+  }
   const stat = fs.statSync(fp);
   return { mtime: stat.mtimeMs, size: stat.size };
 }
@@ -231,6 +239,18 @@ function handleApi(req, res, url) {
       return sendJson(res, 200, { ok: true, store: name, mtime: meta.mtime });
     }).catch(function (e) {
       return sendJson(res, 400, { ok: false, error: e.message });
+    });
+  }
+
+  if (req.method === 'POST' && p === '/api/publish-web-users') {
+    const row = readStore('users');
+    const users = row && row.data ? row.data : webUsersExport.readUsersFile(ROOT);
+    const exported = webUsersExport.writeWebUsersFile(ROOT, users);
+    return sendJson(res, 200, {
+      ok: true,
+      count: exported.payload.users.length,
+      updatedAt: exported.payload.updatedAt,
+      file: 'data/web-users.json'
     });
   }
 

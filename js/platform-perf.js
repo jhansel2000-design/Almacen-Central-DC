@@ -154,6 +154,8 @@
     shouldUsePerfLite: shouldUsePerfLite,
     shouldUsePosterOnly: shouldUsePosterOnly,
     shouldLoadAuthVideo: shouldLoadAuthVideo,
+    isPublicWeb: isPublicWeb,
+    isLanHost: isLanHost,
     applyPerfLite: applyPerfLite,
     primeAuthVideoElement: primeAuthVideoElement,
     lazyLoadAuthVideo: lazyLoadAuthVideo,

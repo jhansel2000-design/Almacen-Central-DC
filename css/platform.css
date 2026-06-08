@@ -210,6 +210,18 @@ html[data-theme="light"] .auth-field-input::placeholder{ color:#5a6d82; }
 .auth-heading{ margin:0 0 0.5rem; color:var(--text); }
 .auth-subheading{ margin:0 0 1rem; color:var(--muted); font-size:0.9rem; }
 .auth-hint{ margin:0 0 0.75rem; font-size:0.78rem; color:var(--muted); }
+.admin-web-users-bar{
+  margin:0.85rem 0 1rem;
+  padding:0.85rem 1rem;
+  border-radius:12px;
+  border:1px solid rgba(94,179,255,0.22);
+  background:rgba(94,179,255,0.06);
+  display:flex;
+  flex-wrap:wrap;
+  gap:0.55rem;
+  align-items:center;
+}
+.admin-web-users-bar .admin-hint{ margin:0 0 0.35rem; flex:1 1 100%; }
 .auth-role-picker{ display:grid; grid-template-columns:repeat(3,1fr); gap:0.65rem; margin-bottom:0.65rem; position:relative; z-index:3; }
 @media (max-width:520px){ .auth-role-picker{ grid-template-columns:1fr; } }
 .auth-role-card{

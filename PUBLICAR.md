@@ -41,9 +41,24 @@ En el repo: **Settings → Pages** → debe decir *GitHub Actions*.
 
 ### Qué funciona en la web pública
 
-- Login demo, dashboards, importar Excel, despacho
-- Datos en **tu navegador** (localStorage)
+- Login, dashboards, importar Excel, despacho
+- **Personal registrado** (después de publicar usuarios — ver abajo)
 - Modo TV, gráficos (con internet para Chart.js)
+
+### Publicar usuarios para que entren desde la web
+
+1. Crea el personal en **Administración → Usuarios** (con `serve-dashboard.ps1` activo).
+2. Ejecuta en PowerShell:
+
+```powershell
+.\scripts\publicar-usuarios-web.ps1
+```
+
+3. Espera **2–5 minutos** y el personal entra en:
+
+https://jhansel2000-design.github.io/Almacen-Central-DC/
+
+También puedes usar el botón **「Publicar usuarios en la web」** en Administración → Usuarios (exporta y te indica el script).
 
 ### Qué NO funciona en GitHub Pages
 

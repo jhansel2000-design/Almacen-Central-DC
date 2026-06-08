@@ -18,6 +18,7 @@ node_modules/
 
 # Datos de runtime (servidor LAN — no subir a GitHub)
 data/*.json
+!data/web-users.json
 !data/.gitkeep
 
 # Archivos generados en tu PC (IP personal, links locales)

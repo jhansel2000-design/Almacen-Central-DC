@@ -225,6 +225,42 @@
     return getStaffUsers();
   }
 
+  function exportStaffForWeb() {
+    return getStaffUsers().map(function (u) {
+      return {
+        id: u.id,
+        username: u.username,
+        name: u.name,
+        role: u.role,
+        passwordHash: u.passwordHash,
+        areas: u.areas || [],
+        active: u.active !== false,
+        extraPermissions: u.extraPermissions || []
+      };
+    });
+  }
+
+  function importWebUsers(payload) {
+    var remote = [];
+    var updatedAt = '';
+    if (Array.isArray(payload)) {
+      remote = payload;
+    } else if (payload && Array.isArray(payload.users)) {
+      remote = payload.users;
+      updatedAt = String(payload.updatedAt || '');
+    }
+    if (!remote.length) {
+      return { count: 0, updatedAt: updatedAt };
+    }
+    var local = getUsers();
+    var merged = mergeUserRegistries(local, remote);
+    saveUsers(merged);
+    if (updatedAt && global.localStorage) {
+      localStorage.setItem(KEYS.users + '_web', updatedAt);
+    }
+    return { count: remote.length, updatedAt: updatedAt, total: merged.length };
+  }
+
   function mergeUserRegistries(localList, remoteList) {
     var map = Object.create(null);
     (Array.isArray(remoteList) ? remoteList : []).forEach(function (u) {
@@ -543,6 +579,8 @@
     isPrimaryLoginName: isPrimaryLoginName,
     saveUsers: saveUsers,
     mergeUserRegistries: mergeUserRegistries,
+    exportStaffForWeb: exportStaffForWeb,
+    importWebUsers: importWebUsers,
     getAreas: getAreas,
     saveAreas: saveAreas,
     getLogs: getLogs,

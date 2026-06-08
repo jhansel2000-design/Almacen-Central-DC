@@ -317,22 +317,30 @@
   }
 
   function init() {
-    initTheme();
-    initAuth();
-    PC.bindOnce($('despBtnLogout'), 'click', logout);
-    PC.bindOnce($('despBtnRefresh'), 'click', renderDespacho);
+    var start = function () {
+      initTheme();
+      initAuth();
+      PC.bindOnce($('despBtnLogout'), 'click', logout);
+      PC.bindOnce($('despBtnRefresh'), 'click', renderDespacho);
 
-    document.addEventListener('despacho-updated', function () {
-      if (state.user) renderDespacho();
-    });
+      document.addEventListener('despacho-updated', function () {
+        if (state.user) renderDespacho();
+      });
 
-    document.addEventListener('lan-sync', function (ev) {
-      if (!state.user) return;
-      if (!ev.detail || ev.detail.store === 'despacho') renderDespacho();
-    });
+      document.addEventListener('lan-sync', function (ev) {
+        if (!state.user) return;
+        if (!ev.detail || ev.detail.store === 'despacho') renderDespacho();
+      });
 
-    if (!tryRestoreSession()) {
-      setAuthVisible(true);
+      if (!tryRestoreSession()) {
+        setAuthVisible(true);
+      }
+    };
+
+    if (global.PlatformWebUsers && global.PlatformWebUsers.ready) {
+      global.PlatformWebUsers.ready().then(start).catch(start);
+    } else {
+      start();
     }
   }
 
