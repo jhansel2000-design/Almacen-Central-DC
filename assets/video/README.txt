@@ -5,7 +5,8 @@ Sitio: Almacén Central
 
 Video principal (pantalla de inicio de sesión):
 
-  login-operation-full.mp4 — operación en almacén (sin camiones de carga)
+  login-operation-lite.mp4 — bucle corto (~22 s, ~2.5 MB) para login web
+  login-operation-full.mp4 — montaje completo (~118 s, ~20 MB) solo LAN local
   Secuencia: pasillos/racks → montacargas (3 tomas) → inspección de inventario
 
   login-operation-poster.jpg — vista previa
@@ -21,6 +22,11 @@ Clips del montaje (Mixkit — almacén / montacargas / racks):
 No incluir en el montaje (camión de carga / muelle):
 
   clip-loading.mp4, clip-walk.mp4
+
+Regenerar login-operation-lite.mp4 (ffmpeg en PATH):
+
+  cd assets/video
+  ffmpeg -y -i login-operation-full.mp4 -t 22 -an -vf "scale=1280:-2" -c:v libx264 -preset medium -crf 27 -movflags +faststart -pix_fmt yuv420p -r 24 login-operation-lite.mp4
 
 Regenerar login-operation-full.mp4 (ffmpeg en PATH):
 

@@ -8,9 +8,8 @@
 
 .auth-video {
   object-position: center 42%;
-  transform: scale(1.03);
-  filter: saturate(1.14) contrast(1.1) brightness(0.9);
-  will-change: auto;
+  transform: translateZ(0);
+  backface-visibility: hidden;
 }
 
 .auth-video-wrap.is-buffering .auth-video {
@@ -59,8 +58,8 @@
   border: 1px solid rgba(201, 169, 98, 0.22);
   background:
     linear-gradient(155deg, rgba(14, 22, 38, 0.94) 0%, rgba(8, 14, 28, 0.92) 55%, rgba(6, 12, 24, 0.96) 100%);
-  backdrop-filter: blur(24px) saturate(1.4);
-  -webkit-backdrop-filter: blur(24px) saturate(1.4);
+  backdrop-filter: blur(12px) saturate(1.2);
+  -webkit-backdrop-filter: blur(12px) saturate(1.2);
   box-shadow:
     0 32px 80px rgba(0, 0, 0, 0.55),
     0 0 0 1px rgba(255, 255, 255, 0.06) inset,
@@ -255,8 +254,8 @@
   border-radius: 24px;
   border: 1px solid rgba(255, 255, 255, 0.14);
   background: rgba(8, 14, 26, 0.72);
-  backdrop-filter: blur(22px) saturate(1.35);
-  -webkit-backdrop-filter: blur(22px) saturate(1.35);
+  backdrop-filter: blur(12px) saturate(1.15);
+  -webkit-backdrop-filter: blur(12px) saturate(1.15);
   box-shadow:
     0 28px 80px rgba(0, 0, 0, 0.45),
     inset 0 1px 0 rgba(255, 255, 255, 0.1);
@@ -290,7 +289,7 @@ html[data-theme="light"] .auth-video-scrim {
 }
 
 html[data-theme="light"] .auth-video {
-  filter: saturate(1.05) contrast(1.02) brightness(1.02);
+  /* sin filtros GPU */
 }
 
 html[data-theme="light"] .auth-glass-card {

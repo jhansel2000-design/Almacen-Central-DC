@@ -258,6 +258,12 @@
 
   function authVideoShouldRun() {
     if (overlayIsHidden()) return false;
+    if (global.document && global.document.documentElement.classList.contains('perf-lite')) {
+      return false;
+    }
+    if (global.PlatformPerf && global.PlatformPerf.shouldUsePerfLite && global.PlatformPerf.shouldUsePerfLite()) {
+      return false;
+    }
     if (global.matchMedia && global.matchMedia('(prefers-reduced-motion: reduce)').matches) {
       return false;
     }
@@ -278,6 +284,10 @@
   function primeAuthVideo(video) {
     if (!video || video.dataset.authPrimed === '1') return;
     video.dataset.authPrimed = '1';
+    if (global.PlatformPerf && global.PlatformPerf.primeAuthVideoElement) {
+      global.PlatformPerf.primeAuthVideoElement(video);
+      if (!authVideoShouldRun()) return;
+    }
     video.muted = true;
     video.defaultMuted = true;
     video.setAttribute('muted', '');
@@ -314,14 +324,6 @@
       }, delayMs || 180);
     }
 
-    video.addEventListener('timeupdate', function () {
-      if (!authVideoShouldRun() || !video.loop) return;
-      var d = video.duration;
-      if (!d || !isFinite(d)) return;
-      if (video.currentTime >= d - 0.2) {
-        try { video.currentTime = 0.01; } catch (e) { /* ignore */ }
-      }
-    });
     video.addEventListener('stalled', function () {
       scheduleNudge(160);
     });
@@ -357,7 +359,7 @@
           if (p && p.catch) p.catch(function () { /* ignore */ });
         }
       });
-    }, 1500);
+    }, 4000);
   }
 
   function stopAuthVideoWatchdog() {

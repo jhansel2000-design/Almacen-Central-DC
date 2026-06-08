@@ -11,7 +11,8 @@
   <meta http-equiv="X-Content-Type-Options" content="nosniff">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://cdn.sheetjs.com; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://api.openai.com; img-src 'self' data:; media-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'">
   <title>Almacén Central DC</title>
-  <link rel="preload" href="assets/video/login-operation-full.mp4" as="video" type="video/mp4">
+  <script src="js/platform-perf.js"></script>
+  <link rel="preload" href="assets/video/login-operation-poster.jpg" as="image">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%232c98ff'/%3E%3Ctext x='16' y='22' text-anchor='middle' font-size='11' font-weight='800' fill='%23041018' font-family='system-ui'%3EDC%3C/text%3E%3C/svg%3E">
   <link rel="stylesheet" href="css/platform.css">
   <link rel="stylesheet" href="css/platform-enhance.css">
@@ -29,6 +30,7 @@
   <link rel="stylesheet" href="css/executive-premium.css">
   <link rel="stylesheet" href="css/executive-comfort.css">
   <link rel="stylesheet" href="css/auth-cinematic.css">
+  <link rel="stylesheet" href="css/perf-lite.css">
   <link rel="stylesheet" href="css/despacho-auth.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -47,11 +49,11 @@
         muted
         loop
         playsinline
-        preload="auto"
+        preload="metadata"
         disablepictureinpicture
         poster="assets/video/login-operation-poster.jpg"
         tabindex="-1">
-        <source src="assets/video/login-operation-full.mp4" type="video/mp4">
+        <source src="assets/video/login-operation-lite.mp4" type="video/mp4">
       </video>
       <div class="auth-video-scrim"></div>
     </div>
@@ -479,41 +481,41 @@
     </div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js" crossorigin="anonymous"></script>
-  <script src="js/chart-premium-style.js"></script>
-  <script src="js/panel-core.js"></script>
-  <script src="js/platform-utils.js"></script>
-  <script src="js/platform-store.js"></script>
-  <script src="js/platform-lan-sync.js"></script>
-  <script src="js/platform-speech.js"></script>
-  <script src="js/platform-layout.js"></script>
-  <script src="js/platform-site-filter.js"></script>
-  <script src="js/platform-command-center.js"></script>
-  <script src="js/platform-operational-insights.js"></script>
-  <script src="js/platform-executive-charts.js"></script>
-  <script src="js/platform-excel-detect.js"></script>
-  <script src="js/platform-excel-productivity.js"></script>
-  <script src="js/platform-excel-operaciones.js"></script>
-  <script src="js/platform-excel-facturas.js"></script>
-  <script src="js/platform-facturas-ui.js"></script>
-  <script src="js/platform-despacho-store.js"></script>
-  <script src="js/platform-despacho-ui.js"></script>
-  <script src="js/platform-excel.js"></script>
-  <script src="js/platform-export.js"></script>
-  <script src="js/platform-ops-dashboard.js"></script>
-  <script src="js/platform-ops-voice-alerts.js"></script>
-  <script src="js/platform-tv-dashboard.js"></script>
-  <script src="js/platform-gestures.js"></script>
-  <script src="js/platform-operaciones-ui.js"></script>
-  <script src="js/platform-admin.js"></script>
-  <script src="js/platform-admin-tools.js"></script>
-  <script src="js/platform-admin-ui.js"></script>
-  <script src="js/platform-modules.js"></script>
-  <script src="js/platform-ai.js"></script>
-  <script src="js/platform-toast.js"></script>
-  <script src="js/platform-shortcuts.js"></script>
-  <script src="js/platform-app.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js" crossorigin="anonymous"></script>
+  <script defer src="js/chart-premium-style.js"></script>
+  <script defer src="js/panel-core.js"></script>
+  <script defer src="js/platform-utils.js"></script>
+  <script defer src="js/platform-store.js"></script>
+  <script defer src="js/platform-lan-sync.js"></script>
+  <script defer src="js/platform-speech.js"></script>
+  <script defer src="js/platform-layout.js"></script>
+  <script defer src="js/platform-site-filter.js"></script>
+  <script defer src="js/platform-command-center.js"></script>
+  <script defer src="js/platform-operational-insights.js"></script>
+  <script defer src="js/platform-executive-charts.js"></script>
+  <script defer src="js/platform-excel-detect.js"></script>
+  <script defer src="js/platform-excel-productivity.js"></script>
+  <script defer src="js/platform-excel-operaciones.js"></script>
+  <script defer src="js/platform-excel-facturas.js"></script>
+  <script defer src="js/platform-facturas-ui.js"></script>
+  <script defer src="js/platform-despacho-store.js"></script>
+  <script defer src="js/platform-despacho-ui.js"></script>
+  <script defer src="js/platform-excel.js"></script>
+  <script defer src="js/platform-export.js"></script>
+  <script defer src="js/platform-ops-dashboard.js"></script>
+  <script defer src="js/platform-ops-voice-alerts.js"></script>
+  <script defer src="js/platform-tv-dashboard.js"></script>
+  <script defer src="js/platform-gestures.js"></script>
+  <script defer src="js/platform-operaciones-ui.js"></script>
+  <script defer src="js/platform-admin.js"></script>
+  <script defer src="js/platform-admin-tools.js"></script>
+  <script defer src="js/platform-admin-ui.js"></script>
+  <script defer src="js/platform-modules.js"></script>
+  <script defer src="js/platform-ai.js"></script>
+  <script defer src="js/platform-toast.js"></script>
+  <script defer src="js/platform-shortcuts.js"></script>
+  <script defer src="js/platform-app.js"></script>
   <script defer src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js" crossorigin="anonymous"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js" crossorigin="anonymous"></script>
 </body>
