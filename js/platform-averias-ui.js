@@ -30,6 +30,7 @@
     buildEquipmentChecklist();
     loadData();
     if (typeof closeDrawer === 'function') closeDrawer();
+    initFitScreen();
     showWelcome();
   }
 // Data Management
@@ -321,10 +322,66 @@
             global.addEventListener('resize', function () {
                 if (global.innerWidth >= 1100) {
                     document.body.classList.remove('averias-drawer-open');
+                    applyFitScreen(false);
                 } else {
                     closeDrawer();
+                    applyFitScreen(loadFitScreenPref());
                 }
             }, { passive: true });
+        }
+
+        var FIT_KEY = 'averias_dc_fit_screen';
+
+        function isMobileView() {
+            return global.innerWidth < 1100;
+        }
+
+        function loadFitScreenPref() {
+            var stored = localStorage.getItem(FIT_KEY);
+            if (stored === null) return isMobileView();
+            return stored === '1';
+        }
+
+        function applyFitScreen(enabled) {
+            var app = document.getElementById('avApp');
+            if (!app) return;
+            var on = !!enabled && isMobileView();
+            app.classList.toggle('averias-fit-screen', on);
+            app.classList.toggle('averias-fit-normal', !on);
+            var btn = document.getElementById('btnFitScreen');
+            if (btn) {
+                btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+                btn.title = on
+                    ? 'Pantalla completa activa — tocar para desplazamiento normal'
+                    : 'Ajustar contenido a la pantalla del celular';
+                btn.classList.toggle('active', on);
+            }
+            updateFitScale();
+        }
+
+        function updateFitScale() {
+            var app = document.getElementById('avApp');
+            if (!app || !app.classList.contains('averias-fit-screen')) {
+                if (app) app.style.removeProperty('--av-ui-scale');
+                return;
+            }
+            var w = global.innerWidth || 390;
+            var h = global.innerHeight || 740;
+            var scale = Math.min(1.08, Math.max(0.88, Math.min(w / 360, h / 680)));
+            app.style.setProperty('--av-ui-scale', String(Math.round(scale * 1000) / 1000));
+        }
+
+        function initFitScreen() {
+            applyFitScreen(loadFitScreenPref());
+        }
+
+        function toggleFitScreen() {
+            playSelectFeedback();
+            var app = document.getElementById('avApp');
+            if (!app || !isMobileView()) return;
+            var next = !app.classList.contains('averias-fit-screen');
+            localStorage.setItem(FIT_KEY, next ? '1' : '0');
+            applyFitScreen(next);
         }
 
         function navigateToModule(module) {
@@ -1028,6 +1085,7 @@
   global.navigateToModule = navigateToModule;
   global.toggleDrawer = toggleDrawer;
   global.closeDrawer = closeDrawer;
+  global.toggleFitScreen = toggleFitScreen;
   global.handleReportButton = handleReportButton;
   global.handleCorrectButton = handleCorrectButton;
   global.showPalletsDashboard = showPalletsDashboard;
