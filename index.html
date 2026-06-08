@@ -103,12 +103,12 @@
       <div class="auth-glass-card">
         <form id="authForm" class="auth-form" novalidate action="#" method="post">
           <h2 id="authTitle" class="auth-heading">Acceso ejecutivo</h2>
-          <p class="auth-subheading">Identifícate para entrar al centro de mando · selección rápida por rol</p>
+          <p class="auth-subheading">Ingresa el usuario y contraseña que te asignó el administrador</p>
           <div class="auth-field">
             <label for="authUsername">Usuario</label>
-            <input id="authUsername" class="auth-field-input" type="text" name="username" placeholder="Tu usuario" autocomplete="username" maxlength="64" required>
+            <input id="authUsername" class="auth-field-input" type="text" name="username" placeholder="Usuario asignado" autocomplete="off" maxlength="64" required>
           </div>
-          <div class="auth-role-picker" role="group" aria-label="Acceso rápido por rol">
+          <div class="auth-role-picker" role="group" aria-label="Referencia de roles">
             <button type="button" class="auth-role-card active" data-role="administrador" aria-pressed="true">
               <span class="role-check" aria-hidden="true">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
@@ -119,7 +119,7 @@
               <strong>Administrador</strong>
               <span class="role-desc">Control total</span>
             </button>
-            <button type="button" class="auth-role-card" data-role="supervisor" data-user="supervisor" aria-pressed="false">
+            <button type="button" class="auth-role-card" data-role="supervisor" aria-pressed="false">
               <span class="role-check" aria-hidden="true">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
               </span>
@@ -129,7 +129,7 @@
               <strong>Supervisor</strong>
               <span class="role-desc">Importar y supervisar</span>
             </button>
-            <button type="button" class="auth-role-card" data-role="operador" data-user="operador" aria-pressed="false">
+            <button type="button" class="auth-role-card" data-role="operador" aria-pressed="false">
               <span class="role-check" aria-hidden="true">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
               </span>
@@ -146,7 +146,7 @@
             <button type="button" class="auth-pwd-toggle" id="btnTogglePassword" aria-label="Mostrar contraseña" title="Mostrar/ocultar">Ver</button>
           </div>
           <button type="submit" class="btn btn-primary" id="authSubmit">Entrar a la plataforma</button>
-          <p class="auth-hint">Credenciales demo en documentación interna (README).</p>
+          <p class="auth-hint">Cada persona debe escribir su propio usuario asignado; no se rellena automáticamente.</p>
           <p id="authError" class="auth-error" role="alert" aria-live="polite"></p>
         </form>
       </div>
@@ -527,7 +527,7 @@
   <script defer src="js/platform-ai.js"></script>
   <script defer src="js/platform-toast.js"></script>
   <script defer src="js/platform-shortcuts.js"></script>
-  <script defer src="js/platform-app.js?v=4"></script>
+  <script defer src="js/platform-app.js?v=5"></script>
   <script defer src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js" crossorigin="anonymous"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js" crossorigin="anonymous"></script>
 </body>

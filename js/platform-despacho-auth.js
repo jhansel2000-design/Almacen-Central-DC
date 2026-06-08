@@ -29,14 +29,8 @@
     }
   ];
 
-  var USER_ALIASES = {
-    operador: 'preparador',
-    supervisor: 'validador'
-  };
-
   function resolveUsername(username) {
-    var key = String(username || '').toLowerCase().trim();
-    return USER_ALIASES[key] || key;
+    return String(username || '').toLowerCase().trim();
   }
 
   function getDisplayName(user) {

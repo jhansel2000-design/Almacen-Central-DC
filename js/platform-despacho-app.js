@@ -75,12 +75,6 @@
       btn.classList.toggle('active', active);
       btn.setAttribute('aria-pressed', active ? 'true' : 'false');
     });
-    if (card) {
-      var userInput = $('despAuthUsername');
-      if (userInput && card.hasAttribute('data-user')) {
-        userInput.value = card.getAttribute('data-user') || '';
-      }
-    }
   }
 
   function setLoginLoading(loading) {

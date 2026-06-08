@@ -495,10 +495,6 @@
       btn.setAttribute('aria-pressed', active ? 'true' : 'false');
     });
     if (card) {
-      var userInput = $('authUsername');
-      if (userInput && card.hasAttribute('data-user')) {
-        userInput.value = card.getAttribute('data-user') || '';
-      }
       card.classList.add('role-pop');
       setTimeout(function () { card.classList.remove('role-pop'); }, 450);
     }
