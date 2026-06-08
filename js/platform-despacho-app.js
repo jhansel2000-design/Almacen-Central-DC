@@ -71,9 +71,10 @@
 
   function showDespAuthRoleFeedback(card) {
     var picker = card && card.closest('.auth-role-picker');
-    var fb = picker && picker.parentElement
-      ? picker.parentElement.querySelector('.auth-role-feedback')
-      : null;
+    var fb = $('despAuthRoleFeedback');
+    if (!fb && picker && picker.parentElement) {
+      fb = picker.parentElement.querySelector('.auth-role-feedback');
+    }
     if (picker) {
       picker.classList.remove('role-area-pulse');
       void picker.offsetWidth;
@@ -190,7 +191,14 @@
     });
 
     var activeCard = document.querySelector('.desp-auth-role-card.active');
-    if (activeCard) applyRolePicker(activeCard);
+    if (activeCard) {
+      applyRolePicker(activeCard);
+      setTimeout(function () {
+        if (PC.spawnRoleRipple) {
+          PC.spawnRoleRipple(activeCard, null);
+        }
+      }, 320);
+    }
     initPasswordToggle();
   }
 

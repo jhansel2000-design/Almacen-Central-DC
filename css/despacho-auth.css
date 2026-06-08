@@ -192,9 +192,49 @@ html[data-theme="light"] .auth-portal-body span {
   grid-template-columns: 1fr 1fr;
 }
 
+.desp-auth-role-card {
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.desp-auth-role-card.role-pop {
+  animation: rolePop 0.45s cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+
+.desp-auth-role-card.active .role-icon-wrap {
+  transform: scale(1.08);
+}
+
 .desp-auth-role-card.active {
   border-color: rgba(255, 183, 77, 0.55);
   background: rgba(255, 152, 0, 0.12);
+  box-shadow: 0 0 0 1px rgba(255, 183, 77, 0.28), 0 12px 32px rgba(255, 152, 0, 0.12);
+}
+
+.desp-auth-role-card[data-role="validador"].active {
+  border-color: rgba(206, 147, 216, 0.55);
+  background: rgba(156, 39, 176, 0.1);
+  box-shadow: 0 0 0 1px rgba(206, 147, 216, 0.28), 0 12px 32px rgba(156, 39, 176, 0.12);
+}
+
+.desp-auth-role-card[data-role="validador"].active .role-check {
+  background: linear-gradient(135deg, #ce93d8, #ab47bc);
+  color: #1a081f;
+}
+
+.desp-auth-role-card[data-role="preparador"].active .role-check {
+  background: linear-gradient(135deg, #ffb74d, #ff9800);
+  color: #2a1800;
+}
+
+.desp-auth-role-card .role-icon-wrap {
+  color: #ffb74d;
+}
+
+.desp-auth-role-card[data-role="validador"] .role-icon-wrap {
+  color: #ce93d8;
 }
 
 #despAuthSubmit {

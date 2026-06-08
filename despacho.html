@@ -12,10 +12,11 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self'; img-src 'self' data:; media-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'">
   <title>Despacho — Almacén Central DC</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23ff9800'/%3E%3Ctext x='16' y='22' text-anchor='middle' font-size='14' font-weight='800' fill='%23041018' font-family='system-ui'%3ED%3C/text%3E%3C/svg%3E">
-  <link rel="stylesheet" href="css/platform.css">
+  <link rel="stylesheet" href="css/platform.css?v=9">
   <link rel="stylesheet" href="css/platform-enhance.css">
+  <link rel="stylesheet" href="css/platform-gestures.css?v=9">
   <link rel="stylesheet" href="css/despacho-dashboard.css">
-  <link rel="stylesheet" href="css/despacho-auth.css">
+  <link rel="stylesheet" href="css/despacho-auth.css?v=9">
   <link rel="stylesheet" href="css/auth-cinematic.css">
   <link rel="stylesheet" href="css/theme-light.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -55,12 +56,24 @@
         <form id="despAuthForm" class="auth-form" novalidate action="#" method="post">
           <h2 id="despAuthTitle" class="auth-heading desp-auth-heading">Acceso a despacho</h2>
           <p class="auth-subheading desp-auth-subheading">1. Elige tu área · 2. Escribe el usuario que te asignó el administrador</p>
-          <div class="auth-role-picker desp-auth-role-picker" role="group" aria-label="Elige tu área de despacho">
+          <div class="auth-role-picker desp-auth-role-picker" role="group" aria-label="Elige tu rol en despacho">
             <button type="button" class="auth-role-card desp-auth-role-card active" data-role="preparador" aria-pressed="true">
+              <span class="role-check" aria-hidden="true">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+              </span>
+              <span class="role-icon-wrap" aria-hidden="true">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+              </span>
               <strong>Preparador</strong>
               <span class="role-desc">Registra IDC y jaula</span>
             </button>
             <button type="button" class="auth-role-card desp-auth-role-card" data-role="validador" aria-pressed="false">
+              <span class="role-check" aria-hidden="true">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+              </span>
+              <span class="role-icon-wrap" aria-hidden="true">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+              </span>
               <strong>Validador</strong>
               <span class="role-desc">Valida y libera pedidos</span>
             </button>
@@ -102,13 +115,13 @@
     </main>
   </div>
 
-  <script src="js/panel-core.js?v=7"></script>
+  <script src="js/panel-core.js?v=9"></script>
   <script src="js/platform-admin.js"></script>
   <script src="js/platform-despacho-store.js"></script>
   <script src="js/platform-lan-sync.js"></script>
   <script src="js/platform-despacho-ui.js"></script>
   <script src="js/platform-despacho-auth.js"></script>
   <script src="js/platform-toast.js"></script>
-  <script src="js/platform-despacho-app.js?v=7"></script>
+  <script src="js/platform-despacho-app.js?v=9"></script>
 </body>
 </html>

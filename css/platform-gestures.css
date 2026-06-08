@@ -302,7 +302,8 @@ html[data-theme="light"] body:not(.auth-locked) .platform-topbar {
   transform: translateY(0);
 }
 
-.auth-role-card.role-select-in {
+.auth-role-card.role-select-in,
+.desp-auth-role-card.role-select-in {
   animation: authRoleSelectIn 0.42s var(--gesture-spring);
 }
 
@@ -313,21 +314,34 @@ html[data-theme="light"] body:not(.auth-locked) .platform-topbar {
 }
 
 .auth-role-card .role-ripple--administrador,
-.auth-role-card .role-ripple--admin { background: rgba(94, 179, 255, 0.5) !important; }
+.auth-role-card .role-ripple--admin,
+.desp-auth-role-card .role-ripple--administrador,
+.desp-auth-role-card .role-ripple--admin { background: rgba(94, 179, 255, 0.5) !important; }
 .auth-role-card .role-ripple-ring--administrador,
-.auth-role-card .role-ripple-ring--admin { border-color: rgba(94, 179, 255, 0.55) !important; }
+.auth-role-card .role-ripple-ring--admin,
+.desp-auth-role-card .role-ripple-ring--administrador,
+.desp-auth-role-card .role-ripple-ring--admin { border-color: rgba(94, 179, 255, 0.55) !important; }
 
-.auth-role-card .role-ripple--supervisor { background: rgba(255, 209, 102, 0.48) !important; }
-.auth-role-card .role-ripple-ring--supervisor { border-color: rgba(255, 209, 102, 0.55) !important; }
+.auth-role-card .role-ripple--supervisor,
+.desp-auth-role-card .role-ripple--supervisor { background: rgba(255, 209, 102, 0.48) !important; }
+.auth-role-card .role-ripple-ring--supervisor,
+.desp-auth-role-card .role-ripple-ring--supervisor { border-color: rgba(255, 209, 102, 0.55) !important; }
 
-.auth-role-card .role-ripple--validador { background: rgba(206, 147, 216, 0.48) !important; }
-.auth-role-card .role-ripple-ring--validador { border-color: rgba(206, 147, 216, 0.55) !important; }
+.auth-role-card .role-ripple--validador,
+.desp-auth-role-card .role-ripple--validador { background: rgba(206, 147, 216, 0.48) !important; }
+.auth-role-card .role-ripple-ring--validador,
+.desp-auth-role-card .role-ripple-ring--validador { border-color: rgba(206, 147, 216, 0.55) !important; }
 
-.auth-role-card .role-ripple--operador { background: rgba(110, 231, 183, 0.45) !important; }
-.auth-role-card .role-ripple-ring--operador { border-color: rgba(110, 231, 183, 0.5) !important; }
+.auth-role-card .role-ripple--operador,
+.desp-auth-role-card .role-ripple--operador { background: rgba(110, 231, 183, 0.45) !important; }
+.auth-role-card .role-ripple-ring--operador,
+.desp-auth-role-card .role-ripple-ring--operador { border-color: rgba(110, 231, 183, 0.5) !important; }
 
-.auth-role-card .role-ripple--preparador { background: rgba(255, 183, 77, 0.48) !important; }
-.auth-role-card .role-ripple-ring--preparador { border-color: rgba(255, 183, 77, 0.55) !important; }
+.auth-role-card .role-ripple--preparador,
+.desp-auth-role-card .role-ripple--preparador,
+.desp-auth-role-card .btn-ripple.role-ripple--preparador { background: rgba(255, 183, 77, 0.48) !important; }
+.auth-role-card .role-ripple-ring--preparador,
+.desp-auth-role-card .role-ripple-ring--preparador { border-color: rgba(255, 183, 77, 0.55) !important; }
 
 .desp-auth-role-feedback {
   color: #ffb74d;
@@ -339,7 +353,8 @@ html[data-theme="light"] body:not(.auth-locked) .platform-topbar {
   .gen-card--interactive.is-released,
   body:not(.auth-locked) .platform-app::before,
   .auth-role-picker.role-area-pulse,
-  .auth-role-card.role-select-in {
+  .auth-role-card.role-select-in,
+  .desp-auth-role-card.role-select-in {
     animation: none !important;
     transition-duration: 0.01ms !important;
   }

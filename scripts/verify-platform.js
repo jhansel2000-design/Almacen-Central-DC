@@ -54,10 +54,16 @@ despScriptSrcs.forEach((src) => {
 });
 if (!FAIL.some((f) => f.includes('Despacho script'))) ok('All ' + despScriptSrcs.length + ' scripts from despacho.html exist');
 
-if (!html.includes('auth-external-portal') || !html.includes('despacho.html')) {
-  fail('index.html missing external despacho portal card');
+if (!despHtml.includes('desp-auth-role-picker') || !despHtml.includes('data-role="validador"')) {
+  fail('despacho.html missing preparador/validador role picker');
 } else {
-  ok('index.html has external despacho login card');
+  ok('despacho.html has despacho role picker (preparador/validador)');
+}
+
+if (html.includes('auth-external-portal') && html.includes('data-role="validador"')) {
+  fail('index.html should not expose despacho/validador on main login');
+} else {
+  ok('index.html main login excludes despacho portal card and validador role');
 }
 
 // 2. No referencias rotas a módulos eliminados (excepto migración/legacy)

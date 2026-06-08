@@ -210,8 +210,7 @@ html[data-theme="light"] .auth-field-input::placeholder{ color:#5a6d82; }
 .auth-heading{ margin:0 0 0.5rem; color:var(--text); }
 .auth-subheading{ margin:0 0 1rem; color:var(--muted); font-size:0.9rem; }
 .auth-hint{ margin:0 0 0.75rem; font-size:0.78rem; color:var(--muted); }
-.auth-role-picker{ display:grid; grid-template-columns:repeat(2,1fr); gap:0.65rem; margin-bottom:0.65rem; position:relative; z-index:3; }
-@media (min-width:720px){ .auth-role-picker{ grid-template-columns:repeat(4,1fr); } }
+.auth-role-picker{ display:grid; grid-template-columns:repeat(3,1fr); gap:0.65rem; margin-bottom:0.65rem; position:relative; z-index:3; }
 @media (max-width:520px){ .auth-role-picker{ grid-template-columns:1fr; } }
 .auth-role-card{
   position:relative; z-index:3; overflow:hidden;
@@ -593,6 +592,7 @@ button:hover:not(:disabled),
 button.is-pressed:not(:disabled),
 .btn.is-pressed:not(:disabled),
 .auth-role-card.is-pressed,
+.desp-auth-role-card.is-pressed,
 .admin-tab-btn.is-pressed,
 .nav-dashboards button.is-pressed,
 .sidebar-footer button.is-pressed,
@@ -602,6 +602,7 @@ button.is-pressed:not(:disabled),
 button.is-released:not(:disabled),
 .btn.is-released:not(:disabled),
 .auth-role-card.is-released,
+.desp-auth-role-card.is-released,
 .admin-tab-btn.is-released,
 .nav-dashboards button.is-released,
 .sidebar-footer button.is-released{ animation:btnPop .38s cubic-bezier(.34,1.4,.64,1); }

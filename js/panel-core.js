@@ -288,7 +288,7 @@
     var top = (cy - rect.top - size / 2) + 'px';
 
     var primary = document.createElement('span');
-    primary.className = 'gesture-ripple gesture-ripple-primary btn-ripple';
+    primary.className = 'gesture-ripple gesture-ripple-primary btn-ripple role-ripple';
     primary.style.width = primary.style.height = size + 'px';
     primary.style.left = left;
     primary.style.top = top;
@@ -439,6 +439,7 @@
     touchDespachoSession: touchDespachoSession,
     initGestures: initGestures,
     initAuthRoleGestures: initAuthRoleGestures,
-    spawnRipple: spawnRipple
+    spawnRipple: spawnRipple,
+    spawnRoleRipple: spawnRoleRipple
   };
 })(typeof window !== 'undefined' ? window : this);
