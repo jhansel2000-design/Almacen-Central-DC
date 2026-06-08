@@ -20,7 +20,8 @@
     users: 'almacen_users',
     areas: 'almacen_areas',
     logs: 'almacen_logs',
-    accessRequests: 'almacen_access_requests'
+    accessRequests: 'almacen_access_requests',
+    averias: 'averias_dc_snapshot'
   };
 
   var LS_TO_STORE = {};
@@ -62,6 +63,13 @@
     if (store === 'despacho') {
       try {
         global.dispatchEvent(new CustomEvent('despacho-updated', {
+          detail: { data: data, at: new Date().toISOString(), source: 'lan' }
+        }));
+      } catch (e) { /* noop */ }
+    }
+    if (store === 'averias') {
+      try {
+        global.dispatchEvent(new CustomEvent('averias-updated', {
           detail: { data: data, at: new Date().toISOString(), source: 'lan' }
         }));
       } catch (e) { /* noop */ }
@@ -118,6 +126,33 @@
     return global.PlatformAdmin.mergeUserRegistries(local, remote);
   }
 
+  function mergeAveriasSnapshots(local, remote) {
+    if (!remote) return local;
+    if (!local) return remote;
+    function mergeArr(a, b) {
+      var map = {};
+      (a || []).forEach(function (x) {
+        if (x && x.id != null) map[String(x.id)] = x;
+      });
+      (b || []).forEach(function (x) {
+        if (x && x.id != null) map[String(x.id)] = x;
+      });
+      return Object.keys(map).map(function (k) { return map[k]; })
+        .sort(function (x, y) { return (y.id || 0) - (x.id || 0); });
+    }
+    var lTime = Date.parse(local.updatedAt) || 0;
+    var rTime = Date.parse(remote.updatedAt) || 0;
+    return {
+      updatedAt: new Date(Math.max(lTime, rTime)).toISOString(),
+      incidences: mergeArr(local.incidences, remote.incidences),
+      damages: mergeArr(local.damages, remote.damages),
+      securityIncidents: mergeArr(local.securityIncidents, remote.securityIncidents),
+      audits5s: mergeArr(local.audits5s, remote.audits5s),
+      equipmentInspections: mergeArr(local.equipmentInspections, remote.equipmentInspections),
+      equipmentRegistry: Object.assign({}, local.equipmentRegistry || {}, remote.equipmentRegistry || {})
+    };
+  }
+
   function mergeOnConnect(serverPayload) {
     var stores = (serverPayload && serverPayload.stores) || {};
     Object.keys(STORE_TO_LS).forEach(function (store) {
@@ -137,6 +172,10 @@
           var mergedUsers = applyUsersMerge(local, remote);
           applyRemote(lsKey, mergedUsers, store);
           pushToServer(lsKey, JSON.stringify(mergedUsers));
+        } else if (store === 'averias') {
+          var mergedAverias = mergeAveriasSnapshots(local, remote);
+          applyRemote(lsKey, mergedAverias, store);
+          pushToServer(lsKey, JSON.stringify(mergedAverias));
         } else {
           var rTime = remoteWrap.mtime || getUpdatedAt(remote);
           var lTime = getUpdatedAt(local) || getLocalStoreTime(lsKey);
@@ -173,6 +212,12 @@
             try { local = localRaw ? JSON.parse(localRaw) : null; } catch (e) { local = null; }
             merged = applyUsersMerge(local, res.data);
           }
+          if (payload.store === 'averias' && global.localStorage) {
+            var localAvRaw = localStorage.getItem(lsKey);
+            var localAv = null;
+            try { localAv = localAvRaw ? JSON.parse(localAvRaw) : null; } catch (e) { localAv = null; }
+            merged = mergeAveriasSnapshots(localAv, res.data);
+          }
           applyRemote(lsKey, merged, payload.store);
           if (payload.store === 'users' && global.PlatformAdmin && global.PlatformAdmin.forceSyncPrimaryCredentials) {
             global.PlatformAdmin.forceSyncPrimaryCredentials();
@@ -193,7 +238,7 @@
     badge.className = 'chip-live lan-sync-badge';
     badge.title = 'Datos compartidos en red local';
     badge.textContent = 'LAN';
-    var host = document.querySelector('.topbar-actions') || document.querySelector('.desp-topbar-actions');
+    var host = document.querySelector('.topbar-actions') || document.querySelector('.desp-topbar-actions') || document.querySelector('.averias-app .app-toolbar');
     if (host) host.insertBefore(badge, host.firstChild);
   }
 

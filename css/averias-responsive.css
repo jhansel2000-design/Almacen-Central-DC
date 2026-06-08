@@ -294,6 +294,36 @@ body.averias-dash-view {
     font-size: 1.35rem;
   }
 
+  .averias-app .btn-sync-data {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 8px 10px;
+    margin-right: 4px;
+    border: 2px solid rgba(96, 165, 250, 0.35);
+    border-radius: 10px;
+    background: rgba(30, 58, 138, 0.25);
+    color: #93c5fd;
+    font-size: 1.35rem;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+    touch-action: manipulation;
+    flex-shrink: 0;
+  }
+
+  .averias-app .btn-sync-data:active {
+    transform: scale(0.96);
+  }
+
+  .averias-app .lan-sync-badge {
+    margin-right: 6px;
+    font-size: 0.65rem;
+    padding: 3px 8px;
+  }
+
   .averias-app .btn-fit-screen {
     display: inline-flex;
     align-items: center;
@@ -642,6 +672,10 @@ body.averias-dash-view {
   }
 
   .averias-app .btn-fit-screen {
+    display: none !important;
+  }
+
+  .averias-app .btn-sync-data {
     display: none !important;
   }
 

@@ -58,7 +58,8 @@ const STORES = {
   users: { file: 'users.json', lsKey: 'almacen_users' },
   areas: { file: 'areas.json', lsKey: 'almacen_areas' },
   logs: { file: 'logs.json', lsKey: 'almacen_logs' },
-  accessRequests: { file: 'access-requests.json', lsKey: 'almacen_access_requests' }
+  accessRequests: { file: 'access-requests.json', lsKey: 'almacen_access_requests' },
+  averias: { file: 'averias.json', lsKey: 'averias_dc_snapshot' }
 };
 let clientCounter = 0;
 

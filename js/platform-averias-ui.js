@@ -158,7 +158,54 @@
             }
         }
 
-        function loadData() {
+        var FIT_KEY = 'averias_dc_fit_screen';
+        var SNAPSHOT_KEY = 'averias_dc_snapshot';
+        var applyingRemoteSnapshot = false;
+
+        function buildSnapshot() {
+            return {
+                updatedAt: new Date().toISOString(),
+                incidences: allIncidences,
+                damages: allDamages,
+                securityIncidents: allSecurity,
+                audits5s: allAudits,
+                equipmentInspections: allEquipmentInspections,
+                equipmentRegistry: equipmentRegistry
+            };
+        }
+
+        function applySnapshot(snap) {
+            if (!snap || typeof snap !== 'object') return false;
+            allIncidences = Array.isArray(snap.incidences) ? snap.incidences : [];
+            allDamages = Array.isArray(snap.damages) ? snap.damages : [];
+            allSecurity = Array.isArray(snap.securityIncidents) ? snap.securityIncidents : [];
+            allAudits = Array.isArray(snap.audits5s) ? snap.audits5s : [];
+            allEquipmentInspections = Array.isArray(snap.equipmentInspections) ? snap.equipmentInspections : [];
+            equipmentRegistry = snap.equipmentRegistry && typeof snap.equipmentRegistry === 'object' ? snap.equipmentRegistry : {};
+            return true;
+        }
+
+        function writeIndividualKeys() {
+            localStorage.setItem('averias_dc_incidences', JSON.stringify(allIncidences));
+            localStorage.setItem('averias_dc_damages', JSON.stringify(allDamages));
+            localStorage.setItem('averias_dc_securityIncidents', JSON.stringify(allSecurity));
+            localStorage.setItem('averias_dc_audits5s', JSON.stringify(allAudits));
+            localStorage.setItem('averias_dc_equipmentInspections', JSON.stringify(allEquipmentInspections));
+            localStorage.setItem('averias_dc_equipmentRegistry', JSON.stringify(equipmentRegistry));
+        }
+
+        function persistSnapshot() {
+            if (applyingRemoteSnapshot) return;
+            try {
+                applyingRemoteSnapshot = true;
+                writeIndividualKeys();
+                localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(buildSnapshot()));
+            } finally {
+                applyingRemoteSnapshot = false;
+            }
+        }
+
+        function loadDataFromLegacyKeys() {
             const stored = localStorage.getItem('averias_dc_incidences');
             if (stored) allIncidences = JSON.parse(stored);
             const d = localStorage.getItem('averias_dc_damages');
@@ -171,29 +218,114 @@
             if (eq) allEquipmentInspections = JSON.parse(eq);
             const reg = localStorage.getItem('averias_dc_equipmentRegistry');
             if (reg) equipmentRegistry = JSON.parse(reg);
+        }
+
+        function loadData() {
+            const snapRaw = localStorage.getItem(SNAPSHOT_KEY);
+            if (snapRaw) {
+                try {
+                    if (applySnapshot(JSON.parse(snapRaw))) {
+                        updateAllStats();
+                        return;
+                    }
+                } catch (e) { /* fallback legacy */ }
+            }
+            loadDataFromLegacyKeys();
+            persistSnapshot();
+            updateAllStats();
+        }
+
+        function updateAllStats() {
             updateStats();
+            updateDamagesStats();
+            updateSecurityStats();
+            updateAuditStats();
+        }
+
+        function refreshCurrentView() {
+            updateAllStats();
+            if (currentModule === 'pallets') {
+                if (!document.getElementById('palletsCorrect').classList.contains('hidden')) filterIncidences();
+                else if (!document.getElementById('palletsReport').classList.contains('hidden')) { /* form */ }
+                else showPalletsDashboard();
+            } else if (currentModule === 'damages') showDamagesDashboard();
+            else if (currentModule === 'security') showSecurityDashboard();
+            else if (currentModule === 'audit') showAuditDashboard();
+            else if (currentModule === 'equipment') showEquipmentDashboard();
+        }
+
+        function reloadFromSync() {
+            applyingRemoteSnapshot = true;
+            try {
+                loadData();
+            } finally {
+                applyingRemoteSnapshot = false;
+            }
+            refreshCurrentView();
+        }
+
+        function syncAveriasData() {
+            playSelectFeedback();
+            if (global.PlatformLanSync && global.PlatformLanSync.isEnabled()) {
+                global.PlatformLanSync.forcePull().then(function (ok) {
+                    reloadFromSync();
+                    if (global.PlatformToast) {
+                        global.PlatformToast.success(ok ? 'Reportes sincronizados desde la red' : 'No se pudo sincronizar', 3500);
+                    } else {
+                        alert(ok ? '✅ Reportes sincronizados' : 'No se pudo sincronizar');
+                    }
+                });
+                return;
+            }
+            var msg = 'Sin servidor LAN activo.\n\nLos reportes de cada celular solo se ven en ese mismo equipo.\n\nPara ver todos los reportes:\n1. Abra serve-dashboard.ps1 en el PC servidor\n2. En el celular entre a http://IP-DEL-PC:8080/averias.html\n3. Misma red WiFi\n4. Toque ↻ para sincronizar';
+            if (global.PlatformToast) global.PlatformToast.warn('Sin LAN — reportes solo en este dispositivo', 6000);
+            alert(msg);
+        }
+
+        function initAveriasSync() {
+            document.addEventListener('lan-sync', function (ev) {
+                if (ev.detail && ev.detail.store === 'averias') reloadFromSync();
+            });
+            document.addEventListener('averias-updated', function () { reloadFromSync(); });
+            document.addEventListener('lan-ready', function () {
+                if (global.PlatformLanSync && global.PlatformLanSync.forcePull) {
+                    global.PlatformLanSync.forcePull().then(function () { reloadFromSync(); });
+                }
+            });
+            global.addEventListener('visibilitychange', function () {
+                if (document.visibilityState === 'visible' && global.PlatformLanSync && global.PlatformLanSync.isEnabled()) {
+                    global.PlatformLanSync.forcePull().then(function () { reloadFromSync(); });
+                }
+            }, { passive: true });
+        }
+
+        if (!global._averiasSyncBound) {
+            global._averiasSyncBound = true;
+            initAveriasSync();
         }
 
         function saveData() {
-            localStorage.setItem('averias_dc_incidences', JSON.stringify(allIncidences));
+            persistSnapshot();
             updateStats();
         }
 
         function saveDamagesData() {
-            localStorage.setItem('averias_dc_damages', JSON.stringify(allDamages));
+            persistSnapshot();
+            updateDamagesStats();
         }
 
         function saveSecurityData() {
-            localStorage.setItem('averias_dc_securityIncidents', JSON.stringify(allSecurity));
+            persistSnapshot();
+            updateSecurityStats();
         }
 
         function saveAuditsData() {
-            localStorage.setItem('averias_dc_audits5s', JSON.stringify(allAudits));
+            persistSnapshot();
+            updateAuditStats();
         }
 
         function saveEquipmentData() {
-            localStorage.setItem('averias_dc_equipmentInspections', JSON.stringify(allEquipmentInspections));
-            localStorage.setItem('averias_dc_equipmentRegistry', JSON.stringify(equipmentRegistry));
+            persistSnapshot();
         }
 
         function handleLogout() {
@@ -1086,6 +1218,7 @@
   global.toggleDrawer = toggleDrawer;
   global.closeDrawer = closeDrawer;
   global.toggleFitScreen = toggleFitScreen;
+  global.syncAveriasData = syncAveriasData;
   global.handleReportButton = handleReportButton;
   global.handleCorrectButton = handleCorrectButton;
   global.showPalletsDashboard = showPalletsDashboard;
