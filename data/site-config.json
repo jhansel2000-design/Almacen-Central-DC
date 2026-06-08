@@ -3,11 +3,18 @@
   "updatedAt": "2026-06-08T00:00:00.000Z",
   "publicSyncBaseUrl": "",
   "githubPagesDataUrl": "https://jhansel2000-design.github.io/Almacen-Central-DC/data/averias.json",
-  "pollSeconds": 15,
+  "pollSeconds": 5,
+  "firebase": {
+    "enabled": false,
+    "apiKey": "",
+    "authDomain": "",
+    "databaseURL": "",
+    "projectId": ""
+  },
   "averiasJsonBin": {
     "enabled": false,
     "binId": "",
     "accessKey": ""
   },
-  "help": "publicSyncBaseUrl = URL HTTPS publica del servidor (Cloudflare Tunnel, hosting). Todos los celulares con internet usaran esa URL para compartir reportes en tiempo real."
+  "help": "Opcion A: ejecute scripts/setup-averias-cloud.ps1 -MasterKey SU-CLAVE-JSONBIN. Opcion B: ponga publicSyncBaseUrl con URL HTTPS del servidor. Opcion C: configure firebase en este archivo."
 }

@@ -17,7 +17,7 @@
   <link rel="stylesheet" href="css/averias-auth.css?v=2">
   <link rel="stylesheet" href="css/auth-cinematic.css?v=16">
   <link rel="stylesheet" href="css/averias-portal.css?v=2">
-  <link rel="stylesheet" href="css/averias-responsive.css?v=8">
+  <link rel="stylesheet" href="css/averias-responsive.css?v=9">
   <link rel="stylesheet" href="css/theme-light.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -138,9 +138,12 @@
                 <div class="app-toolbar">
                     <button class="btn-menu" onclick="toggleDrawer()" title="Menú" type="button" aria-label="Abrir menú">☰</button>
                     <span class="toolbar-title" id="moduleTitle">Almacén Central</span>
-                    <button class="btn-sync-data" id="btnSyncAverias" type="button" onclick="syncAveriasData()" title="Sincronizar reportes de todos los dispositivos" aria-label="Sincronizar reportes">↻</button>
-                    <button class="btn-fit-screen" id="btnFitScreen" type="button" onclick="toggleFitScreen()" title="Ajustar a la pantalla del celular" aria-pressed="false" aria-label="Ajustar pantalla">⛶</button>
+                    <button class="btn-sync-data" id="btnSyncAverias" type="button" onclick="syncAveriasData()" title="Sincronizar reportes" aria-label="Sincronizar reportes">↻</button>
+                    <button class="btn-fit-screen" id="btnFitScreen" type="button" onclick="toggleFitScreen()" title="Ajustar pantalla" aria-pressed="false" aria-label="Ajustar pantalla">⛶</button>
                     <button class="btn-toolbar-logout" onclick="handleLogout()">Salir</button>
+                </div>
+                <div class="av-sync-banner" id="avSyncBanner" hidden role="status">
+                    ⚠️ Sincronización cloud no configurada — los reportes no se comparten entre celulares. El administrador debe ejecutar <strong>setup-averias-cloud.ps1</strong> en el servidor.
                 </div>
 
                 <div class="module-content">
@@ -467,12 +470,14 @@
   <script src="js/panel-core.js?v=16"></script>
   <script src="js/platform-network-relay.js?v=1"></script>
   <script src="js/platform-lan-sync.js?v=2"></script>
-  <script src="js/platform-averias-cloud-sync.js?v=1"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+  <script src="js/platform-averias-cloud-sync.js?v=2"></script>
   <script src="js/platform-store.js"></script>
   <script src="js/platform-admin.js?v=12"></script>
   <script src="js/platform-web-users.js?v=11"></script>
   <script src="js/platform-toast.js"></script>
-  <script src="js/platform-averias-ui.js?v=5"></script>
+  <script src="js/platform-averias-ui.js?v=6"></script>
   <script src="js/platform-averias-app.js?v=1"></script>
 </body>
 </html>

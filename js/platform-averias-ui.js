@@ -208,7 +208,18 @@
                 var snap = buildSnapshot();
                 localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(snap));
                 if (global.PlatformAveriasCloudSync && global.PlatformAveriasCloudSync.push) {
-                    global.PlatformAveriasCloudSync.push(snap);
+                    global.PlatformAveriasCloudSync.push(snap).then(function (result) {
+                        if (result && !result.ok && global.PlatformAveriasCloudSync.isCloudConfigured &&
+                            global.PlatformAveriasCloudSync.isCloudConfigured()) {
+                            if (global.PlatformToast) {
+                                global.PlatformToast.warn('Reporte guardado; reintentando sync...', 3000);
+                            }
+                        } else if (result && !result.ok && !global.PlatformAveriasCloudSync.isCloudConfigured()) {
+                            if (global.PlatformToast) {
+                                global.PlatformToast.warn('Reporte solo en este celular — falta configurar nube', 5000);
+                            }
+                        }
+                    });
                 }
             } finally {
                 applyingRemoteSnapshot = false;
@@ -285,14 +296,15 @@
             }
             Promise.all(tasks.length ? tasks : [Promise.resolve()]).then(function () {
                 reloadFromSync();
-                var cloud = global.PlatformAveriasCloudSync && global.PlatformAveriasCloudSync.isCloudConfigured && global.PlatformAveriasCloudSync.isCloudConfigured();
+                var cloud = global.PlatformAveriasCloudSync && global.PlatformAveriasCloudSync.isCloudConfigured &&
+                    global.PlatformAveriasCloudSync.isCloudConfigured();
                 var msg = cloud
-                    ? 'Reportes sincronizados — todos los usuarios ven los mismos datos'
-                    : 'Datos actualizados desde GitHub. Para tiempo real configure publicSyncBaseUrl en site-config.json';
+                    ? 'Reportes sincronizados — todos ven los mismos datos'
+                    : 'Sin nube activa. El admin debe ejecutar setup-averias-cloud.ps1 en el PC servidor.';
                 if (global.PlatformToast) {
-                    global.PlatformToast.success(msg, 4000);
+                    global.PlatformToast[cloud ? 'success' : 'warn'](msg, 4500);
                 } else {
-                    alert('✅ ' + msg);
+                    alert(cloud ? '✅ ' + msg : '⚠️ ' + msg);
                 }
             });
         }
@@ -903,17 +915,20 @@
 
             allIncidences.push(incidence);
             saveData();
+            updateStats();
 
             document.getElementById('reportLocation').value = '';
             document.getElementById('reportProduct').value = '';
             document.getElementById('reportObservation').value = '';
             document.getElementById('reportSeverity').value = '';
+            document.querySelectorAll('.severity-btn').forEach(function (btn) { btn.classList.remove('selected'); });
             document.getElementById('reportError').classList.remove('show');
             document.getElementById('reportSuccess').classList.add('show');
 
-            setTimeout(() => {
+            setTimeout(function () {
                 document.getElementById('reportSuccess').classList.remove('show');
-            }, 2000);
+                showPalletsDashboard();
+            }, 1500);
         }
 
         function selectSeverity(severity) {

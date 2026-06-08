@@ -1,20 +1,33 @@
 /**
- * Sincronización de reportes — Internet + LAN + GitHub Pages
- * Todos los usuarios registrados ven los mismos datos.
+ * Sincronización de reportes — Internet en tiempo real (Firebase + servidor + JSONBin + GitHub)
  */
 (function (global) {
   'use strict';
 
   var SNAPSHOT_KEY = 'averias_dc_snapshot';
+  var EMPTY = {
+    version: 1,
+    updatedAt: '1970-01-01T00:00:00.000Z',
+    incidences: [],
+    damages: [],
+    securityIncidents: [],
+    audits5s: [],
+    equipmentInspections: [],
+    equipmentRegistry: {}
+  };
+
   var siteConfig = null;
   var publicBase = '';
   var pollTimer = null;
   var eventSource = null;
   var pushing = false;
   var lastPullAt = 0;
+  var lastAppliedJson = '';
+  var firebaseDb = null;
+  var firebaseBound = false;
 
   function mergeAveriasSnapshots(local, remote) {
-    if (!remote) return local;
+    if (!remote) return local || EMPTY;
     if (!local) return remote;
     function mergeArr(a, b) {
       var map = {};
@@ -51,6 +64,14 @@
     return /^192\.168\.|^10\.|^172\.(1[6-9]|2\d|3[0-1])\./.test(h);
   }
 
+  function isPublicHost() {
+    if (global.PlatformNetworkRelay && global.PlatformNetworkRelay.isPublicHost) {
+      return global.PlatformNetworkRelay.isPublicHost();
+    }
+    var h = global.location && global.location.hostname || '';
+    return h.indexOf('github.io') !== -1 || h.indexOf('githubusercontent.com') !== -1;
+  }
+
   function normalizeBase(url) {
     return String(url || '').trim().replace(/\/+$/, '');
   }
@@ -64,16 +85,20 @@
     }
   }
 
-  function applySnapshotToLocal(snap) {
+  function applySnapshotToLocal(snap, silent) {
     if (!snap || !global.localStorage) return false;
+    var json = JSON.stringify(snap);
+    if (json === lastAppliedJson) return false;
     try {
-      global.localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(snap));
+      global.localStorage.setItem(SNAPSHOT_KEY, json);
       global.localStorage.setItem('averias_dc_incidences', JSON.stringify(snap.incidences || []));
       global.localStorage.setItem('averias_dc_damages', JSON.stringify(snap.damages || []));
       global.localStorage.setItem('averias_dc_securityIncidents', JSON.stringify(snap.securityIncidents || []));
       global.localStorage.setItem('averias_dc_audits5s', JSON.stringify(snap.audits5s || []));
       global.localStorage.setItem('averias_dc_equipmentInspections', JSON.stringify(snap.equipmentInspections || []));
       global.localStorage.setItem('averias_dc_equipmentRegistry', JSON.stringify(snap.equipmentRegistry || {}));
+      lastAppliedJson = json;
+      if (!silent) notifyUpdated('apply');
       return true;
     } catch (e) {
       return false;
@@ -88,10 +113,24 @@
 
   function fetchJson(url, opts) {
     opts = opts || {};
-    return global.fetch(url, Object.assign({ cache: 'no-store' }, opts)).then(function (res) {
+    return global.fetch(url, Object.assign({ cache: 'no-store', mode: 'cors' }, opts)).then(function (res) {
       if (!res.ok) throw new Error('HTTP ' + res.status);
       return res.json();
     });
+  }
+
+  function applySiteConfigRelay() {
+    var url = siteConfig && normalizeBase(siteConfig.publicSyncBaseUrl);
+    if (!url || !global.PlatformNetworkRelay || !global.PlatformNetworkRelay.saveRelayConfig) return;
+    global.PlatformNetworkRelay.saveRelayConfig({
+      enabled: true,
+      baseUrl: url,
+      autoRedirect: false
+    });
+    if (global.PlatformNetworkRelay.applyRelayFromConfig) {
+      global.PlatformNetworkRelay.applyRelayFromConfig();
+    }
+    publicBase = url;
   }
 
   function resolvePublicBase() {
@@ -107,8 +146,11 @@
         return publicBase;
       }
     }
-    if (isLanHost()) return '';
     return '';
+  }
+
+  function canUseServerApi() {
+    return !!(resolvePublicBase() || isLanHost());
   }
 
   function apiUrl(path) {
@@ -119,7 +161,7 @@
 
   function staticDataUrl() {
     if (siteConfig && siteConfig.githubPagesDataUrl) return siteConfig.githubPagesDataUrl;
-    if (global.PlatformNetworkRelay && global.PlatformNetworkRelay.isPublicHost && global.PlatformNetworkRelay.isPublicHost()) {
+    if (isPublicHost()) {
       return 'https://jhansel2000-design.github.io/Almacen-Central-DC/data/averias.json';
     }
     return 'data/averias.json';
@@ -128,6 +170,7 @@
   function loadSiteConfig() {
     return fetchJson('data/site-config.json?t=' + Date.now()).then(function (cfg) {
       siteConfig = cfg || {};
+      applySiteConfigRelay();
       publicBase = normalizeBase(siteConfig.publicSyncBaseUrl) || publicBase;
       return siteConfig;
     }).catch(function () {
@@ -143,9 +186,40 @@
     }).catch(function () { return false; });
   }
 
+  function initFirebase() {
+    var fb = siteConfig && siteConfig.firebase;
+    if (!fb || !fb.enabled || !fb.databaseURL || typeof global.firebase === 'undefined') {
+      return Promise.resolve(false);
+    }
+    try {
+      if (!global.firebase.apps.length) {
+        global.firebase.initializeApp({
+          apiKey: fb.apiKey,
+          authDomain: fb.authDomain,
+          databaseURL: fb.databaseURL,
+          projectId: fb.projectId
+        });
+      }
+      firebaseDb = global.firebase.database();
+      if (!firebaseBound) {
+        firebaseBound = true;
+        firebaseDb.ref('averias/snapshot').on('value', function (snap) {
+          var val = snap.val();
+          if (!val) return;
+          var merged = mergeAveriasSnapshots(getLocalSnapshot(), val);
+          applySnapshotToLocal(merged);
+        });
+      }
+      return Promise.resolve(true);
+    } catch (e) {
+      console.warn('[AveriasCloud] Firebase init error:', e);
+      return Promise.resolve(false);
+    }
+  }
+
   function pullFromServer() {
-    var url = apiUrl('/api/data/averias');
-    return fetchJson(url).then(function (res) {
+    if (!canUseServerApi()) return Promise.resolve(null);
+    return fetchJson(apiUrl('/api/data/averias')).then(function (res) {
       return res && res.data ? res.data : null;
     }).catch(function () { return null; });
   }
@@ -159,7 +233,8 @@
     if (!jb || !jb.enabled || !jb.binId || !jb.accessKey) return Promise.resolve(null);
     return global.fetch('https://api.jsonbin.io/v3/b/' + jb.binId + '/latest', {
       headers: { 'X-Access-Key': jb.accessKey },
-      cache: 'no-store'
+      cache: 'no-store',
+      mode: 'cors'
     }).then(function (res) {
       if (!res.ok) throw new Error('jsonbin');
       return res.json();
@@ -168,30 +243,40 @@
     }).catch(function () { return null; });
   }
 
+  function pullFromFirebase() {
+    if (!firebaseDb) return Promise.resolve(null);
+    return firebaseDb.ref('averias/snapshot').once('value').then(function (snap) {
+      return snap.val() || null;
+    }).catch(function () { return null; });
+  }
+
   function pullAll() {
-    return Promise.all([pullFromServer(), pullFromStatic(), pullFromJsonBin()]).then(function (parts) {
-      var merged = getLocalSnapshot();
+    return Promise.all([
+      pullFromServer(),
+      pullFromStatic(),
+      pullFromJsonBin(),
+      pullFromFirebase()
+    ]).then(function (parts) {
+      var merged = getLocalSnapshot() || EMPTY;
       parts.forEach(function (part) {
         if (part) merged = mergeAveriasSnapshots(merged, part);
       });
       if (merged) {
         applySnapshotToLocal(merged);
         lastPullAt = Date.now();
-        notifyUpdated('pull');
       }
       return merged;
     });
   }
 
   function pushToServer(snap) {
-    var url = apiUrl('/api/data/averias');
-    return global.fetch(url, {
+    if (!canUseServerApi()) return Promise.resolve(false);
+    return global.fetch(apiUrl('/api/data/averias'), {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ data: snap, source: 'client' })
     }).then(function (res) {
-      if (!res.ok) throw new Error('push server failed');
-      return true;
+      return res.ok;
     }).catch(function () { return false; });
   }
 
@@ -204,26 +289,53 @@
         'Content-Type': 'application/json',
         'X-Access-Key': jb.accessKey
       },
-      body: JSON.stringify(snap)
+      body: JSON.stringify(snap),
+      mode: 'cors'
     }).then(function (res) { return res.ok; }).catch(function () { return false; });
   }
 
-  function pushSnapshot(snap) {
-    if (!snap || pushing) return Promise.resolve(false);
+  function pushToFirebase(snap) {
+    if (!firebaseDb) return Promise.resolve(false);
+    return firebaseDb.ref('averias/snapshot').set(snap).then(function () {
+      return true;
+    }).catch(function () { return false; });
+  }
+
+  function pushSnapshot(snap, retries) {
+    if (!snap) return Promise.resolve({ ok: false, reason: 'empty' });
+    if (pushing) return Promise.resolve({ ok: false, reason: 'busy' });
     pushing = true;
+    retries = retries == null ? 2 : retries;
     snap.updatedAt = new Date().toISOString();
-    applySnapshotToLocal(snap);
-    return Promise.all([pushToServer(snap), pushToJsonBin(snap)]).then(function (results) {
-      var ok = results.some(Boolean);
-      if (ok && isLanHost()) {
-        global.fetch('/api/publish-averias-live', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ data: snap })
-        }).catch(function () { /* noop */ });
-      }
-      return ok;
-    }).finally(function () {
+    applySnapshotToLocal(snap, true);
+
+    function attempt(n) {
+      return Promise.all([
+        pushToServer(snap),
+        pushToJsonBin(snap),
+        pushToFirebase(snap)
+      ]).then(function (results) {
+        var ok = results.some(Boolean);
+        if (ok) {
+          if (isLanHost()) {
+            global.fetch('/api/publish-averias-live', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ data: snap })
+            }).catch(function () { /* noop */ });
+          }
+          return { ok: true };
+        }
+        if (n < retries) {
+          return new Promise(function (resolve) {
+            global.setTimeout(function () { resolve(attempt(n + 1)); }, 800);
+          });
+        }
+        return { ok: false, reason: 'no-cloud' };
+      });
+    }
+
+    return attempt(0).finally(function () {
       pushing = false;
     });
   }
@@ -246,29 +358,46 @@
 
   function startPolling() {
     clearInterval(pollTimer);
-    var sec = (siteConfig && siteConfig.pollSeconds) || 15;
+    var sec = (siteConfig && siteConfig.pollSeconds) || 5;
     pollTimer = global.setInterval(function () {
       if (document.visibilityState === 'visible') pullAll();
-    }, Math.max(8, sec) * 1000);
+    }, Math.max(4, sec) * 1000);
   }
 
-  function updateSyncBadge() {
+  function isCloudConfigured() {
+    var jb = siteConfig && siteConfig.averiasJsonBin;
+    var fb = siteConfig && siteConfig.firebase;
+    return !!(
+      resolvePublicBase() ||
+      (jb && jb.enabled && jb.binId && jb.accessKey) ||
+      (fb && fb.enabled && fb.databaseURL)
+    );
+  }
+
+  function updateSyncUi() {
     var btn = global.document.getElementById('btnSyncAverias');
-    if (!btn) return;
-    var online = !!(resolvePublicBase() || (siteConfig && siteConfig.averiasJsonBin && siteConfig.averiasJsonBin.enabled));
-    btn.title = online
-      ? 'Sincronizar reportes (internet activo)'
-      : 'Sincronizar reportes (GitHub + servidor cloud)';
-    btn.classList.toggle('cloud-active', online);
+    if (btn) {
+      var online = isCloudConfigured();
+      btn.title = online
+        ? 'Sincronizar reportes (nube activa)'
+        : 'Sin nube — ejecute setup-averias-cloud.ps1 en el servidor';
+      btn.classList.toggle('cloud-active', online);
+    }
+    var banner = global.document.getElementById('avSyncBanner');
+    if (banner) {
+      banner.hidden = isCloudConfigured();
+    }
   }
 
   function init() {
     return loadSiteConfig().then(function () {
+      return initFirebase();
+    }).then(function () {
       return probeServerBase(resolvePublicBase()).then(function (alive) {
-        if (!alive && siteConfig && siteConfig.publicSyncBaseUrl) {
+        if (!alive && siteConfig && siteConfig.publicSyncBaseUrl && !isLanHost()) {
           publicBase = '';
         }
-        updateSyncBadge();
+        updateSyncUi();
         return pullAll();
       });
     }).then(function () {
@@ -281,7 +410,7 @@
         publicBase = resolvePublicBase();
         pullAll();
         startSSE();
-        updateSyncBadge();
+        updateSyncUi();
       });
       document.addEventListener('lan-sync', function (ev) {
         if (ev.detail && ev.detail.store === 'averias') notifyUpdated('lan');
@@ -301,9 +430,7 @@
     mergeAveriasSnapshots: mergeAveriasSnapshots,
     pull: pullAll,
     push: pushSnapshot,
-    isCloudConfigured: function () {
-      return !!(resolvePublicBase() || (siteConfig && siteConfig.averiasJsonBin && siteConfig.averiasJsonBin.enabled));
-    },
+    isCloudConfigured: isCloudConfigured,
     getPublicBase: function () { return resolvePublicBase(); },
     getLastPullAt: function () { return lastPullAt; }
   };

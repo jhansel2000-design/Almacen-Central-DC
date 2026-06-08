@@ -330,6 +330,21 @@ body.averias-dash-view {
     padding: 3px 8px;
   }
 
+  .averias-app .av-sync-banner {
+    flex-shrink: 0;
+    margin: 0;
+    padding: 10px 14px;
+    font-size: 0.82rem;
+    line-height: 1.4;
+    color: #ffb74d;
+    background: rgba(255, 152, 0, 0.12);
+    border-bottom: 1px solid rgba(255, 152, 0, 0.25);
+  }
+
+  .averias-app .av-sync-banner[hidden] {
+    display: none !important;
+  }
+
   .averias-app .btn-fit-screen {
     display: inline-flex;
     align-items: center;
