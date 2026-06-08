@@ -560,7 +560,12 @@
       setLoginLoading(false);
       if (!user) {
         PC.recordLoginFailure();
-        showAuthError('Usuario o contraseña incorrectos.');
+        var msg = 'Usuario o contraseña incorrectos.';
+        if (global.PlatformWebUsers && global.PlatformWebUsers.isPublicWeb &&
+            global.PlatformWebUsers.isPublicWeb() && !global.PlatformAdmin.isPrimaryLoginName(username)) {
+          msg += ' En la web pública el personal debe estar publicado por el administrador.';
+        }
+        showAuthError(msg);
         return;
       }
       PC.clearLoginAttempts();
