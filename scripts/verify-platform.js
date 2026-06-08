@@ -138,6 +138,7 @@ const loadOrder = [
   'js/platform-despacho-store.js',
   'js/platform-despacho-ui.js',
   'js/platform-despacho-auth.js',
+  'js/platform-admin.js',
   'js/platform-excel.js',
   'js/platform-site-filter.js',
   'js/platform-ops-dashboard.js',
@@ -255,6 +256,37 @@ else ok('TV dashboard: slides=' + g.PlatformTvDashboard.TV_SLIDES.join(','));
   PC.clearDespachoSession();
   if (PC.getDespachoSession()) fail('Despacho clearSession failed');
   else ok('Despacho auth: login + sesión panel_despacho_session separada');
+})();
+
+// 5e. Usuarios registrados — crear y autenticar personal
+(function () {
+  var PA = g.PlatformAdmin;
+  var PC = g.PanelCore;
+  if (!PA || !PC) {
+    fail('PlatformAdmin or PanelCore missing for staff auth test');
+    return;
+  }
+  var testUser = 'staff_test_' + Date.now().toString(36);
+  var pass = 'ClaveStaff01';
+  var hash = PC.sha256Sync(pass);
+  var created = PA.createUser({
+    username: testUser,
+    name: 'Personal Prueba',
+    role: 'supervisor',
+    passwordHash: hash
+  });
+  if (!created.ok || !created.user) fail('createUser staff failed: ' + (created.message || ''));
+  var authed = PA.authenticate(testUser, hash);
+  if (!authed || authed.username !== testUser) fail('authenticate staff user failed after createUser');
+  var merged = PA.mergeUserRegistries(
+    PA.getUsers(),
+    [{ id: 'u_remote_only', username: 'remoto1', name: 'Remoto', role: 'operador', passwordHash: hash, active: true, areas: [], extraPermissions: [] }]
+  );
+  if (!merged.some(function (u) { return u.username === testUser; })) fail('mergeUserRegistries dropped local staff user');
+  if (!merged.some(function (u) { return u.username === 'remoto1'; })) fail('mergeUserRegistries dropped remote staff user');
+  PA.deleteUser(created.user.id);
+  PA.deleteUser(merged.find(function (u) { return u.username === 'remoto1'; }).id);
+  ok('Staff users: createUser + authenticate + LAN merge');
 })();
 
 // 6. Admin diagnostics — no missing required globals for Linea

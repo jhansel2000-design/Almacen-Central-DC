@@ -225,8 +225,25 @@
     return getStaffUsers();
   }
 
+  function mergeUserRegistries(localList, remoteList) {
+    var map = Object.create(null);
+    (Array.isArray(remoteList) ? remoteList : []).forEach(function (u) {
+      if (u && u.id) map[u.id] = normalizeUser(Object.assign({}, u));
+    });
+    (Array.isArray(localList) ? localList : []).forEach(function (u) {
+      if (u && u.id) {
+        map[u.id] = normalizeUser(Object.assign({}, map[u.id] || {}, u));
+      }
+    });
+    return ensureUserRegistry(Object.values(map));
+  }
+
   function saveUsers(users) {
-    if (global.localStorage) localStorage.setItem(KEYS.users, JSON.stringify(users.map(normalizeUser)));
+    var list = ensureUserRegistry((users || []).map(normalizeUser));
+    if (global.localStorage) {
+      localStorage.setItem(KEYS.users, JSON.stringify(list));
+      localStorage.setItem(KEYS.users + '_sync', String(Date.now()));
+    }
   }
 
   function getAreas() {
@@ -370,8 +387,8 @@
     }
     var user = normalizeUser({
       id: uid(),
-      username: data.username.trim(),
-      name: data.name.trim() || data.username,
+      username: String(data.username || '').trim(),
+      name: String(data.name || data.username || '').trim() || String(data.username || '').trim(),
       role: data.role,
       passwordHash: data.passwordHash,
       areas: data.areas || [],
@@ -525,6 +542,7 @@
     isPrimaryAdminUser: isPrimaryAdminUser,
     isPrimaryLoginName: isPrimaryLoginName,
     saveUsers: saveUsers,
+    mergeUserRegistries: mergeUserRegistries,
     getAreas: getAreas,
     saveAreas: saveAreas,
     getLogs: getLogs,

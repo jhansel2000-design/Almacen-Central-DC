@@ -2423,6 +2423,10 @@
     });
   }
 
+  function hashPassword(password) {
+    return PC.sha256Sync(String(password || '').trim());
+  }
+
   function saveUserFromForm() {
     if (!userCan('users.manage')) {
       toastNotify('No tienes permiso para gestionar usuarios.', 'warn');
@@ -2430,7 +2434,7 @@
     }
     var editId = $('userEditId').value;
     var username = PC.sanitizeUsername($('userUsername').value);
-    var password = $('userPassword').value;
+    var password = String(($('userPassword') && $('userPassword').value) || '').trim();
     var displayName = ($('userName').value || '').trim();
     if (!username && !editId) {
       alert('El usuario es obligatorio.');
@@ -2457,10 +2461,8 @@
       patch.username = payload.username;
       patch.role = payload.role;
       if (password) {
-        PC.sha256(password).then(function (hash) {
-          patch.passwordHash = hash;
-          finishUserSave(editId, patch);
-        });
+        patch.passwordHash = hashPassword(password);
+        finishUserSave(editId, patch);
         return;
       }
       finishUserSave(editId, patch);
@@ -2475,22 +2477,21 @@
       alert('La contraseña es obligatoria para usuarios nuevos.');
       return;
     }
-    PC.sha256(password).then(function (hash) {
-      var res = global.PlatformAdmin.createUser({
-        username: payload.username,
-        name: payload.name,
-        role: payload.role,
-        areas: [],
-        passwordHash: hash
-      });
-      if (!res.ok) {
-        alert(res.message || 'Error al crear usuario.');
-        return;
-      }
-      resetStaffUserForm();
-      refreshAdminTables();
-      toastNotify('Usuario registrado correctamente.', 'ok');
+    var hash = hashPassword(password);
+    var res = global.PlatformAdmin.createUser({
+      username: payload.username,
+      name: payload.name,
+      role: payload.role,
+      areas: [],
+      passwordHash: hash
     });
+    if (!res.ok) {
+      alert(res.message || 'Error al crear usuario.');
+      return;
+    }
+    resetStaffUserForm();
+    refreshAdminTables();
+    toastNotify('Usuario registrado correctamente.', 'ok');
   }
 
   function finishUserSave(editId, patch) {

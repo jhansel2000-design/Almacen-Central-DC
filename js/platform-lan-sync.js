@@ -102,6 +102,22 @@
     global.localStorage.__lanHooked = true;
   }
 
+  function getLocalStoreTime(lsKey) {
+    if (!global.localStorage) return 0;
+    if (lsKey === STORE_TO_LS.users) {
+      var ts = localStorage.getItem(lsKey + '_sync');
+      if (ts) return parseInt(ts, 10) || 0;
+    }
+    return 0;
+  }
+
+  function applyUsersMerge(local, remote) {
+    if (!global.PlatformAdmin || !global.PlatformAdmin.mergeUserRegistries) {
+      return remote || local;
+    }
+    return global.PlatformAdmin.mergeUserRegistries(local, remote);
+  }
+
   function mergeOnConnect(serverPayload) {
     var stores = (serverPayload && serverPayload.stores) || {};
     Object.keys(STORE_TO_LS).forEach(function (store) {
@@ -117,12 +133,18 @@
       } else if (remote && !local) {
         applyRemote(lsKey, remote, store);
       } else if (remote && local) {
-        var rTime = remoteWrap.mtime || getUpdatedAt(remote);
-        var lTime = getUpdatedAt(local);
-        if (rTime >= lTime) {
-          applyRemote(lsKey, remote, store);
+        if (store === 'users') {
+          var mergedUsers = applyUsersMerge(local, remote);
+          applyRemote(lsKey, mergedUsers, store);
+          pushToServer(lsKey, JSON.stringify(mergedUsers));
         } else {
-          pushToServer(lsKey, localRaw);
+          var rTime = remoteWrap.mtime || getUpdatedAt(remote);
+          var lTime = getUpdatedAt(local) || getLocalStoreTime(lsKey);
+          if (rTime >= lTime) {
+            applyRemote(lsKey, remote, store);
+          } else {
+            pushToServer(lsKey, localRaw);
+          }
         }
       }
       if (store === 'users' && global.PlatformAdmin && global.PlatformAdmin.forceSyncPrimaryCredentials) {
@@ -143,7 +165,15 @@
       if (!payload || !payload.store) return;
       apiFetch('/api/data/' + payload.store).then(function (res) {
         if (res && res.data != null) {
-          applyRemote(STORE_TO_LS[payload.store], res.data, payload.store);
+          var lsKey = STORE_TO_LS[payload.store];
+          var merged = res.data;
+          if (payload.store === 'users' && global.localStorage && global.PlatformAdmin) {
+            var localRaw = localStorage.getItem(lsKey);
+            var local = null;
+            try { local = localRaw ? JSON.parse(localRaw) : null; } catch (e) { local = null; }
+            merged = applyUsersMerge(local, res.data);
+          }
+          applyRemote(lsKey, merged, payload.store);
           if (payload.store === 'users' && global.PlatformAdmin && global.PlatformAdmin.forceSyncPrimaryCredentials) {
             global.PlatformAdmin.forceSyncPrimaryCredentials();
           }

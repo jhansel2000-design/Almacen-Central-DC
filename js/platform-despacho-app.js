@@ -125,7 +125,7 @@
 
   function doLogin() {
     var username = PC.sanitizeUsername($('despAuthUsername') && $('despAuthUsername').value);
-    var password = ($('despAuthPassword') && $('despAuthPassword').value) || '';
+    var password = String(($('despAuthPassword') && $('despAuthPassword').value) || '').trim();
 
     showAuthError('');
     var allowed = PC.checkDespachoLoginAllowed();
@@ -149,7 +149,8 @@
     }
 
     setLoginLoading(true);
-    PC.sha256(password).then(function (hash) {
+    try {
+      var hash = PC.sha256Sync(password);
       var user = Auth.authenticate(username, hash);
       setLoginLoading(false);
       if (!user) {
@@ -161,10 +162,10 @@
       PC.saveDespachoSession(user);
       enterApp(user);
       toast('Bienvenido al portal de despacho, ' + (user.name || user.username) + '.', 'ok');
-    }).catch(function () {
+    } catch (err) {
       setLoginLoading(false);
       showAuthError('No se pudo validar la sesión. Intenta de nuevo.');
-    });
+    }
   }
 
   function initAuth() {
