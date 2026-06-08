@@ -5,7 +5,8 @@ Sitio: Almacén Central
 
 Video principal (pantalla de inicio de sesión):
 
-  login-operation-lite.mp4 — bucle corto (~22 s, ~2.5 MB) para login web
+  login-operation-mini.mp4 — bucle corto (~12 s, ~380 KB) video LAN
+  login-operation-lite.mp4 — alternativa (~22 s, ~2.5 MB)
   login-operation-full.mp4 — montaje completo (~118 s, ~20 MB) solo LAN local
   Secuencia: pasillos/racks → montacargas (3 tomas) → inspección de inventario
 

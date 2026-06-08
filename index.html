@@ -40,20 +40,18 @@
   <noscript><p class="noscript-msg">Activa JavaScript para usar la plataforma.</p></noscript>
 
   <div class="auth-overlay" id="authOverlay" role="dialog" aria-labelledby="authTitle">
-    <div class="auth-video-wrap" aria-hidden="true">
+    <div class="auth-video-wrap auth-video-wrap--poster" aria-hidden="true">
       <video
-        class="auth-video is-active"
+        class="auth-video"
         id="authBgVideo"
         data-auth-clip="operation"
-        autoplay
         muted
         loop
         playsinline
-        preload="metadata"
+        preload="none"
         disablepictureinpicture
         poster="assets/video/login-operation-poster.jpg"
         tabindex="-1">
-        <source src="assets/video/login-operation-lite.mp4" type="video/mp4">
       </video>
       <div class="auth-video-scrim"></div>
     </div>

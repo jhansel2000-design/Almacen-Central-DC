@@ -258,10 +258,15 @@
 
   function authVideoShouldRun() {
     if (overlayIsHidden()) return false;
-    if (global.document && global.document.documentElement.classList.contains('perf-lite')) {
-      return false;
+    if (global.PlatformPerf) {
+      if (global.PlatformPerf.shouldUsePosterOnly && global.PlatformPerf.shouldUsePosterOnly()) {
+        return false;
+      }
+      if (global.PlatformPerf.shouldLoadAuthVideo && !global.PlatformPerf.shouldLoadAuthVideo()) {
+        return false;
+      }
     }
-    if (global.PlatformPerf && global.PlatformPerf.shouldUsePerfLite && global.PlatformPerf.shouldUsePerfLite()) {
+    if (global.document && global.document.documentElement.classList.contains('perf-lite')) {
       return false;
     }
     if (global.matchMedia && global.matchMedia('(prefers-reduced-motion: reduce)').matches) {
@@ -349,17 +354,7 @@
   }
 
   function startAuthVideoWatchdog() {
-    if (authBgVideoState.watchdog) return;
-    authBgVideoState.watchdog = global.setInterval(function () {
-      if (!authVideoShouldRun()) return;
-      getAuthBgVideos().forEach(function (video) {
-        if (video.paused && !video.ended) {
-          video.muted = true;
-          var p = video.play();
-          if (p && p.catch) p.catch(function () { /* ignore */ });
-        }
-      });
-    }, 4000);
+    /* desactivado — el reintento constante causaba tirones en el video */
   }
 
   function stopAuthVideoWatchdog() {
@@ -426,6 +421,13 @@
     var clips = getAuthBgVideos();
     if (!clips.length) return;
     authBgVideoState.clips = clips;
+    if (!authVideoShouldRun()) {
+      stopAuthVideoWatchdog();
+      clips.forEach(function (v) {
+        try { v.pause(); } catch (e) { /* ignore */ }
+      });
+      return;
+    }
     var reduceMotion = global.matchMedia && global.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (!visible || reduceMotion) {
       stopAuthVideoWatchdog();
@@ -553,16 +555,6 @@
 
     if (!overlayIsHidden()) {
       syncAuthBgVideo(true);
-      var kickVideo = $('authBgVideo');
-      if (kickVideo && !document.body.dataset.authVideoKick) {
-        document.body.dataset.authVideoKick = '1';
-        document.body.addEventListener('pointerdown', function kickAuthVideoOnce() {
-          if (!authVideoShouldRun()) return;
-          kickVideo.muted = true;
-          var p = kickVideo.play();
-          if (p && p.catch) p.catch(function () { /* ignore */ });
-        }, { once: true, passive: true });
-      }
     }
   }
 

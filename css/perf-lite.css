@@ -1,13 +1,58 @@
 /* Modo rendimiento — activado en conexiones lentas o equipos modestos */
 
+.auth-video-wrap--poster {
+  background: #03060c;
+}
+
+.auth-video-wrap--poster::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: url('../assets/video/login-operation-poster.jpg') center 42% / cover no-repeat;
+  transform: scale(1);
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .auth-video-wrap--poster::before {
+    animation: authPosterKen 28s ease-in-out infinite alternate;
+  }
+}
+
+@keyframes authPosterKen {
+  from { transform: scale(1); }
+  to { transform: scale(1.05); }
+}
+
+.auth-video-wrap--poster .auth-video {
+  display: none !important;
+}
+
+.auth-video-wrap.is-video-ready::before {
+  opacity: 0;
+  transition: opacity 0.8s ease;
+  pointer-events: none;
+}
+
+.auth-video-wrap.is-video-ready .auth-video {
+  display: block !important;
+  opacity: 1;
+}
+
+html.perf-lite .auth-video-wrap::before {
+  animation: none !important;
+  transform: none !important;
+}
+
+
 html.perf-lite .auth-video {
   display: none !important;
 }
 
-html.perf-lite .auth-video-wrap {
-  background:
-    url('../assets/video/login-operation-poster.jpg') center 42% / cover no-repeat,
-    linear-gradient(165deg, #03060c, #0a1119);
+html.perf-lite .auth-video-wrap::before {
+  animation: none !important;
+  transform: none !important;
 }
 
 html.perf-lite .auth-video-scrim {
