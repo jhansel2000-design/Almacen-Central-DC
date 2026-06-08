@@ -284,7 +284,44 @@ html[data-theme="light"] .auth-field-input::placeholder{ color:#5a6d82; }
   45%,55%{ opacity:1; }
   100%{ transform:translateX(220%) rotate(18deg); opacity:0; }
 }
-.btn-web-download{ font-size:0.78rem; padding:0.45rem 0.75rem; }
+.btn-relay-toggle{
+  display:none;
+  width:100%;
+  justify-content:center;
+  gap:0.45rem;
+  margin-bottom:0.35rem;
+  border:1px solid rgba(52,211,153,0.22);
+  background:rgba(52,211,153,0.08);
+  color:rgba(255,255,255,0.82);
+  font-size:0.78rem;
+  font-weight:700;
+  border-radius:10px;
+  padding:0.55rem 0.75rem;
+  cursor:pointer;
+  transition:background .2s ease,border-color .2s ease,box-shadow .2s ease;
+}
+.sidebar-footer .btn-relay-toggle:not(.perm-denied){ display:inline-flex; }
+.btn-relay-toggle.is-active{
+  border-color:rgba(52,211,153,0.55);
+  background:rgba(52,211,153,0.18);
+  color:#6ee7b7;
+  box-shadow:0 0 0 1px rgba(52,211,153,0.25);
+}
+.admin-relay-url-row{
+  display:flex; flex-wrap:wrap; gap:0.5rem; align-items:center; margin-bottom:0.5rem;
+}
+.admin-relay-url-row input{
+  flex:1 1 220px; min-width:0;
+}
+html.dc-relay-stealth .lan-sync-badge,
+html.dc-relay-stealth #lanSyncBadge{ display:none !important; }
+html[data-theme="light"] .btn-relay-toggle{
+  background:rgba(16,185,129,0.08);
+  color:#065f46;
+  border-color:rgba(16,185,129,0.25);
+}
+.admin-relay-ok{ color:#34d399 !important; }
+.admin-relay-err{ color:#fb923c !important; }
 html[data-theme="light"] .admin-web-publish-card{
   background:linear-gradient(135deg, rgba(21,101,192,0.06) 0%, rgba(16,185,129,0.05) 100%), #fff;
   border-color:rgba(21,101,192,0.18);

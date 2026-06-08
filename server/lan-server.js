@@ -194,7 +194,21 @@ function handleApi(req, res, url) {
         return 'http://' + i.address + ':' + PORT;
       }),
       clients: sseClients.size,
-      stores: Object.keys(STORES)
+      stores: Object.keys(STORES),
+      relay: true
+    });
+  }
+
+  if (req.method === 'GET' && p === '/api/relay/discover') {
+    const ips = getLanAddresses();
+    const suggested = ips.map(function (i) {
+      return 'http://' + i.address + ':' + PORT;
+    });
+    suggested.unshift('http://localhost:' + PORT);
+    return sendJson(res, 200, {
+      ok: true,
+      suggested: suggested,
+      hostname: os.hostname()
     });
   }
 

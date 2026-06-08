@@ -777,6 +777,7 @@
     });
     updateRequestsBadge();
     if (global.PlatformUtils) global.PlatformUtils.applyRoleUi(state.user);
+    if (global.PlatformNetworkRelay) global.PlatformNetworkRelay.syncAdminToggleUi();
   }
 
   function updateRequestsBadge() {
@@ -1554,6 +1555,93 @@
     }).join('');
   }
 
+  function updateRelayStatusUi(msg, kind) {
+    var el = $('configNetworkRelayStatus');
+    if (!el) return;
+    el.textContent = msg || 'Estado: sin configurar';
+    el.className = 'admin-hint small' + (kind === 'ok' ? ' admin-relay-ok' : kind === 'err' ? ' admin-relay-err' : '');
+  }
+
+  function readRelayFromUi() {
+    return {
+      enabled: !!($('configNetworkRelayEnabled') && $('configNetworkRelayEnabled').checked),
+      autoRedirect: !($('configNetworkRelayAutoRedirect') && !$('configNetworkRelayAutoRedirect').checked),
+      baseUrl: String(($('configNetworkRelayUrl') && $('configNetworkRelayUrl').value) || '').trim()
+    };
+  }
+
+  function applyNetworkRelayConfig(notify) {
+    if (!global.PlatformNetworkRelay) return;
+    var relay = readRelayFromUi();
+    if (relay.enabled && !relay.baseUrl) {
+      if (notify) toastNotify('Escribe la URL del servidor LAN para activar la red privada.', 'warn');
+      return false;
+    }
+    state.config.networkRelay = Object.assign({}, state.config.networkRelay || {}, relay);
+    global.PlatformStore.saveConfig(state.config);
+    global.PlatformNetworkRelay.saveRelayConfig(state.config.networkRelay);
+    global.PlatformNetworkRelay.applyRelayFromConfig();
+    global.PlatformNetworkRelay.syncAdminToggleUi();
+    if (relay.enabled) {
+      updateRelayStatusUi('Estado: red privada activa (invisible para usuarios)', 'ok');
+    } else {
+      updateRelayStatusUi('Estado: red privada desactivada', '');
+    }
+    if (notify) {
+      toastNotify(relay.enabled ? 'Red privada activada en toda la web.' : 'Red privada desactivada.', 'ok');
+    }
+    return true;
+  }
+
+  function toggleNetworkRelayQuick() {
+    if (!userCan('config.save')) {
+      toastNotify('Solo el administrador puede controlar la red privada.', 'warn');
+      return;
+    }
+    if (!global.PlatformNetworkRelay) return;
+    var relay = state.config.networkRelay || {};
+    if (!relay.enabled && !relay.baseUrl) {
+      openAdminModal();
+      global.PlatformAdminUI && global.PlatformAdminUI.switchTab('config');
+      toastNotify('Configura la URL del servidor LAN en Configuración.', 'info');
+      return;
+    }
+    var on = global.PlatformNetworkRelay.toggleRelayEnabled();
+    state.config = global.PlatformStore.getConfig();
+    global.PlatformNetworkRelay.syncAdminToggleUi();
+    toastNotify(on ? 'Red privada activada.' : 'Red privada desactivada.', 'ok');
+    updateRelayStatusUi(on ? 'Estado: red privada activa (invisible para usuarios)' : 'Estado: red privada desactivada', on ? 'ok' : '');
+  }
+
+  function detectRelayUrl() {
+    fetch('/api/relay/discover').then(function (res) { return res.json(); }).then(function (body) {
+      if (!body.ok || !body.suggested || !body.suggested.length) throw new Error('Sin servidor LAN');
+      if ($('configNetworkRelayUrl')) $('configNetworkRelayUrl').value = body.suggested[0];
+      updateRelayStatusUi('Detectado: ' + body.suggested[0], 'ok');
+      toastNotify('Servidor LAN detectado.', 'ok');
+    }).catch(function () {
+      updateRelayStatusUi('No se detectó servidor. Enciende serve-dashboard.ps1', 'err');
+      toastNotify('Enciende serve-dashboard.ps1 en este equipo.', 'warn');
+    });
+  }
+
+  function testRelayUrl() {
+    var url = String(($('configNetworkRelayUrl') && $('configNetworkRelayUrl').value) || '').trim();
+    if (!url) {
+      toastNotify('Escribe la URL del servidor LAN.', 'warn');
+      return;
+    }
+    if (!global.PlatformNetworkRelay) return;
+    updateRelayStatusUi('Probando conexión…', '');
+    global.PlatformNetworkRelay.probeRelayUrl(url).then(function () {
+      updateRelayStatusUi('Conexión OK · ' + url, 'ok');
+      toastNotify('Servidor LAN responde correctamente.', 'ok');
+    }).catch(function () {
+      updateRelayStatusUi('No responde · revisa URL y firewall', 'err');
+      toastNotify('No se pudo conectar al servidor LAN.', 'err');
+    });
+  }
+
   function loadConfigForm() {
     if (!state.config || !userCan('config.save')) return;
     var refreshInput = $('refreshSeconds');
@@ -1573,6 +1661,18 @@
     renderFileHistory();
     renderAdminLayoutPickers();
     syncAiModeBadge();
+    var relay = state.config.networkRelay || {};
+    if ($('configNetworkRelayEnabled')) $('configNetworkRelayEnabled').checked = !!relay.enabled;
+    if ($('configNetworkRelayAutoRedirect')) $('configNetworkRelayAutoRedirect').checked = relay.autoRedirect !== false;
+    if ($('configNetworkRelayUrl')) $('configNetworkRelayUrl').value = relay.baseUrl || '';
+    if (relay.enabled && relay.baseUrl) {
+      updateRelayStatusUi('Estado: red privada activa (invisible para usuarios)', 'ok');
+    } else if (relay.baseUrl) {
+      updateRelayStatusUi('Estado: configurada · inactiva', '');
+    } else {
+      updateRelayStatusUi('Estado: sin configurar', '');
+    }
+    if (global.PlatformNetworkRelay) global.PlatformNetworkRelay.syncAdminToggleUi();
   }
 
   function populateAiVoiceSelect() {
@@ -2526,6 +2626,9 @@
     });
 
     bindOnce($('btnSaveConfig'), 'click', saveConfigFromUi);
+    bindOnce($('btnNetworkRelay'), 'click', toggleNetworkRelayQuick);
+    bindOnce($('btnDetectRelayUrl'), 'click', detectRelayUrl);
+    bindOnce($('btnTestRelayUrl'), 'click', testRelayUrl);
     bindOnce($('btnSaveOpenai'), 'click', saveOpenaiFromUi);
     bindOnce($('btnTestAiVoice'), 'click', function () {
       if ($('aiVoiceSelect')) {
@@ -2718,6 +2821,7 @@
       }
     }
     global.PlatformStore.saveConfig(state.config);
+    applyNetworkRelayConfig(false);
     startAutoRefresh();
     renderSubnav();
     syncOpsTvPresentation();

@@ -65,7 +65,12 @@
     tvLayout: [
       { id: 'ops', enabled: true, order: 0 },
       { id: 'fac', enabled: true, order: 1 }
-    ]
+    ],
+    networkRelay: {
+      enabled: false,
+      baseUrl: '',
+      autoRedirect: true
+    }
   };
 
   var MODULE_LABELS = {
@@ -114,7 +119,8 @@
         : DEFAULT_CONFIG.generalLayout.slice(),
       tvLayout: (cfg.tvLayout && cfg.tvLayout.length)
         ? cfg.tvLayout
-        : DEFAULT_CONFIG.tvLayout.slice()
+        : DEFAULT_CONFIG.tvLayout.slice(),
+      networkRelay: Object.assign({}, DEFAULT_CONFIG.networkRelay, cfg.networkRelay || {})
     });
     if (global.PlatformLayout && global.PlatformLayout.mergeConfigLayout) {
       global.PlatformLayout.mergeConfigLayout(out);

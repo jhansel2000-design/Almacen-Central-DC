@@ -186,6 +186,7 @@
   }
 
   function showLanBadge() {
+    if (document.documentElement.classList.contains('dc-relay-stealth')) return;
     if (document.getElementById('lanSyncBadge')) return;
     var badge = document.createElement('span');
     badge.id = 'lanSyncBadge';
@@ -208,7 +209,9 @@
         showLanBadge();
         if (global.PlatformToast) {
           var ip = (health.ips && health.ips[0] && health.ips[0].address) || 'red local';
-          global.PlatformToast.info('Modo LAN activo · datos compartidos (' + ip + ')', 5000);
+          if (!document.documentElement.classList.contains('dc-relay-stealth')) {
+            global.PlatformToast.info('Modo LAN activo · datos compartidos (' + ip + ')', 5000);
+          }
         }
         try {
           global.dispatchEvent(new CustomEvent('lan-ready', { detail: health }));
