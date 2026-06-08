@@ -14,7 +14,7 @@
   <script src="js/platform-perf.js"></script>
   <link rel="preload" href="assets/img/login-wms-poster.jpg" as="image">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%232c98ff'/%3E%3Ctext x='16' y='22' text-anchor='middle' font-size='11' font-weight='800' fill='%23041018' font-family='system-ui'%3EDC%3C/text%3E%3C/svg%3E">
-  <link rel="stylesheet" href="css/platform.css?v=17">
+  <link rel="stylesheet" href="css/platform.css?v=18">
   <link rel="stylesheet" href="css/platform-enhance.css">
   <link rel="stylesheet" href="css/platform-gestures.css?v=15">
   <link rel="stylesheet" href="css/ops-dashboard.css">
@@ -369,10 +369,22 @@
               <button type="submit" class="btn btn-primary" id="btnSaveUser">Guardar usuario</button>
               <button type="button" class="btn" id="btnCancelUserEdit" hidden>Cancelar edición</button>
             </form>
-            <div class="admin-web-users-bar" id="adminWebUsersBar" data-perm="users.manage">
-              <p class="admin-hint small">Para que el personal entre desde <strong>GitHub Pages</strong>, publica los usuarios después de registrarlos.</p>
-              <button type="button" class="btn btn-primary" id="btnPublishWebUsers">Publicar usuarios en la web</button>
-              <button type="button" class="btn" id="btnDownloadWebUsers">Descargar web-users.json</button>
+            <div class="admin-web-publish-card" id="adminWebUsersBar" data-perm="users.manage">
+              <div class="admin-web-publish-head">
+                <span class="admin-web-publish-icon" aria-hidden="true">🌐</span>
+                <div class="admin-web-publish-copy">
+                  <strong>Acceso web inmediato</strong>
+                  <p class="admin-hint small">Al guardar un usuario se publica solo en GitHub Pages. No hace falta esperar ni ejecutar scripts.</p>
+                </div>
+              </div>
+              <div class="admin-web-publish-actions">
+                <button type="button" class="btn btn-web-publish" id="btnPublishWebUsers">
+                  <span class="btn-web-publish-glow" aria-hidden="true"></span>
+                  <span class="btn-web-publish-label">Publicar ahora</span>
+                </button>
+                <p class="admin-web-publish-status" id="webUsersPublishStatus" aria-live="polite">Listo para publicar</p>
+                <button type="button" class="btn btn-ghost btn-web-download" id="btnDownloadWebUsers" title="Descargar respaldo JSON">Descargar JSON</button>
+              </div>
             </div>
             <div id="staffUsersHost"></div>
           </div>
@@ -532,8 +544,8 @@
   <script defer src="js/platform-ai.js"></script>
   <script defer src="js/platform-toast.js"></script>
   <script defer src="js/platform-shortcuts.js"></script>
-  <script defer src="js/platform-web-users.js?v=15"></script>
-  <script defer src="js/platform-app.js?v=16"></script>
+  <script defer src="js/platform-web-users.js?v=16"></script>
+  <script defer src="js/platform-app.js?v=17"></script>
   <script defer src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js" crossorigin="anonymous"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js" crossorigin="anonymous"></script>
 </body>

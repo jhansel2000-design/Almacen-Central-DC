@@ -537,9 +537,86 @@
     btn.disabled = loading;
   }
 
+  function setWebPublishStatus(text, kind) {
+    var el = $('webUsersPublishStatus');
+    if (!el) return;
+    el.textContent = text || '';
+    el.classList.remove('is-live', 'is-busy', 'is-warn');
+    if (kind) el.classList.add(kind);
+  }
+
+  function setWebPublishButtonLoading(loading, ok) {
+    var btn = $('btnPublishWebUsers');
+    if (!btn) return;
+    btn.classList.toggle('is-loading', !!loading);
+    btn.classList.toggle('is-ok', !!ok && !loading);
+    var label = btn.querySelector('.btn-web-publish-label');
+    if (label) {
+      label.textContent = loading ? 'Publicando…' : (ok ? 'Publicado ✓' : 'Publicar ahora');
+    }
+    btn.disabled = !!loading;
+  }
+
+  function formatWebPublishResult(body) {
+    if (!body || !body.ok) return { text: 'No se pudo publicar.', kind: 'is-warn', toast: 'err' };
+    var count = body.count || 0;
+    if (body.live && body.pushed) {
+      return {
+        text: count + ' usuario(s) en la web · hace un momento',
+        kind: 'is-live',
+        toast: 'ok',
+        toastMsg: count + ' usuario(s) publicados. Ya pueden entrar en la web.'
+      };
+    }
+    if (body.gitError) {
+      return {
+        text: 'Guardado en disco · revisa conexión git',
+        kind: 'is-warn',
+        toast: 'warn',
+        toastMsg: 'Exportado localmente. Ejecuta publicar-usuarios-web.ps1 si falló el push.'
+      };
+    }
+    return {
+      text: count + ' usuario(s) exportados localmente',
+      kind: 'is-live',
+      toast: 'ok',
+      toastMsg: count + ' usuario(s) exportados.'
+    };
+  }
+
+  function publishWebUsersNow(showToast) {
+    if (!global.PlatformWebUsers) {
+      return Promise.resolve({ ok: false });
+    }
+    setWebPublishButtonLoading(true);
+    setWebPublishStatus('Publicando en GitHub Pages…', 'is-busy');
+    var run = global.PlatformWebUsers.publishLive || global.PlatformWebUsers.publishToDisk;
+    return run().then(function (body) {
+      var result = formatWebPublishResult(body);
+      setWebPublishStatus(result.text, result.kind);
+      setWebPublishButtonLoading(false, body && body.live && body.pushed);
+      if (showToast !== false && result.toastMsg) {
+        toastNotify(result.toastMsg, result.toast);
+      }
+      if (body && body.live && body.pushed) {
+        setTimeout(function () { setWebPublishButtonLoading(false, false); }, 2800);
+      }
+      return body;
+    }).catch(function () {
+      if (global.PlatformWebUsers.downloadWebUsersExport) {
+        global.PlatformWebUsers.downloadWebUsersExport();
+      }
+      setWebPublishStatus('Servidor local apagado · descargado JSON', 'is-warn');
+      setWebPublishButtonLoading(false);
+      if (showToast !== false) {
+        toastNotify('Enciende serve-dashboard.ps1 para publicar al instante.', 'warn');
+      }
+      return { ok: false };
+    });
+  }
+
   function triggerWebUsersPublish() {
-    if (!global.PlatformWebUsers || !global.PlatformWebUsers.publishToDisk) return;
-    global.PlatformWebUsers.publishToDisk().catch(function () { /* noop */ });
+    publishWebUsersNow(false);
   }
 
   function doLogin() {
@@ -2362,6 +2439,8 @@
       return;
     }
     refreshAdminTables();
+    toastNotify('Usuario eliminado. Actualizando la web…', 'info');
+    triggerWebUsersPublish();
   }
 
   function loadAreaForEdit(id) {
@@ -2531,7 +2610,7 @@
     }
     resetStaffUserForm();
     refreshAdminTables();
-    toastNotify('Usuario registrado correctamente.', 'ok');
+    toastNotify('Usuario registrado. Publicando en la web…', 'info');
     triggerWebUsersPublish();
   }
 
@@ -2548,7 +2627,7 @@
     }
     resetStaffUserForm();
     refreshAdminTables();
-    toastNotify('Usuario actualizado.', 'ok');
+    toastNotify('Usuario actualizado. Publicando en la web…', 'info');
     triggerWebUsersPublish();
   }
 
@@ -2563,26 +2642,10 @@
     }
     var staffCount = global.PlatformAdmin.getStaffUsers().length;
     if (!staffCount) {
-      alert('No hay personal registrado para publicar.');
+      toastNotify('No hay personal registrado para publicar.', 'warn');
       return;
     }
-    global.PlatformWebUsers.publishToDisk().then(function (body) {
-      var msg = 'Usuarios exportados (' + (body.count || staffCount) + ').\n\n' +
-        'Ahora ejecuta en PowerShell:\n\n' +
-        '  .\\scripts\\publicar-usuarios-web.ps1\n\n' +
-        'En 2-5 minutos podrán entrar desde:\n' +
-        'https://jhansel2000-design.github.io/Almacen-Central-DC/';
-      alert(msg);
-      toastNotify('Export listo. Ejecuta publicar-usuarios-web.ps1', 'ok');
-    }).catch(function () {
-      global.PlatformWebUsers.downloadWebUsersExport();
-      alert(
-        'Servidor local no detectado.\n\n' +
-        '1. Se descargó web-users.json\n' +
-        '2. Colócalo en la carpeta data/ del proyecto\n' +
-        '3. Ejecuta: .\\scripts\\publicar-usuarios-web.ps1'
-      );
-    });
+    publishWebUsersNow(true);
   }
 
   function saveAreaFromForm() {

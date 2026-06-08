@@ -44,18 +44,21 @@
         return;
       }
 
-      status.textContent = 'Enviando al servidor…';
-      fetch('/api/publish-web-users', {
+      status.textContent = 'Publicando en GitHub Pages…';
+      fetch('/api/publish-web-users-live', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ users: all })
       }).then(function (res) { return res.json(); })
         .then(function (body) {
           if (!body.ok) throw new Error(body.error || 'Error al publicar');
-          status.textContent = 'Listo: ' + body.count + ' usuario(s) exportados a data/web-users.json';
-          status.className = 'ok';
-          write('\nAhora ejecuta en PowerShell:');
-          write('  .\\scripts\\publicar-usuarios-web.ps1');
+          if (body.live && body.pushed) {
+            status.textContent = 'Listo: ' + body.count + ' usuario(s) ya están en la web pública.';
+          } else {
+            status.textContent = 'Exportados ' + body.count + ' usuario(s). Git push pendiente.';
+          }
+          status.className = body.live && body.pushed ? 'ok' : 'warn';
+          write('\nURL: https://jhansel2000-design.github.io/Almacen-Central-DC/');
         })
         .catch(function (err) {
           status.textContent = 'Error: ' + (err.message || err);

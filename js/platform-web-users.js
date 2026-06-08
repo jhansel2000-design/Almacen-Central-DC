@@ -66,6 +66,27 @@
     });
   }
 
+  function publishLive() {
+    if (!global.PlatformLanSync || !global.PlatformLanSync.isEnabled()) {
+      return Promise.resolve({ ok: false, message: 'Activa el servidor local (serve-dashboard.ps1).' });
+    }
+    var users = global.PlatformAdmin && global.PlatformAdmin.getUsers
+      ? global.PlatformAdmin.getUsers()
+      : [];
+    return fetch('/api/publish-web-users-live', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ users: users })
+    }).then(function (res) {
+      return res.json().catch(function () { return {}; }).then(function (body) {
+        if (!res.ok || !body.ok) {
+          throw new Error((body && body.error) || ('HTTP ' + res.status));
+        }
+        return body;
+      });
+    });
+  }
+
   function downloadWebUsersExport() {
     if (!global.PlatformAdmin || !global.PlatformAdmin.exportStaffForWeb) return;
     var payload = {
@@ -86,6 +107,7 @@
     ready: ready,
     refresh: importFromWeb,
     publishToDisk: publishToDisk,
+    publishLive: publishLive,
     downloadWebUsersExport: downloadWebUsersExport,
     WEB_USERS_URL: WEB_USERS_URL
   };

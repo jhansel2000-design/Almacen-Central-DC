@@ -16,13 +16,25 @@ if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
 
 # Intenta exportar desde el servidor LAN si está activo
 try {
-    $resp = Invoke-RestMethod -Method POST -Uri 'http://localhost:8080/api/publish-web-users' -TimeoutSec 5
+    $resp = Invoke-RestMethod -Method POST -Uri 'http://localhost:8080/api/publish-web-users-live' -TimeoutSec 90
+    if ($resp.ok -and $resp.pushed) {
+        Write-Host ('Publicado en GitHub: ' + $resp.count + ' usuario(s)') -ForegroundColor Green
+        Write-Host 'https://jhansel2000-design.github.io/Almacen-Central-DC/' -ForegroundColor White
+        exit 0
+    }
     if ($resp.ok) {
-        Write-Host ('Exportados desde servidor LAN: ' + $resp.count + ' usuario(s)') -ForegroundColor Green
+        Write-Host ('Exportados: ' + $resp.count + ' usuario(s). Push manual pendiente.') -ForegroundColor Yellow
     }
 } catch {
-    node (Join-Path $PSScriptRoot 'export-web-users.js')
-    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+    try {
+        $resp = Invoke-RestMethod -Method POST -Uri 'http://localhost:8080/api/publish-web-users' -TimeoutSec 5
+        if ($resp.ok) {
+            Write-Host ('Exportados desde servidor LAN: ' + $resp.count + ' usuario(s)') -ForegroundColor Green
+        }
+    } catch {
+        node (Join-Path $PSScriptRoot 'export-web-users.js')
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+    }
 }
 
 $webFile = Join-Path $root 'data\web-users.json'

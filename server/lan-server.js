@@ -16,6 +16,7 @@ const path = require('path');
 const os = require('os');
 const { URL } = require('url');
 const webUsersExport = require('../scripts/export-web-users.js');
+const { pushWebUsersGit } = require('../scripts/push-web-users-git.js');
 
 const args = process.argv.slice(2);
 function argValue(flag, fallback) {
@@ -258,6 +259,44 @@ function handleApi(req, res, url) {
         count: exported.payload.users.length,
         updatedAt: exported.payload.updatedAt,
         file: 'data/web-users.json'
+      });
+    }).catch(function (e) {
+      return sendJson(res, 400, { ok: false, error: e.message });
+    });
+  }
+
+  if (req.method === 'POST' && p === '/api/publish-web-users-live') {
+    return readBody(req).then(function (body) {
+      var users = body && Array.isArray(body.users) ? body.users : null;
+      if (!users) {
+        const row = readStore('users');
+        users = row && row.data ? row.data : webUsersExport.readUsersFile(ROOT);
+      }
+      if (Array.isArray(users) && users.length) {
+        try { writeStore('users', users); } catch (e) { /* noop */ }
+      }
+      const exported = webUsersExport.writeWebUsersFile(ROOT, users || []);
+      return pushWebUsersGit(ROOT).then(function (gitResult) {
+        return sendJson(res, 200, {
+          ok: true,
+          live: true,
+          count: exported.payload.users.length,
+          updatedAt: exported.payload.updatedAt,
+          committed: !!gitResult.committed,
+          pushed: !!gitResult.pushed,
+          file: 'data/web-users.json',
+          webUrl: 'https://jhansel2000-design.github.io/Almacen-Central-DC/'
+        });
+      }).catch(function (gitErr) {
+        return sendJson(res, 200, {
+          ok: true,
+          live: false,
+          count: exported.payload.users.length,
+          updatedAt: exported.payload.updatedAt,
+          file: 'data/web-users.json',
+          gitError: String(gitErr.stderr || gitErr.message || gitErr),
+          hint: 'Archivo exportado en disco. Revisa git push o ejecuta publicar-usuarios-web.ps1'
+        });
       });
     }).catch(function (e) {
       return sendJson(res, 400, { ok: false, error: e.message });
