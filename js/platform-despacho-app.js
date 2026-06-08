@@ -75,6 +75,10 @@
       btn.classList.toggle('active', active);
       btn.setAttribute('aria-pressed', active ? 'true' : 'false');
     });
+    if (card) {
+      var form = $('despAuthForm');
+      if (form) form.setAttribute('data-selected-area', card.getAttribute('data-role') || '');
+    }
   }
 
   function setLoginLoading(loading) {

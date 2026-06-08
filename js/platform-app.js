@@ -495,6 +495,8 @@
       btn.setAttribute('aria-pressed', active ? 'true' : 'false');
     });
     if (card) {
+      var form = $('authForm');
+      if (form) form.setAttribute('data-selected-area', card.getAttribute('data-role') || '');
       card.classList.add('role-pop');
       setTimeout(function () { card.classList.remove('role-pop'); }, 450);
     }

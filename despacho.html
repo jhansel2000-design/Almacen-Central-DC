@@ -54,12 +54,8 @@
       <div class="auth-glass-card desp-auth-glass">
         <form id="despAuthForm" class="auth-form" novalidate action="#" method="post">
           <h2 id="despAuthTitle" class="auth-heading desp-auth-heading">Acceso a despacho</h2>
-          <p class="auth-subheading desp-auth-subheading">Ingresa el usuario y contraseña que te asignó el administrador</p>
-          <div class="auth-field">
-            <label for="despAuthUsername">Usuario</label>
-            <input id="despAuthUsername" class="auth-field-input" type="text" name="username" placeholder="Usuario asignado" autocomplete="off" maxlength="64" required>
-          </div>
-          <div class="auth-role-picker desp-auth-role-picker" role="group" aria-label="Referencia de roles">
+          <p class="auth-subheading desp-auth-subheading">1. Elige tu área · 2. Escribe el usuario que te asignó el administrador</p>
+          <div class="auth-role-picker desp-auth-role-picker" role="group" aria-label="Elige tu área de despacho">
             <button type="button" class="auth-role-card desp-auth-role-card active" data-role="preparador" aria-pressed="true">
               <strong>Preparador</strong>
               <span class="role-desc">Registra IDC y jaula</span>
@@ -69,13 +65,17 @@
               <span class="role-desc">Valida y libera pedidos</span>
             </button>
           </div>
+          <div class="auth-field">
+            <label for="despAuthUsername">Usuario asignado</label>
+            <input id="despAuthUsername" class="auth-field-input" type="text" name="desp_assigned_user" placeholder="Escribe tu usuario (no se autocompleta)" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="64" required>
+          </div>
           <div class="auth-field auth-field-password">
             <label for="despAuthPassword">Contraseña</label>
             <input id="despAuthPassword" class="auth-field-input" type="password" name="password" placeholder="Contraseña" autocomplete="current-password" maxlength="128" required>
             <button type="button" class="auth-pwd-toggle" id="despBtnTogglePassword" aria-label="Mostrar contraseña" title="Mostrar/ocultar">Ver</button>
           </div>
           <button type="submit" class="btn btn-primary" id="despAuthSubmit">Entrar al portal de despacho</button>
-          <p class="auth-hint desp-auth-hint">Escribe el usuario que te dio el administrador; no se completa solo.</p>
+          <p class="auth-hint desp-auth-hint">Elegir Validador o Preparador no escribe el usuario; debes teclear el que te dieron.</p>
           <p id="despAuthError" class="desp-auth-error" role="alert" aria-live="polite" hidden></p>
         </form>
       </div>

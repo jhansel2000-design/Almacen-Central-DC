@@ -103,12 +103,8 @@
       <div class="auth-glass-card">
         <form id="authForm" class="auth-form" novalidate action="#" method="post">
           <h2 id="authTitle" class="auth-heading">Acceso ejecutivo</h2>
-          <p class="auth-subheading">Ingresa el usuario y contraseña que te asignó el administrador</p>
-          <div class="auth-field">
-            <label for="authUsername">Usuario</label>
-            <input id="authUsername" class="auth-field-input" type="text" name="username" placeholder="Usuario asignado" autocomplete="off" maxlength="64" required>
-          </div>
-          <div class="auth-role-picker" role="group" aria-label="Referencia de roles">
+          <p class="auth-subheading">1. Elige tu área · 2. Escribe el usuario que te asignó el administrador</p>
+          <div class="auth-role-picker" role="group" aria-label="Elige tu área de acceso">
             <button type="button" class="auth-role-card active" data-role="administrador" aria-pressed="true">
               <span class="role-check" aria-hidden="true">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
@@ -129,6 +125,16 @@
               <strong>Supervisor</strong>
               <span class="role-desc">Importar y supervisar</span>
             </button>
+            <button type="button" class="auth-role-card" data-role="validador" aria-pressed="false">
+              <span class="role-check" aria-hidden="true">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+              </span>
+              <span class="role-icon-wrap" aria-hidden="true">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+              </span>
+              <strong>Validador</strong>
+              <span class="role-desc">Validación y despacho</span>
+            </button>
             <button type="button" class="auth-role-card" data-role="operador" aria-pressed="false">
               <span class="role-check" aria-hidden="true">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
@@ -140,13 +146,17 @@
               <span class="role-desc">Solo visualización</span>
             </button>
           </div>
+          <div class="auth-field">
+            <label for="authUsername">Usuario asignado</label>
+            <input id="authUsername" class="auth-field-input" type="text" name="wms_assigned_user" placeholder="Escribe tu usuario (no se autocompleta)" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="64" required>
+          </div>
           <div class="auth-field auth-field-password">
             <label for="authPassword">Contraseña</label>
             <input id="authPassword" class="auth-field-input" type="password" name="password" placeholder="Contraseña" autocomplete="current-password" maxlength="128" required>
             <button type="button" class="auth-pwd-toggle" id="btnTogglePassword" aria-label="Mostrar contraseña" title="Mostrar/ocultar">Ver</button>
           </div>
           <button type="submit" class="btn btn-primary" id="authSubmit">Entrar a la plataforma</button>
-          <p class="auth-hint">Cada persona debe escribir su propio usuario asignado; no se rellena automáticamente.</p>
+          <p class="auth-hint">Al elegir Validador, Supervisor u otra área, el usuario no cambia: cada quien escribe el suyo.</p>
           <p id="authError" class="auth-error" role="alert" aria-live="polite"></p>
         </form>
       </div>
@@ -527,7 +537,7 @@
   <script defer src="js/platform-ai.js"></script>
   <script defer src="js/platform-toast.js"></script>
   <script defer src="js/platform-shortcuts.js"></script>
-  <script defer src="js/platform-app.js?v=5"></script>
+  <script defer src="js/platform-app.js?v=6"></script>
   <script defer src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js" crossorigin="anonymous"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js" crossorigin="anonymous"></script>
 </body>

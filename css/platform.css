@@ -242,8 +242,14 @@ html[data-theme="light"] .auth-field-input::placeholder{ color:#5a6d82; }
 .auth-role-card[data-role="administrador"] .role-icon-wrap,
 .auth-role-card[data-role="admin"] .role-icon-wrap{ color:#8ec5ff; }
 .auth-role-card[data-role="supervisor"] .role-icon-wrap{ color:#ffd166; }
-.auth-role-card[data-role="operador"] .role-icon-wrap,
-.auth-role-card[data-role="user"] .role-icon-wrap{ color:#6ee7b7; }
+.auth-role-card[data-role="validador"] .role-icon-wrap{ color:#ce93d8; }
+.auth-role-card[data-role="validador"].active{
+  border-color:rgba(156,39,176,0.55);
+  background:linear-gradient(145deg,rgba(156,39,176,0.14),rgba(156,39,176,0.06));
+}
+.auth-role-card[data-role="validador"].active .role-check{
+  opacity:1; transform:scale(1);
+}
 .auth-role-card strong{ font-size:0.95rem; color:var(--text); }
 .auth-role-card span.role-desc{ font-size:0.78rem; color:var(--muted); line-height:1.35; }
 .auth-role-card .role-check{
