@@ -585,7 +585,7 @@
           var msg = 'Usuario o contraseña incorrectos.';
           if (global.PlatformWebUsers && global.PlatformWebUsers.isPublicWeb &&
               global.PlatformWebUsers.isPublicWeb() && !global.PlatformAdmin.isPrimaryLoginName(username)) {
-            msg = 'No pudimos validar tu acceso. Verifica usuario y contraseña. Si eres personal registrado, el administrador debe publicar usuarios en la web (publicar-usuarios-web.ps1).';
+            msg = 'Usuario o contraseña incorrectos. Verifica los datos que te dio el administrador.';
           }
           showAuthError(msg);
           return;

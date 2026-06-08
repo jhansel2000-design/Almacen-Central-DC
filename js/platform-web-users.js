@@ -68,8 +68,8 @@
       hint.hidden = false;
       return;
     }
-    hint.textContent = 'En la web pública solo entran usuarios que el administrador publicó. Si eres personal y no puedes entrar, avisa al admin para ejecutar publicar-usuarios-web.ps1.';
-    hint.hidden = false;
+    hint.hidden = true;
+    hint.textContent = '';
   }
 
   function publishToDisk() {
