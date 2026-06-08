@@ -12,10 +12,15 @@ function isPrimaryAdminUser(user) {
 }
 
 function exportStaffUsers(users) {
-  return (Array.isArray(users) ? users : []).filter(function (u) {
+  var seen = Object.create(null);
+  var out = [];
+  (Array.isArray(users) ? users : []).filter(function (u) {
     return u && u.active !== false && !isPrimaryAdminUser(u);
-  }).map(function (u) {
-    return {
+  }).forEach(function (u) {
+    var key = String(u.username || '').toLowerCase().trim();
+    if (!key || seen[key]) return;
+    seen[key] = 1;
+    out.push({
       id: u.id,
       username: u.username,
       name: u.name,
@@ -24,8 +29,9 @@ function exportStaffUsers(users) {
       areas: u.areas || [],
       active: u.active !== false,
       extraPermissions: u.extraPermissions || []
-    };
+    });
   });
+  return out;
 }
 
 function buildWebUsersPayload(users) {

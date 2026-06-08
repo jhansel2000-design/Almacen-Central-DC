@@ -96,6 +96,39 @@
     return u;
   }
 
+  function dedupeStaffByUsername(staffList) {
+    var byKey = Object.create(null);
+
+    function score(u) {
+      var s = 0;
+      if (u.active !== false) s += 8;
+      if (u.passwordHash) s += 4;
+      if (u.name && String(u.name).trim() && String(u.name).toLowerCase() !== String(u.username || '').toLowerCase()) {
+        s += 2;
+      }
+      return s;
+    }
+
+    (staffList || []).forEach(function (u) {
+      if (!u || !u.username) return;
+      var key = String(u.username).toLowerCase().trim();
+      if (!key) return;
+      var prev = byKey[key];
+      if (!prev) {
+        byKey[key] = normalizeUser(Object.assign({}, u));
+        return;
+      }
+      var keep = score(u) >= score(prev) ? u : prev;
+      var drop = keep === u ? prev : u;
+      byKey[key] = normalizeUser(Object.assign({}, drop, keep, {
+        id: keep.id || drop.id,
+        username: keep.username || drop.username
+      }));
+    });
+
+    return Object.values(byKey);
+  }
+
   function isPrimaryAdminUser(user) {
     if (!user) return false;
     if (user.isPrimaryAdmin) return true;
@@ -159,6 +192,8 @@
     staff = staff.filter(function (u) {
       return String(u.username || '').toLowerCase() !== primaryKey;
     });
+
+    staff = dedupeStaffByUsername(staff);
 
     if (!primary) {
       primary = syncPrimaryFromCode({
@@ -226,7 +261,7 @@
   }
 
   function exportStaffForWeb() {
-    return getStaffUsers().map(function (u) {
+    return dedupeStaffByUsername(getStaffUsers()).map(function (u) {
       return {
         id: u.id,
         username: u.username,
@@ -271,7 +306,10 @@
         map[u.id] = normalizeUser(Object.assign({}, map[u.id] || {}, u));
       }
     });
-    return ensureUserRegistry(Object.values(map));
+    var merged = ensureUserRegistry(Object.values(map));
+    var primary = merged.find(isPrimaryAdminUser);
+    var staff = dedupeStaffByUsername(merged.filter(function (u) { return !isPrimaryAdminUser(u); }));
+    return primary ? [primary].concat(staff) : staff;
   }
 
   function saveUsers(users) {
