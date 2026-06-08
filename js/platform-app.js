@@ -490,19 +490,10 @@
 
   function showAuthRoleFeedback(card) {
     var picker = card && card.closest('.auth-role-picker');
-    var fb = picker && picker.parentElement
-      ? picker.parentElement.querySelector('.auth-role-feedback')
-      : null;
     if (picker) {
       picker.classList.remove('role-area-pulse');
       void picker.offsetWidth;
       picker.classList.add('role-area-pulse');
-    }
-    if (fb) {
-      var labelEl = card.querySelector('strong');
-      var label = labelEl ? labelEl.textContent.trim() : '';
-      fb.textContent = label ? ('Área seleccionada: ' + label) : '';
-      fb.classList.toggle('is-visible', !!label);
     }
   }
 
@@ -528,25 +519,9 @@
     btn.disabled = loading;
   }
 
-  var ROLE_CARD_MAP = {
-    administrador: 'administrador',
-    supervisor: 'supervisor',
-    operador: 'operador',
-    colaborador: 'colaborador',
-    preparador: 'colaborador',
-    validador: 'colaborador'
-  };
-
-  function suggestRoleForUsername(username) {
-    var un = PC.sanitizeUsername(username);
-    if (!un || !global.PlatformAdmin) return;
-    var staff = global.PlatformAdmin.getStaffUsers().find(function (u) {
-      return String(u.username || '').toLowerCase() === un.toLowerCase();
-    });
-    if (!staff) return;
-    var roleKey = ROLE_CARD_MAP[staff.role] || 'colaborador';
-    var card = document.querySelector('.auth-role-card[data-role="' + roleKey + '"]');
-    if (card) applyRolePicker(card);
+  function triggerWebUsersPublish() {
+    if (!global.PlatformWebUsers || !global.PlatformWebUsers.publishToDisk) return;
+    global.PlatformWebUsers.publishToDisk().catch(function () { /* noop */ });
   }
 
   function doLogin() {
@@ -560,7 +535,7 @@
       return;
     }
     if (!username) {
-      showAuthError('Escribe el usuario asignado (sin espacios). El área/rol es solo orientativa.');
+      showAuthError('Escribe el usuario.');
       $('authUsername') && $('authUsername').focus();
       return;
     }
@@ -640,12 +615,6 @@
     var activeCard = document.querySelector('.auth-role-card.active');
     if (activeCard) applyRolePicker(activeCard);
     initPasswordToggle();
-    var userInput = $('authUsername');
-    if (userInput) {
-      bindOnce(userInput, 'blur', function () {
-        suggestRoleForUsername(userInput.value);
-      });
-    }
 
     if (!overlayIsHidden()) {
       syncAuthBgVideo(true);
@@ -2535,7 +2504,7 @@
     resetStaffUserForm();
     refreshAdminTables();
     toastNotify('Usuario registrado correctamente.', 'ok');
-    promptPublishWebUsersIfNeeded();
+    triggerWebUsersPublish();
   }
 
   function finishUserSave(editId, patch) {
@@ -2552,12 +2521,7 @@
     resetStaffUserForm();
     refreshAdminTables();
     toastNotify('Usuario actualizado.', 'ok');
-    promptPublishWebUsersIfNeeded();
-  }
-
-  function promptPublishWebUsersIfNeeded() {
-    if (!userCan('users.manage')) return;
-    toastNotify('Recuerda: ejecuta .\\scripts\\publicar-usuarios-web.ps1 para que entren desde la web pública.', 'info');
+    triggerWebUsersPublish();
   }
 
   function publishWebUsersFromAdmin() {

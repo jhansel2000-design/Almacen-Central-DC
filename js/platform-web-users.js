@@ -39,37 +39,10 @@
   function ready() {
     if (!readyPromise) {
       readyPromise = importFromWeb().then(function (result) {
-        updatePublicWebLoginHint(result);
-        if (result.ok && result.count > 0 && global.PlatformToast) {
-          global.PlatformToast.info('Usuarios de la web cargados (' + result.count + ').', 3500);
-        }
         return result;
       });
     }
     return readyPromise;
-  }
-
-  function updatePublicWebLoginHint(result) {
-    if (!isPublicWeb()) return;
-    var hint = document.getElementById('authPublicWebHint');
-    if (!hint) {
-      hint = document.createElement('p');
-      hint.id = 'authPublicWebHint';
-      hint.className = 'auth-hint auth-public-web-hint';
-      var form = document.getElementById('authForm');
-      var anchor = form && form.querySelector('.auth-hint');
-      if (anchor && anchor.parentNode) {
-        anchor.parentNode.insertBefore(hint, anchor.nextSibling);
-      }
-    }
-    var staffCount = result && result.count ? result.count : 0;
-    if (staffCount > 0) {
-      hint.textContent = 'Personal publicado en la web: ' + staffCount + ' usuario(s). Escribe tu usuario asignado.';
-      hint.hidden = false;
-      return;
-    }
-    hint.hidden = true;
-    hint.textContent = '';
   }
 
   function publishToDisk() {

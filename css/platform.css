@@ -234,8 +234,7 @@ html[data-theme="light"] .auth-field-input::placeholder{ color:#5a6d82; }
   align-items:center;
 }
 .admin-web-users-bar .admin-hint{ margin:0 0 0.35rem; flex:1 1 100%; }
-.auth-role-picker{ display:grid; grid-template-columns:repeat(2,1fr); gap:0.65rem; margin-bottom:0.65rem; position:relative; z-index:3; }
-@media (min-width:720px){ .auth-role-picker{ grid-template-columns:repeat(4,1fr); } }
+.auth-role-picker{ display:grid; grid-template-columns:repeat(3,1fr); gap:0.65rem; margin-bottom:0.65rem; position:relative; z-index:3; }
 @media (max-width:520px){ .auth-role-picker{ grid-template-columns:1fr; } }
 .auth-role-card{
   position:relative; z-index:3; overflow:hidden;
