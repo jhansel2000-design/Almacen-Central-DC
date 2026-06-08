@@ -1,0 +1,870 @@
+/**
+ * Modo TV — Dashboard general, rotación Operación → Facturas
+ */
+(function (global) {
+  'use strict';
+
+  var esc = global.PanelCore ? global.PanelCore.esc : function (s) {
+    return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  };
+
+  var TV_SLIDES = ['ops', 'fac'];
+
+  function resolveTvSlides(opts) {
+    if (opts && opts.slides && opts.slides.length) return opts.slides.slice();
+    if (global.PlatformLayout && global.PlatformLayout.getTvSlideIds) {
+      var cfg = opts && opts.config ? opts.config : null;
+      if (!cfg && global.PlatformStore && global.PlatformStore.getConfig) {
+        cfg = global.PlatformStore.getConfig();
+      }
+      return global.PlatformLayout.getTvSlideIds(cfg || {});
+    }
+    return TV_SLIDES.slice();
+  }
+
+  function applyTvSlides(slides) {
+    TV_SLIDES = slides && slides.length ? slides.slice() : ['ops'];
+    if (tvSlideIndex >= TV_SLIDES.length) tvSlideIndex = 0;
+  }
+  var TV_ROTATE_MIN = 5;
+  var TV_ROTATE_MAX = 60;
+  var SLIDE_META = {
+    ops: { pill: 'ops', title: 'Operación', emptyKpi: 'Sin datos de operación', emptyFoot: 'Importar Excel de operaciones', chartTitle: 'Tendencia' },
+    fac: { pill: 'fac', title: 'Facturación · CENTRAL', emptyKpi: 'Sin datos de facturas', emptyFoot: 'Importar diario de facturas', chartTitle: 'Facturación diaria (RD$)' }
+  };
+
+  var KPI_ICONS = {
+    open: '○',
+    process: '◐',
+    total: '◎',
+    money: '◆',
+    warn: '!',
+    alert: '⚠',
+    time: '⏱',
+    default: '●'
+  };
+
+  var chartInstances = {};
+  var tvTimer = null;
+  var tvSlideIndex = 0;
+  var tvCarouselSeconds = 8;
+  var tvCarouselRunning = false;
+  var carouselHost = null;
+
+  function fmtNum(n) {
+    var v = Number(n) || 0;
+    if (v >= 1000000) return (v / 1000000).toFixed(1) + 'M';
+    if (v >= 1000) return (v / 1000).toFixed(1) + 'K';
+    return String(Math.round(v));
+  }
+
+  function fmtMontoRd(n) {
+    var FX = global.PlatformExcelFacturas;
+    if (FX && FX.formatMillions) return FX.formatMillions(n) + ' RD$';
+    return fmtNum(n) + ' RD$';
+  }
+
+  function fmtMontoAxis(n) {
+    var v = Number(n) || 0;
+    if (v >= 1000000) return (v / 1000000).toFixed(v >= 10000000 ? 0 : 1) + 'M';
+    if (v >= 1000) return (v / 1000).toFixed(v >= 10000 ? 0 : 1) + 'K';
+    return String(Math.round(v));
+  }
+
+  function resolveFacturasPorAlmacen(facData, FX) {
+    if (!facData || !FX) return [];
+    if (facData.aggregates && facData.aggregates.porAlmacen && facData.aggregates.porAlmacen.length) {
+      return facData.aggregates.porAlmacen;
+    }
+    if (facData.registros && facData.registros.length) {
+      return FX.buildAggregates(facData.registros).porAlmacen || [];
+    }
+    return [];
+  }
+
+  function pctLogradoDisplay(c) {
+    var pct = c.pctVentas != null ? c.pctVentas : c.pctOrdenes;
+    if (pct == null || !isFinite(pct)) return null;
+    return Math.round(pct) + '%';
+  }
+
+  function collectSnapshot(opsData, facData, tipoCambio, facturasMetas, config) {
+    config = config || (global.PlatformStore && global.PlatformStore.getConfig && global.PlatformStore.getConfig()) || {};
+    var siteTitle = '300-001 (CENTRAL)';
+    var SF = global.PlatformSiteFilter;
+    if (SF) {
+      var filtered = SF.applySiteFilter({ operaciones: opsData, facturas: facData, config: config });
+      siteTitle = (filtered.site && filtered.site.title) || siteTitle;
+      if (filtered.operaciones) opsData = filtered.operaciones;
+      if (filtered.facturas) facData = filtered.facturas;
+    }
+
+    var snap = {
+      siteTitle: siteTitle,
+      ops: { hasData: false, kpis: [], footer: [], chart: { labels: [], values: [] } },
+      fac: { hasData: false, kpis: [], footer: [], chart: { labels: [], values: [] }, tipoCambio: 58.5 }
+    };
+
+    var OPS = global.PlatformOpsDashboard;
+    var FX = global.PlatformExcelFacturas;
+
+    if (OPS && opsData) {
+      var model = OPS.buildModel(opsData);
+      if (model) {
+        snap.ops.hasData = true;
+        var k = model.kpis || {};
+        snap.ops.kpis = [
+          { label: 'Abiertos', value: k.abiertos != null ? k.abiertos : 0, variant: 'open' },
+          { label: 'En proceso', value: k.enProceso != null ? k.enProceso : 0, variant: 'process' },
+          { label: 'Total a trabajar', value: k.totalTrabajar != null ? k.totalTrabajar : 0, variant: 'total' }
+        ];
+        if (model.processAlerts && model.processAlerts.length) {
+          snap.ops.footer.push({
+            label: 'ALERTA 24H',
+            value: model.processAlerts.length + ' vencido(s) · ' + (model.processAlerts[0].responsable || 'Responsable')
+          });
+        }
+        (model.operaciones || []).slice(0, 4).forEach(function (op) {
+          snap.ops.footer.push({ label: op.name, value: op.total });
+        });
+        var pf = (model.porFecha || []).slice(-7);
+        snap.ops.chart.labels = pf.map(function (x) {
+          var d = x.fecha || x.label || '';
+          return d.length >= 10 ? d.slice(5).replace('-', '/') : d;
+        });
+        snap.ops.chart.values = pf.map(function (x) {
+          return (x.abiertos || 0) + (x.enProceso || 0) + (x.total || 0);
+        });
+        if (!snap.ops.chart.labels.length) {
+          snap.ops.chart.labels = ['Abiertos', 'En proceso', 'Total'];
+          snap.ops.chart.values = [k.abiertos || 0, k.enProceso || 0, k.totalTrabajar || 0];
+        }
+      }
+    }
+
+    var facRegs = facData && Array.isArray(facData.registros) ? facData.registros : [];
+    var facOk = FX && facData && facRegs.length > 0 &&
+      (FX.isFacturasData(facData) || facData.format === 'facturas' || facData.module === 'facturas');
+
+    if (facOk) {
+      try {
+        var CC = global.PlatformCommandCenter;
+        if (CC && SF) {
+          var ccModel = CC.buildModel({
+            facturas: facData,
+            operaciones: null,
+            tipoCambio: tipoCambio,
+            config: config
+          });
+          if (ccModel && ccModel.hasFacturas && ccModel.facturacion) {
+            var fm = ccModel.facturacion;
+            var ser = fm.series || {};
+            snap.fac.hasData = true;
+            snap.fac.useAlmacenLayout = false;
+            snap.fac.centralLayout = true;
+            snap.fac.tipoCambio = fm.tipoCambio;
+            var varPct = fm.variationPct;
+            var varStr = varPct != null && isFinite(varPct)
+              ? (varPct >= 0 ? '+' : '') + Math.round(varPct) + '%'
+              : '—';
+            snap.fac.kpis = [
+              { label: 'Total facturado', value: fmtMontoRd(fm.total), variant: 'money' },
+              { label: 'Día actual', value: fmtMontoRd(fm.daily), variant: 'money' },
+              { label: 'Variación vs ayer', value: varStr, variant: varPct != null && varPct < 0 ? 'warn' : 'total' }
+            ];
+            snap.fac.chartTitle = 'Facturación diaria · ' + siteTitle;
+            snap.fac.chartMode = 'daily';
+            snap.fac.chart.labels = ser.labels || [];
+            snap.fac.chart.values = ser.values || [];
+            snap.fac.chart.markers = ser.markers || [];
+            snap.fac.footer = [
+              { label: 'Día pico', value: (fm.peakDay || '—') + ' · ' + fmtMontoRd(fm.peakValue) },
+              { label: 'Acumulado', value: fmtMontoRd(fm.acumulada != null ? fm.acumulada : fm.total) },
+              { label: 'Tipo de cambio', value: 'TC ' + fm.tipoCambio }
+            ];
+            return snap;
+          }
+        }
+
+        snap.fac.hasData = true;
+        snap.fac.useAlmacenLayout = true;
+        var tc = FX.resolveTipoCambio(tipoCambio);
+        snap.fac.tipoCambio = tc;
+        var agg = facData.aggregates && facData.aggregates.porAlmacen
+          ? facData.aggregates
+          : FX.buildAggregates(facRegs);
+        var view = FX.enrichAggregatesForDisplay(agg, tc);
+        var porAlm = view.porAlmacen || [];
+        var compliance = [];
+        try {
+          compliance = FX.buildMetasCompliance(agg.porAlmacen || porAlm, facturasMetas || {}, tc);
+        } catch (eMeta) {
+          compliance = [];
+        }
+        var compByAlm = {};
+        compliance.forEach(function (c) {
+          compByAlm[c.almacen] = c;
+        });
+
+        snap.fac.almacenes = porAlm.map(function (a) {
+          var c = compByAlm[a.almacen] || {};
+          var pctStr = pctLogradoDisplay(c);
+          var factCount = a.facturas != null ? a.facturas : (c.facturas != null ? c.facturas : 0);
+          var subParts = [a.ordenes + ' órdenes', factCount + ' fact.'];
+          if (pctStr) subParts.push(pctStr + ' de meta');
+          return {
+            almacen: a.almacen,
+            ventasPesos: a.ventasPesos,
+            ordenes: a.ordenes,
+            facturas: factCount,
+            semaforo: c.semaforoGeneral || 'neutral',
+            valueDisplay: fmtMontoRd(a.ventasPesos),
+            valueSuffix: '',
+            subLabel: subParts.join(' · ')
+          };
+        }).sort(function (a, b) {
+          return (b.ventasPesos || 0) - (a.ventasPesos || 0);
+        });
+
+        snap.fac.kpis = [];
+        snap.fac.chartMode = 'money';
+        snap.fac.chartTitle = 'Monto por almacén (RD$)';
+        snap.fac.footer = snap.fac.almacenes.slice(0, 6).map(function (a) {
+          return { label: a.almacen, value: fmtMontoRd(a.ventasPesos) };
+        });
+        snap.fac.chart.labels = snap.fac.almacenes.slice(0, 8).map(function (a) { return a.almacen; });
+        snap.fac.chart.values = snap.fac.almacenes.slice(0, 8).map(function (a) { return a.ventasPesos; });
+      } catch (errFac) {
+        snap.fac.hasData = false;
+        snap.fac.useAlmacenLayout = true;
+        snap.fac.almacenes = [];
+        if (global.console && console.warn) {
+          console.warn('TV Facturas snapshot:', errFac);
+        }
+      }
+    }
+
+    return snap;
+  }
+
+  function formatKpiDisplay(value) {
+    if (value == null || value === '') return '—';
+    if (typeof value === 'number' && !isNaN(value)) return fmtNum(value);
+    var s = String(value);
+    if (/^[\d.,]+$/.test(s.replace(/\s/g, ''))) {
+      var n = parseFloat(s.replace(/,/g, ''));
+      if (!isNaN(n) && n >= 1000) return fmtNum(n);
+    }
+    return s;
+  }
+
+  function kpiHtml(items, emptyLabel) {
+    if (!items.length) {
+      return '<div class="tv-kpi-empty">' + esc(emptyLabel) + '</div>';
+    }
+    return '<div class="tv-kpi-trio">' + items.map(function (k) {
+      var variant = k.variant || 'default';
+      var icon = KPI_ICONS[variant] || KPI_ICONS.default;
+      return '<article class="tv-kpi-card tv-kpi-' + esc(variant) + '" role="group" aria-label="' + esc(k.label) + '">' +
+        '<span class="tv-kpi-icon" aria-hidden="true">' + icon + '</span>' +
+        '<div class="tv-kpi-body">' +
+        '<span class="tv-kpi-val" title="' + esc(String(k.value)) + '">' + esc(formatKpiDisplay(k.value)) + '</span>' +
+        '<span class="tv-kpi-lbl">' + esc(k.label) + '</span>' +
+        '</div></article>';
+    }).join('') + '</div>';
+  }
+
+  function facAlmacenKpiHtml(almacenes, emptyLabel) {
+    if (!almacenes || !almacenes.length) {
+      return '<div class="tv-kpi-empty">' + esc(emptyLabel) + '</div>';
+    }
+    return '<div class="tv-almacen-grid">' + almacenes.map(function (a) {
+      var sem = a.semaforo && a.semaforo !== 'neutral' ? a.semaforo : 'neutral';
+      return '<div class="tv-kpi tv-kpi-wh tv-kpi-' + esc(sem) + '">' +
+        '<span class="tv-kpi-val">' + esc(String(a.valueDisplay)) +
+        (a.valueSuffix ? '<span class="tv-kpi-suffix">' + esc(a.valueSuffix) + '</span>' : '') +
+        '</span>' +
+        '<span class="tv-kpi-lbl">' + esc(a.almacen) + '</span>' +
+        '<span class="tv-kpi-sub">' + esc(a.subLabel) + '</span></div>';
+    }).join('') + '</div>';
+  }
+
+  function footerHtml(items, emptyText) {
+    if (!items.length) {
+      return '<p class="tv-foot-empty">' + esc(emptyText) + '</p>';
+    }
+    return '<ul class="tv-foot-list">' + items.map(function (x) {
+      return '<li><span>' + esc(x.label) + '</span><strong>' + esc(String(x.value)) + '</strong></li>';
+    }).join('') + '</ul>';
+  }
+
+  function chartCanvasId(slideId) {
+    return 'tvChart' + slideId.charAt(0).toUpperCase() + slideId.slice(1);
+  }
+
+  function facKpiBlock(slideId, block, emptyLabel) {
+    if (slideId === 'fac' && block.centralLayout) {
+      return kpiHtml(block.kpis || [], emptyLabel);
+    }
+    if (slideId === 'fac') {
+      return facAlmacenKpiHtml(block.almacenes || [], emptyLabel);
+    }
+    return kpiHtml(block.kpis || [], emptyLabel);
+  }
+
+  function renderSlide(slideId, snapshot) {
+    var meta = SLIDE_META[slideId];
+    var block = snapshot[slideId];
+    var facExtra = slideId === 'fac' && block.centralLayout ? ' tv-slide--central' : '';
+    var extra = slideId === 'fac' && block.hasData
+      ? '<span class="tv-tc-tag">TC ' + esc(String(block.tipoCambio)) + '</span>'
+      : '';
+    var kpiBlock = facKpiBlock(slideId, block, meta.emptyKpi);
+    var chartTitle = (slideId === 'fac' && block.chartTitle) ? block.chartTitle : meta.chartTitle;
+    var footTitle = slideId === 'fac' && block.useAlmacenLayout && !block.centralLayout
+      ? 'Montos por almacén'
+      : 'Resumen';
+    return '<section class="tv-slide' + (slideId === 'fac' ? ' tv-slide--fac' + facExtra : '') + '" data-slide="' + slideId + '">' +
+      '<header class="tv-slide-head">' +
+      '<span class="tv-pill ' + meta.pill + '">' + esc(meta.title) + '</span>' + extra +
+      '</header>' +
+      '<div class="tv-slide-grid">' +
+      '<div class="tv-slide-kpis">' + kpiBlock + '</div>' +
+      '<div class="tv-slide-chart">' +
+      '<h3 class="tv-chart-title">' + esc(chartTitle) + '</h3>' +
+      '<div class="tv-chart-box"><canvas id="' + chartCanvasId(slideId) + '"></canvas></div>' +
+      '</div>' +
+      '<div class="tv-slide-foot">' +
+      '<h3 class="tv-foot-title">' + esc(footTitle) + '</h3>' + footerHtml(block.footer, meta.emptyFoot) +
+      '</div></div></section>';
+  }
+
+  function render(host, snapshot, clockText, opts) {
+    if (!host) return;
+    carouselHost = host;
+    opts = opts || {};
+    applyTvSlides(resolveTvSlides(opts));
+    snapshot = snapshot || collectSnapshot(null, null, null, 58.5);
+
+    var subLabel = global.PlatformLayout && global.PlatformLayout.getTvSlideLabels
+      ? global.PlatformLayout.getTvSlideLabels(opts.config || (global.PlatformStore && global.PlatformStore.getConfig && global.PlatformStore.getConfig()) || {})
+      : 'Operación → Facturas';
+
+    var wallTitle = (snapshot.siteTitle || '300-001 (CENTRAL)') + ' · TV';
+
+    var slidesHtml = TV_SLIDES.map(function (id) {
+      return renderSlide(id, snapshot);
+    }).join('');
+
+    var segLabels = { ops: 'Operación', fac: 'Facturas' };
+    var segsHtml = TV_SLIDES.map(function (id, i) {
+      return '<button type="button" class="tv-seg' + (i === 0 ? ' active' : '') + '" data-slide="' + id + '"' +
+        ' aria-label="' + esc(segLabels[id] || id) + '">' +
+        '<span class="tv-seg-label">' + esc(segLabels[id] || id) + '</span>' +
+        '<span class="tv-seg-track"><i class="tv-seg-fill"></i></span></button>';
+    }).join('');
+
+    var preserve = opts && typeof opts.preserveSlideIndex === 'number'
+      ? Math.max(0, Math.min(TV_SLIDES.length - 1, opts.preserveSlideIndex))
+      : 0;
+
+    host.innerHTML =
+      '<div class="tv-wall tv-carousel" id="tvCarousel">' +
+      '<header class="tv-wall-brand">' +
+      '<div><h1 class="tv-wall-title">' + esc(wallTitle) + '</h1>' +
+      '<p class="tv-wall-sub">' + esc(subLabel) + ' · <span class="tv-esc-hint">Esc para salir</span></p></div>' +
+      '<time class="tv-wall-clock" id="tvWallClock">' + esc(clockText || '') + '</time>' +
+      '</header>' +
+      '<div class="tv-slides-viewport">' + slidesHtml + '</div>' +
+      '<footer class="tv-carousel-foot">' +
+      '<p class="tv-slide-now tv-slide-now--ops" id="tvSlideNow">Operación</p>' +
+      '<div class="tv-progress" id="tvProgress" role="tablist">' + segsHtml + '</div>' +
+      '<p class="tv-rotate-hint" id="tvRotateHint">' + esc(rotateHintText()) + '</p>' +
+      '</footer></div>';
+
+    tvSlideIndex = preserve;
+    var carouselRoot = host.querySelector('#tvCarousel') || host;
+    setSlide(preserve, false);
+    bindTvProgress(carouselRoot);
+    return snapshot;
+  }
+
+  var SLIDE_NOW_LABEL = { ops: 'Operación', fac: 'Facturas' };
+
+  function rotateHintText() {
+    if (TV_SLIDES.length <= 1) return 'Una sola diapositiva activa · sin rotación';
+    return 'Rotación cada ' + (tvCarouselSeconds || 8) + ' s · teclas 1–' + TV_SLIDES.length + ' · ← →';
+  }
+
+  function updateRotateHint() {
+    var el = document.getElementById('tvRotateHint');
+    if (el) el.textContent = rotateHintText();
+  }
+
+  function slideFootInner(slideId, block, meta) {
+    var footTitle = slideId === 'fac' && block.useAlmacenLayout && !block.centralLayout
+      ? 'Montos por almacén'
+      : 'Resumen';
+    return '<h3 class="tv-foot-title">' + esc(footTitle) + '</h3>' + footerHtml(block.footer, meta.emptyFoot);
+  }
+
+  function updateSnapshot(host, snapshot) {
+    if (!host || !snapshot) return false;
+    var root = document.getElementById('tvCarousel') ||
+      (host.querySelector && host.querySelector('#tvCarousel'));
+    if (!root) return false;
+    var ok = false;
+    TV_SLIDES.forEach(function (slideId) {
+      var block = snapshot[slideId];
+      if (!block) return;
+      var meta = SLIDE_META[slideId];
+      var slideEl = root.querySelector('.tv-slide[data-slide="' + slideId + '"]');
+      if (!slideEl) return;
+      if (slideId === 'fac') {
+        slideEl.classList.toggle('tv-slide--central', !!block.centralLayout);
+      }
+      var kpiHost = slideEl.querySelector('.tv-slide-kpis');
+      if (kpiHost) {
+        kpiHost.innerHTML = facKpiBlock(slideId, block, meta.emptyKpi);
+        ok = true;
+      }
+      var footHost = slideEl.querySelector('.tv-slide-foot');
+      if (footHost) {
+        footHost.innerHTML = slideFootInner(slideId, block, meta);
+      }
+      var chartTitleEl = slideEl.querySelector('.tv-chart-title');
+      if (chartTitleEl) {
+        chartTitleEl.textContent = (slideId === 'fac' && block.chartTitle)
+          ? block.chartTitle
+          : meta.chartTitle;
+      }
+    });
+    return ok;
+  }
+
+  function bindTvProgress(root) {
+    if (!root) return;
+    root.querySelectorAll('.tv-seg, .tv-dot').forEach(function (btn) {
+      if (btn.dataset.tvDotBound === '1') return;
+      btn.dataset.tvDotBound = '1';
+      btn.addEventListener('click', function () {
+        var id = btn.getAttribute('data-slide');
+        var idx = TV_SLIDES.indexOf(id);
+        if (idx >= 0) {
+          setSlide(idx, true);
+        }
+      });
+    });
+  }
+
+  function updateProgressAnimation(slideId) {
+    var root = document.getElementById('tvCarousel');
+    if (!root) return;
+    var sec = tvCarouselSeconds || 8;
+    var canAnimate = TV_SLIDES.length > 1 && tvCarouselRunning;
+    root.querySelectorAll('.tv-seg').forEach(function (seg) {
+      var on = seg.getAttribute('data-slide') === slideId;
+      seg.classList.toggle('active', on);
+      var fill = seg.querySelector('.tv-seg-fill');
+      if (!fill) return;
+      fill.style.animation = 'none';
+      fill.style.width = on && !canAnimate ? '100%' : '0%';
+      if (on && canAnimate) {
+        void fill.offsetWidth;
+        fill.style.animation = 'tvSegProgress ' + sec + 's linear forwards';
+      }
+    });
+    root.querySelectorAll('.tv-dot').forEach(function (dot) {
+      dot.classList.toggle('active', dot.getAttribute('data-slide') === slideId);
+    });
+  }
+
+  function updateSlideNowLabel(slideId) {
+    var el = document.getElementById('tvSlideNow');
+    if (!el) return;
+    el.textContent = SLIDE_NOW_LABEL[slideId] || slideId;
+    el.className = 'tv-slide-now tv-slide-now--' + (slideId || 'ops');
+  }
+
+  function syncTvBodySlideClass(slideId) {
+    if (!document.body.classList.contains('tv-unified-active')) return;
+    document.body.classList.remove('tv-slide-ops', 'tv-slide-fac');
+    if (slideId === 'ops' || slideId === 'fac') {
+      document.body.classList.add('tv-slide-' + slideId);
+    }
+  }
+
+  function setSlide(index, dispatch, silent) {
+    if (dispatch === undefined) dispatch = true;
+    var root = document.getElementById('tvCarousel') ||
+      (carouselHost && carouselHost.querySelector('#tvCarousel'));
+    if (!root || !TV_SLIDES.length) return;
+    var prevId = TV_SLIDES[tvSlideIndex];
+    tvSlideIndex = ((index % TV_SLIDES.length) + TV_SLIDES.length) % TV_SLIDES.length;
+    var slideId = TV_SLIDES[tvSlideIndex];
+    var sameSlide = slideId === prevId;
+    if (silent || sameSlide) {
+      root.classList.add('tv-slide-instant');
+    }
+    root.querySelectorAll('.tv-slide').forEach(function (el) {
+      var on = el.getAttribute('data-slide') === slideId;
+      el.classList.toggle('active', on);
+    });
+    root.querySelectorAll('.tv-seg').forEach(function (seg) {
+      seg.classList.toggle('active', seg.getAttribute('data-slide') === slideId);
+    });
+    root.querySelectorAll('.tv-dot').forEach(function (dot) {
+      dot.classList.toggle('active', dot.getAttribute('data-slide') === slideId);
+    });
+    if (!silent) {
+      updateProgressAnimation(slideId);
+    }
+    var viewport = root.querySelector('.tv-slides-viewport');
+    if (viewport) {
+      viewport.style.transform = '';
+      viewport.classList.remove('is-dragging', 'is-snap-back', 'gesture-swipe-track');
+    }
+    syncTvBodySlideClass(slideId);
+    updateSlideNowLabel(slideId);
+    if (silent || sameSlide) {
+      requestAnimationFrame(function () {
+        root.classList.remove('tv-slide-instant');
+      });
+    }
+    if (dispatch) {
+      global.dispatchEvent(new CustomEvent('tv-dashboard-slide', { detail: { slide: slideId, index: tvSlideIndex } }));
+      if (tvCarouselRunning && TV_SLIDES.length > 1) {
+        restartCarouselTimer();
+      }
+    }
+  }
+
+  function clearCarouselTimer() {
+    if (tvTimer) {
+      clearTimeout(tvTimer);
+      tvTimer = null;
+    }
+  }
+
+  function restartCarouselTimer() {
+    clearCarouselTimer();
+    if (!tvCarouselRunning || TV_SLIDES.length <= 1) return;
+    tvTimer = setTimeout(function () {
+      if (!tvCarouselRunning || TV_SLIDES.length <= 1) return;
+      setSlide(tvSlideIndex + 1, true);
+    }, tvCarouselSeconds * 1000);
+  }
+
+  function stopCarousel() {
+    tvCarouselRunning = false;
+    clearCarouselTimer();
+  }
+
+  function startCarousel(seconds) {
+    stopCarousel();
+    if (!document.body.classList.contains('tv-unified-active')) return;
+    var sec = Number(seconds) || 8;
+    tvCarouselSeconds = Math.max(TV_ROTATE_MIN, Math.min(TV_ROTATE_MAX, sec));
+    updateRotateHint();
+    if (TV_SLIDES.length <= 1) {
+      updateProgressAnimation(TV_SLIDES[tvSlideIndex] || 'ops');
+      return;
+    }
+    tvCarouselRunning = true;
+    updateProgressAnimation(TV_SLIDES[tvSlideIndex]);
+    restartCarouselTimer();
+  }
+
+  function getSlideIndex() {
+    return tvSlideIndex;
+  }
+
+  function getSlideId() {
+    return TV_SLIDES[tvSlideIndex] || 'ops';
+  }
+
+  function destroyCharts() {
+    Object.keys(chartInstances).forEach(function (id) {
+      if (chartInstances[id] && chartInstances[id].destroy) chartInstances[id].destroy();
+    });
+    chartInstances = {};
+  }
+
+  function makeChart(id, cfg) {
+    if (typeof Chart === 'undefined') return;
+    var el = document.getElementById(id);
+    if (!el) return;
+    if (chartInstances[id]) chartInstances[id].destroy();
+    cfg = cfg || {};
+    var colors = { text: '#e8eef7', muted: '#94a3b8', grid: 'rgba(255,255,255,0.08)' };
+    if (global.ChartPremiumStyle) {
+      global.ChartPremiumStyle.register();
+      try {
+        if (cfg.data) {
+          var chartExtra = {
+            tvMode: true,
+            indexAxis: cfg.options && cfg.options.indexAxis,
+            chartType: cfg.type,
+            valueFormat: cfg.valueFormat
+          };
+          cfg.data = global.ChartPremiumStyle.enhanceDatasets(
+            JSON.parse(JSON.stringify(cfg.data)),
+            cfg.type,
+            colors,
+            chartExtra
+          );
+        }
+      } catch (e) { /* noop */ }
+      cfg.options = cfg.options || {};
+      global.ChartPremiumStyle.mergeOptions(cfg.options, colors, {
+        tvMode: true,
+        biChart: true,
+        indexAxis: cfg.options.indexAxis,
+        chartType: cfg.type,
+        chartData: cfg.data,
+        valueFormat: cfg.valueFormat
+      });
+    }
+    chartInstances[id] = new Chart(el, cfg);
+  }
+
+  function renderChartsForSlide(snapshot, colors, slideId) {
+    if (!snapshot || !slideId) return;
+    colors = colors || { text: '#e8eef7', grid: 'rgba(255,255,255,0.08)' };
+    var fs = 15;
+    var block = snapshot[slideId];
+    if (!block) return;
+    if (slideId === 'fac') {
+      if (block.centralLayout) {
+        if (!block.hasData || !block.chart.labels || !block.chart.labels.length) return;
+      } else if (!block.almacenes || !block.almacenes.length) {
+        return;
+      }
+    } else if (!block.hasData) {
+      return;
+    }
+
+    if (slideId === 'fac' && !block.centralLayout && block.almacenes && block.almacenes.length) {
+      block.chart.labels = block.almacenes.slice(0, 8).map(function (a) { return a.almacen; });
+      block.chart.values = block.almacenes.slice(0, 8).map(function (a) { return a.ventasPesos; });
+    }
+    if (!block.chart.labels || !block.chart.labels.length) return;
+
+    var id = chartCanvasId(slideId);
+
+    var EC = global.PlatformExecutiveCharts;
+    function barOpts() {
+      var base = EC && EC.themeColors ? EC.themeColors() : colors;
+      return {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: slideId !== 'fac',
+            position: 'top',
+            labels: { color: base.text, font: { size: fs, weight: '600' }, boxWidth: 14 }
+          },
+          tooltip: {
+            backgroundColor: 'rgba(8, 14, 24, 0.94)',
+            titleFont: { size: fs + 1, weight: '700' },
+            bodyFont: { size: fs },
+            padding: 12
+          }
+        },
+        scales: {
+          x: { ticks: { color: base.text, font: { size: fs, weight: '600' }, maxRotation: 25 }, grid: { display: false } },
+          y: { ticks: { color: base.text, font: { size: fs } }, grid: { color: base.grid || colors.grid }, beginAtZero: true }
+        }
+      };
+    }
+
+    if (slideId === 'ops') {
+      makeChart(id, {
+        type: block.chart.labels.length <= 3 ? 'bar' : 'line',
+        data: {
+          labels: block.chart.labels,
+          datasets: [{
+            label: 'Actividad',
+            data: block.chart.values,
+            backgroundColor: 'rgba(59, 130, 246, 0.75)',
+            borderColor: '#3b82f6',
+            borderWidth: 2,
+            fill: block.chart.labels.length > 3,
+            tension: 0.3
+          }]
+        },
+        options: barOpts()
+      });
+    } else if (slideId === 'fac') {
+      if (block.centralLayout) {
+        var markers = block.chart.markers || [];
+        var lineOpts = barOpts();
+        lineOpts.interaction = { mode: 'index', intersect: false };
+        lineOpts.plugins.legend = { display: false };
+        lineOpts.plugins.datalabels = { display: false };
+        lineOpts.plugins.tooltip = {
+          backgroundColor: 'rgba(6, 11, 20, 0.97)',
+          titleFont: { size: fs + 1, weight: '700' },
+          bodyFont: { size: fs, weight: '600' },
+          padding: 12,
+          callbacks: {
+            label: function (ctx) {
+              return fmtMontoRd(ctx.raw || 0);
+            }
+          }
+        };
+        lineOpts.scales = {
+          x: {
+            ticks: { color: colors.text, font: { size: fs, weight: '600' }, maxRotation: 0 },
+            grid: { display: false }
+          },
+          y: {
+            beginAtZero: true,
+            ticks: {
+              color: colors.text,
+              font: { size: fs, weight: '600' },
+              callback: fmtMontoAxis
+            },
+            grid: { color: colors.grid || 'rgba(255,255,255,0.08)' }
+          }
+        };
+        makeChart(id, {
+          type: 'line',
+          valueFormat: 'money',
+          data: {
+            labels: block.chart.labels,
+            datasets: [{
+              label: 'Facturación RD$',
+              data: block.chart.values,
+              borderColor: '#10b981',
+              backgroundColor: 'rgba(16, 185, 129, 0.14)',
+              borderWidth: 2.5,
+              fill: true,
+              tension: 0.35,
+              pointRadius: markers.map(function (m) {
+                return m === 'up' || m === 'down' ? 7 : 4;
+              }),
+              pointBackgroundColor: markers.map(function (m) {
+                if (m === 'up') return 'rgba(52, 211, 153, 1)';
+                if (m === 'down') return 'rgba(255, 107, 122, 1)';
+                return '#3b82f6';
+              }),
+              pointBorderColor: '#fff',
+              pointBorderWidth: 2
+            }]
+          },
+          options: lineOpts
+        });
+        return;
+      }
+
+      var barColors = (block.almacenes || []).map(function (a) {
+        if (a.semaforo === 'ok') return 'rgba(52, 211, 153, 0.9)';
+        if (a.semaforo === 'warn') return 'rgba(251, 191, 36, 0.9)';
+        if (a.semaforo === 'danger') return 'rgba(255, 107, 122, 0.88)';
+        return 'rgba(16, 185, 129, 0.85)';
+      });
+      if (!barColors.length) {
+        barColors = (block.chart.values || []).map(function () { return 'rgba(16, 185, 129, 0.85)'; });
+      }
+      var chartOpts = barOpts();
+      chartOpts.indexAxis = 'y';
+      chartOpts.layout = { padding: { top: 6, right: 72, bottom: 6, left: 8 } };
+      chartOpts.plugins.tooltip = {
+        backgroundColor: 'rgba(6, 11, 20, 0.97)',
+        titleFont: { size: fs + 2, weight: '800' },
+        bodyFont: { size: fs + 1, weight: '700' },
+        padding: 14,
+        callbacks: {
+          label: function (ctx) {
+            var v = ctx.raw || 0;
+            return fmtMontoRd(v);
+          }
+        }
+      };
+      chartOpts.plugins.legend = { display: false };
+      chartOpts.plugins.datalabels = {
+        display: true,
+        anchor: 'end',
+        align: 'right',
+        offset: 8,
+        color: '#f8fafc',
+        textStrokeColor: 'rgba(6, 11, 20, 0.85)',
+        textStrokeWidth: 3,
+        font: { size: fs, weight: '800' },
+        formatter: function (v) { return fmtMontoRd(v); }
+      };
+      chartOpts.scales = {
+        x: {
+          beginAtZero: true,
+          ticks: {
+            color: colors.text,
+            font: { size: fs, weight: '700' },
+            callback: fmtMontoAxis
+          },
+          grid: { color: 'rgba(255,255,255,0.08)' },
+          border: { display: false }
+        },
+        y: {
+          ticks: {
+            color: colors.text,
+            font: { size: fs + 1, weight: '800' },
+            autoSkip: false
+          },
+          grid: { display: false },
+          border: { display: false }
+        }
+      };
+      makeChart(id, {
+        type: 'bar',
+        valueFormat: 'money',
+        data: {
+          labels: block.chart.labels,
+          datasets: [{
+            label: 'RD$',
+            data: block.chart.values,
+            backgroundColor: barColors,
+            borderRadius: 12,
+            maxBarThickness: 46
+          }]
+        },
+        options: chartOpts
+      });
+    }
+  }
+
+  function renderCharts(snapshot, colors) {
+    destroyCharts();
+    if (!snapshot) return;
+    var slideId = TV_SLIDES[tvSlideIndex];
+    requestAnimationFrame(function () {
+      renderChartsForSlide(snapshot, colors, slideId);
+    });
+  }
+
+  function clampRotateSeconds(sec) {
+    var n = Number(sec) || 8;
+    return Math.max(TV_ROTATE_MIN, Math.min(TV_ROTATE_MAX, n));
+  }
+
+  global.PlatformTvDashboard = {
+    get TV_SLIDES() { return TV_SLIDES.slice(); },
+    set TV_SLIDES(v) { applyTvSlides(v); },
+    applyTvSlides: applyTvSlides,
+    resolveTvSlides: resolveTvSlides,
+    TV_ROTATE_MIN: TV_ROTATE_MIN,
+    TV_ROTATE_MAX: TV_ROTATE_MAX,
+    clampRotateSeconds: clampRotateSeconds,
+    collectSnapshot: collectSnapshot,
+    updateSnapshot: updateSnapshot,
+    render: render,
+    renderCharts: renderCharts,
+    renderChartsForSlide: renderChartsForSlide,
+    destroyCharts: destroyCharts,
+    startCarousel: startCarousel,
+    stopCarousel: stopCarousel,
+    setSlide: setSlide,
+    getSlideIndex: getSlideIndex,
+    getSlideId: getSlideId
+  };
+})(typeof window !== 'undefined' ? window : this);

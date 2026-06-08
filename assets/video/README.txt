@@ -1,0 +1,31 @@
+Videos de fondo — login (Almacén Central)
+=========================================
+
+Sitio: Almacén Central
+
+Video principal (pantalla de inicio de sesión):
+
+  login-operation-full.mp4 — operación en almacén (sin camiones de carga)
+  Secuencia: pasillos/racks → montacargas (3 tomas) → inspección de inventario
+
+  login-operation-poster.jpg — vista previa
+
+Clips del montaje (Mixkit — almacén / montacargas / racks):
+
+  clip-racks.mp4           — recorrido en almacén (23010)
+  clip-forklift-rack-a.mp4 — montacargas operando (45848)
+  clip-forklift-rack-b.mp4 — vehículo elevador / montacargas (23303)
+  clip-forklift-rack-c.mp4 — operador montacargas (23789)
+  clip-inventory.mp4       — inspección de productos (4705)
+
+No incluir en el montaje (camión de carga / muelle):
+
+  clip-loading.mp4, clip-walk.mp4
+
+Regenerar login-operation-full.mp4 (ffmpeg en PATH):
+
+  cd assets/video
+  ffmpeg -y -f concat -safe 0 -i concat-list.txt -c copy login-operation-raw.mp4
+  ffmpeg -y -i login-operation-raw.mp4 -an -c:v libx264 -preset fast -crf 22 -movflags +faststart -pix_fmt yuv420p login-operation-full.mp4
+
+Sirve la app con serve-dashboard.ps1.

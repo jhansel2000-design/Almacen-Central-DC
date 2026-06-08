@@ -1,0 +1,336 @@
+/* Portal Despacho — login independiente + tarjeta externa en WMS */
+
+/* Tarjeta fuera del formulario ejecutivo (index.html) */
+.auth-external-portal {
+  position: fixed;
+  z-index: 20050;
+  left: clamp(1rem, 3vw, 2rem);
+  bottom: clamp(1rem, 3vw, 2rem);
+  pointer-events: auto;
+  max-width: min(320px, calc(100vw - 2rem));
+}
+
+body:not(.auth-locked) .auth-external-portal {
+  display: none !important;
+}
+
+.auth-portal-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+  padding: 1rem 1.1rem;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 183, 77, 0.35);
+  background:
+    linear-gradient(145deg, rgba(18, 22, 32, 0.92) 0%, rgba(10, 14, 22, 0.96) 100%);
+  box-shadow:
+    0 12px 40px rgba(0, 0, 0, 0.45),
+    0 0 0 1px rgba(255, 255, 255, 0.04) inset;
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.auth-portal-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 183, 77, 0.55);
+  box-shadow:
+    0 16px 48px rgba(0, 0, 0, 0.5),
+    0 0 24px rgba(255, 152, 0, 0.12);
+}
+
+.auth-portal-card:focus-visible {
+  outline: 2px solid var(--accent, #5eb3ff);
+  outline-offset: 3px;
+}
+
+.auth-portal-icon {
+  flex-shrink: 0;
+  width: 2.5rem;
+  height: 2.5rem;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  font-size: 1.25rem;
+  background: linear-gradient(135deg, rgba(255, 152, 0, 0.25), rgba(255, 87, 34, 0.15));
+  border: 1px solid rgba(255, 183, 77, 0.3);
+}
+
+.auth-portal-body strong {
+  display: block;
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin-bottom: 0.15rem;
+  color: #fff;
+}
+
+.auth-portal-body span {
+  display: block;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.auth-portal-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.55rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #ffb74d;
+  letter-spacing: 0.02em;
+}
+
+html[data-theme="light"] .auth-portal-card {
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 252, 0.98));
+  border-color: rgba(230, 126, 34, 0.35);
+  box-shadow: 0 10px 32px rgba(15, 23, 42, 0.12);
+}
+
+html[data-theme="light"] .auth-portal-body strong {
+  color: #0f172a;
+}
+
+html[data-theme="light"] .auth-portal-body span {
+  color: #475569;
+}
+
+/* Login standalone despacho.html */
+.desp-auth-overlay .auth-layout {
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 400px);
+  max-width: 960px;
+}
+
+.desp-auth-hero {
+  pointer-events: none;
+}
+
+.desp-auth-hero-panel {
+  max-width: 420px;
+}
+
+.desp-auth-brand-title {
+  margin: 0;
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.desp-auth-tag {
+  margin: 0.5rem 0 0.75rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #ffb74d;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.desp-auth-desc {
+  margin: 0 0 1rem;
+  font-size: 0.92rem;
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.desp-auth-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-bottom: 1rem;
+}
+
+.desp-auth-step {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.35rem 0.6rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.desp-auth-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.7);
+  text-decoration: none;
+  pointer-events: auto;
+  margin-top: 0.5rem;
+}
+
+.desp-auth-back:hover {
+  color: #fff;
+}
+
+.desp-auth-glass {
+  pointer-events: auto;
+  padding: clamp(1.25rem, 3vw, 1.75rem);
+  border-radius: 16px;
+  background: rgba(8, 12, 20, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(16px);
+}
+
+.desp-auth-heading {
+  margin: 0 0 0.35rem;
+  font-size: 1.35rem;
+  font-weight: 800;
+}
+
+.desp-auth-subheading {
+  margin: 0 0 1.1rem;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.62);
+  line-height: 1.45;
+}
+
+.desp-auth-role-picker {
+  grid-template-columns: 1fr 1fr;
+}
+
+.desp-auth-role-card.active {
+  border-color: rgba(255, 183, 77, 0.55);
+  background: rgba(255, 152, 0, 0.12);
+}
+
+#despAuthSubmit {
+  position: relative;
+  z-index: 3;
+  pointer-events: auto;
+  cursor: pointer;
+  width: 100%;
+  min-height: 48px;
+}
+
+.desp-auth-hint {
+  margin: 0 0 0.85rem;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.desp-auth-error {
+  margin: 0.75rem 0 0;
+  font-size: 0.82rem;
+  color: #ff8a80;
+}
+
+.desp-auth-error[hidden] {
+  display: none;
+}
+
+/* App shell despacho */
+.desp-app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg, #050810);
+}
+
+.desp-app.is-hidden {
+  display: none;
+}
+
+.desp-topbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 1.25rem;
+  padding: 0.85rem clamp(1rem, 3vw, 1.75rem);
+  border-bottom: 1px solid var(--border, rgba(255, 255, 255, 0.08));
+  background: var(--surface, rgba(8, 12, 20, 0.95));
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.desp-topbar-title h1 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 800;
+}
+
+.desp-topbar-title p {
+  margin: 0.15rem 0 0;
+  font-size: 0.78rem;
+  color: var(--muted, rgba(255, 255, 255, 0.55));
+}
+
+.desp-topbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.desp-view-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  padding: 0  clamp(1rem, 3vw, 1.75rem) 0.5rem;
+  border-bottom: 1px solid var(--border, rgba(255, 255, 255, 0.06));
+}
+
+.desp-view-btn {
+  padding: 0.4rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.1));
+  background: transparent;
+  color: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.desp-view-btn.active {
+  border-color: rgba(255, 183, 77, 0.45);
+  background: rgba(255, 152, 0, 0.12);
+  color: #ffb74d;
+}
+
+.desp-content {
+  flex: 1;
+  padding: clamp(1rem, 3vw, 1.5rem);
+}
+
+.desp-role-preparador {
+  background: rgba(255, 193, 7, 0.15);
+  color: #ffc107;
+}
+
+.desp-role-validador {
+  background: rgba(76, 175, 80, 0.15);
+  color: #81c784;
+}
+
+@media (max-width: 900px) {
+  .auth-external-portal {
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: 0.75rem;
+    width: calc(100% - 1.5rem);
+    max-width: 400px;
+  }
+
+  .auth-portal-card:hover {
+    transform: none;
+  }
+
+  .desp-auth-overlay .auth-layout {
+    max-width: 440px;
+  }
+
+  .desp-auth-hero {
+    display: none;
+  }
+}
+
+@media (max-width: 520px) {
+  .desp-auth-role-picker {
+    grid-template-columns: 1fr;
+  }
+}

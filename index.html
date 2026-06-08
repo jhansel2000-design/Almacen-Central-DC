@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="description" content="WMS Control — Almacén Central. Operaciones, facturas y productividad.">
+  <meta name="theme-color" content="#050810" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#e8eef5" media="(prefers-color-scheme: light)">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta http-equiv="X-Content-Type-Options" content="nosniff">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://cdn.sheetjs.com; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://api.openai.com; img-src 'self' data:; media-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <title>Almacén Central — WMS Control</title>
+  <link rel="preload" href="assets/video/login-operation-full.mp4" as="video" type="video/mp4">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%232c98ff'/%3E%3Ctext x='16' y='22' text-anchor='middle' font-size='16' font-weight='800' fill='%23041018' font-family='system-ui'%3EW%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="css/platform.css">
+  <link rel="stylesheet" href="css/platform-enhance.css">
+  <link rel="stylesheet" href="css/platform-gestures.css">
+  <link rel="stylesheet" href="css/ops-dashboard.css">
+  <link rel="stylesheet" href="css/facturas-dashboard.css">
+  <link rel="stylesheet" href="css/despacho-dashboard.css">
+  <link rel="stylesheet" href="css/tv-dashboard.css">
+  <link rel="stylesheet" href="css/general-dashboard.css">
+  <link rel="stylesheet" href="css/command-center.css">
+  <link rel="stylesheet" href="css/layout-customize.css">
+  <link rel="stylesheet" href="css/executive-charts.css">
+  <link rel="stylesheet" href="css/ai-assistant.css">
+  <link rel="stylesheet" href="css/theme-light.css">
+  <link rel="stylesheet" href="css/executive-premium.css">
+  <link rel="stylesheet" href="css/executive-comfort.css">
+  <link rel="stylesheet" href="css/auth-cinematic.css">
+  <link rel="stylesheet" href="css/despacho-auth.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,500&family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,500&display=swap" rel="stylesheet">
+</head>
+<body class="auth-locked executive-ui">
+  <noscript><p class="noscript-msg">Activa JavaScript para usar la plataforma.</p></noscript>
+
+  <div class="auth-overlay" id="authOverlay" role="dialog" aria-labelledby="authTitle">
+    <div class="auth-video-wrap" aria-hidden="true">
+      <video
+        class="auth-video is-active"
+        id="authBgVideo"
+        data-auth-clip="operation"
+        autoplay
+        muted
+        loop
+        playsinline
+        preload="auto"
+        disablepictureinpicture
+        poster="assets/video/login-operation-poster.jpg"
+        tabindex="-1">
+        <source src="assets/video/login-operation-full.mp4" type="video/mp4">
+      </video>
+      <div class="auth-video-scrim"></div>
+    </div>
+    <div class="auth-layout">
+      <aside class="auth-hero">
+        <div class="auth-hero-panel">
+          <div class="auth-hero-accent" aria-hidden="true"></div>
+          <header class="auth-hero-head">
+            <span class="auth-hero-logo" aria-hidden="true">W</span>
+            <div class="auth-hero-head-text">
+              <p class="auth-welcome-line">Bienvenido a</p>
+              <h1 class="auth-brand-title auth-site-name">Almacén Central</h1>
+            </div>
+          </header>
+          <p class="auth-brand-tag">WMS Control · Centro de mando ejecutivo</p>
+          <p class="auth-brand-desc">Importa Excels del almacén, visualiza KPIs y gráficos de operación, facturas y productividad. Cada módulo mantiene sus datos separados para piso y gerencia.</p>
+          <div class="auth-feature-grid" role="list">
+            <article class="auth-feature-card" role="listitem">
+              <span class="auth-feature-icon auth-feature-icon--ops" aria-hidden="true">⬡</span>
+              <div class="auth-feature-body">
+                <strong>Operaciones</strong>
+                <span>Abiertos, en proceso y tendencias por área</span>
+              </div>
+            </article>
+            <article class="auth-feature-card" role="listitem">
+              <span class="auth-feature-icon auth-feature-icon--fac" aria-hidden="true">$</span>
+              <div class="auth-feature-body">
+                <strong>Facturas</strong>
+                <span>Ventas por almacén en RD$ y metas diarias</span>
+              </div>
+            </article>
+            <article class="auth-feature-card" role="listitem">
+              <span class="auth-feature-icon auth-feature-icon--prod" aria-hidden="true">▣</span>
+              <div class="auth-feature-body">
+                <strong>Productividad</strong>
+                <span>Rendimiento por empleado y ranking</span>
+              </div>
+            </article>
+            <article class="auth-feature-card" role="listitem">
+              <span class="auth-feature-icon auth-feature-icon--rep" aria-hidden="true">☰</span>
+              <div class="auth-feature-body">
+                <strong>Reportes</strong>
+                <span>Informe consolidado y exportación PDF / TXT</span>
+              </div>
+            </article>
+          </div>
+        </div>
+      </aside>
+      <div class="auth-glass-card">
+        <form id="authForm" class="auth-form" novalidate action="#" method="post">
+          <h2 id="authTitle" class="auth-heading">Acceso ejecutivo</h2>
+          <p class="auth-subheading">Identifícate para entrar al centro de mando · selección rápida por rol</p>
+          <div class="auth-field">
+            <label for="authUsername">Usuario</label>
+            <input id="authUsername" class="auth-field-input" type="text" name="username" placeholder="admin, supervisor u operador" autocomplete="username" maxlength="64" required>
+          </div>
+          <div class="auth-role-picker" role="group" aria-label="Acceso rápido por rol">
+            <button type="button" class="auth-role-card active" data-role="administrador" data-user="admin" aria-pressed="true">
+              <span class="role-check" aria-hidden="true">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+              </span>
+              <span class="role-icon-wrap" aria-hidden="true">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 15v2m-6 4h12a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2z"/><path d="M12 11V7a4 4 0 1 0-8 0v4h8z"/></svg>
+              </span>
+              <strong>Administrador</strong>
+              <span class="role-desc">Control total</span>
+            </button>
+            <button type="button" class="auth-role-card" data-role="supervisor" data-user="supervisor" aria-pressed="false">
+              <span class="role-check" aria-hidden="true">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+              </span>
+              <span class="role-icon-wrap" aria-hidden="true">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              </span>
+              <strong>Supervisor</strong>
+              <span class="role-desc">Importar y supervisar</span>
+            </button>
+            <button type="button" class="auth-role-card" data-role="operador" data-user="operador" aria-pressed="false">
+              <span class="role-check" aria-hidden="true">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+              </span>
+              <span class="role-icon-wrap" aria-hidden="true">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              </span>
+              <strong>Operador</strong>
+              <span class="role-desc">Solo visualización</span>
+            </button>
+          </div>
+          <p class="auth-hint">Credenciales demo en documentación interna (README).</p>
+          <div class="auth-field auth-field-password">
+            <label for="authPassword">Contraseña</label>
+            <input id="authPassword" class="auth-field-input" type="password" name="password" placeholder="Contraseña" autocomplete="current-password" maxlength="128" required>
+            <button type="button" class="auth-pwd-toggle" id="btnTogglePassword" aria-label="Mostrar contraseña" title="Mostrar/ocultar">Ver</button>
+          </div>
+          <button type="submit" class="btn btn-primary" id="authSubmit">Entrar a la plataforma</button>
+          <p id="authError" class="auth-error" role="alert" aria-live="polite"></p>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <aside class="auth-external-portal" id="authDespachoPortal" aria-label="Acceso al portal de despacho">
+    <a href="despacho.html" class="auth-portal-card auth-portal-card--despacho">
+      <span class="auth-portal-icon" aria-hidden="true">🚚</span>
+      <div class="auth-portal-body">
+        <strong>Portal de Despacho</strong>
+        <span>Inicio de sesión independiente para preparador y validador de pedidos</span>
+        <span class="auth-portal-cta">Entrar a despacho →</span>
+      </div>
+    </a>
+  </aside>
+
+  <div class="platform-app is-hidden" id="platformApp" aria-hidden="true" inert>
+    <div class="sidebar-backdrop" id="sidebarBackdrop" aria-hidden="true"></div>
+    <aside class="platform-sidebar" id="sidebar">
+      <div class="platform-brand">
+        <div class="brand-logo" aria-hidden="true">W</div>
+        <div>
+          <span>Almacén Central</span>
+          <h1>300-001 · Centro de mando</h1>
+        </div>
+      </div>
+      <nav class="nav-modules" aria-label="Módulos del sistema">
+        <p class="nav-section-label">Principal</p>
+        <ul class="nav-module-list" id="navModules">
+          <li><button type="button" class="nav-module-btn active" data-module="general"><span class="nav-icon">◈</span> Centro de mando</button></li>
+          <li><button type="button" class="nav-module-btn" data-module="productividad"><span class="nav-icon">▣</span> Productividad</button></li>
+          <li><button type="button" class="nav-module-btn" data-module="operaciones"><span class="nav-icon">⬡</span> Operaciones</button></li>
+          <li><button type="button" class="nav-module-btn" data-module="facturas"><span class="nav-icon">$</span> Facturas</button></li>
+          <li><button type="button" class="nav-module-btn" data-module="despacho" data-perm="despacho.use"><span class="nav-icon">🚚</span> Despacho</button></li>
+          <li><button type="button" class="nav-module-btn" data-module="reportes"><span class="nav-icon">☰</span> Reportes</button></li>
+          <li><button type="button" class="nav-module-btn" data-module="administracion" data-perm="admin.panel"><span class="nav-icon">⚙</span> Administración</button></li>
+        </ul>
+        <p class="nav-section-label nav-section-sub" id="subnavLabel" hidden>Vistas</p>
+        <ul class="nav-submodule-list" id="navSubmodules" hidden></ul>
+      </nav>
+      <div class="sidebar-footer">
+        <button type="button" id="btnAi" data-perm="ai.use">Asistente IA</button>
+        <button type="button" id="btnAdmin" data-perm="admin.panel" class="is-hidden">Admin (legacy)</button>
+        <button type="button" id="btnTvMode" data-perm="tv.mode">Modo TV</button>
+        <button type="button" id="btnTheme">Tema claro/oscuro</button>
+        <button type="button" id="btnLogout">Cerrar sesión</button>
+      </div>
+    </aside>
+
+    <div class="platform-main">
+      <header class="platform-topbar">
+        <div class="topbar-title">
+          <h2 id="dashboardTitle">300-001 · Centro de mando</h2>
+          <p id="dashboardSubtitle">Datos publicados · <span id="lastSync">—</span></p>
+          <p class="live-clock" id="liveClock">—</p>
+        </div>
+        <div class="topbar-actions">
+          <div class="data-status-row" id="dataStatusRow" aria-label="Estado de datos">
+            <span class="data-chip is-empty" id="chipProdStatus" title="Productividad">Prod —</span>
+            <span class="data-chip is-empty" id="chipOpsStatus" title="Operaciones">Ops —</span>
+            <span class="data-chip is-empty" id="chipFacStatus" title="Facturas">Fac —</span>
+            <span class="data-chip is-empty" id="chipDespStatus" title="Despacho">Desp —</span>
+          </div>
+          <button type="button" class="btn-ghost" id="btnRefreshView" title="Actualizar vista (R)">↻ Actualizar</button>
+          <button type="button" class="btn-ghost" id="btnShortcutsHelp" title="Atajos de teclado (?)">?</button>
+          <span class="chip-live" id="liveChip">En vivo</span>
+          <span class="role-badge user" id="roleBadge">Usuario</span>
+          <button type="button" class="btn btn-icon" id="btnMenuMobile" title="Menú" aria-label="Abrir menú">☰</button>
+        </div>
+        <div class="filters" id="filtersBar">
+          <div class="filter-group">
+            <label for="filterFechaDesde">Desde</label>
+            <input type="date" id="filterFechaDesde">
+          </div>
+          <div class="filter-group">
+            <label for="filterFechaHasta">Hasta</label>
+            <input type="date" id="filterFechaHasta">
+          </div>
+          <div class="filter-group filter-ops-only is-hidden">
+            <label for="filterUsuario">Usuario</label>
+            <select id="filterUsuario"><option value="">Todos</option></select>
+          </div>
+          <div class="filter-group filter-ops-only is-hidden">
+            <label for="filterUbicacion">Ubicación</label>
+            <select id="filterUbicacion"><option value="">Todas</option></select>
+          </div>
+          <div class="filter-group filter-ops-only is-hidden">
+            <label for="filterTipoTrabajo">Tipo trabajo</label>
+            <select id="filterTipoTrabajo"><option value="">Todos</option></select>
+          </div>
+          <div class="filter-group filter-ops-only is-hidden">
+            <label for="filterEstado">Estado</label>
+            <select id="filterEstado"><option value="">Todos</option></select>
+          </div>
+          <div class="filter-group filter-legacy-only is-hidden">
+            <label for="filterArea">Área</label>
+            <select id="filterArea"><option value="">Todas</option></select>
+          </div>
+          <div class="filter-group filter-legacy-only is-hidden">
+            <label for="filterTipo">Tipo orden</label>
+            <select id="filterTipo"><option value="">Todos</option></select>
+          </div>
+          <div class="filter-group filter-prod-only is-hidden">
+            <label for="filterEmpleado">Empleado</label>
+            <select id="filterEmpleado"><option value="">Todos</option></select>
+          </div>
+          <button type="button" class="btn" id="btnClearFilters" data-perm="filter.apply">Limpiar</button>
+          <button type="button" class="btn btn-primary" id="btnApplyFilters" data-perm="filter.apply">Aplicar</button>
+        </div>
+      </header>
+
+      <div class="platform-content" id="mainContent" tabindex="-1">
+        <div class="ai-insights-bar" id="aiInsightsBar">
+          <div class="ai-insights-head">
+            <span class="ai-badge">IA</span>
+            <strong id="aiNarrative">Analizando datos del Excel…</strong>
+          </div>
+          <div class="ai-alerts-row" id="aiAlertsRow"></div>
+          <div class="ai-critical-grid" id="aiCriticalGrid"></div>
+        </div>
+        <section class="module-view active" id="module-general" data-module="general"></section>
+        <section class="module-view" id="module-productividad" data-module="productividad"></section>
+        <section class="module-view" id="module-operaciones" data-module="operaciones"></section>
+        <section class="module-view" id="module-facturas" data-module="facturas"></section>
+        <section class="module-view" id="module-despacho" data-module="despacho"></section>
+        <section class="module-view" id="module-reportes" data-module="reportes"></section>
+      </div>
+    </div>
+
+    <div class="admin-modal" id="adminModal" aria-hidden="true">
+      <div class="admin-modal-backdrop" id="adminBackdrop"></div>
+      <div class="admin-modal-panel" role="dialog" aria-labelledby="adminModalTitle">
+        <header class="admin-modal-header">
+          <h2 id="adminModalTitle">Administración ejecutiva</h2>
+          <button type="button" class="btn btn-icon" id="btnCloseAdmin" aria-label="Cerrar">✕</button>
+        </header>
+        <nav class="admin-tabs" role="tablist">
+          <button type="button" class="admin-tab-btn active" data-tab="excel" data-perm="data.import">Datos Excel</button>
+          <button type="button" class="admin-tab-btn" data-tab="sistema" data-perm="admin.panel">Sistema</button>
+          <button type="button" class="admin-tab-btn" data-tab="herramientas" data-perm="admin.panel">Herramientas</button>
+          <button type="button" class="admin-tab-btn" data-tab="users" data-perm="users.manage">Usuarios</button>
+          <button type="button" class="admin-tab-btn" data-tab="areas" data-perm="areas.manage">Áreas</button>
+          <button type="button" class="admin-tab-btn" data-tab="config" data-perm="config.save">Configuración</button>
+          <button type="button" class="admin-tab-btn" data-tab="logs" data-perm="logs.view">Historial</button>
+          <button type="button" class="admin-tab-btn" data-tab="ai" data-perm="ai.use">IA</button>
+        </nav>
+        <div class="admin-modal-body">
+          <div class="admin-tab-pane active" id="adminPaneExcel">
+            <p class="admin-hint module-badge prod">Cargar PRODUCTIVIDAD</p>
+            <p class="admin-hint small">Solo tabla dinámica: filas = fechas, columnas = empleados, valores = cantidad.</p>
+            <div class="drop-zone-admin drop-zone-prod" id="adminDropZoneProd">Arrastra aquí el Excel de <strong>Productividad</strong></div>
+            <input type="file" id="adminFileProd" accept=".xlsx,.xls" class="is-hidden" data-module="productividad">
+            <p id="adminFileNameProd" class="admin-hint">Sin archivo de productividad</p>
+            <div class="admin-btn-row">
+              <button type="button" class="btn" id="btnValidateExcelProd">Validar archivo</button>
+              <button type="button" class="btn btn-primary" id="btnImportExcelProd">Importar y publicar</button>
+            </div>
+            <div id="adminPreviewProd" class="admin-excel-preview" aria-live="polite"></div>
+            <hr class="admin-divider">
+            <p class="admin-hint module-badge ops">Cargar OPERACIONES</p>
+            <p class="admin-hint small">Excel transaccional: fecha/hora, usuario, estado, ubicación, cantidad, etc. No usar el botón de productividad.</p>
+            <div class="drop-zone-admin drop-zone-ops" id="adminDropZoneOps">Arrastra aquí el Excel de <strong>Operaciones</strong></div>
+            <input type="file" id="adminFileOps" accept=".xlsx,.xls" class="is-hidden" data-module="operaciones">
+            <p id="adminFileNameOps" class="admin-hint">Sin archivo de operaciones</p>
+            <div class="admin-btn-row">
+              <button type="button" class="btn" id="btnValidateExcelOps">Validar archivo</button>
+              <button type="button" class="btn btn-primary" id="btnImportExcelOps">Importar y publicar</button>
+            </div>
+            <div id="adminPreviewOps" class="admin-excel-preview" aria-live="polite"></div>
+            <hr class="admin-divider" id="adminSectionFacturas">
+            <p class="admin-hint module-badge facturas">Cargar FACTURAS — Diario del cliente</p>
+            <p class="admin-hint small">Columnas: Almacén, Orden de venta, Monto de la factura, Divisa. Sin duplicar números de factura.</p>
+            <div class="drop-zone-admin drop-zone-facturas" id="adminDropZoneFacturas">Arrastra aquí el <strong>Diario de facturas</strong></div>
+            <input type="file" id="adminFileFacturas" accept=".xlsx,.xls" class="is-hidden" data-module="facturas">
+            <p id="adminFileNameFacturas" class="admin-hint">Sin archivo de facturas</p>
+            <div class="admin-btn-row">
+              <button type="button" class="btn" id="btnValidateExcelFacturas">Validar archivo</button>
+              <button type="button" class="btn btn-primary" id="btnImportExcelFacturas">Importar y publicar</button>
+            </div>
+            <div id="adminPreviewFacturas" class="admin-excel-preview" aria-live="polite"></div>
+            <div class="status-msg" id="adminStatus"></div>
+          </div>
+          <div class="admin-tab-pane" id="adminPaneSistema">
+            <p class="admin-hint">Diagnóstico en tiempo real: módulos cargados, bibliotecas, almacenamiento y estado de datos.</p>
+            <div id="adminSystemHost"></div>
+          </div>
+          <div class="admin-tab-pane" id="adminPaneHerramientas">
+            <div id="adminToolsHost"></div>
+          </div>
+          <div class="admin-tab-pane" id="adminPaneUsers">
+            <form id="userForm" class="admin-form">
+              <input type="hidden" id="userEditId">
+              <div class="admin-form-row">
+                <input id="userUsername" placeholder="Usuario" maxlength="64" required>
+                <input id="userName" placeholder="Nombre completo" maxlength="120">
+              </div>
+              <div class="admin-form-row">
+                <select id="userRole">
+                  <option value="administrador">Administrador</option>
+                  <option value="supervisor">Supervisor</option>
+                  <option value="operador">Operador</option>
+                </select>
+                <input id="userPassword" type="password" placeholder="Contraseña (nueva)" maxlength="128" autocomplete="new-password">
+              </div>
+              <input id="userAreas" placeholder="Áreas permitidas (coma) vacío = todas" maxlength="200">
+              <button type="submit" class="btn btn-primary" id="btnSaveUser">Guardar usuario</button>
+            </form>
+            <div id="usersTableHost"></div>
+          </div>
+          <div class="admin-tab-pane" id="adminPaneAreas">
+            <form id="areaForm" class="admin-form">
+              <input type="hidden" id="areaEditId">
+              <input id="areaName" placeholder="Nombre del área" maxlength="80" required>
+              <input id="areaDesc" placeholder="Descripción" maxlength="200">
+              <button type="submit" class="btn btn-primary">Guardar área</button>
+            </form>
+            <div id="areasTableHost"></div>
+          </div>
+          <div class="admin-tab-pane" id="adminPaneConfig">
+            <label for="refreshSeconds">Actualización automática (seg)</label>
+            <input type="number" id="refreshSeconds" min="10" max="300" value="20">
+            <label for="configTheme">Tema por defecto</label>
+            <select id="configTheme">
+              <option value="dark">Oscuro (ERP)</option>
+              <option value="light">Claro</option>
+            </select>
+            <label class="admin-check"><input type="checkbox" id="configTvDefault"> Iniciar en modo TV</label>
+            <label for="tvRotateSeconds">Rotación modo TV (segundos, 5–60)</label>
+            <input type="number" id="tvRotateSeconds" min="5" max="60" step="1" value="8" title="Tiempo por diapositiva en rotación automática">
+            <hr class="admin-divider">
+            <h4 class="admin-subtitle">Tarjetas y diapositivas TV</h4>
+            <p class="admin-hint small">Marca las que quieres ver. En el centro de mando también puedes usar <strong>Personalizar vista</strong>.</p>
+            <p class="admin-hint small">Tarjetas del panel</p>
+            <ul id="adminGeneralLayout" class="layout-picker-list admin-layout-list"></ul>
+            <p class="admin-hint small">Rotación en Modo TV</p>
+            <ul id="adminTvLayout" class="layout-picker-list admin-layout-list"></ul>
+            <hr class="admin-divider">
+            <p class="admin-hint small">Cada submenú (Productividad, Operaciones → Gráficos, Facturas) muestra <strong>un solo gráfico gerencial</strong> con título, contexto y lecturas clave.</p>
+            <hr class="admin-divider">
+            <h4 class="admin-subtitle">Historial de archivos importados</h4>
+            <div id="adminFileHistory" class="admin-file-history"></div>
+            <button type="button" class="btn btn-primary" id="btnSaveConfig">Guardar configuración</button>
+          </div>
+          <div class="admin-tab-pane" id="adminPaneLogs">
+            <div id="logsHost"></div>
+          </div>
+          <div class="admin-tab-pane" id="adminPaneAi">
+            <p class="admin-hint">Conecta <strong>OpenAI</strong> para narrativas generadas por modelo. Sin clave API se usa el motor local.</p>
+            <label class="admin-check"><input type="checkbox" id="openaiEnabled"> Usar OpenAI</label>
+            <label for="openaiApiKey">API Key (sk-…)</label>
+            <input type="password" id="openaiApiKey" placeholder="sk-proj-…" autocomplete="off" maxlength="256" spellcheck="false" inputmode="verbatim">
+            <p class="admin-hint admin-hint--secure">La clave se guarda solo en este navegador. No la compartas ni la subas a repositorios.</p>
+            <label for="openaiModel">Modelo</label>
+            <select id="openaiModel">
+              <option value="gpt-4o-mini">gpt-4o-mini (recomendado)</option>
+              <option value="gpt-4o">gpt-4o</option>
+              <option value="gpt-3.5-turbo">gpt-3.5-turbo</option>
+            </select>
+            <hr class="admin-divider">
+            <h4 class="admin-subtitle">Voz de avisos</h4>
+            <label for="aiVoiceSelect">Voz del navegador</label>
+            <select id="aiVoiceSelect">
+              <option value="">Automática (español)</option>
+            </select>
+            <div class="admin-btn-row">
+              <button type="button" class="btn" id="btnTestAiVoice">Probar voz</button>
+            </div>
+            <p class="admin-hint small">La clave se guarda solo en este navegador. No la compartas en producción sin un proxy seguro.</p>
+            <div class="admin-btn-row">
+              <button type="button" class="btn btn-primary" id="btnSaveOpenai">Guardar OpenAI</button>
+            </div>
+            <p id="openaiStatus" class="status-msg"></p>
+            <hr class="admin-divider">
+            <button type="button" class="btn btn-primary" id="btnRunAiAdmin">Generar análisis IA</button>
+            <div id="aiAdminResult" class="ai-result-box"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <aside class="ai-drawer" id="aiDrawer" aria-label="Asistente IA" aria-hidden="true">
+      <header class="ai-drawer-header">
+        <div class="ai-drawer-title-block">
+          <h2>Asistente IA</h2>
+          <span class="ai-mode-badge" id="aiModeBadge" title="Motor de respuestas">Motor local</span>
+        </div>
+        <button type="button" class="btn btn-icon" id="btnCloseAi" aria-label="Cerrar">✕</button>
+      </header>
+      <p class="ai-mode-hint" id="aiModeHint">Pregunta sobre operaciones, facturas, línea o productividad.</p>
+      <div class="ai-suggestions" id="aiSuggestions" role="list" aria-label="Preguntas sugeridas"></div>
+      <div class="ai-messages" id="aiMessages" role="log" aria-live="polite" aria-relevant="additions"></div>
+      <div class="ai-typing is-hidden" id="aiTyping" aria-hidden="true">
+        <span></span><span></span><span></span> Analizando datos…
+      </div>
+      <div class="ai-input-row">
+        <textarea id="aiQuestion" rows="2" placeholder="Escribe tu pregunta… (Enter envía, Shift+Enter nueva línea)" maxlength="800"></textarea>
+        <div class="ai-input-actions">
+          <button type="button" class="btn btn-primary" id="btnAskAi">Enviar</button>
+          <button type="button" class="btn" id="btnAnalyzeAi" title="Resumen de todos los módulos">Resumen</button>
+        </div>
+      </div>
+      <footer class="ai-drawer-foot">
+        <button type="button" class="btn btn-sm" id="btnClearAiChat">Limpiar chat</button>
+        <button type="button" class="btn btn-sm" id="btnAiConfig">Configurar OpenAI</button>
+      </footer>
+    </aside>
+
+    <div class="shortcuts-modal" id="shortcutsModal" aria-hidden="true" role="dialog" aria-labelledby="shortcutsTitle">
+      <div class="shortcuts-backdrop" id="shortcutsBackdrop"></div>
+      <div class="shortcuts-panel">
+        <button type="button" class="btn btn-icon shortcuts-close" id="btnCloseShortcuts" aria-label="Cerrar">✕</button>
+        <h2 id="shortcutsTitle">Atajos de teclado</h2>
+        <p>Navega más rápido por la plataforma. Pulsa <kbd>?</kbd> para abrir esta ayuda.</p>
+        <ul class="shortcuts-list">
+          <li><span>Dashboard general</span><kbd>Alt</kbd> + <kbd>1</kbd></li>
+          <li><span>Productividad</span><kbd>Alt</kbd> + <kbd>2</kbd></li>
+          <li><span>Operaciones</span><kbd>Alt</kbd> + <kbd>3</kbd></li>
+          <li><span>Facturas</span><kbd>Alt</kbd> + <kbd>4</kbd></li>
+          <li><span>Despacho</span><kbd>Alt</kbd> + <kbd>5</kbd></li>
+          <li><span>Reportes</span><kbd>Alt</kbd> + <kbd>6</kbd></li>
+          <li><span>Administración</span><kbd>Alt</kbd> + <kbd>7</kbd></li>
+          <li><span>Asistente IA</span><kbd>Alt</kbd> + <kbd>8</kbd></li>
+          <li><span>Modo TV (salir)</span><kbd>Esc</kbd></li>
+          <li><span>Actualizar vista y datos</span><kbd>R</kbd></li>
+          <li><span>Cambiar tema claro/oscuro</span><kbd>T</kbd></li>
+          <li><span>Esta ayuda</span><kbd>?</kbd></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js" crossorigin="anonymous"></script>
+  <script src="js/chart-premium-style.js"></script>
+  <script src="js/panel-core.js"></script>
+  <script src="js/platform-utils.js"></script>
+  <script src="js/platform-store.js"></script>
+  <script src="js/platform-lan-sync.js"></script>
+  <script src="js/platform-speech.js"></script>
+  <script src="js/platform-layout.js"></script>
+  <script src="js/platform-site-filter.js"></script>
+  <script src="js/platform-command-center.js"></script>
+  <script src="js/platform-operational-insights.js"></script>
+  <script src="js/platform-executive-charts.js"></script>
+  <script src="js/platform-excel-detect.js"></script>
+  <script src="js/platform-excel-productivity.js"></script>
+  <script src="js/platform-excel-operaciones.js"></script>
+  <script src="js/platform-excel-facturas.js"></script>
+  <script src="js/platform-facturas-ui.js"></script>
+  <script src="js/platform-despacho-store.js"></script>
+  <script src="js/platform-despacho-ui.js"></script>
+  <script src="js/platform-excel.js"></script>
+  <script src="js/platform-export.js"></script>
+  <script src="js/platform-ops-dashboard.js"></script>
+  <script src="js/platform-ops-voice-alerts.js"></script>
+  <script src="js/platform-tv-dashboard.js"></script>
+  <script src="js/platform-gestures.js"></script>
+  <script src="js/platform-operaciones-ui.js"></script>
+  <script src="js/platform-admin.js"></script>
+  <script src="js/platform-admin-tools.js"></script>
+  <script src="js/platform-admin-ui.js"></script>
+  <script src="js/platform-modules.js"></script>
+  <script src="js/platform-ai.js"></script>
+  <script src="js/platform-toast.js"></script>
+  <script src="js/platform-shortcuts.js"></script>
+  <script src="js/platform-app.js"></script>
+  <script defer src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js" crossorigin="anonymous"></script>
+</body>
+</html>

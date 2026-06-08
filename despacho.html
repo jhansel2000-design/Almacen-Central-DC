@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="description" content="Portal Despacho — Preparador y Validador de pedidos.">
+  <meta name="theme-color" content="#050810" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#e8eef5" media="(prefers-color-scheme: light)">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta http-equiv="X-Content-Type-Options" content="nosniff">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self'; img-src 'self' data:; media-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <title>Despacho — Preparador y Validador</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23ff9800'/%3E%3Ctext x='16' y='22' text-anchor='middle' font-size='14' font-weight='800' fill='%23041018' font-family='system-ui'%3ED%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="css/platform.css">
+  <link rel="stylesheet" href="css/platform-enhance.css">
+  <link rel="stylesheet" href="css/despacho-dashboard.css">
+  <link rel="stylesheet" href="css/despacho-auth.css">
+  <link rel="stylesheet" href="css/auth-cinematic.css">
+  <link rel="stylesheet" href="css/theme-light.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,500;0,9..40,600;0,9..40,700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body class="auth-locked executive-ui">
+  <noscript><p class="noscript-msg">Activa JavaScript para usar el portal de despacho.</p></noscript>
+
+  <div class="auth-overlay desp-auth-overlay" id="despAuthOverlay" role="dialog" aria-labelledby="despAuthTitle">
+    <div class="auth-video-wrap" aria-hidden="true">
+      <div class="auth-video-scrim" style="background: linear-gradient(135deg, rgba(8,12,20,0.95) 0%, rgba(20,14,8,0.92) 50%, rgba(8,12,20,0.96) 100%);"></div>
+    </div>
+    <div class="auth-layout">
+      <aside class="auth-hero desp-auth-hero">
+        <div class="auth-hero-panel desp-auth-hero-panel">
+          <header class="auth-hero-head">
+            <span class="auth-hero-logo" aria-hidden="true" style="background: linear-gradient(135deg, #ff9800, #ff5722);">D</span>
+            <div class="auth-hero-head-text">
+              <p class="auth-welcome-line">Portal independiente</p>
+              <h1 class="desp-auth-brand-title">Despacho 300-001</h1>
+            </div>
+          </header>
+          <p class="desp-auth-tag">Preparador ↔ Validador</p>
+          <p class="desp-auth-desc">Inicio de sesión separado del centro de mando WMS. Los pedidos se sincronizan en tiempo real entre preparador y validador en este almacén.</p>
+          <div class="desp-auth-steps" aria-label="Flujo de estados">
+            <span class="desp-auth-step">En proceso</span>
+            <span class="desp-auth-step">Facturado</span>
+            <span class="desp-auth-step">Pendiente carga</span>
+            <span class="desp-auth-step">Validación</span>
+            <span class="desp-auth-step">Listo despacho</span>
+          </div>
+          <a href="index.html" class="desp-auth-back">← Volver al centro de mando WMS</a>
+        </div>
+      </aside>
+      <div class="auth-glass-card desp-auth-glass">
+        <form id="despAuthForm" class="auth-form" novalidate action="#" method="post">
+          <h2 id="despAuthTitle" class="auth-heading desp-auth-heading">Acceso a despacho</h2>
+          <p class="auth-subheading desp-auth-subheading">Sesión propia · preparador o validador</p>
+          <div class="auth-field">
+            <label for="despAuthUsername">Usuario</label>
+            <input id="despAuthUsername" class="auth-field-input" type="text" name="username" placeholder="preparador o validador" autocomplete="username" maxlength="64" required>
+          </div>
+          <div class="auth-role-picker desp-auth-role-picker" role="group" aria-label="Acceso rápido por rol">
+            <button type="button" class="auth-role-card desp-auth-role-card active" data-role="preparador" data-user="preparador" aria-pressed="true">
+              <strong>Preparador</strong>
+              <span class="role-desc">Registra IDC y jaula</span>
+            </button>
+            <button type="button" class="auth-role-card desp-auth-role-card" data-role="validador" data-user="validador" aria-pressed="false">
+              <strong>Validador</strong>
+              <span class="role-desc">Valida y libera pedidos</span>
+            </button>
+          </div>
+          <p class="auth-hint desp-auth-hint">Demo: preparador o operador / CASTRO01 · validador o supervisor / SUPERVISOR01</p>
+          <div class="auth-field auth-field-password">
+            <label for="despAuthPassword">Contraseña</label>
+            <input id="despAuthPassword" class="auth-field-input" type="password" name="password" placeholder="Contraseña" autocomplete="current-password" maxlength="128" required>
+            <button type="button" class="auth-pwd-toggle" id="despBtnTogglePassword" aria-label="Mostrar contraseña" title="Mostrar/ocultar">Ver</button>
+          </div>
+          <button type="submit" class="btn btn-primary" id="despAuthSubmit">Entrar al portal de despacho</button>
+          <p id="despAuthError" class="desp-auth-error" role="alert" aria-live="polite" hidden></p>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="desp-app is-hidden" id="despApp" aria-hidden="true" inert>
+    <header class="desp-topbar">
+      <div class="desp-topbar-title">
+        <h1>Despacho — Preparador y Validador</h1>
+        <p>Usuario: <strong id="despUserName">—</strong> · Última sync: <span id="despSyncLabel">—</span></p>
+      </div>
+      <div class="desp-topbar-actions">
+        <a href="index.html" class="btn btn-ghost">Centro de mando WMS</a>
+        <button type="button" class="btn btn-ghost" id="despBtnRefresh" title="Actualizar vista">↻ Actualizar</button>
+        <button type="button" class="btn btn-ghost" id="despBtnTheme">Tema</button>
+        <span class="role-badge" id="despRoleBadge">Usuario</span>
+        <button type="button" class="btn" id="despBtnLogout">Cerrar sesión</button>
+      </div>
+    </header>
+    <main class="desp-content">
+      <section id="despModule" class="module-view active" data-module="despacho"></section>
+    </main>
+  </div>
+
+  <script src="js/panel-core.js"></script>
+  <script src="js/platform-despacho-store.js"></script>
+  <script src="js/platform-lan-sync.js"></script>
+  <script src="js/platform-despacho-ui.js"></script>
+  <script src="js/platform-despacho-auth.js"></script>
+  <script src="js/platform-toast.js"></script>
+  <script src="js/platform-despacho-app.js"></script>
+</body>
+</html>
