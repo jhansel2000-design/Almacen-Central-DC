@@ -16,6 +16,74 @@
     return !!(h && (h.indexOf('github.io') !== -1 || h.indexOf('githubusercontent.com') !== -1));
   }
 
+  function getStaffUsersPayload() {
+    return global.PlatformAdmin && global.PlatformAdmin.getUsers
+      ? global.PlatformAdmin.getUsers()
+      : [];
+  }
+
+  function getPublishBases() {
+    var bases = [];
+    var seen = Object.create(null);
+
+    function add(base) {
+      var b = String(base || '').replace(/\/+$/, '');
+      var key = b || '__same__';
+      if (seen[key]) return;
+      seen[key] = 1;
+      bases.push(b);
+    }
+
+    add('');
+    add('http://localhost:8080');
+    add('http://127.0.0.1:8080');
+
+    try {
+      var cfg = JSON.parse(global.localStorage.getItem('almacen_platform_config') || '{}');
+      if (cfg.networkRelay && cfg.networkRelay.baseUrl) {
+        add(cfg.networkRelay.baseUrl);
+      }
+    } catch (e) { /* noop */ }
+
+    if (global.PlatformLanSync && global.PlatformLanSync.getServerInfo) {
+      var info = global.PlatformLanSync.getServerInfo();
+      if (info && info.urls) {
+        info.urls.forEach(add);
+      }
+    }
+
+    return bases;
+  }
+
+  function postPublishEndpoint(endpoint, users) {
+    var bases = getPublishBases();
+    var index = 0;
+
+    function attempt() {
+      if (index >= bases.length) {
+        return Promise.reject(new Error('No se encontró servidor local. Ejecuta serve-dashboard.ps1 en este PC.'));
+      }
+      var base = bases[index++];
+      var url = base ? (base + endpoint) : endpoint;
+      return fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ users: users })
+      }).then(function (res) {
+        return res.json().catch(function () { return {}; }).then(function (body) {
+          if (!res.ok || !body.ok) {
+            throw new Error((body && body.error) || ('HTTP ' + res.status));
+          }
+          return body;
+        });
+      }).catch(function () {
+        return attempt();
+      });
+    }
+
+    return attempt();
+  }
+
   function fetchWebUsersPayload() {
     var url = WEB_USERS_URL + '?v=' + encodeURIComponent(String(Date.now()));
     return fetch(url, { cache: 'no-store' }).then(function (res) {
@@ -46,45 +114,11 @@
   }
 
   function publishToDisk() {
-    if (!global.PlatformLanSync || !global.PlatformLanSync.isEnabled()) {
-      return Promise.resolve({ ok: false, message: 'Activa el servidor local (serve-dashboard.ps1).' });
-    }
-    var users = global.PlatformAdmin && global.PlatformAdmin.getUsers
-      ? global.PlatformAdmin.getUsers()
-      : [];
-    return fetch('/api/publish-web-users', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ users: users })
-    }).then(function (res) {
-      return res.json().catch(function () { return {}; }).then(function (body) {
-        if (!res.ok || !body.ok) {
-          throw new Error((body && body.error) || ('HTTP ' + res.status));
-        }
-        return body;
-      });
-    });
+    return postPublishEndpoint('/api/publish-web-users', getStaffUsersPayload());
   }
 
   function publishLive() {
-    if (!global.PlatformLanSync || !global.PlatformLanSync.isEnabled()) {
-      return Promise.resolve({ ok: false, message: 'Activa el servidor local (serve-dashboard.ps1).' });
-    }
-    var users = global.PlatformAdmin && global.PlatformAdmin.getUsers
-      ? global.PlatformAdmin.getUsers()
-      : [];
-    return fetch('/api/publish-web-users-live', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ users: users })
-    }).then(function (res) {
-      return res.json().catch(function () { return {}; }).then(function (body) {
-        if (!res.ok || !body.ok) {
-          throw new Error((body && body.error) || ('HTTP ' + res.status));
-        }
-        return body;
-      });
-    });
+    return postPublishEndpoint('/api/publish-web-users-live', getStaffUsersPayload());
   }
 
   function downloadWebUsersExport() {

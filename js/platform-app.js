@@ -592,6 +592,9 @@
     setWebPublishStatus('Publicando en GitHub Pages…', 'is-busy');
     var run = global.PlatformWebUsers.publishLive || global.PlatformWebUsers.publishToDisk;
     return run().then(function (body) {
+      if (!body || body.ok === false) {
+        throw new Error((body && body.message) || 'publish-failed');
+      }
       var result = formatWebPublishResult(body);
       setWebPublishStatus(result.text, result.kind);
       setWebPublishButtonLoading(false, body && body.live && body.pushed);
