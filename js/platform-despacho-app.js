@@ -261,7 +261,7 @@
 
     global.PlatformDespachoUI.render(host, global.PlatformDespachoStore.load(), {
       user: state.user,
-      canValidate: Auth.canValidate(state.user.role),
+      canValidate: state.despachoArea === 'validador',
       despachoArea: state.despachoArea || 'preparador',
       screen: state.screen,
       onScreenChange: function (s) {

@@ -75,7 +75,7 @@
     }
 
     data = data || (DS() ? DS().load() : { pedidos: [] });
-    var pedidos = DS() ? DS().getPedidosActivos(data.pedidos) : (data.pedidos || []);
+    var pedidos = DS() ? DS().getPedidosVisiblesValidador(data.pedidos) : [];
 
     mountEl.hidden = false;
     mountEl.setAttribute('aria-hidden', 'false');

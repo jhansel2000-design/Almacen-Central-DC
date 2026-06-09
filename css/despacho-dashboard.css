@@ -1398,6 +1398,28 @@ body.desp-controller-mode .desp-live-present-lista {
   gap: 1.25rem;
 }
 
+.desp-lista-vivo-wrap {
+  margin: 0.75rem 0 1rem;
+}
+
+.desp-table--lista-vivo .desp-btn-archive--live {
+  font-weight: 700;
+  color: #f85149;
+  border-color: rgba(248, 81, 73, 0.35);
+}
+
+.desp-table--lista-vivo .desp-btn-archive--live:hover {
+  background: rgba(248, 81, 73, 0.12);
+  border-color: rgba(248, 81, 73, 0.55);
+}
+
+.desp-lista-vivo-empty {
+  margin: 0.5rem 0 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
 .desp-lista-share-actions {
   display: flex;
   flex-direction: column;

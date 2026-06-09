@@ -117,7 +117,11 @@
   }
 
   function canValidate(role) {
-    return role === 'validador';
+    if (role === 'validador') return true;
+    if (global.PlatformAdmin) {
+      return global.PlatformAdmin.can(role, 'despacho.validate', { role: role });
+    }
+    return false;
   }
 
   function getUsers() {

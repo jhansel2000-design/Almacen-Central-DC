@@ -340,21 +340,48 @@
       '</aside></div></section>';
   }
 
+  function renderListaEnVivoSeguimiento(pedidos, canRemove) {
+    pedidos = pedidos || [];
+    if (!pedidos.length) {
+      return '<p class="desp-muted desp-lista-vivo-empty">Sin IDC en seguimiento validador en vivo.</p>';
+    }
+    return '<div class="desp-table-wrap desp-lista-vivo-wrap">' +
+      '<table class="desp-table desp-table--lista-vivo" aria-label="Seguimiento validador en vivo">' +
+      '<thead><tr><th>IDC</th><th>Pasillo</th><th>Estado</th>' +
+      (canRemove ? '<th>Acción</th>' : '') +
+      '</tr></thead><tbody>' +
+      pedidos.map(function (p) {
+        return '<tr data-pedido-id="' + esc(p.id) + '">' +
+          '<td><strong class="desp-idc">' + esc(formatIdc(p.idc)) + '</strong></td>' +
+          '<td>' + esc(p.jaula || '—') + '</td>' +
+          '<td>' + estadoBadge(p.estado) + '</td>' +
+          (canRemove
+            ? '<td><button type="button" class="btn btn-ghost desp-btn-archive desp-btn-archive--live" data-pedido-id="' +
+              esc(p.id) + '" data-idc="' + esc(formatIdc(p.idc)) + '" data-pasillo="' + esc(p.jaula || '') +
+              '" title="Quitar del seguimiento en vivo">Quitar</button></td>'
+            : '') +
+          '</tr>';
+      }).join('') +
+      '</tbody></table></div>';
+  }
+
   function renderPanelValidador(data, opts) {
     var sharing = DS.getLiveShareLista(data);
     var pedidos = DS.getPedidosVisiblesValidador(data.pedidos);
     opts = opts || {};
+    var canRemove = !!opts.canValidate;
     return '<div class="desp-validador-stack">' +
       '<section class="desp-panel desp-panel--val-share" aria-labelledby="despValShareTitle">' +
       '<header class="desp-panel-head">' +
       '<div><span class="desp-eyebrow">Pantalla externa · Validador</span>' +
-      '<h3 id="despValShareTitle">Lista en pantalla TV</h3>' +
-      '<p class="desp-panel-sub">Comparta su seguimiento de validación en monitores · se actualiza al quitar IDC</p></div>' +
+      '<h3 id="despValShareTitle">Seguimiento validador en vivo</h3>' +
+      '<p class="desp-panel-sub">Lo que comparte en TV · <strong>Quitar</strong> saca el IDC del seguimiento y de la pantalla al instante</p></div>' +
       (sharing ? '<span class="desp-share-live-tag desp-share-live-tag--lista"><span class="desp-live-dot"></span> EN VIVO</span>' : '') +
       '</header>' +
       '<p class="desp-share-status desp-share-status--lista" id="despListaShareStatus"' + (sharing ? '' : ' hidden') + '>' +
-      (sharing ? 'Lista en pantalla · ' + esc(String(pedidos.length)) + ' IDC en validación' : '') +
+      (sharing ? 'En pantalla TV · ' + esc(String(pedidos.length)) + ' IDC en seguimiento validador' : '') +
       '</p>' +
+      renderListaEnVivoSeguimiento(pedidos, canRemove) +
       '<div class="desp-lista-share-actions">' +
       '<button type="button" class="btn desp-action-btn desp-btn-share-lista' + (sharing ? ' is-live' : '') + '" id="despBtnShareLista">' +
       '<span class="desp-action-btn-icon" aria-hidden="true">' + (sharing ? '⏹' : '📺') + '</span>' +
@@ -655,8 +682,9 @@
     opts = opts || {};
     lastOpts = opts;
     data = data || DS.load();
-    var canValidate = !!opts.canValidate;
     var despachoArea = opts.despachoArea === 'validador' ? 'validador' : 'preparador';
+    var canValidate = despachoArea === 'validador' || !!opts.canValidate;
+    opts = Object.assign({}, opts, { canValidate: canValidate, despachoArea: despachoArea });
     var screen = resolveScreenForRole(opts.screen, despachoArea);
     if (opts.onScreenChange && screen !== normalizeScreen(opts.screen)) {
       opts.onScreenChange(screen);

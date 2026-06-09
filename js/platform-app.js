@@ -2009,7 +2009,7 @@
 
     global.PlatformDespachoUI.render(host, state.dataDespacho, {
       user: state.user,
-      canValidate: canValidate,
+      canValidate: despachoArea === 'validador',
       despachoArea: despachoArea,
       screen: savedScreen,
       onScreenChange: function (s) {

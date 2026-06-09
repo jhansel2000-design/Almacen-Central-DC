@@ -544,7 +544,11 @@
 
     var pedido = data.pedidos[idx];
     if (!pedido.seguimientoValidador) {
-      return { ok: false, error: 'Este IDC no está en seguimiento validador.' };
+      if (VALIDADOR_ESTADOS.indexOf(pedido.estado) >= 0) {
+        pedido.seguimientoValidador = true;
+      } else {
+        return { ok: false, error: 'Este IDC no está en seguimiento validador.' };
+      }
     }
     if (pedido.visibleValidador === false) {
       return { ok: true, data: data, pedido: pedido, unchanged: true };
@@ -558,6 +562,9 @@
     pedido.archivadoPasillo = pasillo;
     pedido.updatedAt = ts;
     pedido.updatedBy = usuario || '—';
+    if (data.liveShareLista && data.liveShareLista.active) {
+      data.liveShareLista = Object.assign({}, data.liveShareLista, { updatedAt: ts });
+    }
     pushHistorial(pedido, {
       at: ts,
       usuario: usuario || '—',
