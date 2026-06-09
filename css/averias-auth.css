@@ -1,5 +1,30 @@
 /* Portal Operaciones de Piso — login WMS */
 
+.auth-overlay.av-auth-overlay {
+  pointer-events: auto !important;
+}
+
+.av-auth-overlay .auth-layout,
+.av-auth-overlay .auth-stack,
+.av-auth-overlay .auth-glass-card,
+.av-auth-overlay .auth-form,
+.av-auth-overlay .auth-hub-links,
+.av-auth-overlay .auth-hub-link,
+.av-auth-overlay .auth-field,
+.av-auth-overlay .auth-field-input,
+.av-auth-overlay .auth-remember,
+.av-auth-overlay .auth-remember input,
+.av-auth-overlay .auth-pwd-toggle,
+.av-auth-overlay .btn,
+.av-auth-overlay .auth-human-verify,
+.av-auth-overlay .auth-human-verify * {
+  pointer-events: auto !important;
+}
+
+.av-auth-overlay .auth-hero-panel {
+  pointer-events: auto;
+}
+
 .av-auth-bg-wrap {
   background: #06080e;
 }
@@ -62,14 +87,20 @@ body.auth-locked .av-auth-overlay .auth-hub-link {
 
 .av-auth-overlay .auth-stack {
   position: relative;
-  z-index: 5;
+  z-index: 10;
   pointer-events: auto;
   width: 100%;
+}
+
+.av-auth-overlay .auth-glass-card {
+  position: relative;
+  z-index: 11;
 }
 
 .av-auth-overlay .auth-layout {
   pointer-events: auto;
   width: 100%;
+  z-index: 5;
 }
 
 .av-auth-overlay .auth-field-input,

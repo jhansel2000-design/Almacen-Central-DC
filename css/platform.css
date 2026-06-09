@@ -116,7 +116,7 @@ body.tv-mode .tv-exit-fab{ display:none !important; }
 .auth-overlay{
   position:fixed; inset:0; z-index:20000;
   display:flex; align-items:center; justify-content:center; padding:1.25rem;
-  pointer-events:none;
+  pointer-events:auto;
   overflow:hidden;
   background:transparent;
 }
@@ -181,7 +181,7 @@ body.auth-locked #platformApp{
   pointer-events:none !important;
   visibility:hidden !important;
 }
-.auth-layout{ position:relative; z-index:2; pointer-events:none; }
+.auth-layout{ position:relative; z-index:2; pointer-events:auto; }
 .auth-hero .auth-brand-list{ margin:1.25rem 0 0; }
 .auth-brand,
 .auth-hero{ padding:0; background:transparent; border:none; }

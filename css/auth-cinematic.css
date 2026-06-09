@@ -40,7 +40,7 @@
   min-height: auto;
   margin: 0 auto;
   padding: clamp(1.25rem, 4vw, 3rem);
-  pointer-events: none;
+  pointer-events: auto;
 }
 
 .desp-auth-overlay .auth-layout {

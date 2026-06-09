@@ -63,10 +63,12 @@
     if (overlay) {
       overlay.classList.toggle('is-hidden', !visible);
       overlay.setAttribute('aria-hidden', visible ? 'false' : 'true');
+      overlay.style.pointerEvents = visible ? 'auto' : 'none';
       if (visible) ensureAuthTouch();
     }
     if (app) {
       app.classList.toggle('is-hidden', visible);
+      app.style.pointerEvents = visible ? 'none' : 'auto';
       if (visible) {
         app.setAttribute('aria-hidden', 'true');
         app.setAttribute('inert', '');
