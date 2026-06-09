@@ -1535,7 +1535,52 @@ body.desp-controller-mode .desp-live-present-lista {
   flex-wrap: wrap;
   align-items: center;
   gap: 0.35rem;
-  min-width: 9rem;
+  min-width: 12rem;
+}
+
+.desp-val-actions--live {
+  min-width: 14rem;
+}
+
+.desp-val-estado-btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  align-items: center;
+}
+
+.desp-val-estado-btns--compact .desp-btn-set-estado {
+  font-size: 0.72rem;
+  padding: 0.2rem 0.45rem;
+}
+
+.desp-btn-set-estado {
+  font-size: 0.78rem;
+  padding: 0.28rem 0.55rem;
+  white-space: nowrap;
+  border-radius: 8px;
+}
+
+.desp-btn-set-estado.is-current {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.desp-btn-listo {
+  background: rgba(34, 197, 94, 0.18) !important;
+  border-color: rgba(34, 197, 94, 0.55) !important;
+  color: #4ade80 !important;
+  font-weight: 800 !important;
+}
+
+.desp-btn-listo:hover:not(:disabled) {
+  background: rgba(34, 197, 94, 0.28) !important;
+  box-shadow: 0 4px 16px rgba(34, 197, 94, 0.2);
+}
+
+html[data-theme="light"] .desp-btn-listo {
+  color: #15803d !important;
+  background: rgba(34, 197, 94, 0.12) !important;
 }
 
 .desp-btn-archive {

@@ -301,9 +301,6 @@
     pedido.archivadoValidadorAt = null;
     pedido.archivadoValidadorBy = null;
     pedido.archivadoPasillo = null;
-    if (PREPARADOR_ESTADOS.indexOf(pedido.estado) >= 0) {
-      pedido.estado = 'pendiente_carga';
-    }
     pedido.updatedAt = ts;
     pedido.updatedBy = usuario;
     pushHistorial(pedido, {
@@ -311,8 +308,9 @@
       usuario: usuario,
       panel: 'preparador',
       desde: prevEstado,
-      hacia: pedido.estado,
-      nota: 'Operador envió a seguimiento validador'
+      hacia: prevEstado,
+      nota: 'Operador envió a seguimiento validador · estado: ' +
+        (ESTADOS[prevEstado] ? ESTADOS[prevEstado].short : prevEstado)
     });
     save(data);
     return { ok: true, data: data, pedido: pedido };
@@ -347,9 +345,11 @@
       panel: 'validador',
       desde: prev,
       hacia: nuevoEstado,
-      nota: (prevFase === 'preparacion' && newFase !== 'preparacion')
-        ? 'Pasó a validación — sale del seguimiento del operador'
-        : 'Cambio de estado validador'
+      nota: nuevoEstado === 'listo_despacho'
+        ? 'Validador marcó como listo para despacho'
+        : (prevFase === 'preparacion' && newFase !== 'preparacion')
+          ? 'Validador cambió estado desde preparación'
+          : 'Cambio de estado validador'
     });
     save(data);
     return { ok: true, data: data, pedido: pedido };

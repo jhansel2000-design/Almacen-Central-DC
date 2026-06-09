@@ -340,6 +340,26 @@
       '</aside></div></section>';
   }
 
+  function renderValidadorEstadoBtns(p, canValidate, compact) {
+    if (!canValidate) {
+      return '<span class="desp-muted">Sin permiso</span>';
+    }
+    var html = '<div class="desp-val-estado-btns' + (compact ? ' desp-val-estado-btns--compact' : '') + '">';
+    DS.VALIDADOR_ESTADOS.forEach(function (id) {
+      var e = DS.ESTADOS[id];
+      var isCurrent = p.estado === id;
+      var cls = 'desp-btn-set-estado btn btn-ghost';
+      if (id === 'listo_despacho') cls += ' desp-btn-listo';
+      if (isCurrent) cls += ' is-current';
+      html += '<button type="button" class="' + cls + '" data-pedido-id="' + esc(p.id) + '" data-estado="' + esc(id) + '"' +
+        (isCurrent ? ' disabled aria-current="true"' : '') + ' title="' + esc(e.label) + '">' +
+        esc(e.icon) + ' ' + esc(compact && id === 'listo_despacho' ? 'Listo' : (e.short || e.label)) +
+        '</button>';
+    });
+    html += '</div>';
+    return html;
+  }
+
   function renderListaEnVivoSeguimiento(pedidos, canRemove) {
     pedidos = pedidos || [];
     if (!pedidos.length) {
@@ -348,7 +368,7 @@
     return '<div class="desp-table-wrap desp-lista-vivo-wrap">' +
       '<table class="desp-table desp-table--lista-vivo" aria-label="Seguimiento validador en vivo">' +
       '<thead><tr><th>IDC</th><th>Pasillo</th><th>Estado</th>' +
-      (canRemove ? '<th>Acción</th>' : '') +
+      (canRemove ? '<th>Validador</th>' : '') +
       '</tr></thead><tbody>' +
       pedidos.map(function (p) {
         return '<tr data-pedido-id="' + esc(p.id) + '">' +
@@ -356,7 +376,9 @@
           '<td>' + esc(p.jaula || '—') + '</td>' +
           '<td>' + estadoBadge(p.estado) + '</td>' +
           (canRemove
-            ? '<td><button type="button" class="btn btn-ghost desp-btn-archive desp-btn-archive--live" data-pedido-id="' +
+            ? '<td class="desp-val-actions desp-val-actions--live">' +
+              renderValidadorEstadoBtns(p, true, true) +
+              ' <button type="button" class="btn btn-ghost desp-btn-archive desp-btn-archive--live" data-pedido-id="' +
               esc(p.id) + '" data-idc="' + esc(formatIdc(p.idc)) + '" data-pasillo="' + esc(p.jaula || '') +
               '" title="Quitar del seguimiento en vivo">Quitar</button></td>'
             : '') +
@@ -375,7 +397,7 @@
       '<header class="desp-panel-head">' +
       '<div><span class="desp-eyebrow">Pantalla externa · Validador</span>' +
       '<h3 id="despValShareTitle">Seguimiento validador en vivo</h3>' +
-      '<p class="desp-panel-sub">Lo que comparte en TV · <strong>Quitar</strong> saca el IDC del seguimiento y de la pantalla al instante</p></div>' +
+      '<p class="desp-panel-sub">Lo que comparte en TV · el validador marca <strong>Listo</strong> o cambia estado · <strong>Quitar</strong> saca el IDC</p></div>' +
       (sharing ? '<span class="desp-share-live-tag desp-share-live-tag--lista"><span class="desp-live-dot"></span> EN VIVO</span>' : '') +
       '</header>' +
       '<p class="desp-share-status desp-share-status--lista" id="despListaShareStatus"' + (sharing ? '' : ' hidden') + '>' +
@@ -568,7 +590,7 @@
       '<header class="desp-panel-head">' +
       '<div><span class="desp-eyebrow">Validador</span>' +
       '<h3 id="despValTitle">Seguimiento en validación</h3>' +
-      '<p class="desp-panel-sub">IDC que el operador envió. Usted <strong>quita</strong> los terminados — no vuelven al operador.</p></div>' +
+      '<p class="desp-panel-sub">IDC enviados por el operador. Usted marca <strong>Listo para despacho</strong> o cambia el estado · luego puede quitar del seguimiento.</p></div>' +
       '<span class="desp-live-badge" title="Sincronización activa"><span class="desp-live-dot"></span> En vivo</span>' +
       '</header>' +
       '<div class="desp-filters">' +
@@ -628,25 +650,12 @@
 
   function renderValidadorRow(p, opts) {
     var canValidate = opts && opts.canValidate;
-    var selectHtml = '';
-    if (canValidate) {
-      selectHtml = '<select class="desp-estado-select" data-pedido-id="' + esc(p.id) + '" aria-label="Nuevo estado para ' + esc(p.idc) + '">' +
-        '<option value="">Cambiar a…</option>' +
-        DS.VALIDADOR_ESTADOS.map(function (id) {
-          var e = DS.ESTADOS[id];
-          return '<option value="' + esc(id) + '"' + (p.estado === id ? ' disabled' : '') + '>' +
-            esc(e.icon) + ' ' + esc(e.label) + '</option>';
-        }).join('') +
-        '</select>';
-    } else {
-      selectHtml = '<span class="desp-muted">Sin permiso</span>';
-    }
     return '<tr data-pedido-id="' + esc(p.id) + '">' +
       '<td><strong class="desp-idc">' + esc(formatIdc(p.idc)) + '</strong></td>' +
       '<td>' + esc(p.jaula) + '</td>' +
       '<td>' + estadoBadge(p.estado) + '</td>' +
       '<td class="desp-dt">' + esc(fmtDt(p.updatedAt)) + '<br><small>' + esc(p.updatedBy) + '</small></td>' +
-      '<td class="desp-val-actions">' + selectHtml +
+      '<td class="desp-val-actions">' + renderValidadorEstadoBtns(p, canValidate, false) +
       (canValidate ? ' <button type="button" class="btn btn-ghost desp-btn-archive" data-pedido-id="' + esc(p.id) + '" data-idc="' + esc(formatIdc(p.idc)) + '" data-pasillo="' + esc(p.jaula || '') + '" title="Quitar del seguimiento validador">Quitar</button>' : '') +
       '</td>' +
       '<td><button type="button" class="btn btn-ghost desp-btn-hist" data-pedido-id="' + esc(p.id) + '">Historial</button></td>' +
@@ -918,6 +927,23 @@
         if (idcEl) idcEl.value = idc || '';
         var radio = host.querySelector('input[name="prepEstado"][value="' + estado + '"]');
         if (radio) radio.checked = true;
+      });
+    });
+
+    host.querySelectorAll('.desp-btn-set-estado').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        if (btn.disabled) return;
+        var nuevo = btn.getAttribute('data-estado');
+        var pedidoId = btn.getAttribute('data-pedido-id');
+        if (!nuevo || !pedidoId) return;
+        var res = DS.cambiarEstado(pedidoId, nuevo, userName);
+        if (!res.ok) {
+          toast(res.error, 'warn');
+          return;
+        }
+        var label = DS.ESTADOS[nuevo] ? DS.ESTADOS[nuevo].short : nuevo;
+        toast('Estado: ' + label, 'success');
+        render(host, res.data, opts);
       });
     });
 
