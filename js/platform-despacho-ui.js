@@ -13,6 +13,37 @@
   var lastOpts = null;
   var displayWindows = { barcode: null, lista: null };
   var pasilloTouched = { prep: false, share: false };
+  var knownValidatorIds = Object.create(null);
+  var voiceAlertsReady = false;
+
+  function fmtCliente(p) {
+    var c = p && p.cliente ? String(p.cliente).trim() : '';
+    return c || '—';
+  }
+
+  function handleVoiceAlerts(data, despachoArea) {
+    var Voice = global.PlatformDespachoVoice;
+    if (!Voice || !DS || !data) return;
+    var list = DS.getPedidosVisiblesValidador(data.pedidos);
+    if (!voiceAlertsReady) {
+      list.forEach(function (p) { knownValidatorIds[p.id] = true; });
+      voiceAlertsReady = true;
+      return;
+    }
+    if (despachoArea !== 'validador') return;
+    list.forEach(function (p) {
+      if (!knownValidatorIds[p.id]) {
+        knownValidatorIds[p.id] = true;
+        Voice.announceNuevoIdc(p);
+      }
+    });
+  }
+
+  function announceNuevoIdcPedido(pedido) {
+    if (!pedido || !global.PlatformDespachoVoice) return;
+    global.PlatformDespachoVoice.announceNuevoIdc(pedido);
+    knownValidatorIds[pedido.id] = true;
+  }
 
   function resetPasilloTouched() {
     pasilloTouched.prep = false;
@@ -262,6 +293,8 @@
       '<input type="text" id="despIdc" name="idc" inputmode="text" placeholder="Escriba el IDC" autocapitalize="off" autocomplete="off"></label>' +
       '<label class="desp-field"><span>Pasillo</span>' +
       '<input type="text" id="despPasillo" name="x_dc_prep_pasillo" placeholder="Escriba el pasillo" autocomplete="off" autocorrect="off" spellcheck="false" inputmode="text" aria-label="Pasillo"></label>' +
+      '<label class="desp-field"><span>Nombre del cliente</span>' +
+      '<input type="text" id="despCliente" name="cliente" placeholder="Nombre del cliente" autocomplete="off" autocorrect="off" spellcheck="false"></label>' +
       '<fieldset class="desp-field desp-field--estado"><legend>Estado · preparador</legend>' +
       '<div class="desp-estado-pick">' +
       DS.PREPARADOR_ESTADOS.map(function (id, i) {
@@ -368,14 +401,16 @@
     }
     return '<div class="desp-table-wrap desp-lista-vivo-wrap">' +
       '<table class="desp-table desp-table--lista-vivo" aria-label="Seguimiento validador en vivo">' +
-      '<thead><tr><th>IDC</th><th>Pasillo</th><th>Estado</th>' +
+      '<thead><tr><th>IDC</th><th>Cliente</th><th>Pasillo</th><th>Estado</th><th>Fecha y hora</th>' +
       (canRemove ? '<th>Validador</th>' : '') +
       '</tr></thead><tbody>' +
       pedidos.map(function (p) {
         return '<tr data-pedido-id="' + esc(p.id) + '">' +
           '<td><strong class="desp-idc">' + esc(formatIdc(p.idc)) + '</strong></td>' +
+          '<td class="desp-cliente">' + esc(fmtCliente(p)) + '</td>' +
           '<td>' + esc(p.jaula || '—') + '</td>' +
           '<td>' + estadoBadge(p.estado) + '</td>' +
+          '<td class="desp-dt">' + esc(fmtDt(p.createdAt || p.updatedAt)) + '</td>' +
           (canRemove
             ? '<td class="desp-val-actions desp-val-actions--live">' +
               renderValidadorEstadoBtns(p, true, true) +
@@ -417,11 +452,13 @@
   function capturePrepForm(host) {
     var idc = host.querySelector('#despIdc');
     var jaula = host.querySelector('#despPasillo');
+    var cliente = host.querySelector('#despCliente');
     var estadoEl = host.querySelector('input[name="prepEstado"]:checked');
     if (!idc && !jaula) return null;
     return {
       idc: idc ? idc.value : '',
       jaula: pasilloValueFromField(jaula, 'prep'),
+      cliente: cliente ? cliente.value : '',
       estado: estadoEl ? estadoEl.value : 'en_proceso'
     };
   }
@@ -430,7 +467,9 @@
     if (!snap || !host) return;
     var idc = host.querySelector('#despIdc');
     var jaula = host.querySelector('#despPasillo');
+    var cliente = host.querySelector('#despCliente');
     if (idc) idc.value = snap.idc || '';
+    if (cliente) cliente.value = snap.cliente || '';
     if (jaula) {
       jaula.value = snap.jaula || '';
       pasilloTouched.prep = !!snap.jaula;
@@ -509,10 +548,12 @@
   function getPrepFormValues(host) {
     var idcEl = host.querySelector('#despIdc');
     var pasilloEl = host.querySelector('#despPasillo');
+    var clienteEl = host.querySelector('#despCliente');
     var estadoEl = host.querySelector('input[name="prepEstado"]:checked');
     return {
       idc: idcEl ? idcEl.value : '',
       jaula: pasilloValueFromField(pasilloEl, 'prep'),
+      cliente: clienteEl ? clienteEl.value : '',
       estado: estadoEl ? estadoEl.value : 'en_proceso'
     };
   }
@@ -545,7 +586,9 @@
     }
     return '<ul class="desp-mini-list">' + list.map(function (p) {
       return '<li><button type="button" class="desp-mini-idc" data-idc="' + esc(p.idc) + '" data-estado="' + esc(p.estado) + '">' +
-        '<strong>' + esc(formatIdc(p.idc)) + '</strong></button> · Pasillo ' + esc(p.jaula) + ' · ' +
+        '<strong>' + esc(formatIdc(p.idc)) + '</strong></button> · ' +
+        esc(fmtCliente(p)) + ' · Pasillo ' + esc(p.jaula) + ' · ' +
+        esc(fmtDt(p.createdAt || p.updatedAt)) + ' · ' +
         estadoBadge(p.estado) + '</li>';
     }).join('') + '</ul>';
   }
@@ -571,7 +614,9 @@
         '<span class="desp-jaula-count">' + items.length + ' IDC</span></header>' +
         '<ul class="desp-jaula-idc-list">' + items.map(function (p) {
           return '<li><strong class="desp-idc">' + esc(formatIdc(p.idc)) + '</strong> ' +
-            estadoBadge(p.estado) + '</li>';
+            '<span class="desp-cliente-inline">' + esc(fmtCliente(p)) + '</span> ' +
+            estadoBadge(p.estado) + '<br><small class="desp-muted">' +
+            esc(fmtDt(p.createdAt || p.updatedAt)) + '</small></li>';
         }).join('') + '</ul></article>';
     }).join('') + '</div>';
   }
@@ -596,7 +641,7 @@
       '</header>' +
       '<div class="desp-filters">' +
       '<label class="desp-filter"><span>Buscar</span>' +
-      '<input type="search" id="despSearch" placeholder="IDC o pasillo…" value="' + esc(filterQ) + '"></label>' +
+      '<input type="search" id="despSearch" placeholder="IDC, cliente o pasillo…" value="' + esc(filterQ) + '"></label>' +
       '<label class="desp-filter"><span>Estado</span>' +
       '<select id="despFilterEstado">' +
       '<option value="">Todos (validación)</option>' +
@@ -610,12 +655,12 @@
       '<div class="desp-table-wrap">' +
       '<table class="desp-table" id="despValTable">' +
       '<thead><tr>' +
-      '<th>IDC</th><th>Pasillo</th><th>Estado</th><th>Actualizado</th>' +
+      '<th>IDC</th><th>Cliente</th><th>Pasillo</th><th>Estado</th><th>Fecha y hora</th>' +
       (canValidate ? '<th>Acción</th>' : '') +
       '<th></th>' +
       '</tr></thead><tbody>' +
       (list.length ? list.map(function (p) { return renderValidadorRow(p, opts); }).join('') :
-        '<tr><td colspan="' + (canValidate ? 6 : 5) + '" class="desp-empty-row">No hay IDC en seguimiento validador' +
+        '<tr><td colspan="' + (canValidate ? 7 : 6) + '" class="desp-empty-row">No hay IDC en seguimiento validador' +
         (filterEstado || filterQ ? ' con este filtro' : ' — el operador debe enviarlos desde su panel') + '.</td></tr>') +
       '</tbody></table></div>' +
       renderRegistroArchivados(archivados, canValidate) +
@@ -631,13 +676,14 @@
       '<div class="desp-table-wrap">' +
       '<table class="desp-table desp-table--archivo">' +
       '<thead><tr>' +
-      '<th>IDC</th><th>Pasillo (al retirar)</th><th>Estado</th><th>Retirado</th><th>Por</th>' +
+      '<th>IDC</th><th>Cliente</th><th>Pasillo (al retirar)</th><th>Estado</th><th>Retirado</th><th>Por</th>' +
       (canValidate ? '<th></th>' : '') +
       '</tr></thead><tbody>' +
       (archivados.length ? archivados.map(function (p) {
         var pasillo = p.archivadoPasillo != null ? p.archivadoPasillo : p.jaula;
         return '<tr data-pedido-id="' + esc(p.id) + '">' +
           '<td><strong class="desp-idc">' + esc(formatIdc(p.idc)) + '</strong></td>' +
+          '<td class="desp-cliente">' + esc(fmtCliente(p)) + '</td>' +
           '<td>' + esc(pasillo || '—') + '</td>' +
           '<td>' + estadoBadge(p.estado) + '</td>' +
           '<td class="desp-dt">' + esc(fmtDt(p.archivadoValidadorAt || p.updatedAt)) + '</td>' +
@@ -645,7 +691,7 @@
           (canValidate ? '<td><button type="button" class="btn btn-ghost desp-btn-hist" data-pedido-id="' + esc(p.id) + '">Ver historial</button></td>' : '<td></td>') +
           '</tr>';
       }).join('') :
-        '<tr><td colspan="' + (canValidate ? 6 : 5) + '" class="desp-empty-row">Sin IDC retirados todavía.</td></tr>') +
+        '<tr><td colspan="' + (canValidate ? 7 : 6) + '" class="desp-empty-row">Sin IDC retirados todavía.</td></tr>') +
       '</tbody></table></div></section>';
   }
 
@@ -653,9 +699,10 @@
     var canValidate = opts && opts.canValidate;
     return '<tr data-pedido-id="' + esc(p.id) + '">' +
       '<td><strong class="desp-idc">' + esc(formatIdc(p.idc)) + '</strong></td>' +
+      '<td class="desp-cliente">' + esc(fmtCliente(p)) + '</td>' +
       '<td>' + esc(p.jaula) + '</td>' +
       '<td>' + estadoBadge(p.estado) + '</td>' +
-      '<td class="desp-dt">' + esc(fmtDt(p.updatedAt)) + '<br><small>' + esc(p.updatedBy) + '</small></td>' +
+      '<td class="desp-dt">' + esc(fmtDt(p.createdAt || p.updatedAt)) + '<br><small>' + esc(p.updatedBy) + '</small></td>' +
       '<td class="desp-val-actions">' + renderValidadorEstadoBtns(p, canValidate, false) +
       (canValidate ? ' <button type="button" class="btn btn-ghost desp-btn-archive" data-pedido-id="' + esc(p.id) + '" data-idc="' + esc(formatIdc(p.idc)) + '" data-pasillo="' + esc(p.jaula || '') + '" title="Quitar del seguimiento validador">Quitar</button>' : '') +
       '</td>' +
@@ -674,7 +721,8 @@
     }).join('');
     return '<div class="desp-hist-modal-inner">' +
       '<header class="desp-hist-head">' +
-      '<h4>Pedido ' + esc(formatIdc(pedido.idc)) + ' · Pasillo ' + esc(pedido.archivadoPasillo != null ? pedido.archivadoPasillo : pedido.jaula) + '</h4>' +
+      '<h4>Pedido ' + esc(formatIdc(pedido.idc)) + ' · Cliente ' + esc(fmtCliente(pedido)) +
+      ' · Pasillo ' + esc(pedido.archivadoPasillo != null ? pedido.archivadoPasillo : pedido.jaula) + '</h4>' +
       '<p>Estado actual: ' + estadoBadge(pedido.estado) + '</p></header>' +
       '<div class="desp-table-wrap"><table class="desp-table desp-table--hist">' +
       '<thead><tr><th>Fecha</th><th>Usuario</th><th>Panel</th><th>Cambio</th><th>Nota</th></tr></thead>' +
@@ -738,6 +786,7 @@
       '</div>';
 
     bindEvents(host, data, opts, userName);
+    handleVoiceAlerts(data, despachoArea);
 
     if (screen === 'barcode' && host.querySelector('#despBarcodePanel')) {
       var shareIdc = host.querySelector('#despShareIdc');
@@ -756,6 +805,7 @@
 
     unbindSync = DS.bindSync(function (fresh) {
       if (!host.isConnected) return;
+      handleVoiceAlerts(fresh, lastOpts && lastOpts.despachoArea);
       var formSnap = screen === 'barcode' ? captureShareForm(host) : (screen === 'registro' ? capturePrepForm(host) : null);
       var searchEl = host.querySelector('#despSearch');
       var filtEl = host.querySelector('#despFilterEstado');
@@ -803,11 +853,12 @@
       if (btnUpdate) {
         btnUpdate.addEventListener('click', function () {
           var vals = getPrepFormValues(host);
-          var res = DS.registrarPedido(vals.idc, vals.jaula, vals.estado, userName);
+          var res = DS.registrarPedido(vals.idc, vals.jaula, vals.estado, userName, vals.cliente);
           if (!res.ok) {
             toast(res.error, 'warn');
             return;
           }
+          if (!res.updated) announceNuevoIdcPedido(res.pedido);
           toast(res.updated ? 'IDC actualizado — en seguimiento validador' : 'IDC registrado — en seguimiento validador', 'success');
           var snap = capturePrepForm(host);
           render(host, res.data, opts);

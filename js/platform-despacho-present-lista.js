@@ -41,21 +41,37 @@
   function listaSignature(share, pedidos) {
     if (!share || !share.active) return '';
     var rows = (pedidos || []).map(function (p) {
-      return [p.idc, p.jaula, p.estado, p.updatedAt].join(':');
+      return [p.idc, p.cliente, p.jaula, p.estado, p.createdAt, p.updatedAt].join(':');
     }).join('|');
     return share.updatedAt + '::' + rows;
   }
 
+  function fmtDtLista(iso) {
+    if (!iso) return '—';
+    try {
+      return new Intl.DateTimeFormat('es-DO', {
+        dateStyle: 'short',
+        timeStyle: 'short',
+        timeZone: 'America/Santo_Domingo'
+      }).format(new Date(iso));
+    } catch (e) {
+      return String(iso).slice(0, 16).replace('T', ' ');
+    }
+  }
+
   function renderTableRows(pedidos) {
     if (!pedidos.length) {
-      return '<tr><td colspan="3" class="desp-lista-present-empty">Sin IDC registrados todavía.</td></tr>';
+      return '<tr><td colspan="5" class="desp-lista-present-empty">Sin IDC registrados todavía.</td></tr>';
     }
     return pedidos.map(function (p) {
       var store = DS();
       var idc = store ? store.formatIdc(p.idc) : p.idc;
+      var cliente = p.cliente ? String(p.cliente).trim() : '—';
       return '<tr>' +
         '<td class="desp-lista-present-idc">' + esc(idc) + '</td>' +
+        '<td class="desp-lista-present-cliente">' + esc(cliente) + '</td>' +
         '<td class="desp-lista-present-jaula">' + esc(p.jaula || '—') + '</td>' +
+        '<td class="desp-lista-present-fecha">' + esc(fmtDtLista(p.createdAt || p.updatedAt)) + '</td>' +
         '<td class="desp-lista-present-estado-cell">' + estadoHtml(p.estado) + '</td>' +
         '</tr>';
     }).join('');
@@ -90,7 +106,7 @@
       esc(share.sharedBy || '—') + '</p></div>' +
       '<div class="desp-lista-present-table-wrap">' +
       '<table class="desp-lista-present-table" aria-label="Lista IDC y pasillos en vivo">' +
-      '<thead><tr><th>IDC</th><th>Pasillo</th><th>Estado</th></tr></thead>' +
+      '<thead><tr><th>IDC</th><th>Cliente</th><th>Pasillo</th><th>Fecha y hora</th><th>Estado</th></tr></thead>' +
       '<tbody>' + renderTableRows(pedidos) + '</tbody></table></div></div></div>';
 
     lastSig = listaSignature(share, pedidos);

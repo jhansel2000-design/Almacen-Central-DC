@@ -148,6 +148,7 @@
       id: p.id || uid(),
       idc: formatIdc(p.idc || ''),
       jaula: String(p.jaula || '').trim(),
+      cliente: String(p.cliente || '').trim(),
       estado: estado,
       seguimientoValidador: seguimientoValidador,
       visibleValidador: p.visibleValidador !== false,
@@ -234,9 +235,10 @@
     });
   }
 
-  function registrarPedido(idc, jaula, estado, usuario) {
+  function registrarPedido(idc, jaula, estado, usuario, cliente) {
     idc = formatIdc(idc);
     jaula = String(jaula || '').trim();
+    cliente = String(cliente || '').trim();
     estado = ESTADOS[estado] && PREPARADOR_ESTADOS.indexOf(estado) >= 0 ? estado : 'en_proceso';
     usuario = usuario || '—';
 
@@ -254,6 +256,7 @@
       }
       var wasArchived = existing.visibleValidador === false;
       existing.jaula = jaula;
+      existing.cliente = cliente;
       existing.visibleValidador = true;
       promoverASeguimientoValidador(existing, estado, usuario, ts);
       if (wasArchived) {
@@ -267,6 +270,7 @@
       id: uid(),
       idc: idc,
       jaula: jaula,
+      cliente: cliente,
       estado: 'pendiente_carga',
       seguimientoValidador: true,
       visibleValidador: true,
@@ -363,7 +367,8 @@
       if (q) {
         list = list.filter(function (p) {
           return String(p.idc).toLowerCase().indexOf(q) >= 0 ||
-            String(p.jaula).toLowerCase().indexOf(q) >= 0;
+            String(p.jaula).toLowerCase().indexOf(q) >= 0 ||
+            String(p.cliente || '').toLowerCase().indexOf(q) >= 0;
         });
       }
     }

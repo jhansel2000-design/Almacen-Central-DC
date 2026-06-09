@@ -1402,6 +1402,22 @@ body.desp-controller-mode .desp-live-present-lista {
   gap: 1.25rem;
 }
 
+.desp-cliente {
+  max-width: 10rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.desp-cliente-inline {
+  color: var(--muted, #94a3b8);
+  font-size: 0.85em;
+}
+
+.desp-form-grid {
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+
 .desp-lista-vivo-wrap {
   margin: 0.75rem 0 1rem;
 }
