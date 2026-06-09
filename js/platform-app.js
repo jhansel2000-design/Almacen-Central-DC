@@ -479,7 +479,7 @@
   function setAuthVisible(visible) {
     var overlay = $('authOverlay');
     var app = $('platformApp');
-    var portal = $('authDespachoPortal');
+    var portal = $('authExternalPortals');
     if (visible) {
       clearModuleViewClasses();
       resetAuthLayout();

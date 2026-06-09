@@ -33,10 +33,10 @@
   position: relative;
   z-index: 2;
   display: grid;
-  grid-template-columns: minmax(0, 1.25fr) minmax(300px, 420px);
-  align-items: center;
+  grid-template-columns: minmax(0, 1.12fr) minmax(340px, 480px);
+  align-items: start;
   gap: clamp(1.25rem, 3vw, 2.75rem);
-  width: min(100%, 1240px);
+  width: min(100%, 1320px);
   min-height: auto;
   margin: 0 auto;
   padding: clamp(1.25rem, 4vw, 3rem);
@@ -363,7 +363,8 @@ html[data-theme="light"] .auth-feature-body span {
     display: flex;
     flex-direction: column;
     grid-template-columns: 1fr;
-    max-width: 440px;
+    max-width: min(100%, 480px);
+    width: 100%;
     min-height: auto;
     padding: 1rem;
   }

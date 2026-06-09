@@ -14,13 +14,14 @@
   <script src="js/relay-bootstrap.js?v=1"></script>
   <link rel="preload" href="assets/img/login-dispatch-poster.jpg" as="image">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23ff9800'/%3E%3Ctext x='16' y='22' text-anchor='middle' font-size='14' font-weight='800' fill='%23041018' font-family='system-ui'%3ED%3C/text%3E%3C/svg%3E">
-  <link rel="stylesheet" href="css/platform.css?v=20">
+  <link rel="stylesheet" href="css/platform.css?v=21">
   <link rel="stylesheet" href="css/platform-enhance.css">
   <link rel="stylesheet" href="css/platform-gestures.css?v=16">
   <link rel="stylesheet" href="css/despacho-dashboard.css?v=23">
-  <link rel="stylesheet" href="css/despacho-auth.css?v=19">
-  <link rel="stylesheet" href="css/auth-cinematic.css?v=16">
-  <link rel="stylesheet" href="css/auth-security.css?v=2">
+  <link rel="stylesheet" href="css/despacho-auth.css?v=20">
+  <link rel="stylesheet" href="css/auth-cinematic.css?v=18">
+  <link rel="stylesheet" href="css/auth-security.css?v=3">
+  <link rel="stylesheet" href="css/auth-portals-layout.css?v=1">
   <link rel="stylesheet" href="css/theme-light.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -54,6 +55,7 @@
           <a href="index.html" class="desp-auth-back">← Volver al centro de mando WMS</a>
         </div>
       </aside>
+      <div class="auth-stack">
       <div class="auth-glass-card desp-auth-glass">
         <form id="despAuthForm" class="auth-form" novalidate action="#" method="post">
           <h2 id="despAuthTitle" class="auth-heading desp-auth-heading">Acceso a despacho</h2>
@@ -105,6 +107,11 @@
           <p id="despAuthError" class="desp-auth-error" role="alert" aria-live="polite" hidden></p>
         </form>
       </div>
+      <nav class="auth-hub-links" aria-label="Otros portales">
+        <a href="index.html" class="auth-hub-link auth-hub-link--wms">Centro de mando WMS</a>
+        <a href="averias.html" class="auth-hub-link auth-hub-link--ops">Operaciones de piso</a>
+      </nav>
+      </div>
     </div>
   </div>
 
@@ -130,7 +137,7 @@
   </div>
 
   <script src="js/panel-core.js?v=17"></script>
-  <script src="js/platform-security.js?v=4"></script>
+  <script src="js/platform-security.js?v=5"></script>
   <script src="js/platform-network-relay.js?v=1"></script>
   <script src="js/platform-store.js"></script>
   <script src="js/platform-speech.js?v=1"></script>

@@ -155,9 +155,9 @@ html[data-theme="light"] .auth-portal-body span {
 
 /* Login standalone despacho.html — reglas solo dentro del portal despacho */
 .desp-auth-overlay .auth-layout {
-  grid-template-columns: minmax(0, 1fr) minmax(300px, 400px);
-  max-width: 960px;
-  width: min(100%, 960px);
+  grid-template-columns: minmax(0, 1fr) minmax(340px, 460px);
+  max-width: 1080px;
+  width: min(100%, 1080px);
 }
 
 .desp-auth-hero {

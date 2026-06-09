@@ -249,7 +249,7 @@
               sitekey: turnstileSiteKey,
               theme: turnstileTheme(),
               appearance: 'always',
-              size: 'normal',
+              size: 'compact',
               callback: function (token) { turnstileToken = token; },
               'expired-callback': function () { turnstileToken = null; },
               'error-callback': function () { turnstileToken = null; finish(new Error('Turnstile error')); }
@@ -273,7 +273,7 @@
     setVerifyMode(form, 'turnstile');
     turnstileToken = null;
     box.innerHTML =
-      '<p class="auth-turnstile-label">Verificación humana — marque la casilla:</p>' +
+      '<p class="auth-turnstile-label">Verificación humana:</p>' +
       '<div class="auth-turnstile-mount" id="dcTurnstileMount" aria-label="Verificación Cloudflare Turnstile"></div>' +
       '<p class="auth-human-hint">Protegido por Cloudflare Turnstile</p>';
     return loadTurnstileScript()

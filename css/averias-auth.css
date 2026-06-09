@@ -49,9 +49,9 @@ body.auth-locked .av-auth-overlay .auth-form {
 }
 
 .av-auth-overlay .auth-layout {
-  grid-template-columns: minmax(0, 1fr) minmax(300px, 400px);
-  max-width: 960px;
-  width: min(100%, 960px);
+  grid-template-columns: minmax(0, 1fr) minmax(340px, 460px);
+  max-width: 1080px;
+  width: min(100%, 1080px);
 }
 
 .av-auth-hero {
@@ -126,19 +126,8 @@ body.auth-locked .av-auth-overlay .auth-form {
   display: none;
 }
 
+/* Portales externos — ahora integrados en auth-portals-layout.css (index) */
 .auth-external-portals {
-  position: fixed;
-  z-index: 20050;
-  left: clamp(1rem, 3vw, 2rem);
-  bottom: clamp(1rem, 3vw, 2rem);
-  display: flex;
-  flex-direction: column;
-  gap: 0.65rem;
-  max-width: min(320px, calc(100vw - 2rem));
-  pointer-events: auto;
-}
-
-body:not(.auth-locked) .auth-external-portals {
   display: none !important;
 }
 
@@ -165,26 +154,11 @@ body:not(.auth-locked) .auth-external-portals {
 }
 
 @media (max-width: 900px) {
-  .auth-external-portals {
-    left: 50%;
-    transform: translateX(-50%);
-    bottom: 0.75rem;
-    width: calc(100% - 1.5rem);
-    max-width: 400px;
-  }
-
   .av-auth-overlay .auth-layout {
-    max-width: 440px;
+    max-width: min(100%, 480px);
   }
 
   .av-auth-hero {
     display: none;
-  }
-}
-
-@media (max-width: 520px) {
-  .auth-external-portals {
-    max-height: 42vh;
-    overflow-y: auto;
   }
 }
