@@ -40,12 +40,67 @@
 
 body.auth-locked .av-auth-overlay {
   pointer-events: auto;
+  touch-action: manipulation;
+}
+
+body.auth-locked .av-auth-overlay .auth-video-wrap,
+body.auth-locked .av-auth-overlay .av-auth-bg-wrap,
+body.auth-locked .av-auth-overlay .av-auth-bg-wrap::before,
+body.auth-locked .av-auth-overlay .av-auth-scrim {
+  pointer-events: none !important;
 }
 
 body.auth-locked .av-auth-overlay .auth-layout,
+body.auth-locked .av-auth-overlay .auth-stack,
 body.auth-locked .av-auth-overlay .auth-glass-card,
-body.auth-locked .av-auth-overlay .auth-form {
+body.auth-locked .av-auth-overlay .auth-form,
+body.auth-locked .av-auth-overlay .auth-hub-links,
+body.auth-locked .av-auth-overlay .auth-hub-link {
   pointer-events: auto;
+  touch-action: manipulation;
+}
+
+.av-auth-overlay .auth-stack {
+  position: relative;
+  z-index: 5;
+  pointer-events: auto;
+  width: 100%;
+}
+
+.av-auth-overlay .auth-layout {
+  pointer-events: auto;
+  width: 100%;
+}
+
+.av-auth-overlay .auth-field-input,
+.av-auth-overlay .auth-remember,
+.av-auth-overlay .auth-remember input,
+.av-auth-overlay .auth-pwd-toggle,
+.av-auth-overlay .btn-primary,
+.av-auth-overlay .auth-human-verify,
+.av-auth-overlay .auth-human-verify input {
+  pointer-events: auto;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: rgba(76, 175, 80, 0.2);
+}
+
+.av-auth-overlay .auth-field-input {
+  min-height: 44px;
+  font-size: 16px;
+}
+
+.av-auth-overlay .btn-primary {
+  min-height: 48px;
+}
+
+.av-auth-overlay .auth-pwd-toggle {
+  min-width: 44px;
+  min-height: 44px;
+  touch-action: manipulation;
+}
+
+.av-auth-overlay .auth-hub-link {
+  min-height: 44px;
 }
 
 .av-auth-overlay .auth-layout {
@@ -154,8 +209,24 @@ body.auth-locked .av-auth-overlay .auth-form {
 }
 
 @media (max-width: 900px) {
+  body.auth-locked .av-auth-overlay {
+    align-items: flex-start;
+    justify-content: flex-start;
+    padding:
+      max(0.85rem, env(safe-area-inset-top, 0px))
+      max(0.85rem, env(safe-area-inset-right, 0px))
+      max(0.85rem, env(safe-area-inset-bottom, 0px))
+      max(0.85rem, env(safe-area-inset-left, 0px));
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
   .av-auth-overlay .auth-layout {
-    max-width: min(100%, 480px);
+    grid-template-columns: 1fr;
+    max-width: min(100%, 440px);
+    width: 100%;
+    pointer-events: auto;
+    padding: 0.5rem 0 1rem;
   }
 
   .av-auth-hero {

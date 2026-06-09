@@ -264,10 +264,13 @@ html[data-theme="light"] .auth-layout--hub.auth-layout--portals-only .auth-porta
   flex-direction: column;
   gap: 0.85rem;
   min-width: 0;
+}
+
+.auth-layout--hub .auth-stack {
   pointer-events: none;
 }
 
-.auth-stack > * {
+.auth-layout--hub .auth-stack > * {
   pointer-events: auto;
 }
 

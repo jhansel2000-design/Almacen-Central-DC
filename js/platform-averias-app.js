@@ -47,12 +47,23 @@
     el.hidden = !msg;
   }
 
+  function ensureAuthTouch() {
+    var overlay = $('avAuthOverlay');
+    if (!overlay) return;
+    overlay.style.pointerEvents = 'auto';
+    var layout = overlay.querySelector('.auth-layout');
+    var stack = overlay.querySelector('.auth-stack');
+    if (layout) layout.style.pointerEvents = 'auto';
+    if (stack) stack.style.pointerEvents = 'auto';
+  }
+
   function setAuthVisible(visible) {
     var overlay = $('avAuthOverlay');
     var app = $('avApp');
     if (overlay) {
       overlay.classList.toggle('is-hidden', !visible);
       overlay.setAttribute('aria-hidden', visible ? 'false' : 'true');
+      if (visible) ensureAuthTouch();
     }
     if (app) {
       app.classList.toggle('is-hidden', visible);
@@ -174,6 +185,7 @@
     if (global.PlatformSecurity && global.PlatformSecurity.mountLoginForm) {
       global.PlatformSecurity.mountLoginForm(form, 'averias');
     }
+    ensureAuthTouch();
   }
 
   function tryRestoreSession() {

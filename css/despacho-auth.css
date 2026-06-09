@@ -251,9 +251,18 @@ body.auth-locked .desp-auth-overlay {
 }
 
 body.auth-locked .desp-auth-overlay .auth-layout,
+body.auth-locked .desp-auth-overlay .auth-stack,
 body.auth-locked .desp-auth-overlay .auth-glass-card,
 body.auth-locked .desp-auth-overlay .auth-form {
   pointer-events: auto;
+  touch-action: manipulation;
+}
+
+.desp-auth-overlay .auth-stack {
+  pointer-events: auto;
+  width: 100%;
+  position: relative;
+  z-index: 5;
 }
 
 .desp-auth-role-picker {

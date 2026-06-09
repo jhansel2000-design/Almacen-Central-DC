@@ -914,8 +914,18 @@ body.averias-dash-view {
 
 /* Login del portal — móvil y PC */
 @media (max-width: 899px) {
+  body.auth-locked .av-auth-overlay {
+    pointer-events: auto;
+  }
+
+  body.auth-locked .av-auth-overlay .auth-layout,
+  body.auth-locked .av-auth-overlay .auth-stack {
+    pointer-events: auto;
+  }
+
   .av-auth-overlay .auth-layout {
-    max-width: 440px;
+    max-width: min(100%, 440px);
+    width: 100%;
   }
 
   .av-auth-hero {
