@@ -183,27 +183,87 @@
     });
   }
 
-  function setupTurnstile(box) {
-    turnstileToken = null;
-    box.innerHTML = '<div class="auth-turnstile-mount" id="dcTurnstileMount"></div>' +
-      '<p class="auth-human-hint">Verificación anti-bots · Cloudflare Turnstile</p>';
-    return loadTurnstileScript().then(function () {
-      var mount = box.querySelector('#dcTurnstileMount');
-      if (!mount || !global.turnstile) throw new Error('Turnstile no cargó');
+  function turnstileTheme() {
+    return document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+  }
+
+  function mountHasTurnstileFrame(mount) {
+    return !!(mount && mount.querySelector('iframe'));
+  }
+
+  function waitForTurnstileFrame(mount, maxMs) {
+    maxMs = maxMs || 5000;
+    return new Promise(function (resolve) {
+      var start = Date.now();
+      function tick() {
+        if (mountHasTurnstileFrame(mount)) {
+          resolve(true);
+          return;
+        }
+        if (Date.now() - start >= maxMs) {
+          resolve(false);
+          return;
+        }
+        setTimeout(tick, 150);
+      }
+      tick();
+    });
+  }
+
+  function renderTurnstileWidget(mount) {
+    return new Promise(function (resolve, reject) {
+      if (!mount || !global.turnstile) {
+        reject(new Error('Turnstile no cargó'));
+        return;
+      }
       if (turnstileWidgetId != null) {
         try { global.turnstile.remove(turnstileWidgetId); } catch (e) { /* noop */ }
         turnstileWidgetId = null;
       }
-      turnstileWidgetId = global.turnstile.render(mount, {
-        sitekey: turnstileSiteKey,
-        theme: document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark',
-        callback: function (token) { turnstileToken = token; },
-        'expired-callback': function () { turnstileToken = null; },
-        'error-callback': function () { turnstileToken = null; }
-      });
-    }).catch(function () {
-      setupMathChallenge(box, 'fallback');
+      var done = false;
+      function finish(err) {
+        if (done) return;
+        done = true;
+        if (err) reject(err);
+        else resolve();
+      }
+      try {
+        global.turnstile.ready(function () {
+          try {
+            turnstileWidgetId = global.turnstile.render(mount, {
+              sitekey: turnstileSiteKey,
+              theme: turnstileTheme(),
+              appearance: 'always',
+              size: 'normal',
+              callback: function (token) { turnstileToken = token; },
+              'expired-callback': function () { turnstileToken = null; },
+              'error-callback': function () { turnstileToken = null; finish(new Error('Turnstile error')); }
+            });
+            waitForTurnstileFrame(mount, 6000).then(function (ok) {
+              if (ok) finish();
+              else finish(new Error('Turnstile sin widget visible'));
+            });
+          } catch (e) {
+            finish(e);
+          }
+        });
+      } catch (e) {
+        finish(e);
+      }
     });
+  }
+
+  function setupTurnstile(box, portal) {
+    turnstileToken = null;
+    box.innerHTML =
+      '<p class="auth-turnstile-label">Verificación humana — marque la casilla:</p>' +
+      '<div class="auth-turnstile-mount" id="dcTurnstileMount" aria-label="Verificación Cloudflare Turnstile"></div>' +
+      '<p class="auth-human-hint">Protegido por Cloudflare Turnstile</p>';
+    return loadTurnstileScript()
+      .then(function () { return renderTurnstileWidget(box.querySelector('#dcTurnstileMount')); })
+      .catch(function () {
+        setupMathChallenge(box, portal || 'fallback');
+      });
   }
 
   function verifyTurnstileClient() {
@@ -237,7 +297,7 @@
     var box = ensureVerifyBox(form);
     return loadConfig().then(function () {
       if (!box) return;
-      if (turnstileSiteKey) return setupTurnstile(box);
+      if (turnstileSiteKey) return setupTurnstile(box, portal || 'default');
       setupMathChallenge(box, portal || 'default');
     });
   }
@@ -247,8 +307,12 @@
     var portal = (form && form.getAttribute('data-dc-portal')) || 'default';
     var box = form && form.querySelector('.auth-human-verify');
     if (!box) return;
-    if (turnstileSiteKey && global.turnstile && turnstileWidgetId != null) {
-      try { global.turnstile.reset(turnstileWidgetId); } catch (e) { /* noop */ }
+    if (turnstileSiteKey) {
+      if (global.turnstile && turnstileWidgetId != null && mountHasTurnstileFrame(box.querySelector('#dcTurnstileMount'))) {
+        try { global.turnstile.reset(turnstileWidgetId); } catch (e) { /* noop */ }
+        return;
+      }
+      setupTurnstile(box, portal);
       return;
     }
     setupMathChallenge(box, portal);

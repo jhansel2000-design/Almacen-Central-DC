@@ -10,7 +10,17 @@
 }
 
 .auth-human-verify {
-  margin: 0.65rem 0 0.85rem;
+  margin: 0.75rem 0 0.85rem;
+  overflow: visible;
+  position: relative;
+  z-index: 5;
+}
+
+.auth-turnstile-label {
+  margin: 0 0 0.45rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text, #e6edf3);
 }
 
 .auth-human-math-label {
@@ -37,5 +47,27 @@
 }
 
 .auth-turnstile-mount {
-  min-height: 65px;
+  min-height: 72px;
+  min-width: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  overflow: visible;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 0.35rem 0.5rem;
+}
+
+.auth-turnstile-mount iframe {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  max-width: 100%;
+}
+
+.auth-form .auth-human-verify,
+.auth-glass-card .auth-human-verify,
+.av-auth-glass .auth-human-verify {
+  overflow: visible;
 }
