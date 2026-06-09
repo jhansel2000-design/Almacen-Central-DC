@@ -668,7 +668,7 @@
           setLoginLoading(false);
           if (!user) {
             PC.recordLoginFailure();
-            if (Sec && Sec.resetHumanVerify) Sec.resetHumanVerify($('authForm'));
+            if (Sec && Sec.resetHumanVerify) Sec.resetHumanVerify($('authForm'), { reason: 'auth-failed' });
             var msg = 'Usuario o contraseña incorrectos.';
             if (global.PlatformWebUsers && global.PlatformWebUsers.isPublicWeb &&
                 global.PlatformWebUsers.isPublicWeb() && !global.PlatformAdmin.isPrimaryLoginName(username)) {

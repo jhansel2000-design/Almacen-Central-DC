@@ -141,7 +141,7 @@
         setLoginLoading(false);
         if (!user) {
           PC.recordAveriasLoginFailure();
-          if (Sec && Sec.resetHumanVerify) Sec.resetHumanVerify($('avAuthForm'));
+          if (Sec && Sec.resetHumanVerify) Sec.resetHumanVerify($('avAuthForm'), { reason: 'auth-failed' });
           showAuthError('Usuario o contraseña incorrectos.');
           return;
         }

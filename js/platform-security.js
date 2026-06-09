@@ -9,8 +9,21 @@
   var turnstileWidgetId = null;
   var configPromise = null;
   var minFormMs = 1200;
-  /** Respaldo si falla la carga de site-config.json (GitHub Pages / caché). */
   var DEFAULT_TURNSTILE_SITE_KEY = '0x4AAAAAADhftTLJSQ0WxVnuiLp9UNRpOMc';
+
+  function formFromBox(box) {
+    return box && box.closest ? box.closest('form') : null;
+  }
+
+  function getVerifyMode(form) {
+    var mode = form && form.getAttribute('data-dc-verify-mode');
+    if (mode === 'math' || mode === 'turnstile') return mode;
+    return turnstileSiteKey ? 'turnstile' : 'math';
+  }
+
+  function setVerifyMode(form, mode) {
+    if (form) form.setAttribute('data-dc-verify-mode', mode);
+  }
 
   function configUrl() {
     try {
@@ -126,6 +139,8 @@
   }
 
   function setupMathChallenge(box, portal) {
+    var form = formFromBox(box);
+    setVerifyMode(form, 'math');
     var a = 2 + Math.floor(Math.random() * 8);
     var b = 2 + Math.floor(Math.random() * 8);
     var answer = a + b;
@@ -144,7 +159,7 @@
   }
 
   function verifyMathChallenge(form, portal) {
-    if (turnstileSiteKey) return { ok: true };
+    if (getVerifyMode(form) === 'turnstile') return { ok: true };
     var input = form && form.querySelector('.auth-human-answer');
     if (!input) return { ok: false, error: 'Completa la verificación humana.' };
     var raw = String(input.value || '').trim();
@@ -254,6 +269,8 @@
   }
 
   function setupTurnstile(box, portal) {
+    var form = formFromBox(box);
+    setVerifyMode(form, 'turnstile');
     turnstileToken = null;
     box.innerHTML =
       '<p class="auth-turnstile-label">Verificación humana — marque la casilla:</p>' +
@@ -262,11 +279,12 @@
     return loadTurnstileScript()
       .then(function () { return renderTurnstileWidget(box.querySelector('#dcTurnstileMount')); })
       .catch(function () {
-        setupMathChallenge(box, portal || 'fallback');
+        setupMathChallenge(box, portal || 'default');
       });
   }
 
-  function verifyTurnstileClient() {
+  function verifyTurnstileClient(form) {
+    if (getVerifyMode(form) !== 'turnstile') return { ok: true };
     if (!turnstileSiteKey) return { ok: true };
     if (turnstileToken) return { ok: true };
     return { ok: false, error: 'Completa la verificación anti-bots.' };
@@ -299,22 +317,27 @@
       if (!box) return;
       if (turnstileSiteKey) return setupTurnstile(box, portal || 'default');
       setupMathChallenge(box, portal || 'default');
+      setVerifyMode(form, 'math');
     });
   }
 
-  function resetHumanVerify(form) {
+  function resetHumanVerify(form, options) {
+    options = options || {};
+    var reason = options.reason || 'retry';
     turnstileToken = null;
     var portal = (form && form.getAttribute('data-dc-portal')) || 'default';
     var box = form && form.querySelector('.auth-human-verify');
     if (!box) return;
-    if (turnstileSiteKey) {
+    var mode = getVerifyMode(form);
+    if (mode === 'turnstile') {
       if (global.turnstile && turnstileWidgetId != null && mountHasTurnstileFrame(box.querySelector('#dcTurnstileMount'))) {
         try { global.turnstile.reset(turnstileWidgetId); } catch (e) { /* noop */ }
         return;
       }
-      setupTurnstile(box, portal);
+      if (reason !== 'auth-failed') setupTurnstile(box, portal);
       return;
     }
+    if (reason === 'auth-failed') return;
     setupMathChallenge(box, portal);
   }
 
@@ -331,7 +354,7 @@
     return loadConfig().then(function () {
       var math = verifyMathChallenge(form, portal);
       if (!math.ok) return math;
-      var ts = verifyTurnstileClient();
+      var ts = verifyTurnstileClient(form);
       if (!ts.ok) return ts;
       return verifyOnServer(turnstileToken).then(function (server) {
         if (!server.ok) return server;

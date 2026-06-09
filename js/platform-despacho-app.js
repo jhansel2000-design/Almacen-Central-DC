@@ -173,7 +173,7 @@
         setLoginLoading(false);
         if (!user) {
           PC.recordDespachoLoginFailure();
-          if (Sec && Sec.resetHumanVerify) Sec.resetHumanVerify($('despAuthForm'));
+          if (Sec && Sec.resetHumanVerify) Sec.resetHumanVerify($('despAuthForm'), { reason: 'auth-failed' });
           showAuthError('Usuario o contraseña incorrectos.');
           return;
         }
