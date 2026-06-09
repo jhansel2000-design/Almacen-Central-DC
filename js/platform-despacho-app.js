@@ -220,6 +220,7 @@
       PC.clearDespachoSession();
       return false;
     }
+    state.screen = Auth.canValidate(user.role) ? 'validador' : 'registro';
     enterApp(user);
     return true;
   }
@@ -278,6 +279,7 @@
 
   function enterApp(user) {
     state.user = user;
+    state.screen = Auth.canValidate(user.role) ? 'validador' : 'registro';
     document.body.classList.add('desp-controller-mode');
     clearLocalPresentOverlays();
     setAuthVisible(false);

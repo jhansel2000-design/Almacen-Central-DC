@@ -155,7 +155,7 @@
 
   function normalizeScreen(screen) {
     if (screen === 'pantalla' || screen === 'barcode') return 'barcode';
-    if (screen === 'lista') return 'lista';
+    if (screen === 'lista' || screen === 'validador') return 'validador';
     return 'registro';
   }
 
@@ -190,19 +190,36 @@
       '</button>';
   }
 
-  function renderNavEntrada(screen, data) {
+  function renderNavEntrada(screen, data, opts) {
     screen = normalizeScreen(screen);
+    opts = opts || {};
+    var canValidate = !!opts.canValidate;
     var sharingBarcode = DS.getLiveShare(data);
     var liveBarcode = !!(sharingBarcode && sharingBarcode.active);
     var sharingLista = DS.getLiveShareLista(data);
     var liveLista = !!(sharingLista && sharingLista.active);
-    return '<nav class="desp-entrada-nav desp-entrada-nav--3" role="tablist" aria-label="Secciones de despacho">' +
+
+    if (canValidate) {
+      return '<nav class="desp-entrada-nav desp-entrada-nav--1" role="tablist" aria-label="Panel validador">' +
+        renderEntradaBtn({
+          id: 'validador',
+          screen: 'validador',
+          icon: '✅',
+          title: 'Panel validador',
+          sub: 'Seguimiento · quitar IDC · pantalla TV',
+          active: screen === 'validador',
+          live: liveLista
+        }) +
+        '</nav>';
+    }
+
+    return '<nav class="desp-entrada-nav desp-entrada-nav--2" role="tablist" aria-label="Panel operador">' +
       renderEntradaBtn({
         id: 'registro',
         screen: 'registro',
         icon: '📋',
         title: 'Seguimiento IDC y pasillo',
-        sub: 'Registro · ubicación · validadores',
+        sub: 'En proceso · Facturado',
         active: screen === 'registro',
         live: false
       }) +
@@ -214,15 +231,6 @@
         sub: 'Un IDC · escaneo en pantalla',
         active: screen === 'barcode',
         live: liveBarcode
-      }) +
-      renderEntradaBtn({
-        id: 'lista',
-        screen: 'lista',
-        icon: '👥',
-        title: 'Lista a validadores',
-        sub: 'Tabla IDC · jaula · estado',
-        active: screen === 'lista',
-        live: liveLista
       }) +
       '</nav>';
   }
@@ -320,30 +328,28 @@
       '</aside></div></section>';
   }
 
-  function renderPanelListaShare(data) {
+  function renderPanelValidador(data, opts) {
     var sharing = DS.getLiveShareLista(data);
     var pedidos = DS.getPedidosVisiblesValidador(data.pedidos);
-    return '<section class="desp-panel desp-panel--lista" aria-labelledby="despListaTitle">' +
+    opts = opts || {};
+    return '<div class="desp-validador-stack">' +
+      '<section class="desp-panel desp-panel--val-share" aria-labelledby="despValShareTitle">' +
       '<header class="desp-panel-head">' +
-      '<div><span class="desp-eyebrow">Opción 2 · Validadores</span>' +
-      '<h3 id="despListaTitle">Compartir lista IDC y jaulas</h3>' +
-      '<p class="desp-panel-sub">IDC en validación · los que el validador quita no vuelven al seguimiento del operador</p></div>' +
+      '<div><span class="desp-eyebrow">Pantalla externa · Validador</span>' +
+      '<h3 id="despValShareTitle">Lista en pantalla TV</h3>' +
+      '<p class="desp-panel-sub">Comparta su seguimiento de validación en monitores · se actualiza al quitar IDC</p></div>' +
       (sharing ? '<span class="desp-share-live-tag desp-share-live-tag--lista"><span class="desp-live-dot"></span> EN VIVO</span>' : '') +
       '</header>' +
       '<p class="desp-share-status desp-share-status--lista" id="despListaShareStatus"' + (sharing ? '' : ' hidden') + '>' +
-      (sharing ? 'Lista compartida con validadores · ' + esc(String(pedidos.length)) + ' IDC activo(s)' : '') +
+      (sharing ? 'Lista en pantalla · ' + esc(String(pedidos.length)) + ' IDC en validación' : '') +
       '</p>' +
-      '<div class="desp-lista-share-layout">' +
       '<div class="desp-lista-share-actions">' +
       '<button type="button" class="btn desp-action-btn desp-btn-share-lista' + (sharing ? ' is-live' : '') + '" id="despBtnShareLista">' +
-      '<span class="desp-action-btn-icon" aria-hidden="true">' + (sharing ? '⏹' : '👥') + '</span>' +
-      '<span class="desp-action-btn-text">' + (sharing ? 'Dejar de compartir lista' : 'Compartir lista a validadores') + '</span></button>' +
-      '<p class="desp-muted desp-lista-share-hint">Muestra los IDC visibles del seguimiento · se actualiza al registrar o quitar de vista.</p>' +
-      '</div>' +
-      '<section class="desp-lista-preview" aria-labelledby="despListaPreviewTitle">' +
-      '<h4 id="despListaPreviewTitle">Vista previa · lo que ven los validadores</h4>' +
-      renderListaPreviewTable(pedidos, 'Cuando un IDC pase a validación aparecerá aquí y en la pantalla TV.') +
-      '</section></div></section>';
+      '<span class="desp-action-btn-icon" aria-hidden="true">' + (sharing ? '⏹' : '📺') + '</span>' +
+      '<span class="desp-action-btn-text">' + (sharing ? 'Dejar de compartir en pantalla TV' : 'Compartir seguimiento en pantalla TV') + '</span></button>' +
+      '</div></section>' +
+      renderTablaValidacion(data, Object.assign({}, opts, { canValidate: true })) +
+      '</div>';
   }
 
   function capturePrepForm(host) {
@@ -428,12 +434,12 @@
     var count = DS.getPedidosVisiblesValidador(data.pedidos).length;
     btn.classList.toggle('is-live', active);
     btn.innerHTML = active
-      ? '<span class="desp-action-btn-icon" aria-hidden="true">⏹</span><span class="desp-action-btn-text">Dejar de compartir lista</span>'
-      : '<span class="desp-action-btn-icon" aria-hidden="true">👥</span><span class="desp-action-btn-text">Compartir lista a validadores</span>';
+      ? '<span class="desp-action-btn-icon" aria-hidden="true">⏹</span><span class="desp-action-btn-text">Dejar de compartir en pantalla TV</span>'
+      : '<span class="desp-action-btn-icon" aria-hidden="true">📺</span><span class="desp-action-btn-text">Compartir seguimiento en pantalla TV</span>';
     if (status) {
       status.hidden = !active;
       status.textContent = active
-        ? 'Lista compartida con validadores · ' + count + ' IDC activo(s)'
+        ? 'Lista en pantalla · ' + count + ' IDC en validación'
         : '';
     }
   }
@@ -661,14 +667,13 @@
       flujoHtml() +
       '</header>' +
       kpiStrip(counts) +
-      renderNavEntrada(screen, data) +
+      renderNavEntrada(screen, data, opts) +
       '<div class="desp-panels">' +
       (screen === 'barcode'
         ? renderPanelBarcodeShare(data)
-        : screen === 'lista'
-          ? renderPanelListaShare(data)
-          : renderPanelRegistroComun(data) +
-            (canValidate ? renderTablaValidacion(data, opts) : '')) +
+        : screen === 'validador'
+          ? renderPanelValidador(data, opts)
+          : renderPanelRegistroComun(data)) +
       '</div>' +
       '<div class="desp-hist-overlay" id="despHistOverlay" hidden aria-hidden="true">' +
       '<div class="desp-hist-dialog" role="dialog" aria-labelledby="despHistTitle">' +
@@ -689,13 +694,13 @@
       updateShareScreenUi(host, data);
     }
 
-    if (screen === 'lista') {
+    if (screen === 'validador') {
       updateShareListaUi(host, data);
     }
 
     unbindSync = DS.bindSync(function (fresh) {
       if (!host.isConnected) return;
-      var formSnap = screen === 'barcode' ? captureShareForm(host) : capturePrepForm(host);
+      var formSnap = screen === 'barcode' ? captureShareForm(host) : (screen === 'registro' ? capturePrepForm(host) : null);
       var searchEl = host.querySelector('#despSearch');
       var filtEl = host.querySelector('#despFilterEstado');
       render(host, fresh, Object.assign({}, lastOpts, {
@@ -706,7 +711,7 @@
       if (screen === 'barcode') restoreShareForm(host, formSnap);
       else if (screen === 'registro') restorePrepForm(host, formSnap);
       if (screen === 'barcode') updateShareScreenUi(host, fresh);
-      if (screen === 'lista') updateShareListaUi(host, fresh);
+      if (screen === 'validador') updateShareListaUi(host, fresh);
     });
   }
 
@@ -816,9 +821,9 @@
         }
         if (DS.isLiveShareListaActive(res.data)) {
           ensureDisplayWindow('lista');
-          toast('Lista en pantallas de validadores', 'success');
+          toast('Seguimiento en pantalla TV', 'success');
         } else {
-          toast('Compartir lista desactivado', 'info');
+          toast('Pantalla TV desactivada', 'info');
         }
         updateShareListaUi(host, res.data);
       });

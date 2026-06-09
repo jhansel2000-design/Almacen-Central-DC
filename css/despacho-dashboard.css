@@ -990,6 +990,29 @@ body.desp-live-lista-on:not(.desp-live-present-on) .desp-live-present-lista {
   grid-template-columns: repeat(3, 1fr);
 }
 
+.desp-entrada-nav--2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.desp-entrada-nav--1 {
+  grid-template-columns: 1fr;
+  max-width: 420px;
+}
+
+.desp-validador-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.desp-panel--val-share {
+  margin-bottom: 0;
+}
+
+.desp-panel--val-share + .desp-panel--val {
+  margin-top: 0;
+}
+
 .desp-entrada-btn {
   position: relative;
   display: flex;
@@ -1391,7 +1414,8 @@ body.desp-controller-mode .desp-live-present-lista {
 }
 
 @media (max-width: 900px) {
-  .desp-entrada-nav--3 {
+  .desp-entrada-nav--3,
+  .desp-entrada-nav--2 {
     grid-template-columns: 1fr;
   }
 }
