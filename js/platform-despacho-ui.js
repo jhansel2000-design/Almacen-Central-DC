@@ -166,7 +166,7 @@
     }
     return '<div class="desp-table-wrap desp-lista-preview-wrap">' +
       '<table class="desp-table desp-lista-preview-table">' +
-      '<thead><tr><th>IDC</th><th>Jaula</th><th>Estado</th></tr></thead><tbody>' +
+      '<thead><tr><th>IDC</th><th>Pasillo</th><th>Estado</th></tr></thead><tbody>' +
       pedidos.map(function (p) {
         return '<tr><td><strong class="desp-idc">' + esc(formatIdc(p.idc)) + '</strong></td>' +
           '<td>' + esc(p.jaula) + '</td><td>' + estadoBadge(p.estado) + '</td></tr>';
@@ -201,8 +201,8 @@
         id: 'registro',
         screen: 'registro',
         icon: '📋',
-        title: 'Seguimiento IDC y jaulas',
-        sub: 'Registro · mapa · validación',
+        title: 'Seguimiento IDC y pasillo',
+        sub: 'Registro · ubicación · validadores',
         active: screen === 'registro',
         live: false
       }) +
@@ -230,9 +230,9 @@
   function renderPanelRegistroComun(data) {
     return '<section class="desp-panel desp-panel--registro" aria-labelledby="despRegistroTitle">' +
       '<header class="desp-panel-head">' +
-      '<div><span class="desp-eyebrow">Panel común · Preparador y Validador</span>' +
-      '<h3 id="despRegistroTitle">Registro de IDC y pasillo</h3>' +
-      '<p class="desp-panel-sub">Registre y consulte el seguimiento de pedidos por pasillo</p></div>' +
+      '<div><span class="desp-eyebrow">Fuente de visibilidad · Preparador y Validador</span>' +
+      '<h3 id="despRegistroTitle">Seguimiento IDC y pasillo</h3>' +
+      '<p class="desp-panel-sub">Registre IDC y pasillo — los validadores ven aquí dónde está cada pedido. Al actualizar, vuelve a la vista activa.</p></div>' +
       '</header>' +
       '<div class="desp-prep-main">' +
       '<form class="desp-form" id="despPrepForm" autocomplete="off" onsubmit="return false">' +
@@ -263,9 +263,9 @@
         .concat(DS.filterPedidos(data.pedidos, { estado: 'facturado' }).slice(0, 5)).slice(0, 6)) +
       '</div>' +
       '<section class="desp-jaula-map" aria-labelledby="despJaulaMapTitle">' +
-      '<h4 id="despJaulaMapTitle">IDC por jaula</h4>' +
-      '<p class="desp-muted desp-jaula-map-sub">Registro compartido — actualización en vivo</p>' +
-      renderJaulaMap(data.pedidos) +
+      '<h4 id="despJaulaMapTitle">IDC por pasillo · vista validadores</h4>' +
+      '<p class="desp-muted desp-jaula-map-sub">Solo IDC visibles para validadores — actualización en vivo</p>' +
+      renderJaulaMap(DS.getPedidosVisiblesValidador(data.pedidos)) +
       '</section></div></section>';
   }
 
@@ -323,7 +323,7 @@
 
   function renderPanelListaShare(data) {
     var sharing = DS.getLiveShareLista(data);
-    var pedidos = DS.getPedidosActivos(data.pedidos);
+    var pedidos = DS.getPedidosVisiblesValidador(data.pedidos);
     return '<section class="desp-panel desp-panel--lista" aria-labelledby="despListaTitle">' +
       '<header class="desp-panel-head">' +
       '<div><span class="desp-eyebrow">Opción 2 · Validadores</span>' +
@@ -339,7 +339,7 @@
       '<button type="button" class="btn desp-action-btn desp-btn-share-lista' + (sharing ? ' is-live' : '') + '" id="despBtnShareLista">' +
       '<span class="desp-action-btn-icon" aria-hidden="true">' + (sharing ? '⏹' : '👥') + '</span>' +
       '<span class="desp-action-btn-text">' + (sharing ? 'Dejar de compartir lista' : 'Compartir lista a validadores') + '</span></button>' +
-      '<p class="desp-muted desp-lista-share-hint">Se actualiza sola cuando el preparador registra o cambia IDC y jaulas.</p>' +
+      '<p class="desp-muted desp-lista-share-hint">Muestra los IDC visibles del seguimiento · se actualiza al registrar o quitar de vista.</p>' +
       '</div>' +
       '<section class="desp-lista-preview" aria-labelledby="despListaPreviewTitle">' +
       '<h4 id="despListaPreviewTitle">Vista previa · lo que ven los validadores</h4>' +
@@ -426,7 +426,7 @@
     data = data || DS.load();
     var live = DS.getLiveShareLista(data);
     var active = !!(live && live.active);
-    var count = DS.getPedidosActivos(data.pedidos).length;
+    var count = DS.getPedidosVisiblesValidador(data.pedidos).length;
     btn.classList.toggle('is-live', active);
     btn.innerHTML = active
       ? '<span class="desp-action-btn-icon" aria-hidden="true">⏹</span><span class="desp-action-btn-text">Dejar de compartir lista</span>'
@@ -501,7 +501,7 @@
     return '<div class="desp-jaula-grid">' + keys.map(function (jaula) {
       var items = byJaula[jaula];
       return '<article class="desp-jaula-card">' +
-        '<header class="desp-jaula-card-head"><span class="desp-jaula-num">Jaula ' + esc(jaula) + '</span>' +
+        '<header class="desp-jaula-card-head"><span class="desp-jaula-num">Pasillo ' + esc(jaula) + '</span>' +
         '<span class="desp-jaula-count">' + items.length + ' IDC</span></header>' +
         '<ul class="desp-jaula-idc-list">' + items.map(function (p) {
           return '<li><strong class="desp-idc">' + esc(formatIdc(p.idc)) + '</strong> ' +
@@ -513,19 +513,20 @@
   function renderTablaValidacion(data, opts) {
     var filterEstado = (opts && opts.filterEstado) || '';
     var filterQ = (opts && opts.filterQ) || '';
-    var list = DS.filterPedidos(data.pedidos, { estado: filterEstado, q: filterQ });
+    var list = DS.filterPedidos(data.pedidos, { estado: filterEstado, q: filterQ, visiblesValidador: true });
+    var archivados = DS.getPedidosArchivadosValidador(data.pedidos);
     var canValidate = opts && opts.canValidate;
 
     return '<section class="desp-panel desp-panel--val" aria-labelledby="despValTitle">' +
       '<header class="desp-panel-head">' +
       '<div><span class="desp-eyebrow">Validación</span>' +
-      '<h3 id="despValTitle">Estados de pedidos</h3>' +
-      '<p class="desp-panel-sub">Cambie el estado de validación · sincronización en vivo</p></div>' +
+      '<h3 id="despValTitle">Vista activa para validadores</h3>' +
+      '<p class="desp-panel-sub">IDC y pasillo visibles desde seguimiento · puede cambiar estado o quitar de la vista</p></div>' +
       '<span class="desp-live-badge" title="Sincronización activa"><span class="desp-live-dot"></span> En vivo</span>' +
       '</header>' +
       '<div class="desp-filters">' +
       '<label class="desp-filter"><span>Buscar</span>' +
-      '<input type="search" id="despSearch" placeholder="IDC o jaula…" value="' + esc(filterQ) + '"></label>' +
+      '<input type="search" id="despSearch" placeholder="IDC o pasillo…" value="' + esc(filterQ) + '"></label>' +
       '<label class="desp-filter"><span>Estado</span>' +
       '<select id="despFilterEstado">' +
       '<option value="">Todos</option>' +
@@ -539,13 +540,42 @@
       '<div class="desp-table-wrap">' +
       '<table class="desp-table" id="despValTable">' +
       '<thead><tr>' +
-      '<th>IDC</th><th>Jaula</th><th>Estado</th><th>Actualizado</th>' +
+      '<th>IDC</th><th>Pasillo</th><th>Estado</th><th>Actualizado</th>' +
       (canValidate ? '<th>Acción</th>' : '') +
       '<th></th>' +
       '</tr></thead><tbody>' +
       (list.length ? list.map(function (p) { return renderValidadorRow(p, opts); }).join('') :
-        '<tr><td colspan="' + (canValidate ? 6 : 5) + '" class="desp-empty-row">No hay pedidos' +
-        (filterEstado || filterQ ? ' con este filtro' : '') + '.</td></tr>') +
+        '<tr><td colspan="' + (canValidate ? 6 : 5) + '" class="desp-empty-row">No hay IDC visibles' +
+        (filterEstado || filterQ ? ' con este filtro' : ' — registre en seguimiento') + '.</td></tr>') +
+      '</tbody></table></div>' +
+      renderRegistroArchivados(archivados, canValidate) +
+      '</section>';
+  }
+
+  function renderRegistroArchivados(archivados, canValidate) {
+    archivados = archivados || [];
+    return '<section class="desp-archivo-section" aria-labelledby="despArchivoTitle">' +
+      '<header class="desp-archivo-head">' +
+      '<h4 id="despArchivoTitle">Registro de IDC retirados de vista</h4>' +
+      '<p class="desp-muted desp-archivo-sub">Historial con pasillo donde estaba · consulta futura</p></header>' +
+      '<div class="desp-table-wrap">' +
+      '<table class="desp-table desp-table--archivo">' +
+      '<thead><tr>' +
+      '<th>IDC</th><th>Pasillo (al retirar)</th><th>Estado</th><th>Retirado</th><th>Por</th>' +
+      (canValidate ? '<th></th>' : '') +
+      '</tr></thead><tbody>' +
+      (archivados.length ? archivados.map(function (p) {
+        var pasillo = p.archivadoPasillo != null ? p.archivadoPasillo : p.jaula;
+        return '<tr data-pedido-id="' + esc(p.id) + '">' +
+          '<td><strong class="desp-idc">' + esc(formatIdc(p.idc)) + '</strong></td>' +
+          '<td>' + esc(pasillo || '—') + '</td>' +
+          '<td>' + estadoBadge(p.estado) + '</td>' +
+          '<td class="desp-dt">' + esc(fmtDt(p.archivadoValidadorAt || p.updatedAt)) + '</td>' +
+          '<td>' + esc(p.archivadoValidadorBy || '—') + '</td>' +
+          (canValidate ? '<td><button type="button" class="btn btn-ghost desp-btn-hist" data-pedido-id="' + esc(p.id) + '">Ver historial</button></td>' : '<td></td>') +
+          '</tr>';
+      }).join('') :
+        '<tr><td colspan="' + (canValidate ? 6 : 5) + '" class="desp-empty-row">Sin IDC retirados todavía.</td></tr>') +
       '</tbody></table></div></section>';
   }
 
@@ -569,7 +599,9 @@
       '<td>' + esc(p.jaula) + '</td>' +
       '<td>' + estadoBadge(p.estado) + '</td>' +
       '<td class="desp-dt">' + esc(fmtDt(p.updatedAt)) + '<br><small>' + esc(p.updatedBy) + '</small></td>' +
-      '<td>' + selectHtml + '</td>' +
+      '<td class="desp-val-actions">' + selectHtml +
+      (canValidate ? ' <button type="button" class="btn btn-ghost desp-btn-archive" data-pedido-id="' + esc(p.id) + '" data-idc="' + esc(formatIdc(p.idc)) + '" data-pasillo="' + esc(p.jaula || '') + '" title="Quitar de la vista del validador">Quitar vista</button>' : '') +
+      '</td>' +
       '<td><button type="button" class="btn btn-ghost desp-btn-hist" data-pedido-id="' + esc(p.id) + '">Historial</button></td>' +
       '</tr>';
   }
@@ -585,7 +617,7 @@
     }).join('');
     return '<div class="desp-hist-modal-inner">' +
       '<header class="desp-hist-head">' +
-      '<h4>Pedido ' + esc(formatIdc(pedido.idc)) + ' · Jaula ' + esc(pedido.jaula) + '</h4>' +
+      '<h4>Pedido ' + esc(formatIdc(pedido.idc)) + ' · Pasillo ' + esc(pedido.archivadoPasillo != null ? pedido.archivadoPasillo : pedido.jaula) + '</h4>' +
       '<p>Estado actual: ' + estadoBadge(pedido.estado) + '</p></header>' +
       '<div class="desp-table-wrap"><table class="desp-table desp-table--hist">' +
       '<thead><tr><th>Fecha</th><th>Usuario</th><th>Panel</th><th>Cambio</th><th>Nota</th></tr></thead>' +
@@ -620,7 +652,7 @@
       '<div class="desp-dashboard" id="despDashboard">' +
       '<header class="desp-dash-header">' +
       '<div><span class="desp-dash-eyebrow">Almacén Central DC · Despacho</span>' +
-      '<h2 class="desp-dash-title">Registro IDC · Jaula</h2>' +
+      '<h2 class="desp-dash-title">Seguimiento IDC · Pasillo</h2>' +
       '<p class="desp-dash-sub">Panel compartido preparador y validador · ' + esc(String((data.pedidos || []).length)) + ' pedido(s)</p></div>' +
       flujoHtml() +
       '</header>' +
@@ -845,6 +877,25 @@
       });
     }
     if (filtEl) filtEl.addEventListener('change', applyFilters);
+
+    host.querySelectorAll('.desp-btn-archive').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var pedidoId = btn.getAttribute('data-pedido-id');
+        var idc = btn.getAttribute('data-idc') || '';
+        var pasillo = btn.getAttribute('data-pasillo') || '';
+        var msg = '¿Quitar ' + idc + ' de la vista del validador?';
+        if (pasillo) msg += ' Pasillo: ' + pasillo + '.';
+        msg += ' Quedará en el registro histórico.';
+        if (!global.confirm(msg)) return;
+        var res = DS.archivarDeVistaValidador(pedidoId, userName);
+        if (!res.ok) {
+          toast(res.error, 'warn');
+          return;
+        }
+        toast('IDC retirado de vista — guardado en registro histórico', 'success');
+        render(host, res.data, opts);
+      });
+    });
 
     host.querySelectorAll('.desp-btn-hist').forEach(function (btn) {
       btn.addEventListener('click', function () {

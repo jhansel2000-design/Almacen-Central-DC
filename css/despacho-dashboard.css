@@ -1449,3 +1449,45 @@ body.desp-controller-mode .desp-live-present-lista {
     grid-template-columns: 1fr;
   }
 }
+
+/* Validador — archivo / quitar vista */
+.desp-archivo-section {
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px dashed rgba(255, 255, 255, 0.12);
+}
+
+.desp-archivo-head h4 {
+  margin: 0 0 0.25rem;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.desp-archivo-sub {
+  margin: 0 0 0.75rem;
+  font-size: 0.85rem;
+}
+
+.desp-table--archivo tbody tr {
+  opacity: 0.92;
+}
+
+.desp-val-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 9rem;
+}
+
+.desp-btn-archive {
+  color: #f87171 !important;
+  border-color: rgba(248, 113, 113, 0.35) !important;
+  font-size: 0.78rem;
+  padding: 0.25rem 0.55rem;
+  white-space: nowrap;
+}
+
+.desp-btn-archive:hover {
+  background: rgba(248, 113, 113, 0.12) !important;
+}

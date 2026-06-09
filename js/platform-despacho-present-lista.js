@@ -89,8 +89,8 @@
       '<p class="desp-lista-present-meta">' + esc(String(pedidos.length)) + ' IDC activo(s) · Preparador: ' +
       esc(share.sharedBy || '—') + '</p></div>' +
       '<div class="desp-lista-present-table-wrap">' +
-      '<table class="desp-lista-present-table" aria-label="Lista IDC y jaulas en vivo">' +
-      '<thead><tr><th>IDC</th><th>Jaula</th><th>Estado</th></tr></thead>' +
+      '<table class="desp-lista-present-table" aria-label="Lista IDC y pasillos en vivo">' +
+      '<thead><tr><th>IDC</th><th>Pasillo</th><th>Estado</th></tr></thead>' +
       '<tbody>' + renderTableRows(pedidos) + '</tbody></table></div></div></div>';
 
     lastSig = listaSignature(share, pedidos);
@@ -109,7 +109,7 @@
       renderMount(null);
       return;
     }
-    var pedidos = store.getPedidosActivos(data.pedidos);
+    var pedidos = store.getPedidosVisiblesValidador(data.pedidos);
     var sig = listaSignature(share, pedidos);
     if (sig === lastSig) return;
     renderMount(share, data);

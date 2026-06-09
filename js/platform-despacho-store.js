@@ -133,6 +133,10 @@
       idc: formatIdc(p.idc || ''),
       jaula: String(p.jaula || '').trim(),
       estado: ESTADOS[p.estado] ? p.estado : 'en_proceso',
+      visibleValidador: p.visibleValidador !== false,
+      archivadoValidadorAt: p.archivadoValidadorAt || null,
+      archivadoValidadorBy: p.archivadoValidadorBy || null,
+      archivadoPasillo: p.archivadoPasillo != null ? String(p.archivadoPasillo) : null,
       createdAt: p.createdAt || nowIso(),
       createdBy: p.createdBy || '—',
       updatedAt: p.updatedAt || p.createdAt || nowIso(),
@@ -210,8 +214,13 @@
         return { ok: false, error: 'El pedido ' + idc + ' ya está en validación/despacho. Use el panel Validador.' };
       }
       var prev = existing.estado;
+      var wasArchived = existing.visibleValidador === false;
       existing.jaula = jaula;
       existing.estado = estado;
+      existing.visibleValidador = true;
+      existing.archivadoValidadorAt = null;
+      existing.archivadoValidadorBy = null;
+      existing.archivadoPasillo = null;
       existing.updatedAt = ts;
       existing.updatedBy = usuario;
       pushHistorial(existing, {
@@ -220,7 +229,7 @@
         panel: 'preparador',
         desde: prev,
         hacia: estado,
-        nota: 'Actualización preparador'
+        nota: wasArchived ? 'Reactivado en seguimiento preparador' : 'Actualización preparador'
       });
       save(data);
       return { ok: true, data: data, pedido: existing, updated: true };
@@ -231,6 +240,10 @@
       idc: idc,
       jaula: jaula,
       estado: estado,
+      visibleValidador: true,
+      archivadoValidadorAt: null,
+      archivadoValidadorBy: null,
+      archivadoPasillo: null,
       createdAt: ts,
       createdBy: usuario,
       updatedAt: ts,
@@ -300,6 +313,12 @@
         var e = ESTADOS[p.estado];
         return e && e.fase === opts.fase;
       });
+    }
+    if (opts.visiblesValidador) {
+      list = list.filter(function (p) { return p.visibleValidador !== false; });
+    }
+    if (opts.archivadosValidador) {
+      list = list.filter(function (p) { return p.visibleValidador === false; });
     }
     list.sort(function (a, b) {
       return (b.updatedAt || '').localeCompare(a.updatedAt || '');
@@ -444,6 +463,50 @@
     return startLiveShareLista(usuario);
   }
 
+  function archivarDeVistaValidador(pedidoId, usuario) {
+    var data = load();
+    var idx = (data.pedidos || []).findIndex(function (p) { return p.id === pedidoId; });
+    if (idx < 0) return { ok: false, error: 'Pedido no encontrado.' };
+
+    var pedido = data.pedidos[idx];
+    if (pedido.visibleValidador === false) {
+      return { ok: true, data: data, pedido: pedido, unchanged: true };
+    }
+
+    var ts = nowIso();
+    var pasillo = String(pedido.jaula || '').trim();
+    pedido.visibleValidador = false;
+    pedido.archivadoValidadorAt = ts;
+    pedido.archivadoValidadorBy = usuario || '—';
+    pedido.archivadoPasillo = pasillo;
+    pedido.updatedAt = ts;
+    pedido.updatedBy = usuario || '—';
+    pushHistorial(pedido, {
+      at: ts,
+      usuario: usuario || '—',
+      panel: 'validador',
+      desde: pedido.estado,
+      hacia: pedido.estado,
+      nota: 'Retirado de vista validador · IDC ' + pedido.idc + ' · Pasillo ' + (pasillo || '—')
+    });
+    save(data);
+    return { ok: true, data: data, pedido: pedido };
+  }
+
+  function getPedidosVisiblesValidador(pedidos) {
+    return getPedidosActivos((pedidos || []).filter(function (p) {
+      return p.visibleValidador !== false;
+    }));
+  }
+
+  function getPedidosArchivadosValidador(pedidos) {
+    return (pedidos || []).filter(function (p) {
+      return p.visibleValidador === false;
+    }).sort(function (a, b) {
+      return (b.archivadoValidadorAt || b.updatedAt || '').localeCompare(a.archivadoValidadorAt || a.updatedAt || '');
+    });
+  }
+
   function getPedidosActivos(pedidos) {
     return (pedidos || []).slice().sort(function (a, b) {
       var ja = String(a.jaula || '').localeCompare(String(b.jaula || ''), 'es', { numeric: true });
@@ -478,6 +541,9 @@
     save: save,
     registrarPedido: registrarPedido,
     cambiarEstado: cambiarEstado,
+    archivarDeVistaValidador: archivarDeVistaValidador,
+    getPedidosVisiblesValidador: getPedidosVisiblesValidador,
+    getPedidosArchivadosValidador: getPedidosArchivadosValidador,
     filterPedidos: filterPedidos,
     countByEstado: countByEstado,
     formatEstado: formatEstado,
