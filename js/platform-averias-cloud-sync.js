@@ -731,7 +731,7 @@
 
   function updateSyncStatusUi() {
     var el = global.document.getElementById('avSyncStatus');
-    if (!el) return;
+    if (!el || el.hidden) return;
     var jb = getJsonBinConfig();
     if (!jb) {
       el.textContent = 'Sin nube: cada celular guarda por separado. Pulse «Activar ahora» arriba.';

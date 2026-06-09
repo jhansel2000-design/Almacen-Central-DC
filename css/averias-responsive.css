@@ -348,11 +348,12 @@ body.averias-dash-view {
   }
 
   .averias-app .av-sync-status-line {
+  display: none !important;
   margin: 0;
-  padding: 6px 14px 8px;
-  font-size: 0.78rem;
-  line-height: 1.35;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 0;
+  height: 0;
+  overflow: hidden;
+  border: none;
 }
 
 .averias-app .av-sync-status-ok {
