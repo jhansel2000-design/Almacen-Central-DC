@@ -95,8 +95,9 @@
         var lbl = e.kpiLabel || e.short || e.label;
         return '<div class="desp-lista-present-total desp-lista-present-total--' + esc(e.color) + '">' +
           (icon ? '<span class="desp-lista-present-total-icon" aria-hidden="true">' + icon + '</span>' : '') +
+          '<span class="desp-lista-present-total-body">' +
           '<span class="desp-lista-present-total-num">' + esc(String(counts[id] || 0)) + '</span>' +
-          '<span class="desp-lista-present-total-lbl">' + esc(lbl) + '</span></div>';
+          '<span class="desp-lista-present-total-lbl">' + esc(lbl) + '</span></span></div>';
       }).join('') +
       '</div>';
   }
