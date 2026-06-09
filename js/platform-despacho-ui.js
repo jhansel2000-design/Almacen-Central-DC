@@ -249,7 +249,7 @@
       '<header class="desp-panel-head">' +
       '<div><span class="desp-eyebrow">Operador · Preparador</span>' +
       '<h3 id="despRegistroTitle">Seguimiento IDC y pasillo</h3>' +
-      '<p class="desp-panel-sub">Solo <strong>En proceso</strong> y <strong>Facturado</strong>. Cuando el validador cambia el estado, el IDC sale de aquí al instante.</p></div>' +
+      '<p class="desp-panel-sub">Registre IDC y pasillo. Luego <strong>envíe al validador</strong> — solo el validador puede quitarlos de su seguimiento.</p></div>' +
       '</header>' +
       '<div class="desp-prep-main">' +
       '<form class="desp-form" id="despPrepForm" autocomplete="off" onsubmit="return false">' +
@@ -268,10 +268,13 @@
       }).join('') +
       '</div></fieldset>' +
       '</div>' +
-      '<div class="desp-prep-actions desp-prep-actions--single">' +
+      '<div class="desp-prep-actions">' +
       '<button type="button" class="btn btn-primary desp-action-btn desp-btn-update" id="despBtnUpdateIdc">' +
       '<span class="desp-action-btn-icon" aria-hidden="true">🔄</span>' +
       '<span class="desp-action-btn-text">Actualizar IDC y pasillo</span></button>' +
+      '<button type="button" class="btn desp-action-btn desp-btn-send-validador" id="despBtnSendValidador">' +
+      '<span class="desp-action-btn-icon" aria-hidden="true">📤</span>' +
+      '<span class="desp-action-btn-text">Enviar a seguimiento validador</span></button>' +
       '</div>' +
       '</form>' +
       '<div class="desp-recent">' +
@@ -357,7 +360,7 @@
       '<span class="desp-action-btn-icon" aria-hidden="true">' + (sharing ? '⏹' : '📺') + '</span>' +
       '<span class="desp-action-btn-text">' + (sharing ? 'Dejar de compartir en pantalla TV' : 'Compartir seguimiento en pantalla TV') + '</span></button>' +
       '</div></section>' +
-      renderTablaValidacion(data, Object.assign({}, opts, { canValidate: true })) +
+      renderTablaValidacion(data, opts) +
       '</div>';
   }
 
@@ -538,7 +541,7 @@
       '<header class="desp-panel-head">' +
       '<div><span class="desp-eyebrow">Validador</span>' +
       '<h3 id="despValTitle">Seguimiento en validación</h3>' +
-      '<p class="desp-panel-sub">Solo IDC en validación (no En proceso ni Facturado). Usted quita los que terminó — no vuelven al operador.</p></div>' +
+      '<p class="desp-panel-sub">IDC que el operador envió. Usted <strong>quita</strong> los terminados — no vuelven al operador.</p></div>' +
       '<span class="desp-live-badge" title="Sincronización activa"><span class="desp-live-dot"></span> En vivo</span>' +
       '</header>' +
       '<div class="desp-filters">' +
@@ -562,8 +565,8 @@
       '<th></th>' +
       '</tr></thead><tbody>' +
       (list.length ? list.map(function (p) { return renderValidadorRow(p, opts); }).join('') :
-        '<tr><td colspan="' + (canValidate ? 6 : 5) + '" class="desp-empty-row">No hay IDC en validación' +
-        (filterEstado || filterQ ? ' con este filtro' : ' — el operador debe pasarlos desde En proceso/Facturado') + '.</td></tr>') +
+        '<tr><td colspan="' + (canValidate ? 6 : 5) + '" class="desp-empty-row">No hay IDC en seguimiento validador' +
+        (filterEstado || filterQ ? ' con este filtro' : ' — el operador debe enviarlos desde su panel') + '.</td></tr>') +
       '</tbody></table></div>' +
       renderRegistroArchivados(archivados, canValidate) +
       '</section>';
@@ -617,7 +620,7 @@
       '<td>' + estadoBadge(p.estado) + '</td>' +
       '<td class="desp-dt">' + esc(fmtDt(p.updatedAt)) + '<br><small>' + esc(p.updatedBy) + '</small></td>' +
       '<td class="desp-val-actions">' + selectHtml +
-      (canValidate ? ' <button type="button" class="btn btn-ghost desp-btn-archive" data-pedido-id="' + esc(p.id) + '" data-idc="' + esc(formatIdc(p.idc)) + '" data-pasillo="' + esc(p.jaula || '') + '" title="Quitar de la vista del validador">Quitar vista</button>' : '') +
+      (canValidate ? ' <button type="button" class="btn btn-ghost desp-btn-archive" data-pedido-id="' + esc(p.id) + '" data-idc="' + esc(formatIdc(p.idc)) + '" data-pasillo="' + esc(p.jaula || '') + '" title="Quitar del seguimiento validador">Quitar</button>' : '') +
       '</td>' +
       '<td><button type="button" class="btn btn-ghost desp-btn-hist" data-pedido-id="' + esc(p.id) + '">Historial</button></td>' +
       '</tr>';
@@ -674,9 +677,9 @@
       '<header class="desp-dash-header">' +
       '<div><span class="desp-dash-eyebrow">Almacén Central DC · Despacho</span>' +
       '<h2 class="desp-dash-title">Seguimiento IDC · Pasillo</h2>' +
-      '<p class="desp-dash-sub">Operador: En proceso / Facturado · Validador: estados de validación · ' +
+      '<p class="desp-dash-sub">Operador registra y envía · Validador quita del seguimiento · ' +
       esc(String(DS.getPedidosSeguimientoPreparador(data.pedidos).length)) + ' en operador · ' +
-      esc(String(DS.getPedidosVisiblesValidador(data.pedidos).length)) + ' en validación</p></div>' +
+      esc(String(DS.getPedidosVisiblesValidador(data.pedidos).length)) + ' en validador</p></div>' +
       flujoHtml() +
       '</header>' +
       kpiStrip(counts) +
@@ -769,6 +772,29 @@
           var snap = capturePrepForm(host);
           render(host, res.data, opts);
           restorePrepForm(host, snap);
+        });
+      }
+      var btnSendVal = host.querySelector('#despBtnSendValidador');
+      if (btnSendVal) {
+        btnSendVal.addEventListener('click', function () {
+          var vals = getPrepFormValues(host);
+          if (!vals.idc || !String(vals.idc).trim()) {
+            toast('Escriba el IDC antes de enviar al validador.', 'warn');
+            return;
+          }
+          if (!vals.jaula) {
+            toast('Escriba el pasillo antes de enviar al validador.', 'warn');
+            return;
+          }
+          var msg = '¿Enviar ' + DS.formatIdc(vals.idc) + ' al seguimiento validador? Pasillo: ' + vals.jaula + '.';
+          if (!global.confirm(msg)) return;
+          var res = DS.enviarASeguimientoValidador(vals.idc, vals.jaula, userName);
+          if (!res.ok) {
+            toast(res.error, 'warn');
+            return;
+          }
+          toast('IDC enviado al seguimiento validador', 'success');
+          render(host, res.data, opts);
         });
       }
     }
@@ -905,7 +931,7 @@
         var pedidoId = btn.getAttribute('data-pedido-id');
         var idc = btn.getAttribute('data-idc') || '';
         var pasillo = btn.getAttribute('data-pasillo') || '';
-        var msg = '¿Quitar ' + idc + ' de la vista del validador?';
+        var msg = '¿Quitar ' + idc + ' del seguimiento validador?';
         if (pasillo) msg += ' Pasillo: ' + pasillo + '.';
         msg += ' Quedará en el registro histórico.';
         if (!global.confirm(msg)) return;

@@ -1175,8 +1175,20 @@ body.desp-live-lista-on:not(.desp-live-present-on) .desp-live-present-lista {
   color: #56d364;
 }
 
-.desp-prep-actions--single {
-  grid-template-columns: 1fr;
+.desp-btn-send-validador {
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.22), rgba(79, 70, 229, 0.18));
+  border-color: rgba(167, 139, 250, 0.45);
+  color: #c4b5fd;
+}
+
+.desp-btn-send-validador:hover {
+  border-color: rgba(167, 139, 250, 0.75);
+  box-shadow: 0 8px 28px rgba(124, 58, 237, 0.25);
+}
+
+html[data-theme="light"] .desp-btn-send-validador {
+  color: #5b21b6;
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.12), rgba(79, 70, 229, 0.08));
 }
 
 /* Botones de acción principales */

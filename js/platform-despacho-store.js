@@ -128,11 +128,17 @@
 
   function normalizePedido(p) {
     p = p || {};
+    var estado = ESTADOS[p.estado] ? p.estado : 'en_proceso';
+    var seguimientoValidador = p.seguimientoValidador === true;
+    if (p.seguimientoValidador == null && VALIDADOR_ESTADOS.indexOf(estado) >= 0) {
+      seguimientoValidador = true;
+    }
     return {
       id: p.id || uid(),
       idc: formatIdc(p.idc || ''),
       jaula: String(p.jaula || '').trim(),
-      estado: ESTADOS[p.estado] ? p.estado : 'en_proceso',
+      estado: estado,
+      seguimientoValidador: seguimientoValidador,
       visibleValidador: p.visibleValidador !== false,
       archivadoValidadorAt: p.archivadoValidadorAt || null,
       archivadoValidadorBy: p.archivadoValidadorBy || null,
@@ -210,13 +216,17 @@
 
     if (idx >= 0) {
       var existing = data.pedidos[idx];
-      if (VALIDADOR_ESTADOS.indexOf(existing.estado) >= 0) {
-        return { ok: false, error: 'El pedido ' + idc + ' ya está en validación/despacho. Use el panel Validador.' };
+      if (existing.seguimientoValidador && existing.visibleValidador !== false) {
+        return { ok: false, error: 'El pedido ' + idc + ' está en seguimiento validador. El validador debe quitarlo.' };
+      }
+      if (VALIDADOR_ESTADOS.indexOf(existing.estado) >= 0 && existing.seguimientoValidador) {
+        return { ok: false, error: 'El pedido ' + idc + ' está en seguimiento validador. El validador debe quitarlo.' };
       }
       var prev = existing.estado;
       var wasArchived = existing.visibleValidador === false;
       existing.jaula = jaula;
       existing.estado = estado;
+      existing.seguimientoValidador = false;
       existing.visibleValidador = true;
       existing.archivadoValidadorAt = null;
       existing.archivadoValidadorBy = null;
@@ -240,6 +250,7 @@
       idc: idc,
       jaula: jaula,
       estado: estado,
+      seguimientoValidador: false,
       visibleValidador: true,
       archivadoValidadorAt: null,
       archivadoValidadorBy: null,
@@ -263,6 +274,50 @@
     return { ok: true, data: data, pedido: pedido, updated: false };
   }
 
+  function enviarASeguimientoValidador(idc, jaula, usuario) {
+    idc = formatIdc(idc);
+    jaula = String(jaula || '').trim();
+    usuario = usuario || '—';
+
+    if (!idc) return { ok: false, error: 'Ingrese el ID del pedido (IDC).' };
+    if (!jaula) return { ok: false, error: 'Ingrese el pasillo.' };
+
+    var data = load();
+    var idx = findByIdc(data.pedidos, idc);
+    if (idx < 0) {
+      return { ok: false, error: 'Registre primero el IDC en seguimiento operador.' };
+    }
+
+    var pedido = data.pedidos[idx];
+    if (pedido.seguimientoValidador && pedido.visibleValidador !== false) {
+      return { ok: false, error: 'El IDC ' + idc + ' ya está en seguimiento validador.' };
+    }
+
+    var ts = nowIso();
+    var prevEstado = pedido.estado;
+    pedido.jaula = jaula;
+    pedido.seguimientoValidador = true;
+    pedido.visibleValidador = true;
+    pedido.archivadoValidadorAt = null;
+    pedido.archivadoValidadorBy = null;
+    pedido.archivadoPasillo = null;
+    if (PREPARADOR_ESTADOS.indexOf(pedido.estado) >= 0) {
+      pedido.estado = 'pendiente_carga';
+    }
+    pedido.updatedAt = ts;
+    pedido.updatedBy = usuario;
+    pushHistorial(pedido, {
+      at: ts,
+      usuario: usuario,
+      panel: 'preparador',
+      desde: prevEstado,
+      hacia: pedido.estado,
+      nota: 'Operador envió a seguimiento validador'
+    });
+    save(data);
+    return { ok: true, data: data, pedido: pedido };
+  }
+
   function cambiarEstado(pedidoId, nuevoEstado, usuario) {
     if (!ESTADOS[nuevoEstado] || VALIDADOR_ESTADOS.indexOf(nuevoEstado) < 0) {
       return { ok: false, error: 'Estado no válido para el validador.' };
@@ -272,6 +327,9 @@
     if (idx < 0) return { ok: false, error: 'Pedido no encontrado.' };
 
     var pedido = data.pedidos[idx];
+    if (!pedido.seguimientoValidador) {
+      return { ok: false, error: 'Solo puede cambiar estado IDC en seguimiento validador.' };
+    }
     var prev = pedido.estado;
     if (prev === nuevoEstado) {
       return { ok: true, data: data, pedido: pedido, unchanged: true };
@@ -326,12 +384,14 @@
     }
     if (opts.soloPreparador) {
       list = list.filter(function (p) {
-        return PREPARADOR_ESTADOS.indexOf(p.estado) >= 0 && p.visibleValidador !== false;
+        return PREPARADOR_ESTADOS.indexOf(p.estado) >= 0 &&
+          p.seguimientoValidador !== true &&
+          p.visibleValidador !== false;
       });
     }
     if (opts.soloValidador) {
       list = list.filter(function (p) {
-        return VALIDADOR_ESTADOS.indexOf(p.estado) >= 0 && p.visibleValidador !== false;
+        return p.seguimientoValidador === true && p.visibleValidador !== false;
       });
     }
     list.sort(function (a, b) {
@@ -483,8 +543,8 @@
     if (idx < 0) return { ok: false, error: 'Pedido no encontrado.' };
 
     var pedido = data.pedidos[idx];
-    if (VALIDADOR_ESTADOS.indexOf(pedido.estado) < 0) {
-      return { ok: false, error: 'Solo puede quitar IDC que estén en validación (no En proceso ni Facturado).' };
+    if (!pedido.seguimientoValidador) {
+      return { ok: false, error: 'Este IDC no está en seguimiento validador.' };
     }
     if (pedido.visibleValidador === false) {
       return { ok: true, data: data, pedido: pedido, unchanged: true };
@@ -512,19 +572,21 @@
 
   function getPedidosSeguimientoPreparador(pedidos) {
     return getPedidosActivos((pedidos || []).filter(function (p) {
-      return p.visibleValidador !== false && PREPARADOR_ESTADOS.indexOf(p.estado) >= 0;
+      return p.seguimientoValidador !== true &&
+        p.visibleValidador !== false &&
+        PREPARADOR_ESTADOS.indexOf(p.estado) >= 0;
     }));
   }
 
   function getPedidosVisiblesValidador(pedidos) {
     return getPedidosActivos((pedidos || []).filter(function (p) {
-      return p.visibleValidador !== false && VALIDADOR_ESTADOS.indexOf(p.estado) >= 0;
+      return p.seguimientoValidador === true && p.visibleValidador !== false;
     }));
   }
 
   function getPedidosArchivadosValidador(pedidos) {
     return (pedidos || []).filter(function (p) {
-      return p.visibleValidador === false;
+      return p.seguimientoValidador === true && p.visibleValidador === false;
     }).sort(function (a, b) {
       return (b.archivadoValidadorAt || b.updatedAt || '').localeCompare(a.archivadoValidadorAt || a.updatedAt || '');
     });
@@ -563,6 +625,7 @@
     load: load,
     save: save,
     registrarPedido: registrarPedido,
+    enviarASeguimientoValidador: enviarASeguimientoValidador,
     cambiarEstado: cambiarEstado,
     archivarDeVistaValidador: archivarDeVistaValidador,
     getPedidosSeguimientoPreparador: getPedidosSeguimientoPreparador,
