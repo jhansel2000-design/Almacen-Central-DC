@@ -23,63 +23,19 @@
 
   function openDisplayWindow(view) {
     view = view || 'barcode';
-    var url = getDisplayUrl(view);
-    var name = 'despacho_pantalla_' + view;
     var win = displayWindows[view];
     if (win && !win.closed) {
-      try {
-        win.focus();
-        if (win.location.href !== url) win.location.href = url;
-      } catch (e) { /* noop */ }
+      try { win.focus(); } catch (e) { /* noop */ }
       return win;
     }
-    win = global.open(url, name, 'noopener,noreferrer');
-    displayWindows[view] = win;
+    var url = getDisplayUrl(view);
+    win = global.open(url, 'despacho_pantalla_' + view, 'noopener,noreferrer');
+    if (win) displayWindows[view] = win;
     return win;
   }
 
-  function renderDisplayUrlBox(view, idPrefix) {
-    idPrefix = idPrefix || 'desp';
-    var url = getDisplayUrl(view);
-    return '<div class="desp-display-url-box">' +
-      '<p class="desp-display-url-lead">📺 <strong>Pantalla externa</strong> — el IDC aparece en la otra PC, no aquí</p>' +
-      '<div class="desp-display-url-row">' +
-      '<input type="text" class="desp-display-url-input" id="' + esc(idPrefix) + 'DisplayUrl" readonly value="' + esc(url) + '" aria-label="URL pantalla externa">' +
-      '<button type="button" class="btn desp-display-url-open" id="' + esc(idPrefix) + 'BtnOpenDisplay">Abrir pantalla</button>' +
-      '<button type="button" class="btn btn-ghost desp-display-url-copy" id="' + esc(idPrefix) + 'BtnCopyDisplayUrl">Copiar</button>' +
-      '</div>' +
-      '<p class="desp-muted desp-display-url-note">En la otra PC abra esta URL. Con <code>serve-dashboard.ps1</code> (LAN) se sincroniza en tiempo real.</p>' +
-      '</div>';
-  }
-
-  function bindDisplayUrlBox(host, idPrefix, view) {
-    var openBtn = host.querySelector('#' + idPrefix + 'BtnOpenDisplay');
-    var copyBtn = host.querySelector('#' + idPrefix + 'BtnCopyDisplayUrl');
-    var input = host.querySelector('#' + idPrefix + 'DisplayUrl');
-    if (input) input.value = getDisplayUrl(view);
-    if (openBtn) {
-      openBtn.addEventListener('click', function () {
-        openDisplayWindow(view);
-      });
-    }
-    if (copyBtn && input) {
-      copyBtn.addEventListener('click', function () {
-        input.select();
-        input.setSelectionRange(0, input.value.length);
-        try {
-          if (global.navigator.clipboard && global.navigator.clipboard.writeText) {
-            global.navigator.clipboard.writeText(input.value).then(function () {
-              toast('Enlace copiado — ábralo en la otra pantalla', 'success');
-            });
-          } else {
-            document.execCommand('copy');
-            toast('Enlace copiado', 'success');
-          }
-        } catch (e) {
-          toast('Copie el enlace manualmente', 'warn');
-        }
-      });
-    }
+  function ensureDisplayWindow(view) {
+    return openDisplayWindow(view || 'barcode');
   }
 
   function fmtDt(iso) {
@@ -239,10 +195,10 @@
       '<form class="desp-form" id="despPrepForm" autocomplete="off" onsubmit="return false">' +
       '<div class="desp-form-grid">' +
       '<label class="desp-field"><span>ID pedido (IDC)</span>' +
-      '<input type="text" id="despIdc" name="idc" inputmode="text" placeholder="Ej. 1045821 → IDC-1045821" autocapitalize="characters"></label>' +
+      '<input type="text" id="despIdc" name="idc" inputmode="text" placeholder="Escriba el IDC" autocapitalize="off" autocomplete="off"></label>' +
       '<label class="desp-field"><span>Número de jaula</span>' +
-      '<input type="text" id="despJaula" name="jaula" placeholder="Ej. J-12"></label>' +
-      '<fieldset class="desp-field desp-field--estado"><legend>Estado del pedido</legend>' +
+      '<input type="text" id="despJaula" name="jaula" placeholder="Escriba la jaula" autocomplete="off"></label>' +
+      '<fieldset class="desp-field desp-field--estado"><legend>Estado · preparador</legend>' +
       '<div class="desp-estado-pick">' +
       DS.PREPARADOR_ESTADOS.map(function (id, i) {
         var e = DS.ESTADOS[id];
@@ -276,10 +232,9 @@
       '<header class="desp-panel-head">' +
       '<div><span class="desp-eyebrow">Opción 1 · Lectores / escaneo</span>' +
       '<h3 id="despBarcodeTitle">Compartir IDC como código de barras</h3>' +
-      '<p class="desp-panel-sub">Un IDC individual en Code 128 · se muestra en la pantalla externa conectada</p></div>' +
+      '<p class="desp-panel-sub">Escriba IDC y jaula · se refleja en vivo en la pantalla externa al compartir</p></div>' +
       (sharing ? '<span class="desp-share-live-tag"><span class="desp-live-dot"></span> EN VIVO</span>' : '') +
       '</header>' +
-      renderDisplayUrlBox('barcode', 'despBarcode') +
       '<p class="desp-share-status" id="despShareStatus"' + (sharing ? '' : ' hidden') + '>' +
       (sharing ? 'Transmitiendo en pantalla externa · ' + esc(formatIdc(sharing.idc)) + ' · Jaula ' + esc(sharing.jaula) : '') +
       '</p>' +
@@ -288,10 +243,10 @@
       '<form class="desp-form" id="despShareForm" autocomplete="off" onsubmit="return false">' +
       '<div class="desp-form-grid">' +
       '<label class="desp-field"><span>IDC a mostrar</span>' +
-      '<input type="text" id="despShareIdc" name="idc" inputmode="text" placeholder="Ej. 1045821 → IDC-1045821" autocapitalize="characters"></label>' +
-      '<label class="desp-field"><span>Jaula (si aplica)</span>' +
-      '<input type="text" id="despShareJaula" name="jaula" placeholder="Ej. J-12"></label>' +
-      '<fieldset class="desp-field desp-field--estado"><legend>Estado</legend>' +
+      '<input type="text" id="despShareIdc" name="idc" inputmode="text" placeholder="Escriba el IDC" autocapitalize="off" autocomplete="off"></label>' +
+      '<label class="desp-field"><span>Jaula</span>' +
+      '<input type="text" id="despShareJaula" name="jaula" placeholder="Escriba la jaula" autocomplete="off"></label>' +
+      '<fieldset class="desp-field desp-field--estado"><legend>Estado · preparador</legend>' +
       '<div class="desp-estado-pick">' +
       DS.PREPARADOR_ESTADOS.map(function (id, i) {
         var e = DS.ESTADOS[id];
@@ -333,7 +288,6 @@
       '<p class="desp-panel-sub">Todos los IDC activos · los validadores ven la tabla en su pantalla externa</p></div>' +
       (sharing ? '<span class="desp-share-live-tag desp-share-live-tag--lista"><span class="desp-live-dot"></span> EN VIVO</span>' : '') +
       '</header>' +
-      renderDisplayUrlBox('lista', 'despLista') +
       '<p class="desp-share-status desp-share-status--lista" id="despListaShareStatus"' + (sharing ? '' : ' hidden') + '>' +
       (sharing ? 'Lista compartida con validadores · ' + esc(String(pedidos.length)) + ' IDC activo(s)' : '') +
       '</p>' +
@@ -639,9 +593,6 @@
 
     bindEvents(host, data, opts, userName);
 
-    if (screen === 'barcode') bindDisplayUrlBox(host, 'despBarcode', 'barcode');
-    if (screen === 'lista') bindDisplayUrlBox(host, 'despLista', 'lista');
-
     if (screen === 'barcode' && host.querySelector('#despBarcodePanel')) {
       var shareIdc = host.querySelector('#despShareIdc');
       var shareJaula = host.querySelector('#despShareJaula');
@@ -700,13 +651,6 @@
 
     var form = host.querySelector('#despPrepForm');
     if (form) {
-      var idcInput = host.querySelector('#despIdc');
-      if (idcInput) {
-        idcInput.addEventListener('blur', function () {
-          var fmt = formatIdc(idcInput.value);
-          if (fmt && fmt !== idcInput.value) idcInput.value = fmt;
-        });
-      }
       var btnUpdate = host.querySelector('#despBtnUpdateIdc');
       if (btnUpdate) {
         btnUpdate.addEventListener('click', function () {
@@ -728,19 +672,23 @@
     if (shareForm) {
       var shareIdcInput = host.querySelector('#despShareIdc');
       var shareJaulaInput = host.querySelector('#despShareJaula');
+      var livePushTimer = null;
+
+      function pushLiveToExternal() {
+        if (!DS.isLiveShareActive()) return;
+        var vals = getShareFormValues(host);
+        DS.syncLiveShare(vals.idc, vals.jaula, vals.estado, userName);
+      }
+
       function syncSharePreview() {
         var estadoEl = host.querySelector('input[name="shareEstado"]:checked');
         updateBarcodePanel(host, shareIdcInput ? shareIdcInput.value : '', shareJaulaInput ? shareJaulaInput.value : '',
           estadoEl ? estadoEl.value : 'en_proceso');
+        clearTimeout(livePushTimer);
+        livePushTimer = setTimeout(pushLiveToExternal, 120);
       }
-      if (shareIdcInput) {
-        shareIdcInput.addEventListener('input', syncSharePreview);
-        shareIdcInput.addEventListener('blur', function () {
-          var fmt = formatIdc(shareIdcInput.value);
-          if (fmt && fmt !== shareIdcInput.value) shareIdcInput.value = fmt;
-          syncSharePreview();
-        });
-      }
+
+      if (shareIdcInput) shareIdcInput.addEventListener('input', syncSharePreview);
       if (shareJaulaInput) shareJaulaInput.addEventListener('input', syncSharePreview);
       host.querySelectorAll('input[name="shareEstado"]').forEach(function (r) {
         r.addEventListener('change', syncSharePreview);
@@ -750,19 +698,21 @@
       if (btnShare) {
         btnShare.addEventListener('click', function () {
           var vals = getShareFormValues(host);
-          var res = DS.toggleLiveShare(vals.idc, vals.jaula, vals.estado, userName);
+          if (DS.isLiveShareActive()) {
+            DS.stopLiveShare(userName);
+            updateShareScreenUi(host, DS.load());
+            toast('Pantalla externa desactivada', 'info');
+            return;
+          }
+          var res = DS.startLiveShare(vals.idc, vals.jaula, vals.estado, userName);
           if (!res.ok) {
             toast(res.error, 'warn');
             return;
           }
-          if (DS.isLiveShareActive(res.data)) {
-            openDisplayWindow('barcode');
-            toast('IDC enviado a la pantalla externa', 'success');
-          } else {
-            toast('Compartir desactivado en pantallas externas', 'info');
-          }
+          ensureDisplayWindow('barcode');
+          DS.syncLiveShare(vals.idc, vals.jaula, vals.estado, userName);
           updateShareScreenUi(host, res.data);
-          render(host, res.data, opts);
+          toast('Pantalla externa activa — lo que escriba se ve en vivo', 'success');
         });
       }
     }
@@ -776,13 +726,12 @@
           return;
         }
         if (DS.isLiveShareListaActive(res.data)) {
-          openDisplayWindow('lista');
-          toast('Lista enviada a pantallas de validadores', 'success');
+          ensureDisplayWindow('lista');
+          toast('Lista en pantallas de validadores', 'success');
         } else {
           toast('Compartir lista desactivado', 'info');
         }
         updateShareListaUi(host, res.data);
-        render(host, res.data, opts);
       });
     }
 
@@ -795,16 +744,19 @@
         if (isShare) {
           var shareIdcEl = host.querySelector('#despShareIdc');
           var shareJaulaEl = host.querySelector('#despShareJaula');
-          if (shareIdcEl) shareIdcEl.value = formatIdc(idc);
+          if (shareIdcEl) shareIdcEl.value = idc || '';
           if (shareJaulaEl) shareJaulaEl.value = jaula || '';
           var shareRadio = host.querySelector('input[name="shareEstado"][value="' + estado + '"]');
           if (shareRadio) shareRadio.checked = true;
           updateBarcodePanel(host, idc, jaula, estado);
+          if (DS.isLiveShareActive()) {
+            DS.syncLiveShare(idc, jaula, estado, userName);
+          }
           return;
         }
         var idcEl = host.querySelector('#despIdc');
         var jaulaEl = host.querySelector('#despJaula');
-        if (idcEl) idcEl.value = formatIdc(idc);
+        if (idcEl) idcEl.value = idc || '';
         if (jaulaEl) jaulaEl.value = jaula || '';
         var radio = host.querySelector('input[name="prepEstado"][value="' + estado + '"]');
         if (radio) radio.checked = true;

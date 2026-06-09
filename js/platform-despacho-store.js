@@ -142,13 +142,7 @@
   }
 
   function save(data) {
-    if (!global.localStorage) return false;
-    data = data || emptyPayload();
-    data.module = 'despacho';
-    data.updatedAt = nowIso();
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    notify(data);
-    return true;
+    return persistData(data, {});
   }
 
   function notify(data) {
@@ -179,13 +173,22 @@
   }
 
   function formatIdc(raw) {
-    var s = String(raw || '').trim().toUpperCase().replace(/\s+/g, '');
-    if (!s) return '';
-    if (/^IDC-\d/.test(s)) return s;
-    if (/^IDC\d/.test(s)) return 'IDC-' + s.slice(3);
-    if (/^\d+$/.test(s)) return 'IDC-' + s;
-    if (s.indexOf('IDC-') === 0) return s;
-    return 'IDC-' + s.replace(/^IDC-?/, '');
+    return String(raw || '').trim();
+  }
+
+  function persistData(data, opts) {
+    opts = opts || {};
+    if (!global.localStorage) return false;
+    data = data || emptyPayload();
+    data.module = 'despacho';
+    data.updatedAt = nowIso();
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    if (opts.liveShareOnly) {
+      notifyLiveShare(data.liveShare || null);
+    } else if (!opts.silent) {
+      notify(data);
+    }
+    return true;
   }
 
   function registrarPedido(idc, jaula, estado, usuario) {
@@ -360,8 +363,6 @@
     idc = formatIdc(idc);
     jaula = String(jaula || '').trim();
     estado = ESTADOS[estado] && PREPARADOR_ESTADOS.indexOf(estado) >= 0 ? estado : 'en_proceso';
-    if (!idc) return { ok: false, error: 'Ingrese el IDC antes de compartir.' };
-    if (!jaula) return { ok: false, error: 'Ingrese la jaula antes de compartir.' };
     var data = load();
     data.liveShare = {
       active: true,
@@ -372,7 +373,6 @@
       sharedBy: usuario || '—'
     };
     save(data);
-    notifyLiveShare(data.liveShare);
     return { ok: true, data: data, liveShare: data.liveShare };
   }
 
@@ -397,8 +397,7 @@
       updatedAt: nowIso(),
       sharedBy: data.liveShare.sharedBy || usuario || '—'
     };
-    save(data);
-    notifyLiveShare(data.liveShare);
+    persistData(data, { liveShareOnly: true });
     return { ok: true, synced: true, data: data, liveShare: data.liveShare };
   }
 

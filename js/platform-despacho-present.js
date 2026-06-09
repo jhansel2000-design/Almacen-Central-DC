@@ -106,7 +106,7 @@
     }
     var share = store.getLiveShare ? store.getLiveShare() : null;
     var sig = shareSignature(share);
-    if (sig === lastSig && share && share.active) return;
+    if (sig === lastSig) return;
     renderMount(share);
   }
 
