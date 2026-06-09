@@ -1,6 +1,6 @@
 ﻿{
   "version": 1,
-  "updatedAt": "2026-06-08T23:48:01.431Z",
+  "updatedAt": "2026-06-03T12:00:00.000Z",
   "publicSyncBaseUrl": "",
   "githubPagesDataUrl": "https://jhansel2000-design.github.io/Almacen-Central-DC/data/averias.json",
   "pollSeconds": 1,
@@ -20,8 +20,8 @@
   },
   "help": "Tiempo real: JSONBin cada ~1s. Indicador LIVE = sync activa. No refresque la pagina.",
   "security": {
-    "turnstileSiteKey": "",
+    "turnstileSiteKey": "1x00000000000000000000AA",
     "humanVerifyMinMs": 1200,
-    "help": "Turnstile gratis: https://dash.cloudflare.com → Turnstile. Site key aquí; secret key en data/sync-secrets.local.json"
+    "help": "Turnstile activo (clave de prueba Cloudflare). Para producción: cree widget en dash.cloudflare.com, pegue Site Key aquí y Secret Key en data/sync-secrets.local.json"
   }
 }
