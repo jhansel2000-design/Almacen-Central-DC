@@ -340,8 +340,19 @@
       PC.bindOnce($('despBtnRefresh'), 'click', renderDespacho);
 
       document.addEventListener('despacho-updated', function () {
-        if (state.user) renderDespacho();
+        if (state.user) {
+          if (global.PlatformDespachoPresent) global.PlatformDespachoPresent.refresh();
+          renderDespacho();
+        }
       });
+
+      document.addEventListener('despacho-live-share', function () {
+        if (state.user && global.PlatformDespachoPresent) {
+          global.PlatformDespachoPresent.refresh();
+        }
+      });
+
+      if (global.PlatformDespachoPresent) global.PlatformDespachoPresent.bind();
 
       document.addEventListener('lan-sync', function (ev) {
         if (!state.user) return;

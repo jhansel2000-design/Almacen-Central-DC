@@ -1150,9 +1150,13 @@
     document.addEventListener('despacho-updated', function () {
       state.dataDespacho = loadDespachoData();
       updateDataStatusChips();
+      if (global.PlatformDespachoPresent) global.PlatformDespachoPresent.refresh();
       if (getActiveModule() === 'despacho') {
         renderDespachoModule();
       }
+    });
+    document.addEventListener('despacho-live-share', function () {
+      if (global.PlatformDespachoPresent) global.PlatformDespachoPresent.refresh();
     });
     document.addEventListener('tv-dashboard-slide', function (ev) {
       if (!state._tvSnapshot || !global.PlatformTvDashboard || !ev.detail) return;
@@ -2008,6 +2012,8 @@
         renderSubnav();
       }
     });
+
+    if (global.PlatformDespachoPresent) global.PlatformDespachoPresent.bind();
 
     if ($('dashboardTitle')) $('dashboardTitle').textContent = 'Despacho — Preparador y Validador';
     if ($('dashboardSubtitle')) {

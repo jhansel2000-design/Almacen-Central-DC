@@ -716,3 +716,198 @@ html[data-theme="light"] .desp-flujo {
     position: static;
   }
 }
+
+/* —— Presentación en vivo (global, tipo PowerPoint) —— */
+body.desp-live-present-on {
+  padding-top: 0;
+}
+
+.desp-live-present {
+  position: sticky;
+  top: 0;
+  z-index: 8000;
+  width: 100%;
+}
+
+.desp-live-present[hidden] {
+  display: none !important;
+}
+
+.desp-present-shell {
+  background: linear-gradient(135deg, #0d1117 0%, #161b22 100%);
+  border-bottom: 3px solid #ff9800;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+}
+
+.desp-present-inner {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0.75rem 1.25rem 1rem;
+}
+
+.desp-present-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #56d364;
+  margin-bottom: 0.5rem;
+}
+
+.desp-present-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #56d364;
+  animation: despPresentPulse 1.2s ease-in-out infinite;
+}
+
+@keyframes despPresentPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.85); }
+}
+
+.desp-present-grid {
+  display: grid;
+  grid-template-columns: minmax(200px, 340px) 1fr;
+  gap: 1.25rem;
+  align-items: center;
+}
+
+.desp-present-barcode-wrap {
+  background: #fff;
+  border-radius: 12px;
+  padding: 0.65rem 0.5rem 0.35rem;
+  text-align: center;
+}
+
+.desp-present-barcode {
+  width: 100%;
+  max-width: 320px;
+  height: auto;
+}
+
+.desp-present-meta {
+  min-width: 0;
+}
+
+.desp-present-label {
+  margin: 0;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #8b949e;
+}
+
+.desp-present-idc {
+  margin: 0.15rem 0 0.35rem;
+  font-size: clamp(1.6rem, 4vw, 2.4rem);
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  color: #fff;
+}
+
+.desp-present-jaula {
+  margin: 0 0 0.5rem;
+  font-size: 1.1rem;
+  color: #e6edf3;
+}
+
+.desp-present-jaula strong {
+  color: #ff9800;
+  font-size: 1.25rem;
+}
+
+.desp-present-estado-wrap {
+  margin-bottom: 0.35rem;
+}
+
+.desp-present-estado {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.desp-present-estado--amber { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+.desp-present-estado--blue { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
+
+.desp-present-by {
+  margin: 0;
+  font-size: 0.78rem;
+  color: #8b949e;
+}
+
+/* Preparador — botones principales */
+.desp-prep-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.desp-btn-share {
+  background: linear-gradient(135deg, #1a237e, #283593);
+  color: #fff;
+  border: none;
+  font-weight: 800;
+  font-size: 0.95rem;
+  padding: 0.85rem 1rem;
+}
+
+.desp-btn-share.is-live {
+  background: linear-gradient(135deg, #b71c1c, #c62828);
+  animation: despShareGlow 2s ease-in-out infinite;
+}
+
+@keyframes despShareGlow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(198, 40, 40, 0.4); }
+  50% { box-shadow: 0 0 0 6px rgba(198, 40, 40, 0); }
+}
+
+.desp-btn-update {
+  font-weight: 800;
+  font-size: 0.95rem;
+  padding: 0.85rem 1rem;
+}
+
+.desp-share-status {
+  margin: 0 0 0.75rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  background: rgba(86, 211, 100, 0.12);
+  border: 1px solid rgba(86, 211, 100, 0.35);
+  color: #56d364;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.desp-share-live-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.65rem;
+  border-radius: 999px;
+  background: rgba(86, 211, 100, 0.15);
+  color: #56d364;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+}
+
+@media (max-width: 768px) {
+  .desp-present-grid {
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
+
+  .desp-prep-actions {
+    grid-template-columns: 1fr;
+  }
+}

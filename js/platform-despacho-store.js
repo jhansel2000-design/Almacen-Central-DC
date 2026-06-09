@@ -5,6 +5,9 @@
   'use strict';
 
   var STORAGE_KEY = 'almacen_platform_data_despacho';
+  var broadcast = typeof global.BroadcastChannel !== 'undefined'
+    ? new global.BroadcastChannel('despacho-live-share')
+    : null;
 
   var ESTADOS = {
     en_proceso: {
@@ -76,7 +79,20 @@
       module: 'despacho',
       version: 1,
       updatedAt: nowIso(),
-      pedidos: []
+      pedidos: [],
+      liveShare: null
+    };
+  }
+
+  function normalizeLiveShare(liveShare) {
+    if (!liveShare || !liveShare.active) return null;
+    return {
+      active: true,
+      idc: formatIdc(liveShare.idc || ''),
+      jaula: String(liveShare.jaula || '').trim(),
+      estado: ESTADOS[liveShare.estado] ? liveShare.estado : 'en_proceso',
+      updatedAt: liveShare.updatedAt || nowIso(),
+      sharedBy: liveShare.sharedBy || '—'
     };
   }
 
@@ -89,6 +105,7 @@
       if (!data || !Array.isArray(data.pedidos)) return emptyPayload();
       data.module = 'despacho';
       data.pedidos = data.pedidos.map(normalizePedido);
+      data.liveShare = normalizeLiveShare(data.liveShare);
       return data;
     } catch (e) {
       return emptyPayload();
@@ -294,6 +311,79 @@
     return desde + ' → ' + hacia;
   }
 
+  function notifyLiveShare(share) {
+    try {
+      global.dispatchEvent(new CustomEvent('despacho-live-share', {
+        detail: { share: share, at: nowIso() }
+      }));
+    } catch (e) { /* noop */ }
+    if (broadcast) {
+      try { broadcast.postMessage({ at: Date.now() }); } catch (e) { /* noop */ }
+    }
+  }
+
+  function getLiveShare(data) {
+    data = data || load();
+    return data.liveShare && data.liveShare.active ? data.liveShare : null;
+  }
+
+  function isLiveShareActive(data) {
+    return !!getLiveShare(data);
+  }
+
+  function startLiveShare(idc, jaula, estado, usuario) {
+    idc = formatIdc(idc);
+    jaula = String(jaula || '').trim();
+    estado = ESTADOS[estado] && PREPARADOR_ESTADOS.indexOf(estado) >= 0 ? estado : 'en_proceso';
+    if (!idc) return { ok: false, error: 'Ingrese el IDC antes de compartir.' };
+    if (!jaula) return { ok: false, error: 'Ingrese la jaula antes de compartir.' };
+    var data = load();
+    data.liveShare = {
+      active: true,
+      idc: idc,
+      jaula: jaula,
+      estado: estado,
+      updatedAt: nowIso(),
+      sharedBy: usuario || '—'
+    };
+    save(data);
+    notifyLiveShare(data.liveShare);
+    return { ok: true, data: data, liveShare: data.liveShare };
+  }
+
+  function stopLiveShare(usuario) {
+    var data = load();
+    data.liveShare = null;
+    save(data);
+    notifyLiveShare(null);
+    return { ok: true, data: data, stoppedBy: usuario };
+  }
+
+  function syncLiveShare(idc, jaula, estado, usuario) {
+    var data = load();
+    if (!data.liveShare || !data.liveShare.active) {
+      return { ok: true, synced: false, data: data };
+    }
+    data.liveShare = {
+      active: true,
+      idc: formatIdc(idc),
+      jaula: String(jaula || '').trim(),
+      estado: ESTADOS[estado] && PREPARADOR_ESTADOS.indexOf(estado) >= 0 ? estado : data.liveShare.estado,
+      updatedAt: nowIso(),
+      sharedBy: data.liveShare.sharedBy || usuario || '—'
+    };
+    save(data);
+    notifyLiveShare(data.liveShare);
+    return { ok: true, synced: true, data: data, liveShare: data.liveShare };
+  }
+
+  function toggleLiveShare(idc, jaula, estado, usuario) {
+    if (isLiveShareActive()) {
+      return stopLiveShare(usuario);
+    }
+    return startLiveShare(idc, jaula, estado, usuario);
+  }
+
   function bindSync(callback) {
     if (!callback) return function () {};
     function onCustom(ev) {
@@ -325,6 +415,12 @@
     formatEstado: formatEstado,
     formatHistorialEntry: formatHistorialEntry,
     formatIdc: formatIdc,
+    getLiveShare: getLiveShare,
+    isLiveShareActive: isLiveShareActive,
+    startLiveShare: startLiveShare,
+    stopLiveShare: stopLiveShare,
+    syncLiveShare: syncLiveShare,
+    toggleLiveShare: toggleLiveShare,
     bindSync: bindSync
   };
 })(typeof window !== 'undefined' ? window : this);

@@ -69,40 +69,96 @@
     global.PlatformDespachoBarcode.render(svgEl, code, opts || {});
   }
 
-  function updateBarcodePanel(host, idc, jaula) {
+  function capturePrepForm(host) {
+    var idc = host.querySelector('#despIdc');
+    var jaula = host.querySelector('#despJaula');
+    var estadoEl = host.querySelector('input[name="prepEstado"]:checked');
+    if (!idc && !jaula) return null;
+    return {
+      idc: idc ? idc.value : '',
+      jaula: jaula ? jaula.value : '',
+      estado: estadoEl ? estadoEl.value : 'en_proceso'
+    };
+  }
+
+  function restorePrepForm(host, snap) {
+    if (!snap || !host) return;
+    var idc = host.querySelector('#despIdc');
+    var jaula = host.querySelector('#despJaula');
+    if (idc && snap.idc) idc.value = snap.idc;
+    if (jaula && snap.jaula) jaula.value = snap.jaula;
+    if (snap.estado) {
+      var radio = host.querySelector('input[name="prepEstado"][value="' + snap.estado + '"]');
+      if (radio) radio.checked = true;
+    }
+    updateBarcodePanel(host, snap.idc, snap.jaula, snap.estado);
+  }
+
+  function updatePrepShareUi(host, data) {
+    var btn = host.querySelector('#despBtnShareScreen');
+    var status = host.querySelector('#despShareStatus');
+    if (!btn) return;
+    data = data || DS.load();
+    var live = DS.getLiveShare(data);
+    var active = !!(live && live.active);
+    btn.classList.toggle('is-live', active);
+    btn.innerHTML = active
+      ? '⏹ Dejar de compartir pantalla'
+      : '📺 Compartir en pantalla';
+    if (status) {
+      status.hidden = !active;
+      status.textContent = active
+        ? 'Transmitiendo en vivo · ' + formatIdc(live.idc) + ' · Jaula ' + live.jaula
+        : '';
+    }
+  }
+
+  function getPrepFormValues(host) {
+    var idc = (host.querySelector('#despIdc') || {}).value;
+    var jaula = (host.querySelector('#despJaula') || {}).value;
+    var estadoEl = host.querySelector('input[name="prepEstado"]:checked');
+    return {
+      idc: idc,
+      jaula: jaula,
+      estado: estadoEl ? estadoEl.value : 'en_proceso'
+    };
+  }
+
+  function updateBarcodePanel(host, idc, jaula, estado) {
     var svg = host.querySelector('#despBarcodeSvg');
     var label = host.querySelector('#despBarcodeLabel');
     var jaulaEl = host.querySelector('#despBarcodeJaula');
+    var estadoEl = host.querySelector('#despBarcodeEstado');
     var code = formatIdc(idc);
     if (label) label.textContent = code || '—';
     if (jaulaEl) jaulaEl.textContent = jaula ? ('Jaula ' + jaula) : '';
-    renderBarcodeSvg(svg, code, { height: 88, fontSize: 22, width: 2.2 });
-    var fsSvg = host.querySelector('#despBarcodeFsSvg');
-    if (fsSvg && code) {
-      renderBarcodeSvg(fsSvg, code, { height: 120, fontSize: 28, width: 3 });
+    if (estadoEl && DS && DS.ESTADOS) {
+      var e = DS.ESTADOS[estado] || DS.ESTADOS.en_proceso;
+      estadoEl.innerHTML = estadoBadge(estado || 'en_proceso');
     }
-    var fsLabel = host.querySelector('#despBarcodeFsLabel');
-    var fsJaula = host.querySelector('#despBarcodeFsJaula');
-    if (fsLabel) fsLabel.textContent = code || '—';
-    if (fsJaula) fsJaula.textContent = jaula ? ('Jaula ' + jaula) : '';
+    renderBarcodeSvg(svg, code, { height: 96, fontSize: 22, width: 2.3 });
   }
 
   function renderPreparador(data, opts) {
-    var counts = DS.countByEstado(data.pedidos);
+    var sharing = DS.getLiveShare(data);
     return '<section class="desp-panel desp-panel--prep" aria-labelledby="despPrepTitle">' +
       '<header class="desp-panel-head">' +
-      '<div><span class="desp-eyebrow">Panel 1</span>' +
-      '<h3 id="despPrepTitle">Preparador de pedidos</h3>' +
-      '<p class="desp-panel-sub">Registre IDC- y número · comparta el código de barras en pantalla para los lectores</p></div>' +
+      '<div><span class="desp-eyebrow">Panel Preparador</span>' +
+      '<h3 id="despPrepTitle">Control de IDC y jaula</h3>' +
+      '<p class="desp-panel-sub">Actualice datos con el botón verde · comparta en pantalla para que todos vean el mismo IDC en vivo</p></div>' +
+      (sharing ? '<span class="desp-share-live-tag"><span class="desp-live-dot"></span> EN VIVO</span>' : '') +
       '</header>' +
-      '<div class="desp-prep-layout">' +
+      '<p class="desp-share-status" id="despShareStatus"' + (sharing ? '' : ' hidden') + '>' +
+      (sharing ? 'Transmitiendo en vivo · ' + esc(formatIdc(sharing.idc)) + ' · Jaula ' + esc(sharing.jaula) : '') +
+      '</p>' +
+      '<div class="desp-prep-layout desp-prep-layout--v2">' +
       '<div class="desp-prep-main">' +
-      '<form class="desp-form" id="despPrepForm" autocomplete="off">' +
+      '<form class="desp-form" id="despPrepForm" autocomplete="off" onsubmit="return false">' +
       '<div class="desp-form-grid">' +
       '<label class="desp-field"><span>ID pedido (IDC)</span>' +
-      '<input type="text" id="despIdc" name="idc" inputmode="text" placeholder="Ej. IDC-1045821" autocapitalize="characters" required></label>' +
+      '<input type="text" id="despIdc" name="idc" inputmode="text" placeholder="Ej. 1045821 → IDC-1045821" autocapitalize="characters"></label>' +
       '<label class="desp-field"><span>Número de jaula</span>' +
-      '<input type="text" id="despJaula" name="jaula" placeholder="Ej. J-12" required></label>' +
+      '<input type="text" id="despJaula" name="jaula" placeholder="Ej. J-12"></label>' +
       '<fieldset class="desp-field desp-field--estado"><legend>Estado del pedido</legend>' +
       '<div class="desp-estado-pick">' +
       DS.PREPARADOR_ESTADOS.map(function (id, i) {
@@ -113,34 +169,28 @@
       }).join('') +
       '</div></fieldset>' +
       '</div>' +
-      '<button type="submit" class="btn btn-primary desp-btn-submit">Registrar pedido</button>' +
+      '<div class="desp-prep-actions">' +
+      '<button type="button" class="btn desp-btn-share' + (sharing ? ' is-live' : '') + '" id="despBtnShareScreen">' +
+      (sharing ? '⏹ Dejar de compartir pantalla' : '📺 Compartir en pantalla') +
+      '</button>' +
+      '<button type="button" class="btn btn-primary desp-btn-update" id="despBtnUpdateIdc">🔄 Actualizar IDC y jaula</button>' +
+      '</div>' +
       '</form>' +
       '<div class="desp-recent">' +
-      '<h4>Últimos registrados</h4>' +
+      '<h4>Últimos registrados <span class="desp-muted">(tocar para cargar)</span></h4>' +
       renderPedidosMini(DS.filterPedidos(data.pedidos, { fase: 'preparacion' }).slice(0, 5)
         .concat(DS.filterPedidos(data.pedidos, { estado: 'facturado' }).slice(0, 5)).slice(0, 6)) +
       '</div></div>' +
-      '<aside class="desp-barcode-panel" id="despBarcodePanel" aria-label="Código de barras IDC">' +
-      '<h4 class="desp-barcode-title">📊 Código de barras</h4>' +
-      '<p class="desp-muted desp-barcode-hint">Comparta esta pantalla — los operadores escanean con lector mientras usted sigue trabajando aquí.</p>' +
+      '<aside class="desp-barcode-panel" id="despBarcodePanel" aria-label="Vista previa código de barras">' +
+      '<h4 class="desp-barcode-title">Vista previa local</h4>' +
+      '<p class="desp-muted desp-barcode-hint">El código se actualiza al escribir. Al compartir pantalla, todos ven la misma barra en vivo arriba.</p>' +
       '<div class="desp-barcode-stage">' +
       '<svg id="despBarcodeSvg" class="desp-barcode-svg" role="img" aria-label="Código de barras IDC"></svg>' +
       '</div>' +
       '<p class="desp-barcode-idc" id="despBarcodeLabel">—</p>' +
       '<p class="desp-barcode-jaula" id="despBarcodeJaula"></p>' +
-      '<button type="button" class="btn btn-primary desp-btn-barcode-fs" id="despBtnBarcodeFullscreen">⛶ Pantalla grande para escaneo</button>' +
-      '</aside></div>' +
-      '<div class="desp-barcode-fs-overlay" id="despBarcodeFsOverlay" hidden aria-hidden="true">' +
-      '<div class="desp-barcode-fs-dialog" role="dialog" aria-label="IDC para escaneo">' +
-      '<button type="button" class="desp-barcode-fs-close" id="despBarcodeFsClose" aria-label="Cerrar">×</button>' +
-      '<p class="desp-barcode-fs-hint">Comparta pantalla · escaneo con lector</p>' +
-      '<div class="desp-barcode-fs-stage">' +
-      '<svg id="despBarcodeFsSvg" class="desp-barcode-svg desp-barcode-svg--fs" role="img"></svg>' +
-      '</div>' +
-      '<p class="desp-barcode-fs-idc" id="despBarcodeFsLabel">—</p>' +
-      '<p class="desp-barcode-fs-jaula" id="despBarcodeFsJaula"></p>' +
-      '</div></div>' +
-      '</section>';
+      '<div id="despBarcodeEstado"></div>' +
+      '</aside></div></section>';
   }
 
   function renderPedidosMini(list) {
@@ -148,7 +198,7 @@
       return '<p class="desp-muted">Sin pedidos recientes del preparador.</p>';
     }
     return '<ul class="desp-mini-list">' + list.map(function (p) {
-      return '<li><button type="button" class="desp-mini-idc" data-idc="' + esc(p.idc) + '" data-jaula="' + esc(p.jaula) + '">' +
+      return '<li><button type="button" class="desp-mini-idc" data-idc="' + esc(p.idc) + '" data-jaula="' + esc(p.jaula) + '" data-estado="' + esc(p.estado) + '">' +
         '<strong>' + esc(formatIdc(p.idc)) + '</strong></button> · Jaula ' + esc(p.jaula) + ' · ' +
         estadoBadge(p.estado) + '</li>';
     }).join('') + '</ul>';
@@ -333,20 +383,37 @@
 
     bindEvents(host, data, opts, userName);
 
+    if (global.PlatformDespachoPresent) global.PlatformDespachoPresent.bind();
+
     if (host.querySelector('#despBarcodePanel')) {
       var idcInput = host.querySelector('#despIdc');
       var jaulaInput = host.querySelector('#despJaula');
+      var estadoEl = host.querySelector('input[name="prepEstado"]:checked');
       var initialIdc = idcInput ? idcInput.value : '';
       var initialJaula = jaulaInput ? jaulaInput.value : '';
-      if (!initialIdc && data.pedidos && data.pedidos[0]) {
+      var initialEstado = estadoEl ? estadoEl.value : 'en_proceso';
+      var live = DS.getLiveShare(data);
+      if (live && live.active) {
+        initialIdc = live.idc;
+        initialJaula = live.jaula;
+        initialEstado = live.estado;
+        if (idcInput) idcInput.value = initialIdc;
+        if (jaulaInput) jaulaInput.value = initialJaula;
+        var r = host.querySelector('input[name="prepEstado"][value="' + initialEstado + '"]');
+        if (r) r.checked = true;
+      } else if (!initialIdc && data.pedidos && data.pedidos[0]) {
         initialIdc = data.pedidos[0].idc;
         initialJaula = data.pedidos[0].jaula;
+        initialEstado = data.pedidos[0].estado;
       }
-      updateBarcodePanel(host, initialIdc, initialJaula);
+      updateBarcodePanel(host, initialIdc, initialJaula, initialEstado);
+      updatePrepShareUi(host, data);
     }
 
     unbindSync = DS.bindSync(function (fresh) {
       if (!host.isConnected) return;
+      if (global.PlatformDespachoPresent) global.PlatformDespachoPresent.refresh();
+      var formSnap = capturePrepForm(host);
       var keepView = host.querySelector('.desp-tab.active');
       var v = keepView ? keepView.getAttribute('data-desp-view') : view;
       var searchEl = host.querySelector('#despSearch');
@@ -356,6 +423,8 @@
         filterQ: searchEl ? searchEl.value : (opts.filterQ || ''),
         filterEstado: filtEl ? filtEl.value : (opts.filterEstado || '')
       }));
+      restorePrepForm(host, formSnap);
+      updatePrepShareUi(host, fresh);
     });
   }
 
@@ -372,77 +441,80 @@
     if (form) {
       var idcInput = host.querySelector('#despIdc');
       var jaulaInput = host.querySelector('#despJaula');
+      function syncPreview() {
+        var estadoEl = host.querySelector('input[name="prepEstado"]:checked');
+        updateBarcodePanel(host, idcInput ? idcInput.value : '', jaulaInput ? jaulaInput.value : '',
+          estadoEl ? estadoEl.value : 'en_proceso');
+      }
       if (idcInput) {
-        idcInput.addEventListener('input', function () {
-          updateBarcodePanel(host, idcInput.value, jaulaInput ? jaulaInput.value : '');
-        });
+        idcInput.addEventListener('input', syncPreview);
         idcInput.addEventListener('blur', function () {
           var fmt = formatIdc(idcInput.value);
           if (fmt && fmt !== idcInput.value) idcInput.value = fmt;
-          updateBarcodePanel(host, idcInput.value, jaulaInput ? jaulaInput.value : '');
+          syncPreview();
         });
       }
-      if (jaulaInput) {
-        jaulaInput.addEventListener('input', function () {
-          updateBarcodePanel(host, idcInput ? idcInput.value : '', jaulaInput.value);
+      if (jaulaInput) jaulaInput.addEventListener('input', syncPreview);
+      host.querySelectorAll('input[name="prepEstado"]').forEach(function (r) {
+        r.addEventListener('change', syncPreview);
+      });
+
+      var btnShare = host.querySelector('#despBtnShareScreen');
+      if (btnShare) {
+        btnShare.addEventListener('click', function () {
+          var vals = getPrepFormValues(host);
+          var res = DS.toggleLiveShare(vals.idc, vals.jaula, vals.estado, userName);
+          if (!res.ok) {
+            toast(res.error, 'warn');
+            return;
+          }
+          if (DS.isLiveShareActive(res.data)) {
+            toast('Pantalla compartida en vivo — todos ven el mismo IDC', 'success');
+          } else {
+            toast('Compartir pantalla desactivado', 'info');
+          }
+          if (global.PlatformDespachoPresent) global.PlatformDespachoPresent.refresh();
+          updatePrepShareUi(host, res.data);
         });
       }
 
-      form.addEventListener('submit', function (ev) {
-        ev.preventDefault();
-        var idc = (host.querySelector('#despIdc') || {}).value;
-        var jaula = (host.querySelector('#despJaula') || {}).value;
-        var estadoEl = host.querySelector('input[name="prepEstado"]:checked');
-        var estado = estadoEl ? estadoEl.value : 'en_proceso';
-        var res = DS.registrarPedido(idc, jaula, estado, userName);
-        if (!res.ok) {
-          toast(res.error, 'warn');
-          return;
-        }
-        toast(res.updated ? 'Pedido actualizado' : 'Pedido registrado', 'success');
-        form.reset();
-        var firstRadio = host.querySelector('input[name="prepEstado"]');
-        if (firstRadio) firstRadio.checked = true;
-        if (res.pedido) {
-          updateBarcodePanel(host, res.pedido.idc, res.pedido.jaula);
-        }
-        render(host, res.data, opts);
-      });
+      var btnUpdate = host.querySelector('#despBtnUpdateIdc');
+      if (btnUpdate) {
+        btnUpdate.addEventListener('click', function () {
+          var vals = getPrepFormValues(host);
+          var res = DS.registrarPedido(vals.idc, vals.jaula, vals.estado, userName);
+          if (!res.ok) {
+            toast(res.error, 'warn');
+            return;
+          }
+          if (DS.isLiveShareActive()) {
+            DS.syncLiveShare(vals.idc, vals.jaula, vals.estado, userName);
+            if (global.PlatformDespachoPresent) global.PlatformDespachoPresent.refresh();
+          }
+          toast(res.updated ? 'IDC y jaula actualizados' : 'IDC registrado', 'success');
+          updateBarcodePanel(host, res.pedido.idc, res.pedido.jaula, res.pedido.estado);
+          updatePrepShareUi(host, DS.load());
+          var snap = capturePrepForm(host);
+          render(host, res.data, opts);
+          restorePrepForm(host, snap);
+        });
+      }
     }
 
     host.querySelectorAll('.desp-mini-idc').forEach(function (btn) {
       btn.addEventListener('click', function () {
-        updateBarcodePanel(host, btn.getAttribute('data-idc'), btn.getAttribute('data-jaula'));
+        var idc = btn.getAttribute('data-idc');
+        var jaula = btn.getAttribute('data-jaula');
+        var estado = btn.getAttribute('data-estado') || 'en_proceso';
+        var idcEl = host.querySelector('#despIdc');
+        var jaulaEl = host.querySelector('#despJaula');
+        if (idcEl) idcEl.value = formatIdc(idc);
+        if (jaulaEl) jaulaEl.value = jaula || '';
+        var radio = host.querySelector('input[name="prepEstado"][value="' + estado + '"]');
+        if (radio) radio.checked = true;
+        updateBarcodePanel(host, idc, jaula, estado);
       });
     });
-
-    var fsBtn = host.querySelector('#despBtnBarcodeFullscreen');
-    var fsOverlay = host.querySelector('#despBarcodeFsOverlay');
-    var fsClose = host.querySelector('#despBarcodeFsClose');
-    if (fsBtn && fsOverlay) {
-      fsBtn.addEventListener('click', function () {
-        var idc = (host.querySelector('#despIdc') || {}).value;
-        var jaula = (host.querySelector('#despJaula') || {}).value;
-        if (!formatIdc(idc) && host.querySelector('#despBarcodeLabel')) {
-          idc = host.querySelector('#despBarcodeLabel').textContent;
-        }
-        updateBarcodePanel(host, idc, jaula);
-        fsOverlay.hidden = false;
-        fsOverlay.setAttribute('aria-hidden', 'false');
-      });
-    }
-    if (fsClose && fsOverlay) {
-      fsClose.addEventListener('click', function () {
-        fsOverlay.hidden = true;
-        fsOverlay.setAttribute('aria-hidden', 'true');
-      });
-      fsOverlay.addEventListener('click', function (ev) {
-        if (ev.target === fsOverlay) {
-          fsOverlay.hidden = true;
-          fsOverlay.setAttribute('aria-hidden', 'true');
-        }
-      });
-    }
 
     host.querySelectorAll('.desp-estado-select').forEach(function (sel) {
       sel.addEventListener('change', function () {
