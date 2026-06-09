@@ -111,17 +111,58 @@
   function mergeAveriasSnapshots(local, remote) {
     if (!remote) return local || EMPTY;
     if (!local) return remote;
+
+    function recordTime(r) {
+      if (!r) return 0;
+      return Date.parse(r.correctionDate) || Date.parse(r.fechaRegistro) || Date.parse(r.fecha) ||
+        Date.parse(r.reportDate) || (typeof r.id === 'number' ? r.id : parseInt(r.id, 10)) || 0;
+    }
+
+    function pickBetterRecord(a, b) {
+      if (!a) return b;
+      if (!b) return a;
+      if (a.status === 'CORREGIDO' && b.status !== 'CORREGIDO') return a;
+      if (b.status === 'CORREGIDO' && a.status !== 'CORREGIDO') return b;
+      return recordTime(a) >= recordTime(b) ? a : b;
+    }
+
     function mergeArr(a, b) {
       var map = {};
       (a || []).forEach(function (x) {
-        if (x && x.id != null) map[String(x.id)] = x;
+        if (x && x.id != null) {
+          var k = String(x.id);
+          map[k] = map[k] ? pickBetterRecord(map[k], x) : x;
+        }
       });
       (b || []).forEach(function (x) {
-        if (x && x.id != null) map[String(x.id)] = x;
+        if (x && x.id != null) {
+          var k = String(x.id);
+          map[k] = map[k] ? pickBetterRecord(map[k], x) : x;
+        }
       });
       return Object.keys(map).map(function (k) { return map[k]; })
         .sort(function (x, y) { return (y.id || 0) - (x.id || 0); });
     }
+
+    function mergeEquipmentRegistry(lReg, rReg) {
+      var keys = {};
+      var out = {};
+      Object.keys(lReg || {}).forEach(function (k) { keys[k] = true; });
+      Object.keys(rReg || {}).forEach(function (k) { keys[k] = true; });
+      Object.keys(keys).forEach(function (k) {
+        var l = lReg && lReg[k];
+        var r = rReg && rReg[k];
+        if (!l) { out[k] = r; return; }
+        if (!r) { out[k] = l; return; }
+        if (l.estado === 'DISPONIBLE' && r.estado === 'NO_DISPONIBLE') { out[k] = l; return; }
+        if (r.estado === 'DISPONIBLE' && l.estado === 'NO_DISPONIBLE') { out[k] = r; return; }
+        var lt = Date.parse(l.ultimaActualizacion) || 0;
+        var rt = Date.parse(r.ultimaActualizacion) || 0;
+        out[k] = lt >= rt ? l : r;
+      });
+      return out;
+    }
+
     var lTime = Date.parse(local.updatedAt) || 0;
     var rTime = Date.parse(remote.updatedAt) || 0;
     return {
@@ -132,7 +173,7 @@
       securityIncidents: mergeArr(local.securityIncidents, remote.securityIncidents),
       audits5s: mergeArr(local.audits5s, remote.audits5s),
       equipmentInspections: mergeArr(local.equipmentInspections, remote.equipmentInspections),
-      equipmentRegistry: Object.assign({}, local.equipmentRegistry || {}, remote.equipmentRegistry || {})
+      equipmentRegistry: mergeEquipmentRegistry(local.equipmentRegistry, remote.equipmentRegistry)
     };
   }
 

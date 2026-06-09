@@ -194,18 +194,31 @@
         }
 
         function ensureRecordStatuses() {
-            allIncidences.forEach(function (r) {
+            var base = Date.now();
+            allIncidences.forEach(function (r, idx) {
+                if (r.id == null) r.id = base + idx;
                 if (!r.status) r.status = 'PENDIENTE';
             });
-            allDamages.forEach(function (r) {
+            allDamages.forEach(function (r, idx) {
+                if (r.id == null) r.id = base + 10000 + idx;
                 if (!r.status) r.status = 'PENDIENTE';
             });
-            allSecurity.forEach(function (r) {
+            allSecurity.forEach(function (r, idx) {
+                if (r.id == null) r.id = base + 20000 + idx;
                 if (!r.status) r.status = 'PENDIENTE';
             });
-            allAudits.forEach(function (r) {
+            allAudits.forEach(function (r, idx) {
+                if (r.id == null) r.id = base + 30000 + idx;
                 if (!r.status) r.status = 'PENDIENTE';
             });
+        }
+
+        function sameRecordId(a, b) {
+            return String(a) === String(b);
+        }
+
+        function findById(list, id) {
+            return list.find(function (r) { return sameRecordId(r.id, id); });
         }
 
         function writeIndividualKeys() {
@@ -221,6 +234,7 @@
             if (applyingRemoteSnapshot) return;
             try {
                 applyingRemoteSnapshot = true;
+                ensureRecordStatuses();
                 writeIndividualKeys();
                 var snap = buildSnapshot();
                 localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(snap));
@@ -1112,30 +1126,31 @@
 
         function markRecordCorrected(module, id) {
             playSelectFeedback();
+            if (id == null || id === '') return;
             pendingCorrection = { module: module, id: id };
             var title = 'Confirmar corrección';
             var message = '¿Confirmar que este registro fue corregido?';
 
             if (module === 'pallets') {
-                var inc = allIncidences.find(function (i) { return i.id === id; });
+                var inc = findById(allIncidences, id);
                 title = 'Corregir paleta';
                 message = inc
                     ? '¿Confirmar corrección de la incidencia en ' + inc.location + ' (' + inc.product + ')?'
                     : message;
             } else if (module === 'damages') {
-                var d = allDamages.find(function (x) { return x.id === id; });
+                var d = findById(allDamages, id);
                 title = 'Corregir avería';
                 message = d
                     ? '¿Confirmar corrección de avería ' + d.codigo + ' en ' + d.area + '?'
                     : message;
             } else if (module === 'security') {
-                var s = allSecurity.find(function (x) { return x.id === id; });
+                var s = findById(allSecurity, id);
                 title = 'Corregir incidencia de seguridad';
                 message = s
                     ? '¿Confirmar corrección en ' + s.area + ' (' + s.tipo + ')?'
                     : message;
             } else if (module === 'audit') {
-                var a = allAudits.find(function (x) { return x.id === id; });
+                var a = findById(allAudits, id);
                 title = 'Corregir hallazgo 5S';
                 message = a
                     ? '¿Confirmar corrección del pasillo ' + a.pasillo + ' (turno ' + a.turno + ')?'
@@ -1205,6 +1220,7 @@
         }
 
         function filterDamagesPending() {
+            ensureRecordStatuses();
             var filterEl = document.getElementById('damagesCorrectFilter');
             var filter = filterEl ? filterEl.value.toUpperCase() : '';
             var pending = allDamages.filter(function (d) {
@@ -1232,6 +1248,7 @@
         }
 
         function filterSecurityPending() {
+            ensureRecordStatuses();
             var filterEl = document.getElementById('securityCorrectFilter');
             var filter = filterEl ? filterEl.value.toUpperCase() : '';
             var pending = allSecurity.filter(function (s) {
@@ -1265,6 +1282,7 @@
         }
 
         function filterAuditPending() {
+            ensureRecordStatuses();
             var filterEl = document.getElementById('auditCorrectFilter');
             var filter = filterEl ? filterEl.value.toUpperCase() : '';
             var pending = allAudits.filter(function (a) {
@@ -1309,7 +1327,7 @@
                     '<div class="incidence-card-row"><span class="incidence-card-label">Tipo:</span><span class="incidence-card-value">' + e.data.tipo + '</span></div>' +
                     '<div class="incidence-card-row"><span class="incidence-card-label">Estado:</span><span class="incidence-card-value">No disponible</span></div>' +
                     '<div class="incidence-card-row"><span class="incidence-card-label">Actualizado:</span><span class="incidence-card-value">' + (e.data.ultimaActualizacion || '—') + '</span></div>' +
-                    '<button class="btn-correct-incidence" onclick="markRecordCorrected(\'equipment\', \'' + e.codigo.replace(/'/g, "\\'") + '\')">✅ Equipo corregido</button>' +
+                    '<button class="btn-correct-incidence" onclick="markRecordCorrected(\'equipment\', ' + JSON.stringify(String(e.codigo)) + ')">✅ Equipo corregido</button>' +
                     '</div>';
             }).join('');
         }
@@ -1323,45 +1341,51 @@
             var module = pendingCorrection.module;
             var id = pendingCorrection.id;
             var ts = correctionTimestamp();
+            var corrected = false;
 
             if (module === 'pallets') {
-                var inc = allIncidences.find(function (i) { return i.id === id; });
+                var inc = findById(allIncidences, id);
                 if (inc) {
                     inc.status = 'CORREGIDO';
                     inc.correctedBy = currentEmployee.name;
                     inc.correctionDate = ts;
                     saveData();
                     filterIncidences();
+                    corrected = true;
                 }
             } else if (module === 'damages') {
-                var dmg = allDamages.find(function (d) { return d.id === id; });
+                var dmg = findById(allDamages, id);
                 if (dmg) {
                     dmg.status = 'CORREGIDO';
                     dmg.correctedBy = currentEmployee.name;
                     dmg.correctionDate = ts;
                     saveDamagesData();
                     filterDamagesPending();
+                    corrected = true;
                 }
             } else if (module === 'security') {
-                var sec = allSecurity.find(function (s) { return s.id === id; });
+                var sec = findById(allSecurity, id);
                 if (sec) {
                     sec.status = 'CORREGIDO';
                     sec.correctedBy = currentEmployee.name;
                     sec.correctionDate = ts;
                     saveSecurityData();
                     filterSecurityPending();
+                    corrected = true;
                 }
             } else if (module === 'audit') {
-                var aud = allAudits.find(function (a) { return a.id === id; });
+                var aud = findById(allAudits, id);
                 if (aud) {
                     aud.status = 'CORREGIDO';
                     aud.correctedBy = currentEmployee.name;
                     aud.correctionDate = ts;
                     saveAuditsData();
                     filterAuditPending();
+                    corrected = true;
                 }
             } else if (module === 'equipment') {
-                var eq = equipmentRegistry[id];
+                var codigo = String(id);
+                var eq = equipmentRegistry[codigo];
                 if (eq) {
                     eq.estado = 'DISPONIBLE';
                     eq.ultimaActualizacion = ts;
@@ -1369,11 +1393,18 @@
                     saveEquipmentData();
                     updateEquipmentStats();
                     renderEquipmentCorrectList();
+                    corrected = true;
                 }
             }
 
             pendingCorrection = null;
             closeModal();
+
+            if (corrected && global.PlatformToast) {
+                global.PlatformToast.success('Registro marcado como corregido', 3000);
+            } else if (!corrected) {
+                alert('No se pudo corregir el registro. Recargue la página e intente de nuevo.');
+            }
         }
 
         function getSeverityEmoji(type) {
@@ -1573,7 +1604,8 @@
         // Modal
         function closeModal() {
             pendingCorrection = null;
-            document.getElementById('modal').classList.remove('show');
+            var modal = document.getElementById('modal');
+            if (modal) modal.classList.remove('show');
         }
 
         function confirmModal() {
