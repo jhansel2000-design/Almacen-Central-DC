@@ -33,21 +33,32 @@
   var serverReachable = false;
   var siteConfigPollTimer = null;
   var lastRemoteUpdatedAt = '';
+  var lastAppliedContentSig = '';
+  var lastBurstAt = 0;
   var broadcast = typeof global.BroadcastChannel !== 'undefined'
     ? new global.BroadcastChannel('averias-dc-live')
     : null;
 
-  function snapshotSignature(snap) {
+  function contentSignature(snap) {
     if (!snap) return '';
+    function rowSig(list) {
+      return (list || []).map(function (r) {
+        if (!r) return '';
+        return String(r.id) + '@' + String(r.status || 'PENDIENTE').toUpperCase();
+      }).sort().join('|');
+    }
     return [
-      snap.updatedAt || '',
-      (snap.incidences || []).length,
-      (snap.damages || []).length,
-      (snap.securityIncidents || []).length,
-      (snap.audits5s || []).length,
-      Object.keys(snap.equipmentRegistry || {}).length,
-      snap.localSeq || 0
-    ].join(':');
+      rowSig(snap.incidences),
+      rowSig(snap.damages),
+      rowSig(snap.securityIncidents),
+      rowSig(snap.audits5s),
+      String((snap.equipmentInspections || []).length),
+      Object.keys(snap.equipmentRegistry || {}).sort().join(',')
+    ].join('~');
+  }
+
+  function snapshotSignature(snap) {
+    return contentSignature(snap);
   }
 
   function applyCloudOverride(cfg) {
@@ -143,7 +154,7 @@
   function pollIntervalMs() {
     var sec = (siteConfig && siteConfig.pollSeconds) || 1;
     if (siteConfig && siteConfig.realtime === false) sec = 8;
-    return Math.max(0.4, sec) * 1000;
+    return Math.max(1, sec) * 1000;
   }
 
   function mergeAveriasSnapshots(local, remote) {
@@ -264,35 +275,27 @@
     } else if (current && source === 'jsonbin') {
       snap = mergeAveriasSnapshots(snap, current);
     }
+    var contentSig = contentSignature(snap);
+    if (contentSig === lastAppliedContentSig) return false;
     var json = JSON.stringify(snap);
-    var sig = snapshotSignature(snap);
     var remoteAt = String(snap.updatedAt || '');
-    var storageChanged = json !== lastAppliedJson;
-    var remoteNewer = remoteAt && remoteAt !== lastRemoteUpdatedAt;
-    var memoryStale = false;
-    if (global.PlatformAveriasUI && global.PlatformAveriasUI.getSnapshotSignature) {
-      memoryStale = global.PlatformAveriasUI.getSnapshotSignature() !== sig;
-    }
-    var forceUi = source === 'jsonbin' && (remoteNewer || memoryStale);
-    if (!storageChanged && !remoteNewer && !memoryStale && !forceUi) return false;
     try {
-      if (storageChanged || remoteNewer) {
-        global.localStorage.setItem(SNAPSHOT_KEY, json);
-        global.localStorage.setItem('averias_dc_incidences', JSON.stringify(snap.incidences || []));
-        global.localStorage.setItem('averias_dc_damages', JSON.stringify(snap.damages || []));
-        global.localStorage.setItem('averias_dc_securityIncidents', JSON.stringify(snap.securityIncidents || []));
-        global.localStorage.setItem('averias_dc_audits5s', JSON.stringify(snap.audits5s || []));
-        global.localStorage.setItem('averias_dc_equipmentInspections', JSON.stringify(snap.equipmentInspections || []));
-        global.localStorage.setItem('averias_dc_equipmentRegistry', JSON.stringify(snap.equipmentRegistry || {}));
-        lastAppliedJson = json;
-        lastRemoteUpdatedAt = remoteAt;
-      }
+      global.localStorage.setItem(SNAPSHOT_KEY, json);
+      global.localStorage.setItem('averias_dc_incidences', JSON.stringify(snap.incidences || []));
+      global.localStorage.setItem('averias_dc_damages', JSON.stringify(snap.damages || []));
+      global.localStorage.setItem('averias_dc_securityIncidents', JSON.stringify(snap.securityIncidents || []));
+      global.localStorage.setItem('averias_dc_audits5s', JSON.stringify(snap.audits5s || []));
+      global.localStorage.setItem('averias_dc_equipmentInspections', JSON.stringify(snap.equipmentInspections || []));
+      global.localStorage.setItem('averias_dc_equipmentRegistry', JSON.stringify(snap.equipmentRegistry || {}));
+      lastAppliedJson = json;
+      lastRemoteUpdatedAt = remoteAt;
+      lastAppliedContentSig = contentSig;
       var uiRefreshed = false;
       if (global.PlatformAveriasUI && global.PlatformAveriasUI.applyRemoteSnapshot) {
         uiRefreshed = global.PlatformAveriasUI.applyRemoteSnapshot(snap, { silent: !!silent });
       }
-      if (!silent && (storageChanged || remoteNewer || memoryStale || uiRefreshed)) {
-        notifyUpdated('apply', { uiRefreshed: uiRefreshed, signature: sig });
+      if (!silent && uiRefreshed) {
+        notifyUpdated('apply', { uiRefreshed: uiRefreshed, signature: contentSig });
       }
       updateLiveIndicator(true);
       return true;
@@ -510,9 +513,9 @@
           merged = mergeAveriasSnapshots(merged, jsonBinSnap);
         }
         if (merged) {
-          var prevSig = snapshotSignature(getLocalSnapshot());
-          applySnapshotToLocal(merged, false, jsonBinSnap ? 'jsonbin' : 'merge');
-          if (snapshotSignature(merged) !== prevSig || jsonBinSnap) {
+          var prevContentSig = contentSignature(getLocalSnapshot() || EMPTY);
+          var applied = applySnapshotToLocal(merged, false, jsonBinSnap ? 'jsonbin' : 'merge');
+          if (applied && contentSignature(merged) !== prevContentSig) {
             schedulePullBurst();
           }
           lastPullAt = Date.now();
@@ -526,7 +529,10 @@
   }
 
   function schedulePullBurst() {
-    [100, 300, 600, 1200, 2500, 5000].forEach(function (ms) {
+    var now = Date.now();
+    if (now - lastBurstAt < 4000) return;
+    lastBurstAt = now;
+    [300, 900, 2000].forEach(function (ms) {
       global.setTimeout(function () { pullAll(); }, ms);
     });
   }
@@ -858,6 +864,12 @@
         return tryPromoteLocalCloudConfig();
       });
     }).then(function () {
+      var local = getLocalSnapshot();
+      if (local) {
+        lastAppliedContentSig = contentSignature(local);
+        lastAppliedJson = JSON.stringify(local);
+        lastRemoteUpdatedAt = String(local.updatedAt || '');
+      }
       return pullAll();
     }).then(function () {
       startPolling();
@@ -945,6 +957,7 @@
 
   global.PlatformAveriasCloudSync = {
     mergeAveriasSnapshots: mergeAveriasSnapshots,
+    contentSignature: contentSignature,
     pull: pullAll,
     push: pushSnapshot,
     wipeAll: wipeAll,

@@ -365,6 +365,7 @@
                     if (applySnapshot(JSON.parse(snapRaw))) {
                         if (ensureRecordStatuses()) persistSnapshot({ force: true });
                         updateAllStats();
+                        lastUiSignature = contentSignature(buildSnapshot());
                         return;
                     }
                 } catch (e) { /* fallback legacy */ }
@@ -373,6 +374,7 @@
             ensureRecordStatuses();
             persistSnapshot({ force: true });
             updateAllStats();
+            lastUiSignature = contentSignature(buildSnapshot());
         }
 
         function updateAllStats() {
@@ -411,18 +413,23 @@
 
         var reloadSyncTimer = null;
         var lastUiSignature = '';
+        var lastNewReportToastAt = 0;
 
-        function snapshotSignature(snap) {
+        function contentSignature(snap) {
+            if (global.PlatformAveriasCloudSync && global.PlatformAveriasCloudSync.contentSignature) {
+                return global.PlatformAveriasCloudSync.contentSignature(snap);
+            }
             if (!snap) return '';
             return [
-                snap.updatedAt || '',
                 (snap.incidences || []).length,
                 (snap.damages || []).length,
                 (snap.securityIncidents || []).length,
-                (snap.audits5s || []).length,
-                Object.keys(snap.equipmentRegistry || {}).length,
-                snap.localSeq || 0
+                (snap.audits5s || []).length
             ].join(':');
+        }
+
+        function snapshotSignature(snap) {
+            return contentSignature(snap);
         }
 
         function countReports(snap) {
@@ -440,7 +447,7 @@
         function applyRemoteSnapshot(snap, opts) {
             opts = opts || {};
             if (!snap) return false;
-            var sigBefore = lastUiSignature;
+            var sigBefore = lastUiSignature || contentSignature(buildSnapshot());
             var countsBefore = countReports(buildSnapshot());
             isLoadingRemoteSnapshot = true;
             try {
@@ -449,26 +456,27 @@
             } finally {
                 isLoadingRemoteSnapshot = false;
             }
-            lastUiSignature = snapshotSignature(buildSnapshot());
+            lastUiSignature = contentSignature(buildSnapshot());
             var countsAfter = countReports(buildSnapshot());
             var changed = lastUiSignature !== sigBefore ||
                 countsAfter.total !== countsBefore.total ||
                 countsAfter.pending !== countsBefore.pending;
+            if (!changed) return false;
             updateAllStats();
             refreshCurrentView();
             updateLiveChip(true);
-            if (!opts.silent && changed && global.PlatformToast) {
-                if (countsAfter.total > countsBefore.total) {
+            if (!opts.silent && countsAfter.total > countsBefore.total && global.PlatformToast) {
+                var now = Date.now();
+                if (now - lastNewReportToastAt > 2500) {
+                    lastNewReportToastAt = now;
                     global.PlatformToast.info('Nuevo reporte recibido — pantalla actualizada', 2800);
-                } else {
-                    global.PlatformToast.info('Datos actualizados en vivo', 1800);
                 }
             }
-            return changed;
+            return true;
         }
 
         function getSnapshotSignature() {
-            return snapshotSignature(buildSnapshot());
+            return contentSignature(buildSnapshot());
         }
 
         function updateLiveChip(active) {
