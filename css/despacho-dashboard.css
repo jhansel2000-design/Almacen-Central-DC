@@ -492,3 +492,227 @@ html[data-theme="light"] .desp-panel {
 html[data-theme="light"] .desp-flujo {
   background: #f1f5f9;
 }
+
+/* Preparador — layout con código de barras */
+.desp-prep-layout {
+  display: grid;
+  grid-template-columns: 1fr min(320px, 38%);
+  gap: 1.25rem;
+  align-items: start;
+}
+
+.desp-barcode-panel {
+  padding: 1rem 1.1rem;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 152, 0, 0.35);
+  background: rgba(255, 152, 0, 0.06);
+  position: sticky;
+  top: 0.75rem;
+}
+
+.desp-barcode-title {
+  margin: 0 0 0.35rem;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.desp-barcode-hint {
+  margin: 0 0 0.75rem;
+  font-size: 0.78rem;
+}
+
+.desp-barcode-stage {
+  background: #fff;
+  border-radius: 10px;
+  padding: 0.65rem 0.5rem 0.35rem;
+  text-align: center;
+  min-height: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.desp-barcode-svg {
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+}
+
+.desp-barcode-idc {
+  margin: 0.65rem 0 0.15rem;
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-align: center;
+  color: var(--text);
+}
+
+.desp-barcode-jaula {
+  margin: 0 0 0.75rem;
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.desp-btn-barcode-fs {
+  width: 100%;
+}
+
+.desp-mini-idc {
+  background: none;
+  border: none;
+  padding: 0;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+}
+
+.desp-mini-idc:hover strong {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+/* Pantalla grande para escaneo */
+.desp-barcode-fs-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.88);
+}
+
+.desp-barcode-fs-overlay[hidden] {
+  display: none !important;
+}
+
+.desp-barcode-fs-dialog {
+  position: relative;
+  width: min(920px, 100%);
+  padding: 1.5rem 1.25rem 2rem;
+  border-radius: 18px;
+  background: #fff;
+  text-align: center;
+  color: #111;
+}
+
+.desp-barcode-fs-close {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 8px;
+  background: #eee;
+  font-size: 1.4rem;
+  cursor: pointer;
+}
+
+.desp-barcode-fs-hint {
+  margin: 0 0 1rem;
+  font-size: 0.95rem;
+  color: #555;
+}
+
+.desp-barcode-fs-stage {
+  padding: 1rem;
+  background: #fff;
+}
+
+.desp-barcode-svg--fs {
+  max-width: 100%;
+}
+
+.desp-barcode-fs-idc {
+  margin: 1rem 0 0.25rem;
+  font-size: clamp(1.8rem, 5vw, 2.8rem);
+  font-weight: 900;
+  letter-spacing: 0.06em;
+}
+
+.desp-barcode-fs-jaula {
+  margin: 0;
+  font-size: 1.2rem;
+  color: #444;
+}
+
+/* Validador — mapa de jaulas */
+.desp-jaula-map {
+  margin-bottom: 1rem;
+  padding: 0.85rem 1rem;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.desp-jaula-map h4 {
+  margin: 0 0 0.25rem;
+  font-size: 0.95rem;
+}
+
+.desp-jaula-map-sub {
+  margin: 0 0 0.75rem;
+  font-size: 0.78rem;
+}
+
+.desp-jaula-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 0.65rem;
+}
+
+.desp-jaula-card {
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
+  overflow: hidden;
+}
+
+.desp-jaula-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.65rem;
+  background: rgba(255, 152, 0, 0.12);
+  border-bottom: 1px solid var(--border);
+}
+
+.desp-jaula-num {
+  font-weight: 800;
+  font-size: 0.88rem;
+}
+
+.desp-jaula-count {
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.desp-jaula-idc-list {
+  margin: 0;
+  padding: 0.45rem 0.65rem 0.55rem;
+  list-style: none;
+}
+
+.desp-jaula-idc-list li {
+  padding: 0.3rem 0;
+  font-size: 0.82rem;
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.06);
+}
+
+.desp-jaula-idc-list li:last-child {
+  border-bottom: none;
+}
+
+@media (max-width: 900px) {
+  .desp-prep-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .desp-barcode-panel {
+    position: static;
+  }
+}

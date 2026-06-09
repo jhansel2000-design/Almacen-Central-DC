@@ -99,7 +99,7 @@
     p = p || {};
     return {
       id: p.id || uid(),
-      idc: String(p.idc || '').trim(),
+      idc: formatIdc(p.idc || ''),
       jaula: String(p.jaula || '').trim(),
       estado: ESTADOS[p.estado] ? p.estado : 'en_proceso',
       createdAt: p.createdAt || nowIso(),
@@ -140,15 +140,25 @@
   }
 
   function findByIdc(pedidos, idc) {
-    var n = String(idc || '').trim().toLowerCase();
+    var n = formatIdc(idc).toLowerCase();
     if (!n) return -1;
     return (pedidos || []).findIndex(function (p) {
-      return String(p.idc || '').trim().toLowerCase() === n;
+      return formatIdc(p.idc).toLowerCase() === n;
     });
   }
 
+  function formatIdc(raw) {
+    var s = String(raw || '').trim().toUpperCase().replace(/\s+/g, '');
+    if (!s) return '';
+    if (/^IDC-\d/.test(s)) return s;
+    if (/^IDC\d/.test(s)) return 'IDC-' + s.slice(3);
+    if (/^\d+$/.test(s)) return 'IDC-' + s;
+    if (s.indexOf('IDC-') === 0) return s;
+    return 'IDC-' + s.replace(/^IDC-?/, '');
+  }
+
   function registrarPedido(idc, jaula, estado, usuario) {
-    idc = String(idc || '').trim();
+    idc = formatIdc(idc);
     jaula = String(jaula || '').trim();
     estado = ESTADOS[estado] && PREPARADOR_ESTADOS.indexOf(estado) >= 0 ? estado : 'en_proceso';
     usuario = usuario || '—';
@@ -314,6 +324,7 @@
     countByEstado: countByEstado,
     formatEstado: formatEstado,
     formatHistorialEntry: formatHistorialEntry,
+    formatIdc: formatIdc,
     bindSync: bindSync
   };
 })(typeof window !== 'undefined' ? window : this);

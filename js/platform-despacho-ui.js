@@ -55,18 +55,52 @@
       '</div>';
   }
 
+  function formatIdc(raw) {
+    return DS && DS.formatIdc ? DS.formatIdc(raw) : String(raw || '').trim();
+  }
+
+  function renderBarcodeSvg(svgEl, idc, opts) {
+    if (!svgEl || !global.PlatformDespachoBarcode) return;
+    var code = formatIdc(idc);
+    if (!code) {
+      svgEl.innerHTML = '';
+      return;
+    }
+    global.PlatformDespachoBarcode.render(svgEl, code, opts || {});
+  }
+
+  function updateBarcodePanel(host, idc, jaula) {
+    var svg = host.querySelector('#despBarcodeSvg');
+    var label = host.querySelector('#despBarcodeLabel');
+    var jaulaEl = host.querySelector('#despBarcodeJaula');
+    var code = formatIdc(idc);
+    if (label) label.textContent = code || '—';
+    if (jaulaEl) jaulaEl.textContent = jaula ? ('Jaula ' + jaula) : '';
+    renderBarcodeSvg(svg, code, { height: 88, fontSize: 22, width: 2.2 });
+    var fsSvg = host.querySelector('#despBarcodeFsSvg');
+    if (fsSvg && code) {
+      renderBarcodeSvg(fsSvg, code, { height: 120, fontSize: 28, width: 3 });
+    }
+    var fsLabel = host.querySelector('#despBarcodeFsLabel');
+    var fsJaula = host.querySelector('#despBarcodeFsJaula');
+    if (fsLabel) fsLabel.textContent = code || '—';
+    if (fsJaula) fsJaula.textContent = jaula ? ('Jaula ' + jaula) : '';
+  }
+
   function renderPreparador(data, opts) {
     var counts = DS.countByEstado(data.pedidos);
     return '<section class="desp-panel desp-panel--prep" aria-labelledby="despPrepTitle">' +
       '<header class="desp-panel-head">' +
       '<div><span class="desp-eyebrow">Panel 1</span>' +
       '<h3 id="despPrepTitle">Preparador de pedidos</h3>' +
-      '<p class="desp-panel-sub">Registre IDC y jaula · estados: en proceso o facturado</p></div>' +
+      '<p class="desp-panel-sub">Registre IDC- y número · comparta el código de barras en pantalla para los lectores</p></div>' +
       '</header>' +
+      '<div class="desp-prep-layout">' +
+      '<div class="desp-prep-main">' +
       '<form class="desp-form" id="despPrepForm" autocomplete="off">' +
       '<div class="desp-form-grid">' +
       '<label class="desp-field"><span>ID pedido (IDC)</span>' +
-      '<input type="text" id="despIdc" name="idc" inputmode="numeric" placeholder="Ej. 1045821" required></label>' +
+      '<input type="text" id="despIdc" name="idc" inputmode="text" placeholder="Ej. IDC-1045821" autocapitalize="characters" required></label>' +
       '<label class="desp-field"><span>Número de jaula</span>' +
       '<input type="text" id="despJaula" name="jaula" placeholder="Ej. J-12" required></label>' +
       '<fieldset class="desp-field desp-field--estado"><legend>Estado del pedido</legend>' +
@@ -85,7 +119,28 @@
       '<h4>Últimos registrados</h4>' +
       renderPedidosMini(DS.filterPedidos(data.pedidos, { fase: 'preparacion' }).slice(0, 5)
         .concat(DS.filterPedidos(data.pedidos, { estado: 'facturado' }).slice(0, 5)).slice(0, 6)) +
-      '</div></section>';
+      '</div></div>' +
+      '<aside class="desp-barcode-panel" id="despBarcodePanel" aria-label="Código de barras IDC">' +
+      '<h4 class="desp-barcode-title">📊 Código de barras</h4>' +
+      '<p class="desp-muted desp-barcode-hint">Comparta esta pantalla — los operadores escanean con lector mientras usted sigue trabajando aquí.</p>' +
+      '<div class="desp-barcode-stage">' +
+      '<svg id="despBarcodeSvg" class="desp-barcode-svg" role="img" aria-label="Código de barras IDC"></svg>' +
+      '</div>' +
+      '<p class="desp-barcode-idc" id="despBarcodeLabel">—</p>' +
+      '<p class="desp-barcode-jaula" id="despBarcodeJaula"></p>' +
+      '<button type="button" class="btn btn-primary desp-btn-barcode-fs" id="despBtnBarcodeFullscreen">⛶ Pantalla grande para escaneo</button>' +
+      '</aside></div>' +
+      '<div class="desp-barcode-fs-overlay" id="despBarcodeFsOverlay" hidden aria-hidden="true">' +
+      '<div class="desp-barcode-fs-dialog" role="dialog" aria-label="IDC para escaneo">' +
+      '<button type="button" class="desp-barcode-fs-close" id="despBarcodeFsClose" aria-label="Cerrar">×</button>' +
+      '<p class="desp-barcode-fs-hint">Comparta pantalla · escaneo con lector</p>' +
+      '<div class="desp-barcode-fs-stage">' +
+      '<svg id="despBarcodeFsSvg" class="desp-barcode-svg desp-barcode-svg--fs" role="img"></svg>' +
+      '</div>' +
+      '<p class="desp-barcode-fs-idc" id="despBarcodeFsLabel">—</p>' +
+      '<p class="desp-barcode-fs-jaula" id="despBarcodeFsJaula"></p>' +
+      '</div></div>' +
+      '</section>';
   }
 
   function renderPedidosMini(list) {
@@ -93,9 +148,37 @@
       return '<p class="desp-muted">Sin pedidos recientes del preparador.</p>';
     }
     return '<ul class="desp-mini-list">' + list.map(function (p) {
-      return '<li><strong>' + esc(p.idc) + '</strong> · Jaula ' + esc(p.jaula) + ' · ' +
+      return '<li><button type="button" class="desp-mini-idc" data-idc="' + esc(p.idc) + '" data-jaula="' + esc(p.jaula) + '">' +
+        '<strong>' + esc(formatIdc(p.idc)) + '</strong></button> · Jaula ' + esc(p.jaula) + ' · ' +
         estadoBadge(p.estado) + '</li>';
     }).join('') + '</ul>';
+  }
+
+  function renderJaulaMap(pedidos) {
+    var prepList = DS.filterPedidos(pedidos, { fase: 'preparacion' })
+      .concat(DS.filterPedidos(pedidos, { estado: 'facturado' }));
+    if (!prepList.length) {
+      return '<p class="desp-muted">Sin IDC asignados por el preparador todavía.</p>';
+    }
+    var byJaula = {};
+    prepList.forEach(function (p) {
+      var j = String(p.jaula || '—').trim() || '—';
+      if (!byJaula[j]) byJaula[j] = [];
+      byJaula[j].push(p);
+    });
+    var keys = Object.keys(byJaula).sort(function (a, b) {
+      return a.localeCompare(b, 'es', { numeric: true });
+    });
+    return '<div class="desp-jaula-grid">' + keys.map(function (jaula) {
+      var items = byJaula[jaula];
+      return '<article class="desp-jaula-card">' +
+        '<header class="desp-jaula-card-head"><span class="desp-jaula-num">Jaula ' + esc(jaula) + '</span>' +
+        '<span class="desp-jaula-count">' + items.length + ' IDC</span></header>' +
+        '<ul class="desp-jaula-idc-list">' + items.map(function (p) {
+          return '<li><strong class="desp-idc">' + esc(formatIdc(p.idc)) + '</strong> ' +
+            estadoBadge(p.estado) + '</li>';
+        }).join('') + '</ul></article>';
+    }).join('') + '</div>';
   }
 
   function renderValidador(data, opts) {
@@ -123,6 +206,11 @@
       }).join('') +
       '</select></label>' +
       '</div>' +
+      '<section class="desp-jaula-map" aria-labelledby="despJaulaMapTitle">' +
+      '<h4 id="despJaulaMapTitle">IDC asignados por jaula</h4>' +
+      '<p class="desp-muted desp-jaula-map-sub">Lo que registra el preparador — actualización en vivo</p>' +
+      renderJaulaMap(data.pedidos) +
+      '</section>' +
       '<div class="desp-table-wrap">' +
       '<table class="desp-table" id="despValTable">' +
       '<thead><tr>' +
@@ -150,7 +238,7 @@
       selectHtml = '<span class="desp-muted">Sin permiso</span>';
     }
     return '<tr data-pedido-id="' + esc(p.id) + '">' +
-      '<td><strong class="desp-idc">' + esc(p.idc) + '</strong></td>' +
+      '<td><strong class="desp-idc">' + esc(formatIdc(p.idc)) + '</strong></td>' +
       '<td>' + esc(p.jaula) + '</td>' +
       '<td>' + estadoBadge(p.estado) + '</td>' +
       '<td class="desp-dt">' + esc(fmtDt(p.updatedAt)) + '<br><small>' + esc(p.updatedBy) + '</small></td>' +
@@ -170,7 +258,7 @@
     }).join('');
     return '<div class="desp-hist-modal-inner">' +
       '<header class="desp-hist-head">' +
-      '<h4>Pedido ' + esc(pedido.idc) + ' · Jaula ' + esc(pedido.jaula) + '</h4>' +
+      '<h4>Pedido ' + esc(formatIdc(pedido.idc)) + ' · Jaula ' + esc(pedido.jaula) + '</h4>' +
       '<p>Estado actual: ' + estadoBadge(pedido.estado) + '</p></header>' +
       '<div class="desp-table-wrap"><table class="desp-table desp-table--hist">' +
       '<thead><tr><th>Fecha</th><th>Usuario</th><th>Panel</th><th>Cambio</th><th>Nota</th></tr></thead>' +
@@ -245,6 +333,18 @@
 
     bindEvents(host, data, opts, userName);
 
+    if (host.querySelector('#despBarcodePanel')) {
+      var idcInput = host.querySelector('#despIdc');
+      var jaulaInput = host.querySelector('#despJaula');
+      var initialIdc = idcInput ? idcInput.value : '';
+      var initialJaula = jaulaInput ? jaulaInput.value : '';
+      if (!initialIdc && data.pedidos && data.pedidos[0]) {
+        initialIdc = data.pedidos[0].idc;
+        initialJaula = data.pedidos[0].jaula;
+      }
+      updateBarcodePanel(host, initialIdc, initialJaula);
+    }
+
     unbindSync = DS.bindSync(function (fresh) {
       if (!host.isConnected) return;
       var keepView = host.querySelector('.desp-tab.active');
@@ -270,6 +370,24 @@
 
     var form = host.querySelector('#despPrepForm');
     if (form) {
+      var idcInput = host.querySelector('#despIdc');
+      var jaulaInput = host.querySelector('#despJaula');
+      if (idcInput) {
+        idcInput.addEventListener('input', function () {
+          updateBarcodePanel(host, idcInput.value, jaulaInput ? jaulaInput.value : '');
+        });
+        idcInput.addEventListener('blur', function () {
+          var fmt = formatIdc(idcInput.value);
+          if (fmt && fmt !== idcInput.value) idcInput.value = fmt;
+          updateBarcodePanel(host, idcInput.value, jaulaInput ? jaulaInput.value : '');
+        });
+      }
+      if (jaulaInput) {
+        jaulaInput.addEventListener('input', function () {
+          updateBarcodePanel(host, idcInput ? idcInput.value : '', jaulaInput.value);
+        });
+      }
+
       form.addEventListener('submit', function (ev) {
         ev.preventDefault();
         var idc = (host.querySelector('#despIdc') || {}).value;
@@ -285,7 +403,44 @@
         form.reset();
         var firstRadio = host.querySelector('input[name="prepEstado"]');
         if (firstRadio) firstRadio.checked = true;
+        if (res.pedido) {
+          updateBarcodePanel(host, res.pedido.idc, res.pedido.jaula);
+        }
         render(host, res.data, opts);
+      });
+    }
+
+    host.querySelectorAll('.desp-mini-idc').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        updateBarcodePanel(host, btn.getAttribute('data-idc'), btn.getAttribute('data-jaula'));
+      });
+    });
+
+    var fsBtn = host.querySelector('#despBtnBarcodeFullscreen');
+    var fsOverlay = host.querySelector('#despBarcodeFsOverlay');
+    var fsClose = host.querySelector('#despBarcodeFsClose');
+    if (fsBtn && fsOverlay) {
+      fsBtn.addEventListener('click', function () {
+        var idc = (host.querySelector('#despIdc') || {}).value;
+        var jaula = (host.querySelector('#despJaula') || {}).value;
+        if (!formatIdc(idc) && host.querySelector('#despBarcodeLabel')) {
+          idc = host.querySelector('#despBarcodeLabel').textContent;
+        }
+        updateBarcodePanel(host, idc, jaula);
+        fsOverlay.hidden = false;
+        fsOverlay.setAttribute('aria-hidden', 'false');
+      });
+    }
+    if (fsClose && fsOverlay) {
+      fsClose.addEventListener('click', function () {
+        fsOverlay.hidden = true;
+        fsOverlay.setAttribute('aria-hidden', 'true');
+      });
+      fsOverlay.addEventListener('click', function (ev) {
+        if (ev.target === fsOverlay) {
+          fsOverlay.hidden = true;
+          fsOverlay.setAttribute('aria-hidden', 'true');
+        }
       });
     }
 
