@@ -85,9 +85,14 @@
     mountEl.setAttribute('aria-hidden', 'false');
     document.body.classList.add('desp-live-present-on');
 
+    var hasPasillo = !!String(share.jaula || '').trim();
+    var shellCls = 'desp-present-shell' +
+      (shouldShowOnThisPage() ? ' desp-present-shell--tv' : '') +
+      (hasPasillo ? ' desp-present-shell--has-pasillo' : ' desp-present-shell--no-pasillo');
+
     mountEl.innerHTML =
-      '<div class="desp-present-shell' + (shouldShowOnThisPage() ? ' desp-present-shell--tv' : '') + '">' +
-      '<div class="desp-present-inner">' +
+      '<div class="' + shellCls + '">' +
+      '<div class="desp-present-inner desp-present-inner--tv">' +
       '<div class="desp-present-badge"><span class="desp-present-dot"></span> EN VIVO · Código de barras IDC</div>' +
       '<div class="desp-present-grid desp-present-grid--tv">' +
       '<div class="desp-present-barcode-wrap desp-present-barcode-wrap--tv">' +
@@ -96,7 +101,7 @@
       '<div class="desp-present-meta desp-present-meta--tv">' +
       '<p class="desp-present-label">IDC activo</p>' +
       '<p class="desp-present-idc">' + esc(idc) + '</p>' +
-      (share.jaula ? '<p class="desp-present-jaula">Pasillo <strong>' + esc(share.jaula) + '</strong></p>' : '') +
+      (hasPasillo ? '<p class="desp-present-jaula">Pasillo <strong>' + esc(share.jaula) + '</strong></p>' : '') +
       '<div class="desp-present-estado-wrap">' + estadoHtml(share.estado) + '</div>' +
       '<p class="desp-present-by">Preparador: ' + esc(share.sharedBy || '—') + '</p>' +
       '</div></div></div></div>';
