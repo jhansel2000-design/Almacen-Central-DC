@@ -96,6 +96,19 @@
     global.PlatformDespachoBarcode.render(imgEl, code, opts || {});
   }
 
+  function blockFieldAutofill(input) {
+    if (!input) return;
+    input.setAttribute('autocomplete', 'off');
+    input.setAttribute('autocorrect', 'off');
+    input.setAttribute('spellcheck', 'false');
+    input.setAttribute('data-lpignore', 'true');
+    input.setAttribute('data-form-type', 'other');
+    input.readOnly = true;
+    input.addEventListener('focus', function unlock() {
+      input.readOnly = false;
+    }, { once: true });
+  }
+
   function updateBarcodePanel(host, idc, jaula, estado) {
     var img = host.querySelector('#despBarcodeImg');
     var label = host.querySelector('#despBarcodeLabel');
@@ -103,7 +116,7 @@
     var estadoEl = host.querySelector('#despBarcodeEstado');
     var code = formatIdc(idc);
     if (label) label.textContent = code || '—';
-    if (jaulaEl) jaulaEl.textContent = jaula ? ('Jaula ' + jaula) : '';
+    if (jaulaEl) jaulaEl.textContent = jaula ? ('Pasillo ' + jaula) : '';
     if (estadoEl && DS && DS.ESTADOS) {
       estadoEl.innerHTML = estadoBadge(estado || 'en_proceso');
     }
@@ -188,16 +201,16 @@
     return '<section class="desp-panel desp-panel--registro" aria-labelledby="despRegistroTitle">' +
       '<header class="desp-panel-head">' +
       '<div><span class="desp-eyebrow">Panel común · Preparador y Validador</span>' +
-      '<h3 id="despRegistroTitle">Registro de IDC y jaula</h3>' +
-      '<p class="desp-panel-sub">Registre y consulte el seguimiento de pedidos por jaula</p></div>' +
+      '<h3 id="despRegistroTitle">Registro de IDC y pasillo</h3>' +
+      '<p class="desp-panel-sub">Registre y consulte el seguimiento de pedidos por pasillo</p></div>' +
       '</header>' +
       '<div class="desp-prep-main">' +
       '<form class="desp-form" id="despPrepForm" autocomplete="off" onsubmit="return false">' +
       '<div class="desp-form-grid">' +
       '<label class="desp-field"><span>ID pedido (IDC)</span>' +
       '<input type="text" id="despIdc" name="idc" inputmode="text" placeholder="Escriba el IDC" autocapitalize="off" autocomplete="off"></label>' +
-      '<label class="desp-field"><span>Número de jaula</span>' +
-      '<input type="text" id="despJaula" name="jaula" placeholder="Escriba la jaula" autocomplete="off"></label>' +
+      '<label class="desp-field"><span>Pasillo</span>' +
+      '<input type="text" id="despJaula" name="desp_pasillo" placeholder="Escriba el pasillo" autocomplete="off" autocorrect="off" spellcheck="false" inputmode="text"></label>' +
       '<fieldset class="desp-field desp-field--estado"><legend>Estado · preparador</legend>' +
       '<div class="desp-estado-pick">' +
       DS.PREPARADOR_ESTADOS.map(function (id, i) {
@@ -211,7 +224,7 @@
       '<div class="desp-prep-actions desp-prep-actions--single">' +
       '<button type="button" class="btn btn-primary desp-action-btn desp-btn-update" id="despBtnUpdateIdc">' +
       '<span class="desp-action-btn-icon" aria-hidden="true">🔄</span>' +
-      '<span class="desp-action-btn-text">Actualizar IDC y jaula</span></button>' +
+      '<span class="desp-action-btn-text">Actualizar IDC y pasillo</span></button>' +
       '</div>' +
       '</form>' +
       '<div class="desp-recent">' +
@@ -232,11 +245,11 @@
       '<header class="desp-panel-head">' +
       '<div><span class="desp-eyebrow">Opción 1 · Lectores / escaneo</span>' +
       '<h3 id="despBarcodeTitle">Compartir IDC como código de barras</h3>' +
-      '<p class="desp-panel-sub">Escriba IDC y jaula · se refleja en vivo en la pantalla externa al compartir</p></div>' +
+      '<p class="desp-panel-sub">Escriba IDC y pasillo · se refleja en vivo en la pantalla externa al compartir</p></div>' +
       (sharing ? '<span class="desp-share-live-tag"><span class="desp-live-dot"></span> EN VIVO</span>' : '') +
       '</header>' +
       '<p class="desp-share-status" id="despShareStatus"' + (sharing ? '' : ' hidden') + '>' +
-      (sharing ? 'Transmitiendo en pantalla externa · ' + esc(formatIdc(sharing.idc)) + ' · Jaula ' + esc(sharing.jaula) : '') +
+      (sharing ? 'Transmitiendo en pantalla externa · ' + esc(formatIdc(sharing.idc)) + ' · Pasillo ' + esc(sharing.jaula) : '') +
       '</p>' +
       '<div class="desp-prep-layout desp-prep-layout--v2">' +
       '<div class="desp-prep-main">' +
@@ -244,8 +257,8 @@
       '<div class="desp-form-grid">' +
       '<label class="desp-field"><span>IDC a mostrar</span>' +
       '<input type="text" id="despShareIdc" name="idc" inputmode="text" placeholder="Escriba el IDC" autocapitalize="off" autocomplete="off"></label>' +
-      '<label class="desp-field"><span>Jaula</span>' +
-      '<input type="text" id="despShareJaula" name="jaula" placeholder="Escriba la jaula" autocomplete="off"></label>' +
+      '<label class="desp-field"><span>Pasillo</span>' +
+      '<input type="text" id="despShareJaula" name="desp_share_pasillo" placeholder="Escriba el pasillo" autocomplete="off" autocorrect="off" spellcheck="false" inputmode="text"></label>' +
       '<fieldset class="desp-field desp-field--estado"><legend>Estado · preparador</legend>' +
       '<div class="desp-estado-pick">' +
       DS.PREPARADOR_ESTADOS.map(function (id, i) {
@@ -320,8 +333,8 @@
     if (!snap || !host) return;
     var idc = host.querySelector('#despIdc');
     var jaula = host.querySelector('#despJaula');
-    if (idc && snap.idc) idc.value = snap.idc;
-    if (jaula && snap.jaula) jaula.value = snap.jaula;
+    if (idc) idc.value = snap.idc || '';
+    if (jaula) jaula.value = snap.jaula || '';
     if (snap.estado) {
       var radio = host.querySelector('input[name="prepEstado"][value="' + snap.estado + '"]');
       if (radio) radio.checked = true;
@@ -344,8 +357,8 @@
     if (!snap || !host) return;
     var idc = host.querySelector('#despShareIdc');
     var jaula = host.querySelector('#despShareJaula');
-    if (idc && snap.idc) idc.value = snap.idc;
-    if (jaula && snap.jaula) jaula.value = snap.jaula;
+    if (idc) idc.value = snap.idc || '';
+    if (jaula) jaula.value = snap.jaula || '';
     if (snap.estado) {
       var radio = host.querySelector('input[name="shareEstado"][value="' + snap.estado + '"]');
       if (radio) radio.checked = true;
@@ -367,7 +380,7 @@
     if (status) {
       status.hidden = !active;
       status.textContent = active
-        ? 'Transmitiendo en pantalla externa · ' + formatIdc(live.idc) + ' · Jaula ' + live.jaula
+        ? 'Transmitiendo en pantalla externa · ' + formatIdc(live.idc) + ' · Pasillo ' + live.jaula
         : '';
     }
   }
@@ -597,24 +610,10 @@
       var shareIdc = host.querySelector('#despShareIdc');
       var shareJaula = host.querySelector('#despShareJaula');
       var shareEstadoEl = host.querySelector('input[name="shareEstado"]:checked');
-      var initIdc = shareIdc ? shareIdc.value : '';
-      var initJaula = shareJaula ? shareJaula.value : '';
-      var initEstado = shareEstadoEl ? shareEstadoEl.value : 'en_proceso';
-      var live = DS.getLiveShare(data);
-      if (live && live.active) {
-        initIdc = live.idc;
-        initJaula = live.jaula;
-        initEstado = live.estado;
-        if (shareIdc) shareIdc.value = initIdc;
-        if (shareJaula) shareJaula.value = initJaula;
-        var sr = host.querySelector('input[name="shareEstado"][value="' + initEstado + '"]');
-        if (sr) sr.checked = true;
-      } else if (!initIdc && data.pedidos && data.pedidos[0]) {
-        initIdc = data.pedidos[0].idc;
-        initJaula = data.pedidos[0].jaula;
-        initEstado = data.pedidos[0].estado;
-      }
-      updateBarcodePanel(host, initIdc, initJaula, initEstado);
+      updateBarcodePanel(host,
+        shareIdc ? shareIdc.value : '',
+        shareJaula ? shareJaula.value : '',
+        shareEstadoEl ? shareEstadoEl.value : 'en_proceso');
       updateShareScreenUi(host, data);
     }
 
@@ -640,6 +639,9 @@
   }
 
   function bindEvents(host, data, opts, userName) {
+    blockFieldAutofill(host.querySelector('#despJaula'));
+    blockFieldAutofill(host.querySelector('#despShareJaula'));
+
     host.querySelectorAll('[data-desp-screen]').forEach(function (btn) {
       btn.addEventListener('click', function () {
         var next = btn.getAttribute('data-desp-screen');

@@ -7,19 +7,22 @@
   function renderToDataUrl(text, opts) {
     if (!text || typeof global.JsBarcode !== 'function') return '';
     opts = opts || {};
+    var tv = !!opts.tv;
+    var scale = opts.scale || (tv ? Math.max(2.5, global.devicePixelRatio || 2) : 1);
     try {
       var canvas = document.createElement('canvas');
       global.JsBarcode(canvas, String(text), {
         format: 'CODE128',
         displayValue: opts.showText !== false,
-        fontSize: opts.fontSize || 20,
-        height: opts.height || 72,
-        width: opts.width || 2,
-        margin: opts.margin || 8,
+        fontSize: Math.round((opts.fontSize || (tv ? 32 : 20)) * scale),
+        height: Math.round((opts.height || (tv ? 140 : 72)) * scale),
+        width: (opts.width || (tv ? 3.2 : 2)) * scale,
+        margin: Math.round((opts.margin || (tv ? 20 : 8)) * scale),
         background: '#ffffff',
         lineColor: '#000000',
         textAlign: 'center',
-        textPosition: 'bottom'
+        textPosition: 'bottom',
+        textMargin: Math.round(8 * scale)
       });
       return canvas.toDataURL('image/png');
     } catch (e) {
@@ -37,6 +40,8 @@
     }
     imgEl.src = url;
     imgEl.alt = String(text);
+    if (opts && opts.tv) imgEl.classList.add('desp-barcode-img--tv');
+    else imgEl.classList.remove('desp-barcode-img--tv');
     return true;
   }
 

@@ -51,7 +51,15 @@
       imgEl.alt = '';
       return;
     }
-    global.PlatformDespachoBarcode.render(imgEl, code, {
+    var tv = shouldShowOnThisPage();
+    global.PlatformDespachoBarcode.render(imgEl, code, tv ? {
+      tv: true,
+      height: 140,
+      fontSize: 32,
+      width: 3.2,
+      margin: 20,
+      showText: true
+    } : {
       height: 100,
       fontSize: 24,
       width: 2.4,
@@ -78,17 +86,17 @@
     document.body.classList.add('desp-live-present-on');
 
     mountEl.innerHTML =
-      '<div class="desp-present-shell">' +
+      '<div class="desp-present-shell' + (shouldShowOnThisPage() ? ' desp-present-shell--tv' : '') + '">' +
       '<div class="desp-present-inner">' +
       '<div class="desp-present-badge"><span class="desp-present-dot"></span> EN VIVO · Código de barras IDC</div>' +
-      '<div class="desp-present-grid">' +
-      '<div class="desp-present-barcode-wrap">' +
-      '<img class="desp-present-barcode desp-barcode-img" id="despPresentBarcode" alt="Código de barras IDC" width="320" height="120">' +
+      '<div class="desp-present-grid desp-present-grid--tv">' +
+      '<div class="desp-present-barcode-wrap desp-present-barcode-wrap--tv">' +
+      '<img class="desp-present-barcode desp-barcode-img" id="despPresentBarcode" alt="Código de barras IDC">' +
       '</div>' +
-      '<div class="desp-present-meta">' +
+      '<div class="desp-present-meta desp-present-meta--tv">' +
       '<p class="desp-present-label">IDC activo</p>' +
       '<p class="desp-present-idc">' + esc(idc) + '</p>' +
-      '<p class="desp-present-jaula">Jaula <strong>' + esc(share.jaula || '—') + '</strong></p>' +
+      '<p class="desp-present-jaula">Pasillo <strong>' + esc(share.jaula || '—') + '</strong></p>' +
       '<div class="desp-present-estado-wrap">' + estadoHtml(share.estado) + '</div>' +
       '<p class="desp-present-by">Preparador: ' + esc(share.sharedBy || '—') + '</p>' +
       '</div></div></div></div>';
