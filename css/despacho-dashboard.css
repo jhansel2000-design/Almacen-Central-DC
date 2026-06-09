@@ -444,9 +444,24 @@ html[data-theme="light"] .desp-dashboard .desp-btn-set-estado--green {
 }
 
 /* KPI validador — resumen por estado */
+.desp-val-resumen {
+  margin-bottom: 1rem;
+  padding: 1rem 1.15rem;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
+}
+
+.desp-val-resumen-title {
+  margin: 0 0 0.75rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-strong, var(--text));
+}
+
 .desp-kpi-strip--validador {
   grid-template-columns: repeat(3, 1fr);
-  margin-bottom: 1rem;
+  margin-bottom: 0;
 }
 
 .desp-kpi--estado {

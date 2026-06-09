@@ -142,12 +142,20 @@
       DS.VALIDADOR_ESTADOS.map(function (id) {
         var e = DS.ESTADOS[id];
         var icon = DS.renderEstadoIconSvg ? DS.renderEstadoIconSvg(id, { compact: true }) : '';
+        var lbl = e.kpiLabel || e.short || e.label;
         return '<article class="desp-kpi desp-kpi--' + esc(e.color) + ' desp-kpi--estado">' +
           (icon ? '<span class="desp-kpi-icon">' + icon + '</span>' : '') +
           '<span class="desp-kpi-val">' + esc(String(counts[id] || 0)) + '</span>' +
-          '<span class="desp-kpi-lbl">' + esc(e.short) + '</span></article>';
+          '<span class="desp-kpi-lbl">' + esc(lbl) + '</span></article>';
       }).join('') +
       '</div>';
+  }
+
+  function renderValidadorResumen(counts) {
+    return '<section class="desp-val-resumen" aria-labelledby="despValResumenTitle">' +
+      '<h4 id="despValResumenTitle" class="desp-val-resumen-title">Resumen del seguimiento</h4>' +
+      kpiStripValidador(counts) +
+      '</section>';
   }
 
   function kpiStripOperador(stats) {
@@ -487,9 +495,11 @@
   function renderPanelValidador(data, opts) {
     var sharing = DS.getLiveShareLista(data);
     var pedidos = DS.getPedidosVisiblesValidador(data.pedidos);
+    var valCounts = DS.countByEstado(data.pedidos, { soloValidador: true });
     opts = opts || {};
     var canRemove = !!opts.canValidate;
     return '<div class="desp-validador-stack">' +
+      renderValidadorResumen(valCounts) +
       '<section class="desp-panel desp-panel--val-share" aria-labelledby="despValShareTitle">' +
       '<header class="desp-panel-head">' +
       '<div><span class="desp-eyebrow">Pantalla externa · Validador</span>' +
@@ -692,16 +702,14 @@
     });
     var archivados = DS.getPedidosArchivadosValidador(data.pedidos);
     var canValidate = opts && opts.canValidate;
-    var valCounts = DS.countByEstado(data.pedidos, { soloValidador: true });
 
     return '<section class="desp-panel desp-panel--val" aria-labelledby="despValTitle">' +
       '<header class="desp-panel-head">' +
       '<div><span class="desp-eyebrow">Validador</span>' +
       '<h3 id="despValTitle">Seguimiento validador</h3>' +
-      '<p class="desp-panel-sub">IDC del operador entran como <strong>Pend. validar</strong>. Usted marca <strong>Cargado</strong> o quita del seguimiento — nunca quedan En proceso.</p></div>' +
+      '<p class="desp-panel-sub">IDC del operador entran como <strong>Pend. por cargar</strong>. Usted marca <strong>Cargado</strong> o quita del seguimiento — nunca quedan En proceso.</p></div>' +
       '<span class="desp-live-badge" title="Sincronización activa"><span class="desp-live-dot"></span> En vivo</span>' +
       '</header>' +
-      kpiStripValidador(valCounts) +
       '<div class="desp-filters">' +
       '<label class="desp-filter"><span>Buscar</span>' +
       '<input type="search" id="despSearch" placeholder="IDC, cliente o pasillo…" value="' + esc(filterQ) + '"></label>' +
@@ -833,7 +841,10 @@
         ? 'Registro operador → validador automático · ' +
           esc(String(operadorStats.activos || 0)) + ' activos · ' +
           esc(String(operadorStats.total || 0)) + ' enviados en total'
-        : 'Validador · ' + esc(String(DS.getPedidosVisiblesValidador(data.pedidos).length)) + ' en seguimiento') +
+        : 'Validador · ' +
+          esc(String(validadorCounts.pendiente_carga || 0)) + ' pend. · ' +
+          esc(String(validadorCounts.en_validacion || 0)) + ' validados · ' +
+          esc(String(validadorCounts.listo_despacho || 0)) + ' cargados') +
       '</p></div>' +
       flujoHtml() +
       '</header>' +
