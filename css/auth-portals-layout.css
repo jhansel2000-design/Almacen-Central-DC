@@ -1,10 +1,73 @@
 /* Hub de acceso — login + portales integrados (sin tarjetas flotantes) */
 
 .auth-layout--hub {
-  grid-template-columns: minmax(0, 1.12fr) minmax(360px, 520px);
   width: min(100%, 1360px);
   align-items: start;
   gap: clamp(1.25rem, 2.5vw, 2.25rem);
+  margin: 0 auto;
+}
+
+/* Paso 1: solo portales, centrados en pantalla */
+.auth-layout--hub.auth-layout--portals-only {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: min(100%, 520px);
+  max-width: 520px;
+  min-height: calc(100vh - 2.5rem);
+  min-height: calc(100dvh - 2.5rem);
+}
+
+.auth-layout--hub.auth-layout--portals-only .auth-hero {
+  width: 100%;
+  padding: 0;
+}
+
+.auth-layout--hub.auth-layout--portals-only .auth-hero-panel {
+  max-width: 100%;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.auth-layout--hub.auth-layout--portals-only .auth-glass-card--login {
+  display: none !important;
+}
+
+/* Paso 2: login visible tras elegir Control de Mando DC */
+.auth-layout--hub.auth-layout--login-open {
+  display: grid;
+  grid-template-columns: minmax(0, 1.12fr) minmax(360px, 520px);
+  width: min(100%, 1360px);
+  max-width: 1360px;
+  min-height: auto;
+}
+
+.auth-portal-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0 0 0.85rem;
+  padding: 0;
+  border: none;
+  background: none;
+  color: rgba(147, 197, 253, 0.92);
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: left;
+  transition: color 0.2s ease;
+}
+
+.auth-portal-back:hover {
+  color: #bfdbfe;
+}
+
+.auth-portal-back:focus-visible {
+  outline: 2px solid var(--accent, #5eb3ff);
+  outline-offset: 3px;
+  border-radius: 4px;
 }
 
 .auth-stack {
@@ -286,6 +349,23 @@ html[data-theme="light"] .auth-hub-link {
 }
 
 @media (max-width: 900px) {
+  .auth-layout--hub.auth-layout--portals-only {
+    min-height: auto;
+    max-width: min(100%, 480px);
+    width: 100%;
+  }
+
+  .auth-layout--hub.auth-layout--login-open {
+    display: flex;
+    flex-direction: column;
+    max-width: min(100%, 480px);
+    width: 100%;
+  }
+
+  .auth-layout--hub.auth-layout--login-open .auth-hero {
+    display: none;
+  }
+
   .auth-layout--hub {
     display: flex;
     flex-direction: column;

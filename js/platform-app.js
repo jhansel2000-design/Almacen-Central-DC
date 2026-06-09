@@ -474,6 +474,62 @@
     var overlay = $('authOverlay');
     if (overlay) overlay.scrollTop = 0;
     if (typeof window.scrollTo === 'function') window.scrollTo(0, 0);
+    setAuthHubLoginOpen(false);
+  }
+
+  function setAuthHubLoginOpen(open) {
+    var layout = $('authHubLayout') || document.querySelector('.auth-layout--hub');
+    var panel = $('authLoginPanel');
+    var portalCard = $('authPortalMando');
+    if (!layout || !panel) return;
+
+    layout.classList.toggle('auth-layout--portals-only', !open);
+    layout.classList.toggle('auth-layout--login-open', open);
+    panel.hidden = !open;
+    panel.setAttribute('aria-hidden', open ? 'false' : 'true');
+
+    if (portalCard) {
+      portalCard.classList.toggle('is-active', open);
+      if (open) portalCard.setAttribute('aria-current', 'page');
+      else portalCard.removeAttribute('aria-current');
+    }
+
+    if (open) {
+      var form = $('authForm');
+      if (form && global.PlatformSecurity && global.PlatformSecurity.mountLoginForm) {
+        if (!form.querySelector('.auth-human-verify')) {
+          global.PlatformSecurity.mountLoginForm(form, 'wms');
+        }
+      }
+      var userField = $('authUsername');
+      if (userField) {
+        setTimeout(function () { userField.focus(); }, 120);
+      }
+    } else {
+      showAuthError('');
+      var pwd = $('authPassword');
+      if (pwd) pwd.value = '';
+    }
+  }
+
+  function initAuthHub() {
+    var layout = $('authHubLayout') || document.querySelector('.auth-layout--hub');
+    if (!layout) return;
+
+    var portalBtn = $('authPortalMando');
+    var backBtn = $('authPortalBack');
+
+    if (portalBtn) {
+      bindOnce(portalBtn, 'click', function (ev) {
+        ev.preventDefault();
+        setAuthHubLoginOpen(true);
+      });
+    }
+    if (backBtn) {
+      bindOnce(backBtn, 'click', function () {
+        setAuthHubLoginOpen(false);
+      });
+    }
   }
 
   function setAuthVisible(visible) {
@@ -734,8 +790,12 @@
     if (activeCard) applyRolePicker(activeCard);
     initPasswordToggle();
     PC.applyRememberedLoginUsername('wms', $('authUsername'), $('authRememberUser'));
+    initAuthHub();
     if (global.PlatformSecurity && global.PlatformSecurity.mountLoginForm) {
-      global.PlatformSecurity.mountLoginForm(form, 'wms');
+      var hubLayout = $('authHubLayout') || document.querySelector('.auth-layout--hub.auth-layout--portals-only');
+      if (!hubLayout) {
+        global.PlatformSecurity.mountLoginForm(form, 'wms');
+      }
     }
 
     if (!overlayIsHidden()) {
@@ -785,6 +845,7 @@
     state.user = null;
     state._sessionTouchBound = false;
     setAuthVisible(true);
+    setAuthHubLoginOpen(false);
     var pwd = $('authPassword');
     if (pwd) pwd.value = '';
     showAuthError('');
