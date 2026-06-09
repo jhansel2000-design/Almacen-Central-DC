@@ -105,6 +105,22 @@
       '</tbody></table></div>';
   }
 
+  function renderEntradaBtn(opts) {
+    opts = opts || {};
+    var cls = 'desp-entrada-btn desp-entrada-btn--' + esc(opts.id);
+    if (opts.active) cls += ' active';
+    if (opts.live) cls += ' has-live';
+    return '<button type="button" class="' + cls + '" data-desp-screen="' + esc(opts.screen) + '" role="tab"' +
+      (opts.active ? ' aria-selected="true"' : '') + '>' +
+      '<span class="desp-entrada-btn-glow" aria-hidden="true"></span>' +
+      '<span class="desp-entrada-btn-icon" aria-hidden="true">' + esc(opts.icon) + '</span>' +
+      '<span class="desp-entrada-btn-body">' +
+      '<span class="desp-entrada-btn-title">' + esc(opts.title) + '</span>' +
+      '<span class="desp-entrada-btn-sub">' + esc(opts.sub) + '</span></span>' +
+      (opts.live ? '<span class="desp-entrada-live"><span class="desp-entrada-live-dot"></span>EN VIVO</span>' : '') +
+      '</button>';
+  }
+
   function renderNavEntrada(screen, data) {
     screen = normalizeScreen(screen);
     var sharingBarcode = DS.getLiveShare(data);
@@ -112,19 +128,34 @@
     var sharingLista = DS.getLiveShareLista(data);
     var liveLista = !!(sharingLista && sharingLista.active);
     return '<nav class="desp-entrada-nav desp-entrada-nav--3" role="tablist" aria-label="Secciones de despacho">' +
-      '<button type="button" class="desp-entrada-btn' + (screen === 'registro' ? ' active' : '') +
-      '" data-desp-screen="registro" role="tab"' + (screen === 'registro' ? ' aria-selected="true"' : '') + '>' +
-      '📋 Seguimiento IDC y jaulas</button>' +
-      '<button type="button" class="desp-entrada-btn desp-entrada-btn--barcode' +
-      (screen === 'barcode' ? ' active' : '') + (liveBarcode ? ' has-live' : '') +
-      '" data-desp-screen="barcode" role="tab"' + (screen === 'barcode' ? ' aria-selected="true"' : '') + '>' +
-      '📊 Código de barras IDC' + (liveBarcode ? ' · EN VIVO' : '') +
-      '</button>' +
-      '<button type="button" class="desp-entrada-btn desp-entrada-btn--lista' +
-      (screen === 'lista' ? ' active' : '') + (liveLista ? ' has-live' : '') +
-      '" data-desp-screen="lista" role="tab"' + (screen === 'lista' ? ' aria-selected="true"' : '') + '>' +
-      '👥 Lista a validadores' + (liveLista ? ' · EN VIVO' : '') +
-      '</button></nav>';
+      renderEntradaBtn({
+        id: 'registro',
+        screen: 'registro',
+        icon: '📋',
+        title: 'Seguimiento IDC y jaulas',
+        sub: 'Registro · mapa · validación',
+        active: screen === 'registro',
+        live: false
+      }) +
+      renderEntradaBtn({
+        id: 'barcode',
+        screen: 'barcode',
+        icon: '📊',
+        title: 'Código de barras IDC',
+        sub: 'Un IDC · escaneo en pantalla',
+        active: screen === 'barcode',
+        live: liveBarcode
+      }) +
+      renderEntradaBtn({
+        id: 'lista',
+        screen: 'lista',
+        icon: '👥',
+        title: 'Lista a validadores',
+        sub: 'Tabla IDC · jaula · estado',
+        active: screen === 'lista',
+        live: liveLista
+      }) +
+      '</nav>';
   }
 
   function renderPanelRegistroComun(data) {
@@ -152,7 +183,9 @@
       '</div></fieldset>' +
       '</div>' +
       '<div class="desp-prep-actions desp-prep-actions--single">' +
-      '<button type="button" class="btn btn-primary desp-btn-update" id="despBtnUpdateIdc">🔄 Actualizar IDC y jaula</button>' +
+      '<button type="button" class="btn btn-primary desp-action-btn desp-btn-update" id="despBtnUpdateIdc">' +
+      '<span class="desp-action-btn-icon" aria-hidden="true">🔄</span>' +
+      '<span class="desp-action-btn-text">Actualizar IDC y jaula</span></button>' +
       '</div>' +
       '</form>' +
       '<div class="desp-recent">' +
@@ -198,9 +231,9 @@
       '</div></fieldset>' +
       '</div>' +
       '<div class="desp-prep-actions desp-prep-actions--single">' +
-      '<button type="button" class="btn desp-btn-share' + (sharing ? ' is-live' : '') + '" id="despBtnShareScreen">' +
-      (sharing ? '⏹ Dejar de compartir código de barras' : '📊 Compartir IDC como código de barras') +
-      '</button>' +
+      '<button type="button" class="btn desp-action-btn desp-btn-share desp-btn-share--barcode' + (sharing ? ' is-live' : '') + '" id="despBtnShareScreen">' +
+      '<span class="desp-action-btn-icon" aria-hidden="true">' + (sharing ? '⏹' : '📊') + '</span>' +
+      '<span class="desp-action-btn-text">' + (sharing ? 'Dejar de compartir código de barras' : 'Compartir IDC como código de barras') + '</span></button>' +
       '</div>' +
       '</form>' +
       '<div class="desp-recent">' +
@@ -234,9 +267,9 @@
       '</p>' +
       '<div class="desp-lista-share-layout">' +
       '<div class="desp-lista-share-actions">' +
-      '<button type="button" class="btn desp-btn-share-lista' + (sharing ? ' is-live' : '') + '" id="despBtnShareLista">' +
-      (sharing ? '⏹ Dejar de compartir lista' : '👥 Compartir lista a validadores') +
-      '</button>' +
+      '<button type="button" class="btn desp-action-btn desp-btn-share-lista' + (sharing ? ' is-live' : '') + '" id="despBtnShareLista">' +
+      '<span class="desp-action-btn-icon" aria-hidden="true">' + (sharing ? '⏹' : '👥') + '</span>' +
+      '<span class="desp-action-btn-text">' + (sharing ? 'Dejar de compartir lista' : 'Compartir lista a validadores') + '</span></button>' +
       '<p class="desp-muted desp-lista-share-hint">Se actualiza sola cuando el preparador registra o cambia IDC y jaulas.</p>' +
       '</div>' +
       '<section class="desp-lista-preview" aria-labelledby="despListaPreviewTitle">' +
@@ -303,8 +336,8 @@
     var active = !!(live && live.active);
     btn.classList.toggle('is-live', active);
     btn.innerHTML = active
-      ? '⏹ Dejar de compartir código de barras'
-      : '📊 Compartir IDC como código de barras';
+      ? '<span class="desp-action-btn-icon" aria-hidden="true">⏹</span><span class="desp-action-btn-text">Dejar de compartir código de barras</span>'
+      : '<span class="desp-action-btn-icon" aria-hidden="true">📊</span><span class="desp-action-btn-text">Compartir IDC como código de barras</span>';
     if (status) {
       status.hidden = !active;
       status.textContent = active
@@ -323,8 +356,8 @@
     var count = DS.getPedidosActivos(data.pedidos).length;
     btn.classList.toggle('is-live', active);
     btn.innerHTML = active
-      ? '⏹ Dejar de compartir lista'
-      : '👥 Compartir lista a validadores';
+      ? '<span class="desp-action-btn-icon" aria-hidden="true">⏹</span><span class="desp-action-btn-text">Dejar de compartir lista</span>'
+      : '<span class="desp-action-btn-icon" aria-hidden="true">👥</span><span class="desp-action-btn-text">Compartir lista a validadores</span>';
     if (status) {
       status.hidden = !active;
       status.textContent = active
