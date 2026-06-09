@@ -347,6 +347,11 @@ body.averias-dash-view {
     animation: avSyncPulse 2s ease-in-out infinite;
   }
 
+  .averias-app .av-sync-live.is-pulse {
+    animation: avSyncPulse 1s ease-in-out infinite;
+    color: #56d364;
+  }
+
   .averias-app .av-sync-live[hidden] {
     display: none !important;
   }

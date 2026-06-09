@@ -18,5 +18,5 @@
     "accessKey": "$2a$10$QtkeZBCgSXuqFhEmaDkUlOotaT/0nQYmnACfqc7kMonTD0wZ7vE1K",
     "keyType": "master"
   },
-  "help": "Tiempo real activo via JSONBin. Recargue averias.html con Ctrl+F5."
+  "help": "Tiempo real: JSONBin cada ~1s. Indicador LIVE = sync activa. No refresque la pagina."
 }

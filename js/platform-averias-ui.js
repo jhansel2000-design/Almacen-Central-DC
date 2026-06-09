@@ -398,6 +398,75 @@
         }
 
         var reloadSyncTimer = null;
+        var lastUiSignature = '';
+
+        function snapshotSignature(snap) {
+            if (!snap) return '';
+            return [
+                snap.updatedAt || '',
+                (snap.incidences || []).length,
+                (snap.damages || []).length,
+                (snap.securityIncidents || []).length,
+                (snap.audits5s || []).length,
+                Object.keys(snap.equipmentRegistry || {}).length,
+                snap.localSeq || 0
+            ].join(':');
+        }
+
+        function countReports(snap) {
+            snap = snap || buildSnapshot();
+            return {
+                total: (snap.incidences || []).length + (snap.damages || []).length +
+                    (snap.securityIncidents || []).length + (snap.audits5s || []).length,
+                pending: allIncidences.filter(isPendingStatus).length +
+                    allDamages.filter(isPendingStatus).length +
+                    allSecurity.filter(isPendingStatus).length +
+                    allAudits.filter(isPendingStatus).length
+            };
+        }
+
+        function applyRemoteSnapshot(snap, opts) {
+            opts = opts || {};
+            if (!snap) return false;
+            var sigBefore = lastUiSignature;
+            var countsBefore = countReports(buildSnapshot());
+            isLoadingRemoteSnapshot = true;
+            try {
+                applySnapshot(snap);
+                writeIndividualKeys();
+            } finally {
+                isLoadingRemoteSnapshot = false;
+            }
+            lastUiSignature = snapshotSignature(buildSnapshot());
+            var countsAfter = countReports(buildSnapshot());
+            var changed = lastUiSignature !== sigBefore ||
+                countsAfter.total !== countsBefore.total ||
+                countsAfter.pending !== countsBefore.pending;
+            updateAllStats();
+            refreshCurrentView();
+            updateLiveChip(true);
+            if (!opts.silent && changed && global.PlatformToast) {
+                if (countsAfter.total > countsBefore.total) {
+                    global.PlatformToast.info('Nuevo reporte recibido — pantalla actualizada', 2800);
+                } else {
+                    global.PlatformToast.info('Datos actualizados en vivo', 1800);
+                }
+            }
+            return changed;
+        }
+
+        function getSnapshotSignature() {
+            return snapshotSignature(buildSnapshot());
+        }
+
+        function updateLiveChip(active) {
+            var live = document.getElementById('avSyncLive');
+            if (!live) return;
+            var cloud = global.PlatformAveriasCloudSync && global.PlatformAveriasCloudSync.isCloudConfigured &&
+                global.PlatformAveriasCloudSync.isCloudConfigured();
+            live.hidden = !cloud;
+            live.classList.toggle('is-pulse', !!active);
+        }
 
         function reloadFromSync() {
             isLoadingRemoteSnapshot = true;
@@ -409,10 +478,14 @@
             refreshCurrentView();
         }
 
-        function reloadFromSyncDebounced() {
-            if (Date.now() < correctionLockUntil) return;
+        function reloadFromSyncDebounced(ev) {
             clearTimeout(reloadSyncTimer);
-            reloadSyncTimer = setTimeout(reloadFromSync, 120);
+            var immediate = ev && ev.detail && (ev.detail.source === 'apply' || ev.detail.uiRefreshed);
+            if (immediate) {
+                if (!(ev.detail && ev.detail.uiRefreshed)) reloadFromSync();
+                return;
+            }
+            reloadSyncTimer = setTimeout(reloadFromSync, 60);
         }
 
         function refreshUiAfterLocalChange() {
@@ -515,7 +588,7 @@
             document.addEventListener('lan-sync', function (ev) {
                 if (ev.detail && ev.detail.store === 'averias') reloadFromSyncDebounced();
             });
-            document.addEventListener('averias-updated', function () { reloadFromSyncDebounced(); });
+            document.addEventListener('averias-updated', function (ev) { reloadFromSyncDebounced(ev); });
             document.addEventListener('averias-sync-push', function () {
                 if (global.PlatformAveriasCloudSync && global.PlatformAveriasCloudSync.schedulePullBurst) {
                     global.PlatformAveriasCloudSync.schedulePullBurst();
@@ -540,6 +613,13 @@
         if (!global._averiasSyncBound) {
             global._averiasSyncBound = true;
             initAveriasSync();
+            global.setInterval(function () {
+                if (global.PlatformAveriasCloudSync && global.PlatformAveriasCloudSync.isCloudConfigured &&
+                    global.PlatformAveriasCloudSync.isCloudConfigured()) {
+                    var last = global.PlatformAveriasCloudSync.getLastPullAt && global.PlatformAveriasCloudSync.getLastPullAt();
+                    updateLiveChip(last && (Date.now() - last) < 10000);
+                }
+            }, 3000);
         }
 
         function saveData() {
@@ -2196,7 +2276,9 @@
     
 
   global.PlatformAveriasUI = {
-    start: startApp
+    start: startApp,
+    applyRemoteSnapshot: applyRemoteSnapshot,
+    getSnapshotSignature: getSnapshotSignature
   };
 
   global.navigateToModule = navigateToModule;
