@@ -264,6 +264,10 @@
       }
     });
 
+    updateDespachoSyncLabel();
+  }
+
+  function updateDespachoSyncLabel() {
     var data = global.PlatformDespachoStore.load();
     if ($('despSyncLabel')) {
       $('despSyncLabel').textContent = data && data.updatedAt
@@ -339,9 +343,7 @@
       PC.bindOnce($('despBtnRefresh'), 'click', renderDespacho);
 
       document.addEventListener('despacho-updated', function () {
-        if (state.user) {
-          renderDespacho();
-        }
+        if (state.user) updateDespachoSyncLabel();
       });
 
       document.addEventListener('despacho-live-share', function () { /* pantalla externa */ });
@@ -351,7 +353,7 @@
 
       document.addEventListener('lan-sync', function (ev) {
         if (!state.user) return;
-        if (!ev.detail || ev.detail.store === 'despacho') renderDespacho();
+        if (!ev.detail || ev.detail.store === 'despacho') updateDespachoSyncLabel();
       });
 
       if (!tryRestoreSession()) {

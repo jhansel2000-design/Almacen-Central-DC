@@ -198,7 +198,7 @@
     usuario = usuario || '—';
 
     if (!idc) return { ok: false, error: 'Ingrese el ID del pedido (IDC).' };
-    if (!jaula) return { ok: false, error: 'Ingrese el número de jaula.' };
+    if (!jaula) return { ok: false, error: 'Ingrese el pasillo.' };
 
     var data = load();
     var idx = findByIdc(data.pedidos, idc);

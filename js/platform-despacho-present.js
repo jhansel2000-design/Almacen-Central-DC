@@ -96,7 +96,7 @@
       '<div class="desp-present-meta desp-present-meta--tv">' +
       '<p class="desp-present-label">IDC activo</p>' +
       '<p class="desp-present-idc">' + esc(idc) + '</p>' +
-      '<p class="desp-present-jaula">Pasillo <strong>' + esc(share.jaula || '—') + '</strong></p>' +
+      (share.jaula ? '<p class="desp-present-jaula">Pasillo <strong>' + esc(share.jaula) + '</strong></p>' : '') +
       '<div class="desp-present-estado-wrap">' + estadoHtml(share.estado) + '</div>' +
       '<p class="desp-present-by">Preparador: ' + esc(share.sharedBy || '—') + '</p>' +
       '</div></div></div></div>';
