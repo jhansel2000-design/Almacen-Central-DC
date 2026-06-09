@@ -32,7 +32,7 @@
   <link rel="stylesheet" href="css/executive-comfort.css">
   <link rel="stylesheet" href="css/auth-cinematic.css?v=18">
   <link rel="stylesheet" href="css/auth-security.css?v=3">
-  <link rel="stylesheet" href="css/auth-portals-layout.css?v=3">
+  <link rel="stylesheet" href="css/auth-portals-layout.css?v=4">
   <link rel="stylesheet" href="css/perf-lite.css?v=17">
   <link rel="stylesheet" href="css/despacho-auth.css?v=30">
   <link rel="stylesheet" href="css/averias-auth.css?v=3">
@@ -72,12 +72,22 @@
             </div>
           </header>
           <p class="auth-brand-tag">Almacén Central DC · 300-001</p>
-          <section class="auth-portals-section auth-portals-section--hero" id="authExternalPortals" aria-label="Portales independientes">
+          <section class="auth-portals-section auth-portals-section--hero" id="authExternalPortals" aria-label="Portales del almacén">
             <header class="auth-portals-head">
-              <p class="auth-portals-eyebrow">Acceso independiente</p>
-              <h3 class="auth-portals-title">Portales de piso y despacho</h3>
+              <p class="auth-portals-eyebrow">Portal principal</p>
+              <h3 class="auth-portals-title">Portales del Almacén Central DC</h3>
             </header>
             <div class="auth-portals-grid auth-portals-grid--hero">
+              <a href="#authLoginPanel" class="auth-portal-card auth-portal-card--mando is-active" id="authPortalMando" aria-current="page">
+                <span class="auth-portal-icon auth-portal-icon--logo" aria-hidden="true">
+                  <img src="assets/img/dc-logo-64.png?v=3" alt="" width="40" height="40">
+                </span>
+                <div class="auth-portal-body">
+                  <strong>Control de Mando DC</strong>
+                  <span>KPIs, facturas, productividad y administración</span>
+                  <span class="auth-portal-cta">Entrar al mando →</span>
+                </div>
+              </a>
               <a href="despacho.html" class="auth-portal-card auth-portal-card--despacho">
                 <span class="auth-portal-icon" aria-hidden="true">🚚</span>
                 <div class="auth-portal-body">
@@ -98,9 +108,10 @@
           </section>
         </div>
       </aside>
-      <div class="auth-glass-card auth-glass-card--login">
+      <div class="auth-glass-card auth-glass-card--login" id="authLoginPanel">
         <form id="authForm" class="auth-form" novalidate action="#" method="post">
-          <h2 id="authTitle" class="auth-heading">Acceso ejecutivo</h2>
+          <p class="auth-portal-badge">Portal · Control de Mando DC</p>
+          <h2 id="authTitle" class="auth-heading">Control de Mando DC</h2>
           <p class="auth-subheading">1. Elige tu área · 2. Escribe el usuario que te asignó el administrador</p>
           <div class="auth-role-picker" role="group" aria-label="Elige tu área de acceso">
             <button type="button" class="auth-role-card active" data-role="administrador" aria-pressed="true">
@@ -147,7 +158,7 @@
             <input id="authPassword" class="auth-field-input" type="password" name="password" placeholder="Contraseña" autocomplete="current-password" maxlength="128" required>
             <button type="button" class="auth-pwd-toggle" id="btnTogglePassword" aria-label="Mostrar contraseña" title="Mostrar/ocultar">Ver</button>
           </div>
-          <button type="submit" class="btn btn-primary" id="authSubmit">Entrar a la plataforma</button>
+          <button type="submit" class="btn btn-primary" id="authSubmit">Entrar a Control de Mando DC</button>
           <p class="auth-hint">Elige tu área. La contraseña no se guarda en el equipo.</p>
           <p id="authError" class="auth-error" role="alert" aria-live="polite"></p>
         </form>
