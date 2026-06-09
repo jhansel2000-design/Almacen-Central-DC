@@ -1150,17 +1150,9 @@
     document.addEventListener('despacho-updated', function () {
       state.dataDespacho = loadDespachoData();
       updateDataStatusChips();
-      if (global.PlatformDespachoPresent) global.PlatformDespachoPresent.refresh();
-      if (global.PlatformDespachoPresentLista) global.PlatformDespachoPresentLista.refresh();
       if (getActiveModule() === 'despacho') {
         renderDespachoModule();
       }
-    });
-    document.addEventListener('despacho-live-share', function () {
-      if (global.PlatformDespachoPresent) global.PlatformDespachoPresent.refresh();
-    });
-    document.addEventListener('despacho-live-lista', function () {
-      if (global.PlatformDespachoPresentLista) global.PlatformDespachoPresentLista.refresh();
     });
     document.addEventListener('tv-dashboard-slide', function (ev) {
       if (!state._tvSnapshot || !global.PlatformTvDashboard || !ev.detail) return;
@@ -1997,6 +1989,7 @@
   function renderDespachoModule() {
     var host = $('module-despacho');
     if (!host || !global.PlatformDespachoUI) return;
+    document.body.classList.add('desp-controller-mode');
     state.dataDespacho = loadDespachoData();
     var role = state.user ? state.user.role : '';
     var canValidate = global.PlatformAdmin && global.PlatformAdmin.can(role, 'despacho.validate', state.user);
@@ -2010,9 +2003,6 @@
         global.PlatformStore.saveConfig(state.config);
       }
     });
-
-    if (global.PlatformDespachoPresent) global.PlatformDespachoPresent.bind();
-    if (global.PlatformDespachoPresentLista) global.PlatformDespachoPresentLista.bind();
 
     if ($('dashboardTitle')) $('dashboardTitle').textContent = 'Despacho — Preparador y Validador';
     if ($('dashboardSubtitle')) {

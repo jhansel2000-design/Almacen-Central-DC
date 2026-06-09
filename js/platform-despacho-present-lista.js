@@ -11,9 +11,23 @@
   var bound = false;
   var mountEl = null;
   var lastSig = '';
+  var displayMode = false;
 
   function DS() {
     return global.PlatformDespachoStore;
+  }
+
+  function resolveDisplayMode(opts) {
+    if (opts && opts.displayMode != null) return !!opts.displayMode;
+    if (global.PlatformDespachoDisplay && global.PlatformDespachoDisplay.isDisplayMode) {
+      return global.PlatformDespachoDisplay.isDisplayMode();
+    }
+    return !!(global.document && global.document.body &&
+      global.document.body.classList.contains('desp-display-mode'));
+  }
+
+  function shouldShowOnThisPage() {
+    return displayMode;
   }
 
   function estadoHtml(estadoId) {
@@ -49,11 +63,13 @@
 
   function renderMount(share, data) {
     if (!mountEl) return;
-    if (!share || !share.active) {
+    if (!shouldShowOnThisPage() || !share || !share.active) {
       mountEl.hidden = true;
       mountEl.setAttribute('aria-hidden', 'true');
       mountEl.innerHTML = '';
-      document.body.classList.remove('desp-live-lista-on');
+      if (global.document && global.document.body) {
+        global.document.body.classList.remove('desp-live-lista-on');
+      }
       lastSig = '';
       return;
     }
@@ -83,6 +99,10 @@
   function refreshFromStore() {
     var store = DS();
     if (!store) return;
+    if (!shouldShowOnThisPage()) {
+      renderMount(null);
+      return;
+    }
     var data = store.load();
     var share = store.getLiveShareLista ? store.getLiveShareLista(data) : null;
     if (!share || !share.active) {
@@ -109,9 +129,10 @@
     return mountEl;
   }
 
-  function bind() {
+  function bind(opts) {
     if (bound) return;
     bound = true;
+    displayMode = resolveDisplayMode(opts || {});
     ensureMount();
 
     function onUpdate() {

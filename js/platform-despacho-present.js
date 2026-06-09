@@ -11,9 +11,23 @@
   var bound = false;
   var mountEl = null;
   var lastSig = '';
+  var displayMode = false;
 
   function DS() {
     return global.PlatformDespachoStore;
+  }
+
+  function resolveDisplayMode(opts) {
+    if (opts && opts.displayMode != null) return !!opts.displayMode;
+    if (global.PlatformDespachoDisplay && global.PlatformDespachoDisplay.isDisplayMode) {
+      return global.PlatformDespachoDisplay.isDisplayMode();
+    }
+    return !!(global.document && global.document.body &&
+      global.document.body.classList.contains('desp-display-mode'));
+  }
+
+  function shouldShowOnThisPage() {
+    return displayMode;
   }
 
   function estadoHtml(estadoId) {
@@ -47,11 +61,13 @@
 
   function renderMount(share) {
     if (!mountEl) return;
-    if (!share || !share.active) {
+    if (!shouldShowOnThisPage() || !share || !share.active) {
       mountEl.hidden = true;
       mountEl.setAttribute('aria-hidden', 'true');
       mountEl.innerHTML = '';
-      document.body.classList.remove('desp-live-present-on');
+      if (global.document && global.document.body) {
+        global.document.body.classList.remove('desp-live-present-on');
+      }
       lastSig = '';
       return;
     }
@@ -84,6 +100,10 @@
   function refreshFromStore() {
     var store = DS();
     if (!store) return;
+    if (!shouldShowOnThisPage()) {
+      renderMount(null);
+      return;
+    }
     var share = store.getLiveShare ? store.getLiveShare() : null;
     var sig = shareSignature(share);
     if (sig === lastSig && share && share.active) return;
@@ -104,9 +124,10 @@
     return mountEl;
   }
 
-  function bind() {
+  function bind(opts) {
     if (bound) return;
     bound = true;
+    displayMode = resolveDisplayMode(opts || {});
     ensureMount();
 
     function onUpdate() {

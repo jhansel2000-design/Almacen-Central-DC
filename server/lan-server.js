@@ -554,12 +554,14 @@ server.listen(PORT, HOST, function () {
   console.log('En ESTE equipo:');
   console.log('  WMS:      http://localhost:' + PORT + '/index.html');
   console.log('  Despacho: http://localhost:' + PORT + '/despacho.html');
+  console.log('  Pantalla externa: http://localhost:' + PORT + '/despacho-pantalla.html');
   console.log('');
   if (ips.length) {
     console.log('Desde OTROS dispositivos (mismo WiFi):');
     ips.forEach(function (net) {
       console.log('  [' + net.name + '] http://' + net.address + ':' + PORT + '/index.html');
       console.log('           http://' + net.address + ':' + PORT + '/despacho.html');
+      console.log('  Pantalla:  http://' + net.address + ':' + PORT + '/despacho-pantalla.html');
     });
   } else {
     console.log('No se detectó IP LAN. Revisa la conexión WiFi.');

@@ -1294,6 +1294,68 @@ html[data-theme="light"] .desp-entrada-btn.active {
   background: linear-gradient(145deg, rgba(255, 152, 0, 0.12) 0%, #fff8f0 100%);
 }
 
+/* Pantalla externa — enlace en panel de control */
+.desp-display-url-box {
+  margin: 0 0 1rem;
+  padding: 1rem 1.1rem;
+  border-radius: 14px;
+  border: 1px solid rgba(77, 163, 255, 0.28);
+  background: linear-gradient(135deg, rgba(77, 163, 255, 0.1) 0%, rgba(77, 163, 255, 0.03) 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.desp-display-url-lead {
+  margin: 0 0 0.65rem;
+  font-size: 0.88rem;
+  line-height: 1.4;
+}
+
+.desp-display-url-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: stretch;
+}
+
+.desp-display-url-input {
+  flex: 1 1 200px;
+  min-width: 0;
+  padding: 0.65rem 0.75rem;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.25);
+  color: var(--text);
+  font-size: 0.78rem;
+  font-family: ui-monospace, 'Cascadia Code', monospace;
+}
+
+.desp-display-url-open {
+  background: linear-gradient(135deg, #1565c0, #1976d2);
+  color: #fff;
+  border: none;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.desp-display-url-copy {
+  white-space: nowrap;
+}
+
+.desp-display-url-note {
+  margin: 0.55rem 0 0;
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+.desp-display-url-note code {
+  font-size: 0.72rem;
+}
+
+body.desp-controller-mode .desp-live-present,
+body.desp-controller-mode .desp-live-present-lista {
+  display: none !important;
+}
+
 /* Panel lista compartida */
 .desp-lista-share-layout {
   display: flex;

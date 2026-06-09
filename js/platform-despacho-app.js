@@ -274,11 +274,24 @@
 
   function enterApp(user) {
     state.user = user;
+    document.body.classList.add('desp-controller-mode');
+    clearLocalPresentOverlays();
     setAuthVisible(false);
     updateRoleBadge();
     renderDespacho();
     bindSessionTouch();
     if (PC.initGestures) PC.initGestures($('despApp'));
+  }
+
+  function clearLocalPresentOverlays() {
+    ['despGlobalLivePresent', 'despGlobalLiveLista'].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) {
+        el.hidden = true;
+        el.innerHTML = '';
+      }
+    });
+    document.body.classList.remove('desp-live-present-on', 'desp-live-lista-on');
   }
 
   function logout() {
@@ -327,26 +340,14 @@
 
       document.addEventListener('despacho-updated', function () {
         if (state.user) {
-          if (global.PlatformDespachoPresent) global.PlatformDespachoPresent.refresh();
-          if (global.PlatformDespachoPresentLista) global.PlatformDespachoPresentLista.refresh();
           renderDespacho();
         }
       });
 
-      document.addEventListener('despacho-live-share', function () {
-        if (state.user && global.PlatformDespachoPresent) {
-          global.PlatformDespachoPresent.refresh();
-        }
-      });
+      document.addEventListener('despacho-live-share', function () { /* pantalla externa */ });
+      document.addEventListener('despacho-live-lista', function () { /* pantalla externa */ });
 
-      document.addEventListener('despacho-live-lista', function () {
-        if (state.user && global.PlatformDespachoPresentLista) {
-          global.PlatformDespachoPresentLista.refresh();
-        }
-      });
-
-      if (global.PlatformDespachoPresent) global.PlatformDespachoPresent.bind();
-      if (global.PlatformDespachoPresentLista) global.PlatformDespachoPresentLista.bind();
+      clearLocalPresentOverlays();
 
       document.addEventListener('lan-sync', function (ev) {
         if (!state.user) return;

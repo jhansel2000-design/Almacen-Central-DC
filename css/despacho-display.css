@@ -1,0 +1,157 @@
+/**
+ * Pantalla externa — estilos fullscreen
+ */
+body.desp-display-mode {
+  margin: 0;
+  min-height: 100vh;
+  background: #03060e;
+  font-family: 'DM Sans', system-ui, sans-serif;
+  color: #e8eef4;
+  overflow-x: hidden;
+}
+
+.desp-display-noscript {
+  padding: 2rem;
+  text-align: center;
+}
+
+.desp-display-waiting {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  padding: 2rem;
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 0%, rgba(255, 152, 0, 0.08), transparent 55%),
+    #03060e;
+}
+
+.desp-display-waiting[hidden] {
+  display: none !important;
+}
+
+.desp-display-wait-inner {
+  text-align: center;
+  max-width: 420px;
+}
+
+.desp-display-wait-icon {
+  font-size: 3rem;
+  display: block;
+  margin-bottom: 1rem;
+  opacity: 0.85;
+}
+
+.desp-display-wait-title {
+  margin: 0 0 0.65rem;
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.desp-display-wait-text {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+  color: #8fa3b8;
+}
+
+.desp-display-wait-hint {
+  margin: 0;
+  font-size: 0.82rem;
+  color: #6b7c8f;
+  line-height: 1.45;
+}
+
+body.desp-display-mode .desp-live-present {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  top: 0;
+}
+
+body.desp-display-mode .desp-present-shell {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-bottom: none;
+}
+
+body.desp-display-mode .desp-present-inner {
+  width: min(960px, 100%);
+  padding: 2rem 1.5rem;
+}
+
+body.desp-display-mode .desp-present-grid {
+  grid-template-columns: 1fr;
+  text-align: center;
+  gap: 1.5rem;
+}
+
+body.desp-display-mode .desp-present-barcode-wrap {
+  padding: 1rem 1.25rem 0.75rem;
+}
+
+body.desp-display-mode .desp-present-barcode.desp-barcode-img {
+  max-width: min(640px, 92vw);
+}
+
+body.desp-display-mode .desp-present-idc {
+  font-size: clamp(2rem, 6vw, 3.2rem);
+}
+
+body.desp-display-mode .desp-present-jaula {
+  font-size: 1.35rem;
+}
+
+body.desp-display-view-barcode .desp-live-present-lista {
+  display: none !important;
+}
+
+body.desp-display-view-lista .desp-live-present {
+  display: none !important;
+}
+
+body.desp-display-mode .desp-live-present-lista {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  top: 0;
+}
+
+body.desp-display-mode .desp-lista-present-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  border-bottom: none;
+}
+
+body.desp-display-mode .desp-lista-present-inner {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 1.25rem 1.5rem 2rem;
+  max-width: 1200px;
+}
+
+body.desp-display-mode .desp-lista-present-table-wrap {
+  flex: 1;
+}
+
+body.desp-display-mode .desp-lista-present-table {
+  font-size: 1.05rem;
+}
+
+body.desp-display-mode .desp-lista-present-table th {
+  font-size: 0.8rem;
+  padding: 0.75rem 1rem;
+}
+
+body.desp-display-mode .desp-lista-present-table td {
+  padding: 0.65rem 1rem;
+}
+
+body.desp-display-mode .desp-lista-present-idc {
+  font-size: 1.15rem;
+}
