@@ -134,6 +134,21 @@
       '</div>';
   }
 
+  function kpiStripOperador(stats) {
+    stats = stats || {};
+    return '<div class="desp-kpi-strip desp-kpi-strip--operador">' +
+      '<article class="desp-kpi desp-kpi--green">' +
+      '<span class="desp-kpi-val">' + esc(String(stats.activos || 0)) + '</span>' +
+      '<span class="desp-kpi-lbl">Activos validador</span></article>' +
+      '<article class="desp-kpi desp-kpi--neutral">' +
+      '<span class="desp-kpi-val">' + esc(String(stats.retirados || 0)) + '</span>' +
+      '<span class="desp-kpi-lbl">Retirados</span></article>' +
+      '<article class="desp-kpi desp-kpi--blue">' +
+      '<span class="desp-kpi-val">' + esc(String(stats.total || 0)) + '</span>' +
+      '<span class="desp-kpi-lbl">Total enviados</span></article>' +
+      '</div>';
+  }
+
   function formatIdc(raw) {
     return DS && DS.formatIdc ? DS.formatIdc(raw) : String(raw || '').trim();
   }
@@ -263,7 +278,7 @@
         screen: 'registro',
         icon: '📋',
         title: 'Seguimiento IDC y pasillo',
-        sub: 'En proceso · Facturado',
+        sub: 'Registro · envíos al validador',
         active: screen === 'registro',
         live: false
       }) +
@@ -311,15 +326,46 @@
       '<span class="desp-action-btn-text">Registrar IDC y pasillo</span></button>' +
       '</div>' +
       '</form>' +
-      '<div class="desp-recent">' +
-      '<h4>Últimos en validador <span class="desp-muted">(solo copia el IDC)</span></h4>' +
-      renderPedidosMini(DS.getPedidosVisiblesValidador(data.pedidos).slice(0, 6)) +
-      '</div>' +
       '<section class="desp-jaula-map" aria-labelledby="despJaulaMapTitle">' +
-      '<h4 id="despJaulaMapTitle">IDC por pasillo · en validador</h4>' +
-      '<p class="desp-muted desp-jaula-map-sub">Los registros del operador aparecen aquí hasta que el validador los finaliza</p>' +
+      '<h4 id="despJaulaMapTitle">IDC por pasillo · activos en validador</h4>' +
+      '<p class="desp-muted desp-jaula-map-sub">IDC que el validador aún no ha retirado del seguimiento</p>' +
       renderJaulaMap(DS.getPedidosVisiblesValidador(data.pedidos)) +
-      '</section></div></section>';
+      '</section>' +
+      renderRegistroEnviadosValidador(DS.getRegistroEnviadosValidador(data.pedidos)) +
+      '</div></section>';
+  }
+
+  function renderRegistroEnviadosValidador(pedidos) {
+    pedidos = pedidos || [];
+    return '<section class="desp-registro-envios" aria-labelledby="despRegistroEnviosTitle">' +
+      '<header class="desp-archivo-head">' +
+      '<h4 id="despRegistroEnviosTitle">Registro de envíos al validador</h4>' +
+      '<p class="desp-muted desp-archivo-sub">Historial completo de todos los IDC enviados al validador — activos y retirados</p></header>' +
+      '<div class="desp-table-wrap">' +
+      '<table class="desp-table desp-table--registro-envios">' +
+      '<thead><tr>' +
+      '<th>IDC</th><th>Cliente</th><th>Pasillo</th><th>Operador</th><th>Estado validador</th><th>Vista</th><th>Registro</th><th></th>' +
+      '</tr></thead><tbody>' +
+      (pedidos.length ? pedidos.map(function (p) {
+        var activo = p.visibleValidador !== false;
+        var pasillo = activo ? p.jaula : (p.archivadoPasillo != null ? p.archivadoPasillo : p.jaula);
+        var vistaBadge = activo
+          ? '<span class="desp-vista-badge desp-vista-badge--activo">Activo</span>'
+          : '<span class="desp-vista-badge desp-vista-badge--retirado">Retirado</span>';
+        var opEstado = p.estadoOperador || 'en_proceso';
+        return '<tr data-pedido-id="' + esc(p.id) + '">' +
+          '<td><strong class="desp-idc">' + esc(formatIdc(p.idc)) + '</strong></td>' +
+          '<td class="desp-cliente">' + esc(fmtCliente(p)) + '</td>' +
+          '<td>' + esc(pasillo || '—') + '</td>' +
+          '<td>' + estadoBadge(opEstado) + '</td>' +
+          '<td>' + estadoBadge(p.estado) + '</td>' +
+          '<td>' + vistaBadge + '</td>' +
+          '<td class="desp-dt">' + esc(fmtDt(p.createdAt)) + '<br><small>' + esc(p.createdBy) + '</small></td>' +
+          '<td><button type="button" class="btn btn-ghost desp-btn-hist" data-pedido-id="' + esc(p.id) + '">Historial</button></td>' +
+          '</tr>';
+      }).join('') :
+        '<tr><td colspan="8" class="desp-empty-row">Aún no hay IDC enviados al validador.</td></tr>') +
+      '</tbody></table></div></section>';
   }
 
   function renderPanelBarcodeShare(data) {
@@ -672,7 +718,7 @@
     return '<section class="desp-archivo-section" aria-labelledby="despArchivoTitle">' +
       '<header class="desp-archivo-head">' +
       '<h4 id="despArchivoTitle">Registro de IDC retirados de vista</h4>' +
-      '<p class="desp-muted desp-archivo-sub">IDC que el validador quitó · no se muestran al operador · consulta futura</p></header>' +
+      '<p class="desp-muted desp-archivo-sub">IDC que el validador quitó · también aparecen en el registro del operador</p></header>' +
       '<div class="desp-table-wrap">' +
       '<table class="desp-table desp-table--archivo">' +
       '<thead><tr>' +
@@ -760,17 +806,22 @@
       soloPreparador: despachoArea === 'preparador',
       soloValidador: despachoArea === 'validador'
     });
+    var operadorStats = despachoArea === 'preparador' ? DS.countKpiOperador(data.pedidos) : null;
 
     host.innerHTML =
       '<div class="desp-dashboard" id="despDashboard">' +
       '<header class="desp-dash-header">' +
       '<div><span class="desp-dash-eyebrow">Almacén Central DC · Despacho</span>' +
       '<h2 class="desp-dash-title">Seguimiento IDC · Pasillo</h2>' +
-      '<p class="desp-dash-sub">Operador registra (En proceso/Facturado) → validador automático · ' +
-      esc(String(DS.getPedidosVisiblesValidador(data.pedidos).length)) + ' en validador</p></div>' +
+      '<p class="desp-dash-sub">' + (despachoArea === 'preparador'
+        ? 'Registro operador → validador automático · ' +
+          esc(String(operadorStats.activos || 0)) + ' activos · ' +
+          esc(String(operadorStats.total || 0)) + ' enviados en total'
+        : 'Validador · ' + esc(String(DS.getPedidosVisiblesValidador(data.pedidos).length)) + ' en seguimiento') +
+      '</p></div>' +
       flujoHtml() +
       '</header>' +
-      kpiStrip(counts, despachoArea) +
+      (despachoArea === 'preparador' ? kpiStripOperador(operadorStats) : kpiStrip(counts, despachoArea)) +
       renderNavEntrada(screen, data, opts) +
       '<div class="desp-panels">' +
       (screen === 'barcode'

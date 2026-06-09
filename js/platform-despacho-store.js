@@ -144,11 +144,21 @@
     if (seguimientoValidador && PREPARADOR_ESTADOS.indexOf(estado) >= 0) {
       estado = 'pendiente_carga';
     }
+    if (!seguimientoValidador && p.visibleValidador !== false &&
+        PREPARADOR_ESTADOS.indexOf(estado) >= 0) {
+      seguimientoValidador = true;
+      estado = 'pendiente_carga';
+    }
+    var estadoOperador = p.estadoOperador;
+    if (!estadoOperador || PREPARADOR_ESTADOS.indexOf(estadoOperador) < 0) {
+      estadoOperador = inferEstadoOperador(p);
+    }
     return {
       id: p.id || uid(),
       idc: formatIdc(p.idc || ''),
       jaula: String(p.jaula || '').trim(),
       cliente: String(p.cliente || '').trim(),
+      estadoOperador: estadoOperador,
       estado: estado,
       seguimientoValidador: seguimientoValidador,
       visibleValidador: p.visibleValidador !== false,
@@ -161,6 +171,20 @@
       updatedBy: p.updatedBy || p.createdBy || '—',
       historial: Array.isArray(p.historial) ? p.historial : []
     };
+  }
+
+  function inferEstadoOperador(p) {
+    p = p || {};
+    if (p.estadoOperador && PREPARADOR_ESTADOS.indexOf(p.estadoOperador) >= 0) {
+      return p.estadoOperador;
+    }
+    var hist = p.historial || [];
+    for (var i = 0; i < hist.length; i++) {
+      var n = String(hist[i].nota || '');
+      if (/facturado/i.test(n)) return 'facturado';
+      if (/en proceso/i.test(n)) return 'en_proceso';
+    }
+    return 'en_proceso';
   }
 
   function save(data) {
@@ -219,6 +243,7 @@
     var prevEstado = pedido.estado;
     pedido.seguimientoValidador = true;
     pedido.visibleValidador = true;
+    pedido.estadoOperador = estadoOperador;
     pedido.estado = 'pendiente_carga';
     pedido.archivadoValidadorAt = null;
     pedido.archivadoValidadorBy = null;
@@ -271,6 +296,7 @@
       idc: idc,
       jaula: jaula,
       cliente: cliente,
+      estadoOperador: estado,
       estado: 'pendiente_carga',
       seguimientoValidador: true,
       visibleValidador: true,
@@ -620,6 +646,29 @@
     });
   }
 
+  function getRegistroEnviadosValidador(pedidos) {
+    return (pedidos || []).filter(function (p) {
+      return p.seguimientoValidador === true;
+    }).sort(function (a, b) {
+      return (b.createdAt || b.updatedAt || '').localeCompare(a.createdAt || a.updatedAt || '');
+    });
+  }
+
+  function countKpiOperador(pedidos) {
+    var registro = getRegistroEnviadosValidador(pedidos);
+    var activos = registro.filter(function (p) { return p.visibleValidador !== false; });
+    var retirados = registro.filter(function (p) { return p.visibleValidador === false; });
+    var stats = {
+      activos: activos.length,
+      retirados: retirados.length,
+      total: registro.length
+    };
+    VALIDADOR_ESTADOS.forEach(function (id) {
+      stats[id] = activos.filter(function (p) { return p.estado === id; }).length;
+    });
+    return stats;
+  }
+
   function getPedidosActivos(pedidos) {
     return (pedidos || []).slice().sort(function (a, b) {
       var ja = String(a.jaula || '').localeCompare(String(b.jaula || ''), 'es', { numeric: true });
@@ -659,6 +708,8 @@
     getPedidosSeguimientoPreparador: getPedidosSeguimientoPreparador,
     getPedidosVisiblesValidador: getPedidosVisiblesValidador,
     getPedidosArchivadosValidador: getPedidosArchivadosValidador,
+    getRegistroEnviadosValidador: getRegistroEnviadosValidador,
+    countKpiOperador: countKpiOperador,
     filterPedidos: filterPedidos,
     countByEstado: countByEstado,
     formatEstado: formatEstado,

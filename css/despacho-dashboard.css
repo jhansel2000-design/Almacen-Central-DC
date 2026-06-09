@@ -1528,6 +1528,34 @@ body.desp-controller-mode .desp-live-present-lista {
   }
 }
 
+.desp-kpi--green .desp-kpi-val { color: #34d399; }
+.desp-kpi--neutral .desp-kpi-val { color: #94a3b8; }
+
+.desp-registro-envios {
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px dashed rgba(255, 255, 255, 0.12);
+}
+
+.desp-vista-badge {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  letter-spacing: 0.02em;
+}
+
+.desp-vista-badge--activo {
+  background: rgba(52, 211, 153, 0.15);
+  color: #34d399;
+}
+
+.desp-vista-badge--retirado {
+  background: rgba(148, 163, 184, 0.15);
+  color: #94a3b8;
+}
+
 /* Validador — archivo / quitar vista */
 .desp-archivo-section {
   margin-top: 1.5rem;
