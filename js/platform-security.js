@@ -9,6 +9,42 @@
   var turnstileWidgetId = null;
   var configPromise = null;
   var minFormMs = 1200;
+  /** Respaldo si falla la carga de site-config.json (GitHub Pages / caché). */
+  var DEFAULT_TURNSTILE_SITE_KEY = '0x4AAAAAADhftTLJSQ0WxVnuiLp9UNRpOMc';
+
+  function configUrl() {
+    try {
+      var p = global.location.pathname || '/';
+      if (p.indexOf('/Almacen-Central-DC') === 0) {
+        return '/Almacen-Central-DC/data/site-config.json';
+      }
+    } catch (e) { /* noop */ }
+    return 'data/site-config.json';
+  }
+
+  function applySecurityConfig(cfg) {
+    cfg = cfg || {};
+    var sec = cfg.security || {};
+    turnstileSiteKey = String(sec.turnstileSiteKey || DEFAULT_TURNSTILE_SITE_KEY || '').trim();
+    if (sec.humanVerifyMinMs != null) {
+      minFormMs = Math.max(800, parseInt(sec.humanVerifyMinMs, 10) || minFormMs);
+    }
+    return cfg;
+  }
+
+  function isLanOrigin() {
+    try {
+      var h = (global.location && global.location.hostname) || '';
+      if (h === 'localhost' || h === '127.0.0.1') return true;
+      return /^(192\.168\.|10\.|172\.(1[6-9]|2\d|3[01])\.)/.test(h);
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function shouldVerifyOnServer() {
+    return isLanOrigin() && !isPublicWeb();
+  }
 
   function sha256(text) {
     if (global.PanelCore && global.PanelCore.sha256Sync) {
@@ -28,16 +64,11 @@
 
   function loadConfig() {
     if (configPromise) return configPromise;
-    configPromise = fetch('data/site-config.json?v=' + Date.now())
+    configPromise = fetch(configUrl() + '?v=' + Date.now(), { cache: 'no-store' })
       .then(function (r) { return r.ok ? r.json() : {}; })
       .catch(function () { return {}; })
       .then(function (cfg) {
-        var sec = cfg && cfg.security ? cfg.security : {};
-        turnstileSiteKey = String(sec.turnstileSiteKey || '').trim();
-        if (sec.humanVerifyMinMs != null) {
-          minFormMs = Math.max(800, parseInt(sec.humanVerifyMinMs, 10) || minFormMs);
-        }
-        return cfg;
+        return applySecurityConfig(cfg);
       });
     return configPromise;
   }
@@ -182,7 +213,7 @@
   }
 
   function verifyOnServer(token) {
-    if (!token) return Promise.resolve({ ok: true });
+    if (!token || !shouldVerifyOnServer()) return Promise.resolve({ ok: true });
     var url = '/api/verify-human';
     return fetch(url, {
       method: 'POST',

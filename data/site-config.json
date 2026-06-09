@@ -22,6 +22,7 @@
   "security": {
     "turnstileSiteKey": "0x4AAAAAADhftTLJSQ0WxVnuiLp9UNRpOMc",
     "humanVerifyMinMs": 1200,
-    "help": "Turnstile producción · Secret Key solo en data/sync-secrets.local.json (no GitHub)"
+    "turnstileReady": true,
+    "help": "Turnstile producción activo. Secret Key: ejecute CONFIGURAR-TURNSTILE-SECRET.bat en su PC"
   }
 }
