@@ -400,12 +400,30 @@
     return list;
   }
 
-  function countByEstado(pedidos) {
+  function countByEstado(pedidos, opts) {
+    opts = opts || {};
     var counts = {};
     Object.keys(ESTADOS).forEach(function (k) { counts[k] = 0; });
     (pedidos || []).forEach(function (p) {
+      if (p.visibleValidador === false) return;
+      var enOperador = p.seguimientoValidador !== true;
+      var enValidador = p.seguimientoValidador === true;
+      if (PREPARADOR_ESTADOS.indexOf(p.estado) >= 0) {
+        if (!enOperador) return;
+      } else if (VALIDADOR_ESTADOS.indexOf(p.estado) >= 0) {
+        if (!enValidador) return;
+      }
       if (counts[p.estado] != null) counts[p.estado] += 1;
     });
+    if (opts.soloPreparador) {
+      VALIDADOR_ESTADOS.forEach(function (k) { counts[k] = 0; });
+    }
+    if (opts.soloValidador) {
+      PREPARADOR_ESTADOS.forEach(function (k) { counts[k] = 0; });
+      counts.recibidos_validador = getPedidosVisiblesValidador(pedidos).filter(function (p) {
+        return PREPARADOR_ESTADOS.indexOf(p.estado) >= 0;
+      }).length;
+    }
     return counts;
   }
 

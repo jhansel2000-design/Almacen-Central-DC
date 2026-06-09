@@ -87,10 +87,20 @@
       '</div>';
   }
 
-  function kpiStrip(counts) {
+  function kpiStrip(counts, despachoArea) {
     counts = counts || {};
-    return '<div class="desp-kpi-strip">' +
-      Object.keys(DS.ESTADOS).map(function (id) {
+    despachoArea = despachoArea === 'validador' ? 'validador' : 'preparador';
+    var ids = despachoArea === 'validador'
+      ? DS.VALIDADOR_ESTADOS.slice()
+      : DS.PREPARADOR_ESTADOS.slice();
+    var extra = '';
+    if (despachoArea === 'validador' && counts.recibidos_validador > 0) {
+      extra = '<article class="desp-kpi desp-kpi--amber">' +
+        '<span class="desp-kpi-val">' + esc(String(counts.recibidos_validador)) + '</span>' +
+        '<span class="desp-kpi-lbl">Recibidos</span></article>';
+    }
+    return '<div class="desp-kpi-strip">' + extra +
+      ids.map(function (id) {
         var e = DS.ESTADOS[id];
         return '<article class="desp-kpi desp-kpi--' + esc(e.color) + '">' +
           '<span class="desp-kpi-val">' + esc(String(counts[id] || 0)) + '</span>' +
@@ -707,7 +717,10 @@
 
     resetPasilloTouched();
 
-    var counts = DS.countByEstado(data.pedidos);
+    var counts = DS.countByEstado(data.pedidos, {
+      soloPreparador: despachoArea === 'preparador',
+      soloValidador: despachoArea === 'validador'
+    });
 
     host.innerHTML =
       '<div class="desp-dashboard" id="despDashboard">' +
@@ -719,7 +732,7 @@
       esc(String(DS.getPedidosVisiblesValidador(data.pedidos).length)) + ' en validador</p></div>' +
       flujoHtml() +
       '</header>' +
-      kpiStrip(counts) +
+      kpiStrip(counts, despachoArea) +
       renderNavEntrada(screen, data, opts) +
       '<div class="desp-panels">' +
       (screen === 'barcode'
