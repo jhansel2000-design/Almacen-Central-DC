@@ -917,3 +917,16 @@ body.averias-dash-view {
     transform: none;
   }
 }
+
+#modal.averias-app.modal {
+  position: fixed !important;
+  z-index: 99999 !important;
+}
+
+#modal.averias-app.modal[hidden] {
+  display: none !important;
+}
+
+body.av-modal-open {
+  overflow: hidden;
+}
