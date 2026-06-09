@@ -903,6 +903,26 @@ button:focus-visible,.btn:focus-visible,.auth-role-card:focus-visible,.admin-tab
 .admin-preview-summary,.admin-preview-errors{ margin:0.5rem 0 0; padding-left:1.2rem; }
 .admin-tools-section{ margin-bottom:0.5rem; }
 .btn-warn{ background:rgba(255,209,102,0.15); color:var(--warning); border:1px solid rgba(255,209,102,0.4); }
+.admin-danger-zone{
+  padding:1rem 1.15rem;
+  border:2px solid rgba(255,80,90,0.55);
+  border-radius:10px;
+  background:rgba(220,38,38,0.08);
+}
+.admin-danger-title{ color:var(--danger); }
+.admin-danger-hint{ color:var(--danger); opacity:0.9; }
+.btn-no-tocar{
+  background:#dc2626;
+  color:#fff;
+  border:2px solid #991b1b;
+  font-weight:800;
+  font-size:1.05rem;
+  letter-spacing:0.06em;
+  padding:0.7rem 1.6rem;
+  text-transform:uppercase;
+}
+.btn-no-tocar:hover:not(:disabled){ background:#b91c1c; color:#fff; }
+.btn-no-tocar:disabled{ opacity:0.65; cursor:wait; }
 .btn-danger{ background:rgba(255,107,122,0.15); color:var(--danger); border:1px solid rgba(255,107,122,0.4); }
 .btn-admin-file{ display:inline-flex; align-items:center; cursor:pointer; }
 .admin-storage-table td{ font-size:0.82rem; }

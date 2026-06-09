@@ -906,10 +906,48 @@
     }
   }
 
+  function wipeAll() {
+    var snap = {
+      version: 1,
+      updatedAt: new Date().toISOString(),
+      incidences: [],
+      damages: [],
+      securityIncidents: [],
+      audits5s: [],
+      equipmentInspections: [],
+      equipmentRegistry: {}
+    };
+    var keys = [
+      SNAPSHOT_KEY,
+      'averias_dc_incidences',
+      'averias_dc_damages',
+      'averias_dc_securityIncidents',
+      'averias_dc_audits5s',
+      'averias_dc_equipmentInspections',
+      'averias_dc_equipmentRegistry',
+      'averias_dc_audit_log'
+    ];
+    keys.forEach(function (k) {
+      try { global.localStorage.removeItem(k); } catch (e) { /* noop */ }
+    });
+    lastAppliedJson = '';
+    lastRemoteUpdatedAt = '';
+    if (global.PlatformAveriasUI && global.PlatformAveriasUI.applyRemoteSnapshot) {
+      global.PlatformAveriasUI.applyRemoteSnapshot(snap, { silent: false });
+    }
+    return pushSnapshot(snap).then(function (result) {
+      try {
+        global.dispatchEvent(new CustomEvent('averias-web-wiped'));
+      } catch (e) { /* noop */ }
+      return Object.assign({ ok: !!(result && result.ok) }, result || {});
+    });
+  }
+
   global.PlatformAveriasCloudSync = {
     mergeAveriasSnapshots: mergeAveriasSnapshots,
     pull: pullAll,
     push: pushSnapshot,
+    wipeAll: wipeAll,
     isCloudConfigured: isCloudConfigured,
     activateCloud: activateCloud,
     getPublicBase: function () { return resolvePublicBase(); },

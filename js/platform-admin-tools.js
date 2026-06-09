@@ -27,6 +27,17 @@
     { name: 'PlatformDespachoUI', label: 'UI despacho' }
   ];
 
+  var AVERIAS_LS_KEYS = [
+    'averias_dc_snapshot',
+    'averias_dc_incidences',
+    'averias_dc_damages',
+    'averias_dc_securityIncidents',
+    'averias_dc_audits5s',
+    'averias_dc_equipmentInspections',
+    'averias_dc_equipmentRegistry',
+    'averias_dc_audit_log'
+  ];
+
   var STORAGE_KEYS = [
     { key: 'almacen_platform_config', label: 'Configuración' },
     { key: 'almacen_platform_data_operaciones', label: 'Datos operaciones' },
@@ -361,6 +372,117 @@
     return { ok: true, message: 'Configuración restablecida a valores por defecto.' };
   }
 
+  function emptyAveriasSnapshot() {
+    return {
+      version: 1,
+      updatedAt: new Date().toISOString(),
+      incidences: [],
+      damages: [],
+      securityIncidents: [],
+      audits5s: [],
+      equipmentInspections: [],
+      equipmentRegistry: {}
+    };
+  }
+
+  function jsonBinAuthHeaders(jb) {
+    var key = jb && jb.accessKey;
+    if (!key) return {};
+    if (jb.keyType === 'master' || String(key).indexOf('$2a$') === 0) {
+      return { 'X-Master-Key': key };
+    }
+    return { 'X-Access-Key': key };
+  }
+
+  function clearLocalAveriasData() {
+    if (!global.localStorage) return { ok: false };
+    AVERIAS_LS_KEYS.forEach(function (k) {
+      try { global.localStorage.removeItem(k); } catch (e) { /* noop */ }
+    });
+    return { ok: true };
+  }
+
+  function fetchSiteConfigForAdmin() {
+    return global.fetch('data/site-config.json?t=' + Date.now(), { cache: 'no-store', mode: 'cors' })
+      .then(function (res) {
+        if (!res.ok) throw new Error('No se pudo leer site-config.json');
+        return res.json();
+      });
+  }
+
+  function pushEmptyToJsonBin(jb) {
+    if (!jb || !jb.binId || !jb.accessKey) {
+      return Promise.resolve({ ok: false, skipped: true });
+    }
+    var snap = emptyAveriasSnapshot();
+    var headers = jsonBinAuthHeaders(jb);
+    headers['Content-Type'] = 'application/json';
+    return global.fetch('https://api.jsonbin.io/v3/b/' + jb.binId, {
+      method: 'PUT',
+      headers: headers,
+      body: JSON.stringify(snap),
+      mode: 'cors'
+    }).then(function (res) {
+      return { ok: res.ok, status: res.status, target: 'jsonbin' };
+    }).catch(function (err) {
+      return { ok: false, target: 'jsonbin', error: err.message || String(err) };
+    });
+  }
+
+  function pushEmptyToLanAverias() {
+    var snap = emptyAveriasSnapshot();
+    return global.fetch('/api/cloud/averias', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ data: snap })
+    }).then(function (res) {
+      return { ok: res.ok, target: 'lan' };
+    }).catch(function () {
+      return { ok: false, target: 'lan', skipped: true };
+    });
+  }
+
+  function wipeCloudAveriasData() {
+    if (global.PlatformAveriasCloudSync && global.PlatformAveriasCloudSync.wipeAll) {
+      return global.PlatformAveriasCloudSync.wipeAll();
+    }
+    return fetchSiteConfigForAdmin().then(function (cfg) {
+      var tasks = [pushEmptyToLanAverias()];
+      var jb = cfg && cfg.averiasJsonBin;
+      if (jb && jb.enabled && jb.binId && jb.accessKey) {
+        tasks.unshift(pushEmptyToJsonBin(jb));
+      }
+      return Promise.all(tasks).then(function (results) {
+        var jsonbin = results.find(function (r) { return r && r.target === 'jsonbin'; });
+        var lan = results.find(function (r) { return r && r.target === 'lan'; });
+        var cloudOk = !!(jsonbin && jsonbin.ok) || !!(lan && lan.ok);
+        return { ok: cloudOk, jsonbin: jsonbin, lan: lan, results: results };
+      });
+    }).catch(function (err) {
+      return { ok: false, error: err.message || String(err) };
+    });
+  }
+
+  function wipeAllWebRegisteredData() {
+    clearLocalAveriasData();
+    var modules = clearModuleData('all');
+    return wipeCloudAveriasData().then(function (cloud) {
+      try {
+        global.dispatchEvent(new CustomEvent('averias-web-wiped'));
+      } catch (e) { /* noop */ }
+      var cloudOk = !!(cloud && cloud.ok);
+      return {
+        ok: modules.ok !== false && (cloudOk || !(cloud && cloud.error)),
+        cloudOk: cloudOk,
+        message: cloudOk
+          ? 'Limpieza completa: reportes en la nube borrados y datos del WMS vacíos. Todos los dispositivos se actualizarán en ~1 s.'
+          : 'Datos locales borrados. No se pudo vaciar la nube — compruebe internet o JSONBin.',
+        modules: modules,
+        cloud: cloud
+      };
+    });
+  }
+
   global.PlatformAdminTools = {
     runDiagnostics: runDiagnostics,
     validateExcelBuffer: validateExcelBuffer,
@@ -371,6 +493,9 @@
     restoreBackup: restoreBackup,
     clearModuleData: clearModuleData,
     resetConfig: resetConfig,
+    wipeAllWebRegisteredData: wipeAllWebRegisteredData,
+    clearLocalAveriasData: clearLocalAveriasData,
+    emptyAveriasSnapshot: emptyAveriasSnapshot,
     formatBytes: formatBytes
   };
 })(typeof window !== 'undefined' ? window : this);

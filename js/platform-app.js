@@ -1355,7 +1355,8 @@
         onRestore: adminRestoreBackup,
         onClear: adminClearModuleData,
         onResetConfig: adminResetConfig,
-        onPurgeLogs: adminPurgeLogs
+        onPurgeLogs: adminPurgeLogs,
+        onWipeWeb: adminWipeAllWebData
       });
     }
     loadConfigForm();
@@ -1445,6 +1446,63 @@
     setAdminToolsStatus('Historial vaciado.', false);
     var logsHost = $('logsHost');
     if (logsHost) global.PlatformAdminUI.renderLogs(logsHost);
+  }
+
+  function adminWipeAllWebData() {
+    if (!userCan('admin.panel')) {
+      toastNotify('No tienes permiso para esta acción.', 'warn');
+      return;
+    }
+    if (!global.PlatformAdminTools || !global.PlatformAdminTools.wipeAllWebRegisteredData) {
+      toastNotify('Herramienta de limpieza no disponible.', 'warn');
+      return;
+    }
+    if (!confirm(
+      '⚠️ PELIGRO — NO TOCAR\n\n' +
+      'Esto borrará TODOS los reportes de averías en la nube (celulares + PC) ' +
+      'y todos los datos importados del WMS (productividad, operaciones, facturas, despacho).\n\n' +
+      'NO se borran usuarios ni configuración.\n\n¿Desea continuar?'
+    )) return;
+    var typed = prompt('Escriba LIMPIAR (en mayúsculas) para confirmar el borrado total:');
+    if (typed !== 'LIMPIAR') {
+      setAdminToolsStatus('Cancelado — no escribió LIMPIAR.', true);
+      return;
+    }
+    var btn = document.getElementById('btnNoTocar');
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = 'Limpiando…';
+    }
+    setAdminToolsStatus('Limpiando datos en la web… espere.', false);
+    global.PlatformAdminTools.wipeAllWebRegisteredData().then(function (res) {
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = 'NO TOCAR';
+      }
+      setAdminToolsStatus(res.message || 'Listo.', !res.ok || !res.cloudOk);
+      if (res.ok) {
+        state.dataOperaciones = global.PlatformStore.getPublishedData('operaciones');
+        state.dataProductividad = global.PlatformStore.getPublishedData('productividad');
+        destroyCharts();
+        renderCurrentModule();
+        refreshAdminPanels();
+        global.PlatformAdmin.addLog('web_wipe_all', res.cloudOk ? 'nube ok' : 'solo local', logActor());
+        if (res.cloudOk) {
+          toastNotify('Limpieza completada. La web quedó vacía para nuevos reportes.', 'ok');
+        } else {
+          toastNotify(res.message || 'Datos locales borrados; revise la conexión a la nube.', 'warn');
+        }
+      } else {
+        toastNotify(res.message || 'No se pudo completar la limpieza.', 'warn');
+      }
+    }).catch(function (err) {
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = 'NO TOCAR';
+      }
+      setAdminToolsStatus('Error: ' + (err.message || String(err)), true);
+      toastNotify('Error al limpiar la web.', 'warn');
+    });
   }
 
   function validateExcelBeforeImport(inputId, previewId, moduleId) {

@@ -161,6 +161,15 @@
     if (!container) return;
     handlers = handlers || {};
     var html =
+      '<div class="admin-tools-section admin-danger-zone">' +
+      '<h4 class="admin-subtitle admin-danger-title">⛔ Limpieza total en la web</h4>' +
+      '<p class="admin-hint small">Si la web está muy cargada con reportes viejos (celulares y PC), use este botón para borrar <strong>todos</strong> los reportes de averías en la nube y los datos importados del WMS. Usuarios y configuración <strong>no</strong> se borran.</p>' +
+      '<div class="admin-btn-row">' +
+      '<button type="button" class="btn btn-no-tocar" id="btnNoTocar">NO TOCAR</button>' +
+      '</div>' +
+      '<p class="admin-hint small admin-danger-hint">Irreversible. Debe escribir <strong>LIMPIAR</strong> para confirmar. Los demás dispositivos verán la web vacía en ~1 s.</p>' +
+      '</div>' +
+      '<hr class="admin-divider">' +
       '<div class="admin-tools-section">' +
       '<h4 class="admin-subtitle">Copia de seguridad</h4>' +
       '<p class="admin-hint small">Exporta configuración, datos de ambos módulos, usuarios y áreas en un archivo JSON.</p>' +
@@ -205,6 +214,7 @@
     bind('#btnClearAll', 'click', function () { if (handlers.onClear) handlers.onClear('all'); });
     bind('#btnResetConfig', 'click', function () { if (handlers.onResetConfig) handlers.onResetConfig(); });
     bind('#btnPurgeLogs', 'click', function () { if (handlers.onPurgeLogs) handlers.onPurgeLogs(); });
+    bind('#btnNoTocar', 'click', function () { if (handlers.onWipeWeb) handlers.onWipeWeb(); });
   }
 
   function renderExcelPreview(container, result) {

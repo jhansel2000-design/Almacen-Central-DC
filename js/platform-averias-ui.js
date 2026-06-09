@@ -601,6 +601,9 @@
                 if (ev.detail && ev.detail.store === 'averias') reloadFromSyncDebounced();
             });
             document.addEventListener('averias-updated', function (ev) { reloadFromSyncDebounced(ev); });
+            document.addEventListener('averias-web-wiped', function () {
+                reloadFromSyncDebounced({ detail: { source: 'wipe' } });
+            });
             document.addEventListener('averias-sync-push', function () {
                 if (global.PlatformAveriasCloudSync && global.PlatformAveriasCloudSync.schedulePullBurst) {
                     global.PlatformAveriasCloudSync.schedulePullBurst();
