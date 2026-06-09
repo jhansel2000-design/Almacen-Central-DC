@@ -19,6 +19,10 @@ const webUsersExport = require('../scripts/export-web-users.js');
 const { pushWebUsersGit } = require('../scripts/push-web-users-git.js');
 const averiasExport = require('../scripts/export-averias.js');
 const { pushAveriasGit } = require('../scripts/push-averias-git.js');
+const { setupAveriasCloud } = require('../scripts/setup-averias-cloud.js');
+const { ensureAveriasCloud } = require('../scripts/ensure-averias-cloud.js');
+const jsonbinCloud = require('../scripts/jsonbin-cloud.js');
+const { pushSiteConfigGit } = require('../scripts/setup-averias-cloud.js');
 
 var averiasGitPushTimer = null;
 
@@ -341,6 +345,104 @@ function handleApi(req, res, url) {
     });
   }
 
+  if (req.method === 'GET' && p === '/api/cloud/status') {
+    const creds = jsonbinCloud.getJsonBinCredentials(ROOT);
+    const cfg = fs.existsSync(path.join(ROOT, 'data', 'site-config.json'))
+      ? JSON.parse(fs.readFileSync(path.join(ROOT, 'data', 'site-config.json'), 'utf8'))
+      : {};
+    return sendJson(res, 200, {
+      ok: true,
+      jsonbin: !!(creds && creds.binId),
+      publicSyncBaseUrl: cfg.publicSyncBaseUrl || '',
+      realtime: cfg.realtime !== false,
+      pollSeconds: cfg.pollSeconds || 2
+    });
+  }
+
+  if (req.method === 'GET' && p === '/api/cloud/averias') {
+    return jsonbinCloud.pullAveriasFromJsonBin(ROOT).then(function (remote) {
+      if (remote) return sendJson(res, 200, { ok: true, data: remote, source: 'jsonbin' });
+      const row = readStore('averias');
+      const local = row && row.data ? row.data : averiasExport.readAveriasFile(ROOT);
+      return sendJson(res, 200, { ok: true, data: local || averiasExport.emptySnapshot(), source: 'local' });
+    }).catch(function (e) {
+      return sendJson(res, 500, { ok: false, error: e.message });
+    });
+  }
+
+  if (req.method === 'PUT' && p === '/api/cloud/averias') {
+    return readBody(req).then(function (body) {
+      var snap = body && body.data ? body.data : null;
+      if (!snap) return sendJson(res, 400, { ok: false, error: 'data requerida' });
+      snap.updatedAt = new Date().toISOString();
+      try { writeStore('averias', snap); } catch (e) { /* noop */ }
+      averiasExport.writeAveriasFile(ROOT, snap);
+      scheduleAveriasGitPush();
+      return jsonbinCloud.pushAveriasToJsonBin(ROOT, snap).then(function (pushed) {
+        broadcast('update', { store: 'averias', at: snap.updatedAt, source: 'cloud' });
+        return sendJson(res, 200, { ok: true, updatedAt: snap.updatedAt, jsonbin: !!pushed });
+      });
+    }).catch(function (e) {
+      return sendJson(res, 400, { ok: false, error: e.message });
+    });
+  }
+
+  if (req.method === 'POST' && p === '/api/register-jsonbin-config') {
+    return readBody(req).then(function (body) {
+      var binId = body && body.binId ? String(body.binId).trim() : '';
+      var accessKey = body && body.accessKey ? String(body.accessKey).trim() : '';
+      if (!binId || !accessKey) {
+        return sendJson(res, 400, { ok: false, error: 'binId y accessKey requeridos' });
+      }
+      const siteConfigPath = path.join(ROOT, 'data', 'site-config.json');
+      const cfg = JSON.parse(fs.readFileSync(siteConfigPath, 'utf8'));
+      cfg.averiasJsonBin = { enabled: true, binId: binId, accessKey: accessKey };
+      cfg.pollSeconds = 2;
+      cfg.realtime = true;
+      cfg.updatedAt = new Date().toISOString();
+      fs.writeFileSync(siteConfigPath, JSON.stringify(cfg, null, 2), 'utf8');
+      return pushSiteConfigGit(ROOT).then(function (gitResult) {
+        return sendJson(res, 200, {
+          ok: true,
+          binId: binId,
+          pushed: !!gitResult.pushed,
+          webUrl: 'https://jhansel2000-design.github.io/Almacen-Central-DC/data/site-config.json'
+        });
+      }).catch(function (gitErr) {
+        return sendJson(res, 200, {
+          ok: true,
+          binId: binId,
+          pushed: false,
+          gitError: String(gitErr.stderr || gitErr.message || gitErr)
+        });
+      });
+    }).catch(function (e) {
+      return sendJson(res, 400, { ok: false, error: e.message });
+    });
+  }
+
+  if (req.method === 'POST' && p === '/api/setup-averias-cloud') {
+    return readBody(req).then(function (body) {
+      var masterKey = body && body.masterKey ? String(body.masterKey).trim() : '';
+      if (!masterKey) {
+        return sendJson(res, 400, { ok: false, error: 'masterKey requerida' });
+      }
+      return setupAveriasCloud(ROOT, masterKey).then(function (result) {
+        return sendJson(res, 200, {
+          ok: true,
+          binId: result.binId,
+          pushed: !!(result.git && result.git.pushed),
+          gitError: result.gitError || null,
+          webUrl: result.webUrl
+        });
+      }).catch(function (e) {
+        return sendJson(res, 500, { ok: false, error: e.message || String(e) });
+      });
+    }).catch(function (e) {
+      return sendJson(res, 400, { ok: false, error: e.message });
+    });
+  }
+
   if (req.method === 'POST' && p === '/api/publish-averias-live') {
     return readBody(req).then(function (body) {
       var snap = body && body.data ? body.data : null;
@@ -430,6 +532,16 @@ const server = http.createServer(function (req, res) {
 });
 
 ensureDataDir();
+
+ensureAveriasCloud(ROOT).then(function (result) {
+  if (result && result.binId && !result.skipped) {
+    console.log('[Cloud] Sincronizacion JSONBin lista — bin', result.binId);
+  } else if (result && result.reason === 'no-master-key') {
+    console.log('[Cloud] Sin JSONBin — ejecute SETUP-AVERIAS-CLOUD.bat o cree data/sync-secrets.local.json');
+  }
+}).catch(function (e) {
+  console.warn('[Cloud] Auto-config omitida:', e.message || e);
+});
 
 server.listen(PORT, HOST, function () {
   const ips = getLanAddresses();

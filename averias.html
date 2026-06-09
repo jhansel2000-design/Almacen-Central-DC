@@ -201,9 +201,18 @@
                             </div>
                             <div class="action-buttons">
                                 <button class="btn-action btn-report" onclick="handleReportButton()">📝 REPORTAR AVERÍA</button>
-                                <button class="btn-action btn-correct" onclick="handleCorrectButton()">✅ CORREGIR INCIDENCIA</button>
+                                <button class="btn-action btn-correct" onclick="handleCorrectButton()">📋 Ver lista completa</button>
                                 <button class="btn-action btn-export" onclick="playSelectFeedback(); exportCSV()">📊 EXPORTAR CSV</button>
                             </div>
+                            <section class="reported-work-section">
+                                <h4 class="reported-work-title">Trabajos reportados pendientes</h4>
+                                <p class="reported-work-hint">Edite un reporte con error o márquelo resuelto desde aquí.</p>
+                                <div id="palletsReportedList" class="reported-work-list"></div>
+                            </section>
+                            <section class="reported-work-section reported-work-section--done">
+                                <h4 class="reported-work-title">Últimos finalizados</h4>
+                                <div id="palletsCompletedList" class="reported-work-list"></div>
+                            </section>
                         </div>
 
                         <div id="palletsReport" class="sub-panel hidden">
@@ -264,9 +273,18 @@
                             </div>
                             <div class="action-buttons">
                                 <button class="btn-action btn-report" onclick="playSelectFeedback(); showDamagesForm()">⚠️ REGISTRAR AVERÍA</button>
-                                <button class="btn-action btn-correct" onclick="handleDamagesCorrectButton()">✅ CORREGIR AVERÍA</button>
+                                <button class="btn-action btn-correct" onclick="handleDamagesCorrectButton()">📋 Ver lista completa</button>
                                 <button class="btn-action btn-export" onclick="playSelectFeedback(); exportDamagesCSV()">📊 EXPORTAR CSV</button>
                             </div>
+                            <section class="reported-work-section">
+                                <h4 class="reported-work-title">Trabajos reportados pendientes</h4>
+                                <p class="reported-work-hint">Corrija datos del reporte o márquelo resuelto sin salir del dashboard.</p>
+                                <div id="damagesReportedList" class="reported-work-list"></div>
+                            </section>
+                            <section class="reported-work-section reported-work-section--done">
+                                <h4 class="reported-work-title">Últimos finalizados</h4>
+                                <div id="damagesCompletedList" class="reported-work-list"></div>
+                            </section>
                         </div>
                         <div id="damagesFormPanel" class="sub-panel hidden">
                             <button class="btn btn-small" onclick="showDamagesDashboard()" style="margin-bottom:16px;">← Volver al dashboard</button>
@@ -323,9 +341,18 @@
                             </div>
                             <div class="action-buttons">
                                 <button class="btn-action btn-report" onclick="playSelectFeedback(); showSecurityForm()">🛡️ NUEVA INCIDENCIA</button>
-                                <button class="btn-action btn-correct" onclick="handleSecurityCorrectButton()">✅ CORREGIR INCIDENCIA</button>
+                                <button class="btn-action btn-correct" onclick="handleSecurityCorrectButton()">📋 Ver lista completa</button>
                                 <button class="btn-action btn-export" onclick="playSelectFeedback(); exportSecurityCSV()">📊 EXPORTAR CSV</button>
                             </div>
+                            <section class="reported-work-section">
+                                <h4 class="reported-work-title">Trabajos reportados pendientes</h4>
+                                <p class="reported-work-hint">Corrija datos del reporte o márquelo resuelto desde aquí.</p>
+                                <div id="securityReportedList" class="reported-work-list"></div>
+                            </section>
+                            <section class="reported-work-section reported-work-section--done">
+                                <h4 class="reported-work-title">Últimos finalizados</h4>
+                                <div id="securityCompletedList" class="reported-work-list"></div>
+                            </section>
                         </div>
                         <div id="securityFormPanel" class="sub-panel hidden">
                             <button class="btn btn-small" onclick="showSecurityDashboard()" style="margin-bottom:16px;">← Volver al dashboard</button>
@@ -381,9 +408,18 @@
                             </div>
                             <div class="action-buttons">
                                 <button class="btn-action btn-report" onclick="playSelectFeedback(); showAuditForm()">📋 NUEVA AUDITORÍA</button>
-                                <button class="btn-action btn-correct" onclick="handleAuditCorrectButton()">✅ CORREGIR HALLAZGO</button>
+                                <button class="btn-action btn-correct" onclick="handleAuditCorrectButton()">📋 Ver lista completa</button>
                                 <button class="btn-action btn-export" onclick="playSelectFeedback(); exportAuditCSV()">📊 EXPORTAR CSV</button>
                             </div>
+                            <section class="reported-work-section">
+                                <h4 class="reported-work-title">Trabajos reportados pendientes</h4>
+                                <p class="reported-work-hint">Corrija hallazgos o márquelos resueltos desde aquí.</p>
+                                <div id="auditReportedList" class="reported-work-list"></div>
+                            </section>
+                            <section class="reported-work-section reported-work-section--done">
+                                <h4 class="reported-work-title">Últimos finalizados</h4>
+                                <div id="auditCompletedList" class="reported-work-list"></div>
+                            </section>
                         </div>
                         <div id="auditFormPanel" class="sub-panel hidden">
                             <button class="btn btn-small" onclick="showAuditDashboard()" style="margin-bottom:16px;">← Volver al dashboard</button>
@@ -432,10 +468,15 @@
                             </div>
                             <div class="action-buttons">
                                 <button class="btn-action btn-report" onclick="playSelectFeedback(); showEquipmentForm()">NUEVA INSPECCIÓN</button>
-                                <button class="btn-action btn-correct" onclick="handleEquipmentCorrectButton()">✅ CORREGIR EQUIPO</button>
+                                <button class="btn-action btn-correct" onclick="handleEquipmentCorrectButton()">📋 Ver lista completa</button>
                                 <button class="btn-action btn-correct" onclick="playSelectFeedback(); showEquipmentList()">VER EQUIPOS</button>
                                 <button class="btn-action btn-export" onclick="playSelectFeedback(); exportEquipmentCSV()">EXPORTAR CSV</button>
                             </div>
+                            <section class="reported-work-section">
+                                <h4 class="reported-work-title">Equipos reportados no disponibles</h4>
+                                <p class="reported-work-hint">Marque equipos reparados como disponibles desde aquí.</p>
+                                <div id="equipmentReportedList" class="reported-work-list"></div>
+                            </section>
                         </div>
                         <div id="equipmentFormPanel" class="sub-panel hidden">
                             <button class="btn btn-small" onclick="showEquipmentDashboard()" style="margin-bottom:16px;">← Volver al dashboard</button>
@@ -533,12 +574,13 @@
   <script src="js/platform-lan-sync.js?v=2"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
-  <script src="js/platform-averias-cloud-sync.js?v=7"></script>
+  <script src="js/platform-averias-core.js?v=1"></script>
+  <script src="js/platform-averias-cloud-sync.js?v=9"></script>
   <script src="js/platform-store.js"></script>
   <script src="js/platform-admin.js?v=12"></script>
   <script src="js/platform-web-users.js?v=11"></script>
   <script src="js/platform-toast.js"></script>
-  <script src="js/platform-averias-ui.js?v=11"></script>
+  <script src="js/platform-averias-ui.js?v=14"></script>
   <script src="js/platform-averias-app.js?v=1"></script>
 </body>
 </html>

@@ -927,6 +927,110 @@ body.averias-dash-view {
   display: none !important;
 }
 
+.averias-app .reported-work-section {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.averias-app .reported-work-title {
+  margin: 0 0 6px;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #e6edf3;
+}
+
+.averias-app .reported-work-hint {
+  margin: 0 0 12px;
+  font-size: 0.82rem;
+  color: #8b949e;
+  line-height: 1.4;
+}
+
+.averias-app .reported-work-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 420px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.averias-app .reported-work-empty {
+  color: #8b949e;
+  text-align: center;
+  padding: 20px 12px;
+  font-size: 0.9rem;
+}
+
+.averias-app .reported-work-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.averias-app .btn-edit-incidence {
+  flex: 1 1 140px;
+  min-height: 44px;
+  padding: 10px 12px;
+  background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  font-size: 16px;
+  touch-action: manipulation;
+}
+
+.averias-app .btn-correct-inline {
+  flex: 1 1 140px;
+  margin-top: 0;
+  min-height: 44px;
+  font-size: 16px;
+}
+
+.averias-app .reported-work-section--done {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px dashed rgba(255, 255, 255, 0.1);
+}
+
+.averias-app .av-record-dates {
+  margin: 6px 0 4px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.averias-app .av-date-closed {
+  color: #3fb950 !important;
+  font-weight: 600;
+}
+
+.averias-app .av-status-badge {
+  display: inline-block;
+  margin: 4px 0 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.averias-app .av-status-done {
+  background: rgba(63, 185, 80, 0.18);
+  color: #3fb950;
+  border: 1px solid rgba(63, 185, 80, 0.35);
+}
+
+.averias-app .incidence-card.completed {
+  opacity: 0.92;
+  border-color: rgba(63, 185, 80, 0.25);
+}
+
 body.av-modal-open {
   overflow: hidden;
 }

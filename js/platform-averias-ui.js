@@ -83,6 +83,24 @@
         let hasPhoto = false;
         let pendingCorrection = null;
         var correctionLockUntil = 0;
+        var editingRecord = null;
+        var isLoadingRemoteSnapshot = false;
+
+        function avCore() {
+            return global.PlatformAveriasCore;
+        }
+
+        function escAv(value) {
+            var C = avCore();
+            return C ? C.escapeHtml(value) : String(value == null ? '' : value);
+        }
+
+        function auditAction(action, detail) {
+            var C = avCore();
+            if (C && C.auditLog) {
+                C.auditLog(action, detail, currentEmployee && currentEmployee.name);
+            }
+        }
 
         const moduleTitles = {
             home: 'Almacén Central',
@@ -169,7 +187,12 @@
 
         var FIT_KEY = 'averias_dc_fit_screen';
         var SNAPSHOT_KEY = 'averias_dc_snapshot';
-        var applyingRemoteSnapshot = false;
+        var isLoadingRemoteSnapshot = false;
+
+        function datesHtml(record) {
+            var C = avCore();
+            return C ? C.datesBlockHtml(record, escAv) : '';
+        }
 
         function buildSnapshot() {
             return {
@@ -185,6 +208,9 @@
 
         function applySnapshot(snap) {
             if (!snap || typeof snap !== 'object') return false;
+            if (global.PlatformAveriasCloudSync && global.PlatformAveriasCloudSync.mergeAveriasSnapshots) {
+                snap = global.PlatformAveriasCloudSync.mergeAveriasSnapshots(buildSnapshot(), snap);
+            }
             allIncidences = Array.isArray(snap.incidences) ? snap.incidences : [];
             allDamages = Array.isArray(snap.damages) ? snap.damages : [];
             allSecurity = Array.isArray(snap.securityIncidents) ? snap.securityIncidents : [];
@@ -196,7 +222,15 @@
         }
 
         function isPendingStatus(record) {
+            var C = avCore();
+            if (C && C.isPendingStatus) return C.isPendingStatus(record);
             return String(record && record.status || 'PENDIENTE').toUpperCase() !== 'CORREGIDO';
+        }
+
+        function isCorrectedStatus(record) {
+            var C = avCore();
+            if (C && C.isCorrectedStatus) return C.isCorrectedStatus(record);
+            return !isPendingStatus(record);
         }
 
         function assignMissingIds(list, seedBase) {
@@ -227,6 +261,13 @@
             allDamages.forEach(function (r) { if (r && !r.status) r.status = 'PENDIENTE'; });
             allSecurity.forEach(function (r) { if (r && !r.status) r.status = 'PENDIENTE'; });
             allAudits.forEach(function (r) { if (r && !r.status) r.status = 'PENDIENTE'; });
+            var C = avCore();
+            if (C && C.normalizeRecordTimestamps) {
+                allIncidences.forEach(C.normalizeRecordTimestamps);
+                allDamages.forEach(C.normalizeRecordTimestamps);
+                allSecurity.forEach(C.normalizeRecordTimestamps);
+                allAudits.forEach(C.normalizeRecordTimestamps);
+            }
             return changed;
         }
 
@@ -235,7 +276,13 @@
         }
 
         function findById(list, id) {
-            return list.find(function (r) { return sameRecordId(r.id, id); });
+            var found = list.find(function (r) { return sameRecordId(r.id, id); });
+            if (found) return found;
+            var numId = Number(id);
+            if (!isNaN(numId)) {
+                return list.find(function (r) { return Number(r.id) === numId; });
+            }
+            return undefined;
         }
 
         function writeIndividualKeys() {
@@ -247,34 +294,41 @@
             localStorage.setItem('averias_dc_equipmentRegistry', JSON.stringify(equipmentRegistry));
         }
 
-        function persistSnapshot() {
-            if (applyingRemoteSnapshot) return;
+        function persistSnapshot(options) {
+            options = options || {};
+            if (isLoadingRemoteSnapshot && !options.force) {
+                return Promise.resolve({ ok: false, skipped: true });
+            }
             try {
-                applyingRemoteSnapshot = true;
                 var idsAssigned = ensureRecordStatuses();
                 writeIndividualKeys();
                 var snap = buildSnapshot();
                 snap.updatedAt = new Date().toISOString();
+                snap.localSeq = (snap.localSeq || 0) + 1;
                 localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(snap));
                 if (global.PlatformAveriasCloudSync && global.PlatformAveriasCloudSync.push) {
-                    global.PlatformAveriasCloudSync.push(snap).then(function (result) {
+                    return global.PlatformAveriasCloudSync.push(snap).then(function (result) {
                         if (result && !result.ok && global.PlatformAveriasCloudSync.isCloudConfigured &&
                             global.PlatformAveriasCloudSync.isCloudConfigured()) {
                             if (global.PlatformToast) {
-                                global.PlatformToast.warn('Reporte guardado; reintentando sync...', 3000);
+                                global.PlatformToast.warn('Guardado local OK; reintentando sync en la nube…', 3500);
                             }
                         } else if (result && !result.ok && !global.PlatformAveriasCloudSync.isCloudConfigured()) {
                             if (global.PlatformToast) {
-                                global.PlatformToast.warn('Reporte solo en este celular — falta configurar nube', 5000);
+                                global.PlatformToast.warn('Solo en este dispositivo — active la nube para sync global', 4500);
                             }
                         }
+                        return result || { ok: true };
                     });
-                } else if (idsAssigned) {
-                    /* ids nuevos guardados solo en local */
                 }
-            } finally {
-                applyingRemoteSnapshot = false;
+                return Promise.resolve({ ok: true, localOnly: true });
+            } catch (e) {
+                return Promise.resolve({ ok: false, error: e });
             }
+        }
+
+        function persistSnapshotSync(options) {
+            persistSnapshot(options);
         }
 
         function loadDataFromLegacyKeys() {
@@ -297,7 +351,7 @@
             if (snapRaw) {
                 try {
                     if (applySnapshot(JSON.parse(snapRaw))) {
-                        if (ensureRecordStatuses()) persistSnapshot();
+                        if (ensureRecordStatuses()) persistSnapshot({ force: true });
                         updateAllStats();
                         return;
                     }
@@ -305,7 +359,7 @@
             }
             loadDataFromLegacyKeys();
             ensureRecordStatuses();
-            persistSnapshot();
+            persistSnapshot({ force: true });
             updateAllStats();
         }
 
@@ -314,6 +368,7 @@
             updateDamagesStats();
             updateSecurityStats();
             updateAuditStats();
+            renderReportedWorkLists();
         }
 
         function refreshCurrentView() {
@@ -345,11 +400,11 @@
         var reloadSyncTimer = null;
 
         function reloadFromSync() {
-            applyingRemoteSnapshot = true;
+            isLoadingRemoteSnapshot = true;
             try {
                 loadData();
             } finally {
-                applyingRemoteSnapshot = false;
+                isLoadingRemoteSnapshot = false;
             }
             refreshCurrentView();
         }
@@ -357,7 +412,12 @@
         function reloadFromSyncDebounced() {
             if (Date.now() < correctionLockUntil) return;
             clearTimeout(reloadSyncTimer);
-            reloadSyncTimer = setTimeout(reloadFromSync, 80);
+            reloadSyncTimer = setTimeout(reloadFromSync, 120);
+        }
+
+        function refreshUiAfterLocalChange() {
+            updateAllStats();
+            refreshCurrentView();
         }
 
         function syncAveriasData() {
@@ -456,6 +516,11 @@
                 if (ev.detail && ev.detail.store === 'averias') reloadFromSyncDebounced();
             });
             document.addEventListener('averias-updated', function () { reloadFromSyncDebounced(); });
+            document.addEventListener('averias-sync-push', function () {
+                if (global.PlatformAveriasCloudSync && global.PlatformAveriasCloudSync.schedulePullBurst) {
+                    global.PlatformAveriasCloudSync.schedulePullBurst();
+                }
+            });
             document.addEventListener('lan-ready', function () {
                 if (global.PlatformLanSync && global.PlatformLanSync.forcePull) {
                     global.PlatformLanSync.forcePull().then(function () { reloadFromSyncDebounced(); });
@@ -478,27 +543,27 @@
         }
 
         function saveData() {
-            persistSnapshot();
+            persistSnapshot({ force: true });
             updateStats();
         }
 
         function saveDamagesData() {
-            persistSnapshot();
+            persistSnapshot({ force: true });
             updateDamagesStats();
         }
 
         function saveSecurityData() {
-            persistSnapshot();
+            persistSnapshot({ force: true });
             updateSecurityStats();
         }
 
         function saveAuditsData() {
-            persistSnapshot();
+            persistSnapshot({ force: true });
             updateAuditStats();
         }
 
         function saveEquipmentData() {
-            persistSnapshot();
+            persistSnapshot({ force: true });
         }
 
         function handleLogout() {
@@ -716,6 +781,7 @@
         }
 
         function showPalletsDashboard() {
+            clearEditingRecord();
             document.getElementById('palletsDashboard').classList.remove('hidden');
             document.getElementById('palletsReport').classList.add('hidden');
             document.getElementById('palletsCorrect').classList.add('hidden');
@@ -724,8 +790,9 @@
 
         function handleReportButton() {
             playSelectFeedback();
-            
+            clearEditingRecord();
             document.getElementById('palletsDashboard').classList.add('hidden');
+            document.getElementById('palletsCorrect').classList.add('hidden');
             document.getElementById('palletsReport').classList.remove('hidden');
             document.getElementById('reportSuccess').classList.remove('show');
             document.getElementById('reportError').classList.remove('show');
@@ -739,6 +806,7 @@
         }
 
         function showDamagesDashboard() {
+            clearEditingRecord();
             document.getElementById('damagesDashboard').classList.remove('hidden');
             document.getElementById('damagesFormPanel').classList.add('hidden');
             document.getElementById('damagesCorrect').classList.add('hidden');
@@ -755,12 +823,14 @@
         }
 
         function showDamagesForm() {
+            clearEditingRecord();
             document.getElementById('damagesDashboard').classList.add('hidden');
             document.getElementById('damagesFormPanel').classList.remove('hidden');
             resetDamageArea();
         }
 
         function showSecurityDashboard() {
+            clearEditingRecord();
             document.getElementById('securityDashboard').classList.remove('hidden');
             document.getElementById('securityFormPanel').classList.add('hidden');
             document.getElementById('securityCorrect').classList.add('hidden');
@@ -776,11 +846,13 @@
         }
 
         function showSecurityForm() {
+            clearEditingRecord();
             document.getElementById('securityDashboard').classList.add('hidden');
             document.getElementById('securityFormPanel').classList.remove('hidden');
         }
 
         function showAuditDashboard() {
+            clearEditingRecord();
             document.getElementById('auditDashboard').classList.remove('hidden');
             document.getElementById('auditFormPanel').classList.add('hidden');
             document.getElementById('auditCorrect').classList.add('hidden');
@@ -796,12 +868,14 @@
         }
 
         function showAuditForm() {
+            clearEditingRecord();
             document.getElementById('auditDashboard').classList.add('hidden');
             document.getElementById('auditFormPanel').classList.remove('hidden');
             document.getElementById('auditAuditor').value = currentEmployee.name;
         }
 
         function showEquipmentDashboard() {
+            clearEditingRecord();
             document.getElementById('equipmentDashboard').classList.remove('hidden');
             document.getElementById('equipmentFormPanel').classList.add('hidden');
             document.getElementById('equipmentListPanel').classList.add('hidden');
@@ -950,19 +1024,40 @@
                 alert('Complete área, código y cantidad');
                 return;
             }
+            if (editingRecord && editingRecord.module === 'damages') {
+                var existing = findById(allDamages, editingRecord.id);
+                if (existing) {
+                    existing.area = selectedDamageArea;
+                    existing.codigo = codigo;
+                    existing.cantidad = cantidad;
+                    existing.fecha = document.getElementById('damageFecha').value;
+                    existing.condicion = document.getElementById('damageCondicion').value;
+                    existing.modifiedAt = new Date().toISOString();
+                    saveDamagesData();
+                    clearEditingRecord();
+                    alert('✅ Reporte corregido');
+                    showDamagesDashboard();
+                    return;
+                }
+            }
             allDamages.push({
                 id: Date.now(),
                 area: selectedDamageArea,
-                codigo,
+                codigo: (avCore() && avCore().sanitizeText(codigo, 64)) || codigo,
                 cantidad,
                 fecha: document.getElementById('damageFecha').value,
                 condicion: document.getElementById('damageCondicion').value,
                 usuario: currentEmployee.name,
-                fechaRegistro: new Date().toLocaleString('es-ES'),
                 status: 'PENDIENTE',
                 correctedBy: null,
                 correctionDate: null
             });
+            var lastD = allDamages[allDamages.length - 1];
+            if (avCore() && avCore().stampNewReport) {
+                lastD.fechaRegistro = avCore().formatDisplayDateTime(avCore().nowIso());
+                avCore().stampNewReport(lastD);
+            }
+            auditAction('REPORTAR', { module: 'damages', codigo: codigo, area: selectedDamageArea });
             saveDamagesData();
             updateDamagesStats();
             alert('✅ Avería guardada correctamente');
@@ -990,19 +1085,40 @@
                 alert('Complete detalle y área específica');
                 return;
             }
+            if (editingRecord && editingRecord.module === 'security') {
+                var existingSec = findById(allSecurity, editingRecord.id);
+                if (existingSec) {
+                    existingSec.tipo = document.getElementById('securityTipo').value;
+                    existingSec.detalle = detalle;
+                    existingSec.area = area;
+                    existingSec.clasificacion = securityClass;
+                    existingSec.foto = hasPhoto;
+                    existingSec.modifiedAt = new Date().toISOString();
+                    saveSecurityData();
+                    clearEditingRecord();
+                    alert('✅ Reporte corregido');
+                    showSecurityDashboard();
+                    return;
+                }
+            }
             allSecurity.push({
                 id: Date.now(),
                 tipo: document.getElementById('securityTipo').value,
-                detalle,
-                area,
+                detalle: (avCore() && avCore().sanitizeText(detalle, 500)) || detalle,
+                area: (avCore() && avCore().sanitizeText(area, 120)) || area,
                 clasificacion: securityClass,
                 foto: hasPhoto,
                 usuario: currentEmployee.name,
-                fecha: new Date().toLocaleString('es-ES'),
                 status: 'PENDIENTE',
                 correctedBy: null,
                 correctionDate: null
             });
+            var lastS = allSecurity[allSecurity.length - 1];
+            if (avCore() && avCore().stampNewReport) {
+                lastS.fecha = avCore().formatDisplayDateTime(avCore().nowIso());
+                avCore().stampNewReport(lastS);
+            }
+            auditAction('REPORTAR', { module: 'security', area: area });
             saveSecurityData();
             updateSecurityStats();
             alert('✅ Incidencia de seguridad guardada');
@@ -1036,11 +1152,31 @@
                 alert('Complete auditor, pasillo y responsable');
                 return;
             }
+            if (editingRecord && editingRecord.module === 'audit') {
+                var existingAud = findById(allAudits, editingRecord.id);
+                if (existingAud) {
+                    existingAud.auditor = auditor;
+                    existingAud.pasillo = pasillo;
+                    existingAud.responsable = responsable;
+                    existingAud.turno = selectedTurno;
+                    existingAud.obstruccionesPasillo = document.querySelector('#chkObstrucciones .toggle-switch').classList.contains('on');
+                    existingAud.sinSkuAveriado = document.querySelector('#chkSkuAveriado .toggle-switch').classList.contains('on');
+                    existingAud.iluminacion = document.querySelector('#chkIluminacion .toggle-switch').classList.contains('on');
+                    existingAud.sinPaletasRotas = document.querySelector('#chkPaletas .toggle-switch').classList.contains('on');
+                    existingAud.acuracidad = document.querySelector('#chkAcuracidad .toggle-switch').classList.contains('on');
+                    existingAud.modifiedAt = new Date().toISOString();
+                    saveAuditsData();
+                    clearEditingRecord();
+                    alert('✅ Reporte corregido');
+                    showAuditDashboard();
+                    return;
+                }
+            }
             allAudits.push({
                 id: Date.now(),
                 auditor,
-                pasillo,
-                responsable,
+                pasillo: (avCore() && avCore().sanitizeText(pasillo, 80)) || pasillo,
+                responsable: (avCore() && avCore().sanitizeText(responsable, 120)) || responsable,
                 turno: selectedTurno,
                 obstruccionesPasillo: document.querySelector('#chkObstrucciones .toggle-switch').classList.contains('on'),
                 sinSkuAveriado: document.querySelector('#chkSkuAveriado .toggle-switch').classList.contains('on'),
@@ -1048,11 +1184,16 @@
                 sinPaletasRotas: document.querySelector('#chkPaletas .toggle-switch').classList.contains('on'),
                 acuracidad: document.querySelector('#chkAcuracidad .toggle-switch').classList.contains('on'),
                 usuario: currentEmployee.name,
-                fecha: new Date().toLocaleString('es-ES'),
                 status: 'PENDIENTE',
                 correctedBy: null,
                 correctionDate: null
             });
+            var lastA = allAudits[allAudits.length - 1];
+            if (avCore() && avCore().stampNewReport) {
+                lastA.fecha = avCore().formatDisplayDateTime(avCore().nowIso());
+                avCore().stampNewReport(lastA);
+            }
+            auditAction('REPORTAR', { module: 'audit', pasillo: pasillo });
             saveAuditsData();
             updateAuditStats();
             alert('✅ Auditoría 5S guardada');
@@ -1076,11 +1217,33 @@
                 return;
             }
 
+            if (editingRecord && editingRecord.module === 'pallets') {
+                var existingInc = findById(allIncidences, editingRecord.id);
+                if (existingInc) {
+                    existingInc.location = location;
+                    existingInc.product = product;
+                    existingInc.productDescription = resolveProductDescription(product, location);
+                    existingInc.type = severity;
+                    existingInc.description = observation;
+                    existingInc.modifiedAt = new Date().toISOString();
+                    saveData();
+                    clearEditingRecord();
+                    document.getElementById('reportError').classList.remove('show');
+                    document.getElementById('reportSuccess').textContent = '✅ Reporte corregido';
+                    document.getElementById('reportSuccess').classList.add('show');
+                    setTimeout(function () {
+                        document.getElementById('reportSuccess').classList.remove('show');
+                        showPalletsDashboard();
+                    }, 1200);
+                    return;
+                }
+            }
+
             // Check for duplicate
             const duplicate = allIncidences.find(inc => 
                 inc.location === location && 
                 inc.product === product && 
-                inc.status === 'PENDIENTE'
+                isPendingStatus(inc)
             );
 
             if (duplicate) {
@@ -1093,21 +1256,23 @@
 
             const incidence = {
                 id: Date.now(),
-                location,
-                product,
+                location: (avCore() && avCore().sanitizeText(location, 80)) || location,
+                product: (avCore() && avCore().sanitizeText(product, 64)) || product,
                 productDescription,
                 type: severity,
-                description: observation,
+                description: (avCore() && avCore().sanitizeText(observation, 500)) || observation,
                 reportedBy: currentEmployee.name,
-                reportDate: new Date().toLocaleDateString('es-ES') + ' ' + new Date().toLocaleTimeString('es-ES', {hour: '2-digit', minute:'2-digit'}),
                 status: 'PENDIENTE',
                 correctedBy: null,
                 correctionDate: null
             };
+            if (avCore() && avCore().stampNewReport) avCore().stampNewReport(incidence);
 
             allIncidences.push(incidence);
-            saveData();
+            auditAction('REPORTAR', { module: 'pallets', location: incidence.location, product: incidence.product });
+            persistSnapshot({ force: true });
             updateStats();
+            renderReportedWorkLists();
 
             document.getElementById('reportLocation').value = '';
             document.getElementById('reportProduct').value = '';
@@ -1140,49 +1305,435 @@
             document.getElementById('reportObservation').value = observations[severity];
         }
 
+        function isSupervisorRole() {
+            return currentEmployee && currentEmployee.role === 'CORRIGE';
+        }
+
+        function samePerson(a, b) {
+            if (!a || !b) return false;
+            var x = String(a).trim().toLowerCase();
+            var y = String(b).trim().toLowerCase();
+            if (x === y) return true;
+            return x.split(' ')[0] === y.split(' ')[0];
+        }
+
+        function recordAuthor(record) {
+            return record.reportedBy || record.usuario || record.auditor || '';
+        }
+
+        function canEditReport(record) {
+            if (!currentEmployee || !isPendingStatus(record)) return false;
+            if (isSupervisorRole()) return true;
+            return samePerson(recordAuthor(record), currentEmployee.name);
+        }
+
+        function recordIdAttr(module, id) {
+            if (module === 'equipment') return String(id).replace(/"/g, '&quot;');
+            return id;
+        }
+
+        function canResolveReport(record) {
+            if (!currentEmployee || !isPendingStatus(record)) return false;
+            if (isSupervisorRole()) return true;
+            return samePerson(recordAuthor(record), currentEmployee.name);
+        }
+
+        function reportedWorkActionsHtml(module, id, record) {
+            var html = '<div class="reported-work-actions">';
+            if (canEditReport(record)) {
+                html += '<button type="button" class="btn-edit-incidence" data-edit-module="' + module + '" data-edit-id="' + recordIdAttr(module, id) + '">✏️ Editar reporte</button>';
+            }
+            if (canResolveReport(record)) {
+                html += '<button type="button" class="btn-correct-incidence btn-correct-inline" data-correct-module="' + module + '" data-correct-id="' + recordIdAttr(module, id) + '">✅ Marcar resuelto</button>';
+            }
+            html += '</div>';
+            return html;
+        }
+
+        function renderReportedWorkLists() {
+            renderPalletsReportedList();
+            renderDamagesReportedList();
+            renderSecurityReportedList();
+            renderAuditReportedList();
+            renderEquipmentReportedList();
+        }
+
+        function renderPalletsReportedList() {
+            var list = document.getElementById('palletsReportedList');
+            if (!list) return;
+            var pending = allIncidences.filter(function (i) { return isPendingStatus(i); }).slice(0, 20);
+            if (!pending.length) {
+                list.innerHTML = '<div class="reported-work-empty">No hay paletas reportadas pendientes.</div>';
+                return;
+            }
+            list.innerHTML = pending.map(function (inc) {
+                return '<div class="incidence-card ' + String(inc.type || '').toLowerCase() + '">' +
+                    '<div class="incidence-card-row"><span class="incidence-card-label">Ubicación:</span><span class="incidence-card-value">' + escAv(inc.location) + '</span></div>' +
+                    '<div class="incidence-card-row"><span class="incidence-card-label">Producto:</span><span class="incidence-card-value">' + escAv(inc.product) + '</span></div>' +
+                    '<div class="incidence-card-row"><span class="incidence-card-label">Tipo:</span><span class="incidence-card-value">' + getSeverityEmoji(inc.type) + ' ' + escAv(inc.type) + '</span></div>' +
+                    datesHtml(inc) +
+                    reportedWorkActionsHtml('pallets', inc.id, inc) +
+                    '</div>';
+            }).join('');
+            renderRecentCompleted('pallets', allIncidences, 'palletsCompletedList');
+        }
+
+        function renderDamagesReportedList() {
+            var list = document.getElementById('damagesReportedList');
+            if (!list) return;
+            var pending = allDamages.filter(function (d) { return isPendingStatus(d); }).slice(0, 20);
+            if (!pending.length) {
+                list.innerHTML = '<div class="reported-work-empty">No hay averías reportadas pendientes.</div>';
+                return;
+            }
+            list.innerHTML = pending.map(function (d) {
+                return '<div class="incidence-card medio">' +
+                    '<div class="incidence-card-row"><span class="incidence-card-label">Área:</span><span class="incidence-card-value">' + escAv(d.area) + '</span></div>' +
+                    '<div class="incidence-card-row"><span class="incidence-card-label">Código:</span><span class="incidence-card-value">' + escAv(d.codigo) + '</span></div>' +
+                    '<div class="incidence-card-row"><span class="incidence-card-label">Cantidad:</span><span class="incidence-card-value">' + escAv(d.cantidad) + '</span></div>' +
+                    datesHtml(d) +
+                    reportedWorkActionsHtml('damages', d.id, d) +
+                    '</div>';
+            }).join('');
+            renderRecentCompleted('damages', allDamages, 'damagesCompletedList');
+        }
+
+        function renderRecentCompleted(module, list, containerId) {
+            var container = document.getElementById(containerId);
+            if (!container) return;
+            var C = avCore();
+            var done = (list || []).filter(function (r) { return isCorrectedStatus(r); })
+                .sort(function (a, b) {
+                    var ta = C && C.recordTimeForMerge ? C.recordTimeForMerge(a) : 0;
+                    var tb = C && C.recordTimeForMerge ? C.recordTimeForMerge(b) : 0;
+                    return tb - ta;
+                })
+                .slice(0, 5);
+            if (!done.length) {
+                container.innerHTML = '<div class="reported-work-empty">Sin trabajos finalizados recientes.</div>';
+                return;
+            }
+            container.innerHTML = done.map(function (r) {
+                var title = module === 'pallets' ? escAv(r.location + ' · ' + r.product)
+                    : module === 'damages' ? escAv(r.codigo + ' · ' + r.area)
+                    : module === 'security' ? escAv(r.area)
+                    : escAv(r.pasillo || r.codigo || '—');
+                return '<div class="incidence-card completed">' +
+                    '<div class="incidence-card-row"><span class="incidence-card-label">Trabajo:</span><span class="incidence-card-value">' + title + '</span></div>' +
+                    '<span class="av-status-badge av-status-done">' + (C && C.statusLabel ? C.statusLabel(r.status) : 'Finalizado') + '</span>' +
+                    datesHtml(r) +
+                    '</div>';
+            }).join('');
+        }
+
+        function renderSecurityReportedList() {
+            var list = document.getElementById('securityReportedList');
+            if (!list) return;
+            var pending = allSecurity.filter(function (s) { return isPendingStatus(s); }).slice(0, 20);
+            if (!pending.length) {
+                list.innerHTML = '<div class="reported-work-empty">No hay incidencias de seguridad pendientes.</div>';
+                return;
+            }
+            list.innerHTML = pending.map(function (s) {
+                return '<div class="incidence-card ' + (s.clasificacion === 'Urgente' ? 'alto' : 'medio') + '">' +
+                    '<div class="incidence-card-row"><span class="incidence-card-label">Área:</span><span class="incidence-card-value">' + escAv(s.area) + '</span></div>' +
+                    '<div class="incidence-card-row"><span class="incidence-card-label">Tipo:</span><span class="incidence-card-value">' + escAv(s.tipo) + '</span></div>' +
+                    datesHtml(s) +
+                    reportedWorkActionsHtml('security', s.id, s) +
+                    '</div>';
+            }).join('');
+            renderRecentCompleted('security', allSecurity, 'securityCompletedList');
+        }
+
+        function renderAuditReportedList() {
+            var list = document.getElementById('auditReportedList');
+            if (!list) return;
+            var pending = allAudits.filter(function (a) { return isPendingStatus(a); }).slice(0, 20);
+            if (!pending.length) {
+                list.innerHTML = '<div class="reported-work-empty">No hay hallazgos 5S pendientes.</div>';
+                return;
+            }
+            list.innerHTML = pending.map(function (a) {
+                return '<div class="incidence-card medio">' +
+                    '<div class="incidence-card-row"><span class="incidence-card-label">Pasillo:</span><span class="incidence-card-value">' + escAv(a.pasillo) + '</span></div>' +
+                    '<div class="incidence-card-row"><span class="incidence-card-label">Turno:</span><span class="incidence-card-value">' + escAv(a.turno) + '</span></div>' +
+                    datesHtml(a) +
+                    reportedWorkActionsHtml('audit', a.id, a) +
+                    '</div>';
+            }).join('');
+            renderRecentCompleted('audit', allAudits, 'auditCompletedList');
+        }
+
+        function renderEquipmentReportedList() {
+            var list = document.getElementById('equipmentReportedList');
+            if (!list) return;
+            var pending = Object.entries(equipmentRegistry)
+                .filter(function (entry) { return entry[1] && entry[1].estado === 'NO_DISPONIBLE'; })
+                .map(function (entry) { return { codigo: entry[0], tipo: entry[1].tipo, ultimaActualizacion: entry[1].ultimaActualizacion }; })
+                .slice(0, 20);
+            if (!pending.length) {
+                list.innerHTML = '<div class="reported-work-empty">No hay equipos marcados no disponibles.</div>';
+                return;
+            }
+            list.innerHTML = pending.map(function (e) {
+                return '<div class="incidence-card alto">' +
+                    '<div class="incidence-card-row"><span class="incidence-card-label">Equipo:</span><span class="incidence-card-value">' + e.codigo + '</span></div>' +
+                    '<div class="incidence-card-row"><span class="incidence-card-label">Tipo:</span><span class="incidence-card-value">' + (e.tipo || '') + '</span></div>' +
+                    (isSupervisorRole()
+                        ? '<div class="reported-work-actions"><button type="button" class="btn-correct-incidence btn-correct-inline" data-correct-module="equipment" data-correct-id="' + recordIdAttr('equipment', e.codigo) + '">✅ Marcar disponible</button></div>'
+                        : '') +
+                    '</div>';
+            }).join('');
+        }
+
+        function resetFormSubmitLabels() {
+            var palletsBtn = document.querySelector('#palletsReport button[type="submit"]');
+            if (palletsBtn) palletsBtn.textContent = 'GUARDAR INCIDENCIA';
+            var damageBtn = document.querySelector('#damagesForm .btn-primary');
+            if (damageBtn) damageBtn.textContent = 'GUARDAR AVERÍA';
+            var secBtn = document.querySelector('#securityFormPanel .btn-primary');
+            if (secBtn) secBtn.textContent = 'GUARDAR INCIDENCIA';
+            var auditBtn = document.querySelector('#auditFormPanel .btn-primary');
+            if (auditBtn) auditBtn.textContent = 'GUARDAR AUDITORÍA';
+        }
+
+        function clearEditingRecord() {
+            editingRecord = null;
+            resetFormSubmitLabels();
+        }
+
+        function setAuditToggle(id, value) {
+            var row = document.getElementById(id);
+            if (!row) return;
+            var toggle = row.querySelector('.toggle-switch');
+            if (!toggle) return;
+            toggle.classList.toggle('on', !!value);
+            row.classList.toggle('ok', !!value);
+            row.classList.toggle('bad', !value);
+        }
+
+        function openEditReport(module, id) {
+            playSelectFeedback();
+            ensureRecordStatuses();
+            if (module === 'pallets') {
+                var inc = findById(allIncidences, id);
+                if (!inc || !canEditReport(inc)) {
+                    alert('No puede editar este reporte.');
+                    return;
+                }
+                editingRecord = { module: module, id: id };
+                document.getElementById('palletsDashboard').classList.add('hidden');
+                document.getElementById('palletsCorrect').classList.add('hidden');
+                document.getElementById('palletsReport').classList.remove('hidden');
+                document.getElementById('reportLocation').value = inc.location || '';
+                document.getElementById('reportProduct').value = inc.product || '';
+                document.getElementById('reportObservation').value = inc.description || '';
+                document.getElementById('reportSeverity').value = inc.type || '';
+                document.querySelectorAll('.severity-btn').forEach(function (btn) { btn.classList.remove('selected'); });
+                var sevBtn = document.querySelector('.severity-btn.' + String(inc.type || '').toLowerCase());
+                if (sevBtn) sevBtn.classList.add('selected');
+                lookupProductDescription();
+                var submitBtn = document.querySelector('#palletsReport button[type="submit"]');
+                if (submitBtn) submitBtn.textContent = 'GUARDAR CORRECCIÓN';
+                return;
+            }
+            if (module === 'damages') {
+                var dmg = findById(allDamages, id);
+                if (!dmg || !canEditReport(dmg)) {
+                    alert('No puede editar este reporte.');
+                    return;
+                }
+                editingRecord = { module: module, id: id };
+                document.getElementById('damagesDashboard').classList.add('hidden');
+                document.getElementById('damagesCorrect').classList.add('hidden');
+                document.getElementById('damagesFormPanel').classList.remove('hidden');
+                selectedDamageArea = dmg.area;
+                document.getElementById('damagesAreaSelect').classList.add('hidden');
+                document.getElementById('damagesForm').classList.remove('hidden');
+                document.getElementById('damageAreaBadge').textContent = 'Área: ' + dmg.area;
+                document.getElementById('damageCodigo').value = dmg.codigo || '';
+                document.getElementById('damageCantidad').value = dmg.cantidad || '';
+                document.getElementById('damageFecha').value = dmg.fecha || '';
+                document.getElementById('damageCondicion').value = dmg.condicion || 'Vencimiento';
+                var damageBtn = document.querySelector('#damagesForm .btn-primary');
+                if (damageBtn) damageBtn.textContent = 'GUARDAR CORRECCIÓN';
+                return;
+            }
+            if (module === 'security') {
+                var sec = findById(allSecurity, id);
+                if (!sec || !canEditReport(sec)) {
+                    alert('No puede editar este reporte.');
+                    return;
+                }
+                editingRecord = { module: module, id: id };
+                document.getElementById('securityDashboard').classList.add('hidden');
+                document.getElementById('securityCorrect').classList.add('hidden');
+                document.getElementById('securityFormPanel').classList.remove('hidden');
+                document.getElementById('securityTipo').value = sec.tipo || 'Acto inseguro';
+                document.getElementById('securityDetalle').value = sec.detalle || '';
+                document.getElementById('securityArea').value = sec.area || '';
+                selectSecurityClass(sec.clasificacion || 'No urgente');
+                hasPhoto = !!sec.foto;
+                document.getElementById('photoStatus').textContent = hasPhoto ? '✅ Foto adjunta (simulada)' : '';
+                var secBtn = document.querySelector('#securityFormPanel .btn-primary');
+                if (secBtn) secBtn.textContent = 'GUARDAR CORRECCIÓN';
+                return;
+            }
+            if (module === 'audit') {
+                var aud = findById(allAudits, id);
+                if (!aud || !canEditReport(aud)) {
+                    alert('No puede editar este reporte.');
+                    return;
+                }
+                editingRecord = { module: module, id: id };
+                document.getElementById('auditDashboard').classList.add('hidden');
+                document.getElementById('auditCorrect').classList.add('hidden');
+                document.getElementById('auditFormPanel').classList.remove('hidden');
+                document.getElementById('auditAuditor').value = aud.auditor || '';
+                document.getElementById('auditPasillo').value = aud.pasillo || '';
+                document.getElementById('auditResponsable').value = aud.responsable || '';
+                selectTurno(aud.turno || 'A');
+                setAuditToggle('chkObstrucciones', aud.obstruccionesPasillo);
+                setAuditToggle('chkSkuAveriado', aud.sinSkuAveriado);
+                setAuditToggle('chkIluminacion', aud.iluminacion);
+                setAuditToggle('chkPaletas', aud.sinPaletasRotas);
+                setAuditToggle('chkAcuracidad', aud.acuracidad);
+                var auditBtn = document.querySelector('#auditFormPanel .btn-primary');
+                if (auditBtn) auditBtn.textContent = 'GUARDAR CORRECCIÓN';
+            }
+        }
+
         // Correct Handler (todos los módulos)
-        function correctionTimestamp() {
-            return new Date().toLocaleDateString('es-ES') + ' ' +
-                new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+        function finalizeWorkRecord(record) {
+            var C = avCore();
+            if (C && C.finalizeRecord) {
+                C.finalizeRecord(record, currentEmployee.name);
+            } else {
+                record.status = 'CORREGIDO';
+                record.correctedBy = currentEmployee.name;
+                record.correctionDate = new Date().toLocaleString('es-DO');
+            }
+            return record;
+        }
+
+        function applyCorrectionNow(module, id) {
+            ensureRecordStatuses();
+            var corrected = false;
+            var label = '';
+
+            if (module === 'pallets') {
+                var inc = findById(allIncidences, id);
+                if (inc) {
+                    finalizeWorkRecord(inc);
+                    label = inc.location + ' / ' + inc.product;
+                    correctionLockUntil = Date.now() + 30000;
+                    persistSnapshot({ force: true }).then(function () {
+                        filterIncidences();
+                        renderReportedWorkLists();
+                    });
+                    corrected = true;
+                }
+            } else if (module === 'damages') {
+                var dmg = findById(allDamages, id);
+                if (dmg) {
+                    finalizeWorkRecord(dmg);
+                    label = dmg.codigo + ' / ' + dmg.area;
+                    correctionLockUntil = Date.now() + 30000;
+                    persistSnapshot({ force: true }).then(function () {
+                        filterDamagesPending();
+                        renderReportedWorkLists();
+                    });
+                    corrected = true;
+                }
+            } else if (module === 'security') {
+                var sec = findById(allSecurity, id);
+                if (sec) {
+                    finalizeWorkRecord(sec);
+                    label = sec.area;
+                    correctionLockUntil = Date.now() + 30000;
+                    persistSnapshot({ force: true }).then(function () {
+                        filterSecurityPending();
+                        renderReportedWorkLists();
+                    });
+                    corrected = true;
+                }
+            } else if (module === 'audit') {
+                var aud = findById(allAudits, id);
+                if (aud) {
+                    finalizeWorkRecord(aud);
+                    label = 'Pasillo ' + aud.pasillo;
+                    correctionLockUntil = Date.now() + 30000;
+                    persistSnapshot({ force: true }).then(function () {
+                        filterAuditPending();
+                        renderReportedWorkLists();
+                    });
+                    corrected = true;
+                }
+            } else if (module === 'equipment') {
+                var codigo = String(id);
+                var eq = equipmentRegistry[codigo];
+                if (eq) {
+                    var C = avCore();
+                    var iso = C && C.nowIso ? C.nowIso() : new Date().toISOString();
+                    eq.estado = 'DISPONIBLE';
+                    eq.ultimaActualizacion = C && C.formatDisplayDateTime ? C.formatDisplayDateTime(iso) : iso;
+                    eq.executedAtIso = iso;
+                    eq.correctedBy = currentEmployee.name;
+                    label = codigo;
+                    correctionLockUntil = Date.now() + 30000;
+                    persistSnapshot({ force: true }).then(function () {
+                        updateEquipmentStats();
+                        renderEquipmentCorrectList();
+                        renderReportedWorkLists();
+                    });
+                    corrected = true;
+                }
+            }
+
+            if (corrected) {
+                auditAction('FINALIZAR', { module: module, id: id, label: label });
+                updateAllStats();
+                if (global.PlatformToast) {
+                    global.PlatformToast.success('Trabajo finalizado correctamente', 3500);
+                }
+            } else {
+                alert('No se encontró el registro. Sincronice (↻) e intente de nuevo.');
+            }
+            return corrected;
+        }
+
+        function buildCorrectionMessage(module, id) {
+            if (module === 'pallets') {
+                var inc = findById(allIncidences, id);
+                return inc
+                    ? '¿Finalizar trabajo en ' + inc.location + ' (' + inc.product + ')?'
+                    : '¿Finalizar este trabajo?';
+            }
+            if (module === 'damages') {
+                var d = findById(allDamages, id);
+                return d ? '¿Finalizar avería ' + d.codigo + ' en ' + d.area + '?' : '¿Finalizar este trabajo?';
+            }
+            if (module === 'security') {
+                var s = findById(allSecurity, id);
+                return s ? '¿Finalizar incidencia en ' + s.area + '?' : '¿Finalizar este trabajo?';
+            }
+            if (module === 'audit') {
+                var a = findById(allAudits, id);
+                return a ? '¿Finalizar hallazgo 5S en pasillo ' + a.pasillo + '?' : '¿Finalizar este trabajo?';
+            }
+            if (module === 'equipment') {
+                return '¿Marcar equipo ' + id + ' como DISPONIBLE?';
+            }
+            return '¿Finalizar este trabajo?';
         }
 
         function markRecordCorrected(module, id) {
             playSelectFeedback();
             if (id == null || id === '') return;
-            pendingCorrection = { module: module, id: id };
-            var title = 'Confirmar corrección';
-            var message = '¿Confirmar que este registro fue corregido?';
-
-            if (module === 'pallets') {
-                var inc = findById(allIncidences, id);
-                title = 'Corregir paleta';
-                message = inc
-                    ? '¿Confirmar corrección de la incidencia en ' + inc.location + ' (' + inc.product + ')?'
-                    : message;
-            } else if (module === 'damages') {
-                var d = findById(allDamages, id);
-                title = 'Corregir avería';
-                message = d
-                    ? '¿Confirmar corrección de avería ' + d.codigo + ' en ' + d.area + '?'
-                    : message;
-            } else if (module === 'security') {
-                var s = findById(allSecurity, id);
-                title = 'Corregir incidencia de seguridad';
-                message = s
-                    ? '¿Confirmar corrección en ' + s.area + ' (' + s.tipo + ')?'
-                    : message;
-            } else if (module === 'audit') {
-                var a = findById(allAudits, id);
-                title = 'Corregir hallazgo 5S';
-                message = a
-                    ? '¿Confirmar corrección del pasillo ' + a.pasillo + ' (turno ' + a.turno + ')?'
-                    : message;
-            } else if (module === 'equipment') {
-                title = 'Corregir equipo';
-                message = '¿Marcar equipo ' + id + ' como DISPONIBLE?';
-            }
-
-            showCorrectionModal(title, message);
+            ensureRecordStatuses();
+            var message = buildCorrectionMessage(module, id);
+            if (!window.confirm(message)) return;
+            applyCorrectionNow(module, id);
         }
 
         function filterIncidences() {
@@ -1234,7 +1785,7 @@
                         <span class="incidence-card-label">Fecha:</span>
                         <span class="incidence-card-value">${inc.reportDate}</span>
                     </div>
-                    <button class="btn-correct-incidence" onclick="markRecordCorrected('pallets', ${inc.id})">✅ Paleta corregida</button>
+                    <button type="button" class="btn-correct-incidence" data-correct-module="pallets" data-correct-id="${inc.id}">✅ Paleta corregida</button>
                 </div>
             `).join('');
         }
@@ -1262,7 +1813,7 @@
                     '<div class="incidence-card-row"><span class="incidence-card-label">Condición:</span><span class="incidence-card-value">' + d.condicion + '</span></div>' +
                     '<div class="incidence-card-row"><span class="incidence-card-label">Por:</span><span class="incidence-card-value">' + (d.usuario || '').split(' ')[0] + '</span></div>' +
                     '<div class="incidence-card-row"><span class="incidence-card-label">Fecha:</span><span class="incidence-card-value">' + (d.fechaRegistro || d.fecha) + '</span></div>' +
-                    '<button class="btn-correct-incidence" onclick="markRecordCorrected(\'damages\', ' + d.id + ')">✅ Avería corregida</button>' +
+                    '<button type="button" class="btn-correct-incidence" data-correct-module="damages" data-correct-id="' + d.id + '">✅ Avería corregida</button>' +
                     '</div>';
             }).join('');
         }
@@ -1291,7 +1842,7 @@
                     '<div class="incidence-card-row"><span class="incidence-card-label">Clasif.:</span><span class="incidence-card-value">' + s.clasificacion + '</span></div>' +
                     '<div class="incidence-card-row"><span class="incidence-card-label">Por:</span><span class="incidence-card-value">' + (s.usuario || '').split(' ')[0] + '</span></div>' +
                     '<div class="incidence-card-row"><span class="incidence-card-label">Fecha:</span><span class="incidence-card-value">' + s.fecha + '</span></div>' +
-                    '<button class="btn-correct-incidence" onclick="markRecordCorrected(\'security\', ' + s.id + ')">✅ Incidencia corregida</button>' +
+                    '<button type="button" class="btn-correct-incidence" data-correct-module="security" data-correct-id="' + s.id + '">✅ Incidencia corregida</button>' +
                     '</div>';
             }).join('');
         }
@@ -1325,7 +1876,7 @@
                     '<div class="incidence-card-row"><span class="incidence-card-label">Turno:</span><span class="incidence-card-value">' + a.turno + '</span></div>' +
                     '<div class="incidence-card-row"><span class="incidence-card-label">Cumplimiento:</span><span class="incidence-card-value">' + pct + '% (' + ok + '/5)</span></div>' +
                     '<div class="incidence-card-row"><span class="incidence-card-label">Fecha:</span><span class="incidence-card-value">' + a.fecha + '</span></div>' +
-                    '<button class="btn-correct-incidence" onclick="markRecordCorrected(\'audit\', ' + a.id + ')">✅ Hallazgo corregido</button>' +
+                    '<button type="button" class="btn-correct-incidence" data-correct-module="audit" data-correct-id="' + a.id + '">✅ Hallazgo corregido</button>' +
                     '</div>';
             }).join('');
         }
@@ -1347,7 +1898,7 @@
                     '<div class="incidence-card-row"><span class="incidence-card-label">Tipo:</span><span class="incidence-card-value">' + e.data.tipo + '</span></div>' +
                     '<div class="incidence-card-row"><span class="incidence-card-label">Estado:</span><span class="incidence-card-value">No disponible</span></div>' +
                     '<div class="incidence-card-row"><span class="incidence-card-label">Actualizado:</span><span class="incidence-card-value">' + (e.data.ultimaActualizacion || '—') + '</span></div>' +
-                    '<button class="btn-correct-incidence" onclick="markRecordCorrected(\'equipment\', ' + JSON.stringify(String(e.codigo)) + ')">✅ Equipo corregido</button>' +
+                    '<button type="button" class="btn-correct-incidence" data-correct-module="equipment" data-correct-id="' + String(e.codigo).replace(/"/g, '&quot;') + '">✅ Equipo corregido</button>' +
                     '</div>';
             }).join('');
         }
@@ -1357,78 +1908,11 @@
         }
 
         function confirmCorrection() {
-            if (!pendingCorrection) return;
-            var module = pendingCorrection.module;
-            var id = pendingCorrection.id;
-            var ts = correctionTimestamp();
-            var corrected = false;
-
-            if (module === 'pallets') {
-                var inc = findById(allIncidences, id);
-                if (inc) {
-                    inc.status = 'CORREGIDO';
-                    inc.correctedBy = currentEmployee.name;
-                    inc.correctionDate = ts;
-                    correctionLockUntil = Date.now() + 4000;
-                    saveData();
-                    filterIncidences();
-                    corrected = true;
-                }
-            } else if (module === 'damages') {
-                var dmg = findById(allDamages, id);
-                if (dmg) {
-                    dmg.status = 'CORREGIDO';
-                    dmg.correctedBy = currentEmployee.name;
-                    dmg.correctionDate = ts;
-                    correctionLockUntil = Date.now() + 4000;
-                    saveDamagesData();
-                    filterDamagesPending();
-                    corrected = true;
-                }
-            } else if (module === 'security') {
-                var sec = findById(allSecurity, id);
-                if (sec) {
-                    sec.status = 'CORREGIDO';
-                    sec.correctedBy = currentEmployee.name;
-                    sec.correctionDate = ts;
-                    correctionLockUntil = Date.now() + 4000;
-                    saveSecurityData();
-                    filterSecurityPending();
-                    corrected = true;
-                }
-            } else if (module === 'audit') {
-                var aud = findById(allAudits, id);
-                if (aud) {
-                    aud.status = 'CORREGIDO';
-                    aud.correctedBy = currentEmployee.name;
-                    aud.correctionDate = ts;
-                    correctionLockUntil = Date.now() + 4000;
-                    saveAuditsData();
-                    filterAuditPending();
-                    corrected = true;
-                }
-            } else if (module === 'equipment') {
-                var codigo = String(id);
-                var eq = equipmentRegistry[codigo];
-                if (eq) {
-                    eq.estado = 'DISPONIBLE';
-                    eq.ultimaActualizacion = ts;
-                    eq.correctedBy = currentEmployee.name;
-                    correctionLockUntil = Date.now() + 4000;
-                    saveEquipmentData();
-                    updateEquipmentStats();
-                    renderEquipmentCorrectList();
-                    corrected = true;
-                }
+            if (pendingCorrection) {
+                applyCorrectionNow(pendingCorrection.module, pendingCorrection.id);
+                pendingCorrection = null;
             }
-
             hideCorrectionModal();
-
-            if (corrected && global.PlatformToast) {
-                global.PlatformToast.success('Registro marcado como corregido', 3000);
-            } else if (!corrected) {
-                alert('No se pudo corregir el registro. Recargue la página e intente de nuevo.');
-            }
         }
 
         function getSeverityEmoji(type) {
@@ -1648,6 +2132,29 @@
         }
 
         function initCorrectionModal() {
+            if (!global.__avCorrectionClickBound) {
+                global.__avCorrectionClickBound = true;
+                document.addEventListener('click', function (e) {
+                    var editBtn = e.target && e.target.closest ? e.target.closest('[data-edit-module]') : null;
+                    if (editBtn) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        var editModule = editBtn.getAttribute('data-edit-module');
+                        var editRawId = editBtn.getAttribute('data-edit-id');
+                        var editId = editModule === 'equipment' ? editRawId : (Number(editRawId) || editRawId);
+                        openEditReport(editModule, editId);
+                        return;
+                    }
+                    var btn = e.target && e.target.closest ? e.target.closest('[data-correct-module]') : null;
+                    if (!btn) return;
+                    e.preventDefault();
+                    e.stopPropagation();
+                    var module = btn.getAttribute('data-correct-module');
+                    var rawId = btn.getAttribute('data-correct-id');
+                    var id = module === 'equipment' ? rawId : (Number(rawId) || rawId);
+                    markRecordCorrected(module, id);
+                }, true);
+            }
             var modal = document.getElementById('modal');
             var confirmBtn = document.getElementById('modalConfirmBtn');
             var cancelBtn = modal && modal.querySelector('.modal-btn-cancel');
@@ -1710,6 +2217,7 @@
   global.filterSecurityPending = filterSecurityPending;
   global.filterAuditPending = filterAuditPending;
   global.markRecordCorrected = markRecordCorrected;
+  global.openEditReport = openEditReport;
   global.showPalletsDashboard = showPalletsDashboard;
   global.handleReport = handleReport;
   global.selectSeverity = selectSeverity;

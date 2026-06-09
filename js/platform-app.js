@@ -3185,7 +3185,7 @@
   }
 
   function getRefreshIntervalSec() {
-    var sec = (state.config && state.config.refreshSeconds) || 20;
+    var sec = (state.config && state.config.refreshSeconds) || 8;
     if (state.config && state.config.tvMode) {
       var rot = (state.config.tvRotateSeconds) || 8;
       sec = Math.max(sec, rot * 3 + 4);

@@ -112,33 +112,43 @@
     if (!remote) return local || EMPTY;
     if (!local) return remote;
 
+    var Core = global.PlatformAveriasCore;
+
     function recordTime(r) {
+      if (Core && Core.recordTimeForMerge) return Core.recordTimeForMerge(r);
       if (!r) return 0;
-      return Date.parse(r.correctionDate) || Date.parse(r.fechaRegistro) || Date.parse(r.fecha) ||
+      return Date.parse(r.correctionDateIso) || Date.parse(r.correctionDate) || Date.parse(r.fechaRegistro) || Date.parse(r.fecha) ||
         Date.parse(r.reportDate) || (typeof r.id === 'number' ? r.id : parseInt(r.id, 10)) || 0;
+    }
+
+    function isCor(r) {
+      if (Core && Core.isCorrectedStatus) return Core.isCorrectedStatus(r);
+      return String(r && r.status || '').toUpperCase() === 'CORREGIDO';
     }
 
     function pickBetterRecord(a, b) {
       if (!a) return b;
       if (!b) return a;
-      if (a.status === 'CORREGIDO' && b.status !== 'CORREGIDO') return a;
-      if (b.status === 'CORREGIDO' && a.status !== 'CORREGIDO') return b;
+      var aCor = isCor(a);
+      var bCor = isCor(b);
+      if (aCor && !bCor) return a;
+      if (bCor && !aCor) return b;
       return recordTime(a) >= recordTime(b) ? a : b;
     }
 
     function mergeArr(a, b) {
       var map = {};
-      (a || []).forEach(function (x) {
-        if (x && x.id != null) {
-          var k = String(x.id);
-          map[k] = map[k] ? pickBetterRecord(map[k], x) : x;
-        }
+      (a || []).forEach(function (x, idx) {
+        if (!x) return;
+        if (x.id == null || x.id === '') x.id = 'legacy-a-' + idx + '-' + recordTime(x);
+        var k = String(x.id);
+        map[k] = map[k] ? pickBetterRecord(map[k], x) : x;
       });
-      (b || []).forEach(function (x) {
-        if (x && x.id != null) {
-          var k = String(x.id);
-          map[k] = map[k] ? pickBetterRecord(map[k], x) : x;
-        }
+      (b || []).forEach(function (x, idx) {
+        if (!x) return;
+        if (x.id == null || x.id === '') x.id = 'legacy-b-' + idx + '-' + recordTime(x);
+        var k = String(x.id);
+        map[k] = map[k] ? pickBetterRecord(map[k], x) : x;
       });
       return Object.keys(map).map(function (k) { return map[k]; })
         .sort(function (x, y) { return (y.id || 0) - (x.id || 0); });
@@ -210,6 +220,10 @@
 
   function applySnapshotToLocal(snap, silent) {
     if (!snap || !global.localStorage) return false;
+    var current = getLocalSnapshot();
+    if (current) {
+      snap = mergeAveriasSnapshots(current, snap);
+    }
     var json = JSON.stringify(snap);
     if (json === lastAppliedJson) return false;
     try {
@@ -469,7 +483,6 @@
     retries = retries == null ? 3 : retries;
     snap.updatedAt = new Date().toISOString();
     applySnapshotToLocal(snap, true);
-    notifyUpdated('push-local');
 
     function attempt(n) {
       return Promise.all([
@@ -489,6 +502,7 @@
           }
           schedulePullBurst();
           notifyUpdated('push-ok');
+          global.dispatchEvent(new CustomEvent('averias-sync-push', { detail: { ok: true } }));
           return { ok: true };
         }
         if (n < retries) {
