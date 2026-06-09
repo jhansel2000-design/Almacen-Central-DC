@@ -159,6 +159,13 @@
     return 'registro';
   }
 
+  function resolveScreenForRole(screen, canValidate) {
+    screen = normalizeScreen(screen);
+    if (canValidate) return 'validador';
+    if (screen === 'validador') return 'registro';
+    return screen;
+  }
+
   function renderListaPreviewTable(pedidos, emptyMsg) {
     pedidos = pedidos || [];
     if (!pedidos.length) {
@@ -644,7 +651,10 @@
     lastOpts = opts;
     data = data || DS.load();
     var canValidate = !!opts.canValidate;
-    var screen = normalizeScreen(opts.screen);
+    var screen = resolveScreenForRole(opts.screen, canValidate);
+    if (opts.onScreenChange && screen !== normalizeScreen(opts.screen)) {
+      opts.onScreenChange(screen);
+    }
     var userName = (opts.user && (opts.user.name || opts.user.username)) || 'Usuario';
 
     if (unbindSync) {

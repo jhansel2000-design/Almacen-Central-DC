@@ -47,7 +47,7 @@
       return;
     }
     if (view === 'barcode') showWaiting('Esperando código de barras IDC…');
-    else if (view === 'lista') showWaiting('Esperando lista para validadores…');
+    else if (view === 'lista') showWaiting('Esperando seguimiento del validador…');
     else showWaiting('Esperando transmisión en vivo…');
   }
 

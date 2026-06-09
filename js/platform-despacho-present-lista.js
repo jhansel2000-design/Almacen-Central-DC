@@ -85,8 +85,8 @@
       '<div class="desp-lista-present-shell">' +
       '<div class="desp-lista-present-inner">' +
       '<div class="desp-lista-present-head">' +
-      '<div class="desp-lista-present-badge"><span class="desp-lista-present-dot"></span> EN VIVO · Lista para validadores</div>' +
-      '<p class="desp-lista-present-meta">' + esc(String(pedidos.length)) + ' IDC activo(s) · Preparador: ' +
+      '<div class="desp-lista-present-badge"><span class="desp-lista-present-dot"></span> EN VIVO · Seguimiento validador</div>' +
+      '<p class="desp-lista-present-meta">' + esc(String(pedidos.length)) + ' IDC en validación · Validador: ' +
       esc(share.sharedBy || '—') + '</p></div>' +
       '<div class="desp-lista-present-table-wrap">' +
       '<table class="desp-lista-present-table" aria-label="Lista IDC y pasillos en vivo">' +
