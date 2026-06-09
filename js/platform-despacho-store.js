@@ -35,9 +35,9 @@
     },
     pendiente_carga: {
       id: 'pendiente_carga',
-      label: 'Pendiente por subir al área de carga',
-      short: 'Pend. carga',
-      icon: '📦',
+      label: 'Pendiente por validar',
+      short: 'Pend. validar',
+      icon: '',
       fase: 'validacion',
       color: 'orange',
       preparador: false,
@@ -45,9 +45,9 @@
     },
     en_validacion: {
       id: 'en_validacion',
-      label: 'En validación para despacho',
-      short: 'En validación',
-      icon: '✅',
+      label: 'Validado',
+      short: 'Validado',
+      icon: '',
       fase: 'validacion',
       color: 'purple',
       preparador: false,
@@ -55,9 +55,9 @@
     },
     listo_despacho: {
       id: 'listo_despacho',
-      label: 'Listo para despacho',
-      short: 'Listo',
-      icon: '🚚',
+      label: 'Cargado',
+      short: 'Cargado',
+      icon: '',
       fase: 'despacho',
       color: 'green',
       preparador: false,
@@ -373,7 +373,7 @@
       desde: prev,
       hacia: nuevoEstado,
       nota: nuevoEstado === 'listo_despacho'
-        ? 'Validador marcó como listo para despacho'
+        ? 'Validador marcó como cargado'
         : (prevFase === 'preparacion' && newFase !== 'preparacion')
           ? 'Validador cambió estado desde preparación'
           : 'Cambio de estado validador'
@@ -456,7 +456,7 @@
 
   function formatEstado(id) {
     var e = ESTADOS[id];
-    return e ? e.icon + ' ' + e.label : id;
+    return e ? (e.short || e.label) : id;
   }
 
   function formatHistorialEntry(h) {

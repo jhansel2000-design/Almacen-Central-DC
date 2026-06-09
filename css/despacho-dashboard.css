@@ -61,17 +61,18 @@ body.despacho-dash-view .ai-insights-bar {
 
 .desp-flujo-step {
   font-size: 0.72rem;
-  font-weight: 700;
+  font-weight: 600;
   padding: 0.25rem 0.55rem;
-  border-radius: 999px;
+  border-radius: 6px;
   white-space: nowrap;
+  border: 1px solid transparent;
 }
 
-.desp-flujo-step--amber { background: rgba(245, 158, 11, 0.18); color: #fbbf24; }
-.desp-flujo-step--blue { background: rgba(59, 130, 246, 0.18); color: #60a5fa; }
-.desp-flujo-step--orange { background: rgba(249, 115, 22, 0.18); color: #fb923c; }
-.desp-flujo-step--purple { background: rgba(168, 85, 247, 0.18); color: #c084fc; }
-.desp-flujo-step--green { background: rgba(16, 185, 129, 0.18); color: #34d399; }
+.desp-flujo-step--amber { background: rgba(245, 158, 11, 0.1); color: #d4a017; border-color: rgba(245, 158, 11, 0.2); }
+.desp-flujo-step--blue { background: rgba(59, 130, 246, 0.1); color: #5b8fd4; border-color: rgba(59, 130, 246, 0.2); }
+.desp-flujo-step--orange { background: rgba(249, 115, 22, 0.1); color: #d97706; border-color: rgba(249, 115, 22, 0.2); }
+.desp-flujo-step--purple { background: rgba(168, 85, 247, 0.1); color: #a78bfa; border-color: rgba(168, 85, 247, 0.2); }
+.desp-flujo-step--green { background: rgba(16, 185, 129, 0.1); color: #2ea87a; border-color: rgba(16, 185, 129, 0.2); }
 
 .desp-flujo-arrow {
   color: var(--muted);
@@ -288,41 +289,42 @@ body.despacho-dash-view .ai-insights-bar {
   display: flex;
   align-items: center;
   gap: 0.45rem;
-  padding: 0.65rem 1rem;
-  border-radius: 12px;
-  border: 2px solid var(--border);
+  padding: 0.55rem 0.85rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
   cursor: pointer;
-  font-weight: 600;
-  transition: border-color 0.2s, background 0.2s;
+  font-weight: 500;
+  font-size: 0.88rem;
 }
 
 .desp-radio input { accent-color: var(--accent); }
 
-.desp-radio--amber:has(input:checked) { border-color: #fbbf24; background: rgba(245, 158, 11, 0.1); }
-.desp-radio--blue:has(input:checked) { border-color: #60a5fa; background: rgba(59, 130, 246, 0.1); }
+.desp-radio--amber:has(input:checked) { border-color: rgba(245, 158, 11, 0.45); background: rgba(245, 158, 11, 0.08); }
+.desp-radio--blue:has(input:checked) { border-color: rgba(59, 130, 246, 0.45); background: rgba(59, 130, 246, 0.08); }
 
 .desp-btn-submit {
   min-width: 12rem;
 }
 
-/* Estados badge */
+/* Estados badge — estático, sin animación */
 .desp-estado {
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
-  padding: 0.28rem 0.6rem;
-  border-radius: 999px;
-  font-size: 0.78rem;
-  font-weight: 700;
+  padding: 0.22rem 0.55rem;
+  border-radius: 6px;
+  font-size: 0.76rem;
+  font-weight: 600;
   white-space: nowrap;
+  border: 1px solid transparent;
+  letter-spacing: 0.01em;
 }
 
-.desp-estado--amber { background: rgba(245, 158, 11, 0.18); color: #fbbf24; }
-.desp-estado--blue { background: rgba(59, 130, 246, 0.18); color: #60a5fa; }
-.desp-estado--orange { background: rgba(249, 115, 22, 0.18); color: #fb923c; }
-.desp-estado--purple { background: rgba(168, 85, 247, 0.18); color: #c084fc; }
-.desp-estado--green { background: rgba(16, 185, 129, 0.18); color: #34d399; }
-.desp-estado--neutral { background: rgba(148, 163, 184, 0.15); color: var(--muted); }
+.desp-estado--amber { background: rgba(245, 158, 11, 0.1); color: #d4a017; border-color: rgba(245, 158, 11, 0.22); }
+.desp-estado--blue { background: rgba(59, 130, 246, 0.1); color: #5b8fd4; border-color: rgba(59, 130, 246, 0.22); }
+.desp-estado--orange { background: rgba(249, 115, 22, 0.1); color: #d97706; border-color: rgba(249, 115, 22, 0.22); }
+.desp-estado--purple { background: rgba(168, 85, 247, 0.1); color: #a78bfa; border-color: rgba(168, 85, 247, 0.22); }
+.desp-estado--green { background: rgba(16, 185, 129, 0.1); color: #2ea87a; border-color: rgba(16, 185, 129, 0.22); }
+.desp-estado--neutral { background: rgba(148, 163, 184, 0.1); color: var(--muted); border-color: rgba(148, 163, 184, 0.2); }
 
 /* Filtros validador */
 .desp-filters {
@@ -957,20 +959,19 @@ body.desp-live-lista-on:not(.desp-live-present-on) .desp-live-present-lista {
 }
 
 .desp-lista-present-estado {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
+  display: inline-block;
   padding: 0.2rem 0.5rem;
-  border-radius: 999px;
+  border-radius: 6px;
   font-size: 0.78rem;
-  font-weight: 700;
+  font-weight: 600;
+  border: 1px solid transparent;
 }
 
-.desp-lista-present-estado--amber { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
-.desp-lista-present-estado--blue { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
-.desp-lista-present-estado--orange { background: rgba(249, 115, 22, 0.2); color: #fb923c; }
-.desp-lista-present-estado--purple { background: rgba(168, 85, 247, 0.2); color: #c084fc; }
-.desp-lista-present-estado--green { background: rgba(34, 197, 94, 0.2); color: #4ade80; }
+.desp-lista-present-estado--amber { background: rgba(245, 158, 11, 0.1); color: #d4a017; border-color: rgba(245, 158, 11, 0.22); }
+.desp-lista-present-estado--blue { background: rgba(59, 130, 246, 0.1); color: #5b8fd4; border-color: rgba(59, 130, 246, 0.22); }
+.desp-lista-present-estado--orange { background: rgba(249, 115, 22, 0.1); color: #d97706; border-color: rgba(249, 115, 22, 0.22); }
+.desp-lista-present-estado--purple { background: rgba(168, 85, 247, 0.1); color: #a78bfa; border-color: rgba(168, 85, 247, 0.22); }
+.desp-lista-present-estado--green { background: rgba(16, 185, 129, 0.1); color: #2ea87a; border-color: rgba(16, 185, 129, 0.22); }
 
 .desp-lista-present-empty {
   text-align: center;
@@ -1606,29 +1607,19 @@ body.desp-controller-mode .desp-live-present-lista {
   font-size: 0.78rem;
   padding: 0.28rem 0.55rem;
   white-space: nowrap;
-  border-radius: 8px;
+  border-radius: 6px;
+  font-weight: 500;
 }
 
 .desp-btn-set-estado.is-current {
-  opacity: 0.55;
+  opacity: 0.65;
   cursor: default;
+  font-weight: 600;
 }
 
-.desp-btn-listo {
-  background: rgba(34, 197, 94, 0.18) !important;
-  border-color: rgba(34, 197, 94, 0.55) !important;
-  color: #4ade80 !important;
-  font-weight: 800 !important;
-}
-
-.desp-btn-listo:hover:not(:disabled) {
-  background: rgba(34, 197, 94, 0.28) !important;
-  box-shadow: 0 4px 16px rgba(34, 197, 94, 0.2);
-}
-
-html[data-theme="light"] .desp-btn-listo {
-  color: #15803d !important;
-  background: rgba(34, 197, 94, 0.12) !important;
+.desp-btn-set-estado[data-estado="listo_despacho"]:not(.is-current) {
+  border-color: rgba(16, 185, 129, 0.35);
+  color: #2ea87a;
 }
 
 .desp-btn-archive {

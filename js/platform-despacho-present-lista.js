@@ -35,7 +35,7 @@
     if (!store) return esc(estadoId || '—');
     var e = store.ESTADOS[estadoId] || { label: estadoId, icon: '●', short: estadoId, color: 'neutral' };
     return '<span class="desp-lista-present-estado desp-lista-present-estado--' + esc(e.color) + '">' +
-      esc(e.icon) + ' ' + esc(e.short || e.label) + '</span>';
+      esc(e.short || e.label) + '</span>';
   }
 
   function listaSignature(share, pedidos) {

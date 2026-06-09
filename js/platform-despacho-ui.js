@@ -101,9 +101,8 @@
   }
 
   function estadoBadge(estadoId) {
-    var e = DS.ESTADOS[estadoId] || { label: estadoId, icon: '●', color: 'neutral' };
+    var e = DS.ESTADOS[estadoId] || { label: estadoId, color: 'neutral', short: estadoId };
     return '<span class="desp-estado desp-estado--' + esc(e.color) + '">' +
-      '<span class="desp-estado-icon" aria-hidden="true">' + esc(e.icon) + '</span>' +
       '<span class="desp-estado-text">' + esc(e.short || e.label) + '</span></span>';
   }
 
@@ -113,7 +112,7 @@
         var e = DS.ESTADOS[id];
         return (i > 0 ? '<span class="desp-flujo-arrow" aria-hidden="true">→</span>' : '') +
           '<span class="desp-flujo-step desp-flujo-step--' + esc(e.color) + '">' +
-          esc(e.icon) + ' ' + esc(e.short) + '</span>';
+          esc(e.short || e.label) + '</span>';
       }).join('') +
       '</div>';
   }
@@ -316,7 +315,7 @@
         var e = DS.ESTADOS[id];
         return '<label class="desp-radio desp-radio--' + esc(e.color) + '">' +
           '<input type="radio" name="prepEstado" value="' + esc(id) + '"' + (i === 0 ? ' checked' : '') + '>' +
-          '<span>' + esc(e.icon) + ' ' + esc(e.label) + '</span></label>';
+          '<span>' + esc(e.short || e.label) + '</span></label>';
       }).join('') +
       '</div></fieldset>' +
       '</div>' +
@@ -394,7 +393,7 @@
         var e = DS.ESTADOS[id];
         return '<label class="desp-radio desp-radio--' + esc(e.color) + '">' +
           '<input type="radio" name="shareEstado" value="' + esc(id) + '"' + (i === 0 ? ' checked' : '') + '>' +
-          '<span>' + esc(e.icon) + ' ' + esc(e.label) + '</span></label>';
+          '<span>' + esc(e.short || e.label) + '</span></label>';
       }).join('') +
       '</div></fieldset>' +
       '</div>' +
@@ -429,11 +428,10 @@
       var e = DS.ESTADOS[id];
       var isCurrent = p.estado === id;
       var cls = 'desp-btn-set-estado btn btn-ghost';
-      if (id === 'listo_despacho') cls += ' desp-btn-listo';
       if (isCurrent) cls += ' is-current';
       html += '<button type="button" class="' + cls + '" data-pedido-id="' + esc(p.id) + '" data-estado="' + esc(id) + '"' +
         (isCurrent ? ' disabled aria-current="true"' : '') + ' title="' + esc(e.label) + '">' +
-        esc(e.icon) + ' ' + esc(compact && id === 'listo_despacho' ? 'Listo' : (e.short || e.label)) +
+        esc(compact ? (e.short || e.label) : (e.short || e.label)) +
         '</button>';
     });
     html += '</div>';
@@ -479,7 +477,7 @@
       '<header class="desp-panel-head">' +
       '<div><span class="desp-eyebrow">Pantalla externa · Validador</span>' +
       '<h3 id="despValShareTitle">Seguimiento validador en vivo</h3>' +
-      '<p class="desp-panel-sub">Lo que comparte en TV · el validador marca <strong>Listo</strong> o cambia estado · <strong>Quitar</strong> saca el IDC</p></div>' +
+      '<p class="desp-panel-sub">Lo que comparte en TV · el validador marca <strong>Cargado</strong> o cambia estado · <strong>Quitar</strong> saca el IDC</p></div>' +
       (sharing ? '<span class="desp-share-live-tag desp-share-live-tag--lista"><span class="desp-live-dot"></span> EN VIVO</span>' : '') +
       '</header>' +
       '<p class="desp-share-status desp-share-status--lista" id="despListaShareStatus"' + (sharing ? '' : ' hidden') + '>' +
@@ -586,7 +584,7 @@
     if (status) {
       status.hidden = !active;
       status.textContent = active
-        ? 'Lista en pantalla · ' + count + ' IDC en validación'
+        ? 'Lista en pantalla · ' + count + ' IDC en seguimiento'
         : '';
     }
   }
@@ -681,8 +679,8 @@
     return '<section class="desp-panel desp-panel--val" aria-labelledby="despValTitle">' +
       '<header class="desp-panel-head">' +
       '<div><span class="desp-eyebrow">Validador</span>' +
-      '<h3 id="despValTitle">Seguimiento en validación</h3>' +
-      '<p class="desp-panel-sub">IDC del operador entran como <strong>Pend. carga</strong>. Usted marca <strong>Listo</strong> o quita del seguimiento — nunca quedan En proceso.</p></div>' +
+      '<h3 id="despValTitle">Seguimiento validador</h3>' +
+      '<p class="desp-panel-sub">IDC del operador entran como <strong>Pend. validar</strong>. Usted marca <strong>Cargado</strong> o quita del seguimiento — nunca quedan En proceso.</p></div>' +
       '<span class="desp-live-badge" title="Sincronización activa"><span class="desp-live-dot"></span> En vivo</span>' +
       '</header>' +
       '<div class="desp-filters">' +
@@ -690,11 +688,11 @@
       '<input type="search" id="despSearch" placeholder="IDC, cliente o pasillo…" value="' + esc(filterQ) + '"></label>' +
       '<label class="desp-filter"><span>Estado</span>' +
       '<select id="despFilterEstado">' +
-      '<option value="">Todos (validación)</option>' +
+      '<option value="">Todos (validador)</option>' +
       DS.VALIDADOR_ESTADOS.map(function (id) {
         var e = DS.ESTADOS[id];
         return '<option value="' + esc(id) + '"' + (filterEstado === id ? ' selected' : '') + '>' +
-          esc(e.icon) + ' ' + esc(e.label) + '</option>';
+          esc(e.short || e.label) + '</option>';
       }).join('') +
       '</select></label>' +
       '</div>' +
