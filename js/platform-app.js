@@ -1993,16 +1993,24 @@
     state.dataDespacho = loadDespachoData();
     var role = state.user ? state.user.role : '';
     var canValidate = global.PlatformAdmin && global.PlatformAdmin.can(role, 'despacho.validate', state.user);
+    var view = state.config.despachoView || (canValidate ? 'combinado' : 'preparador');
+    var despachoArea = view === 'validador' ? 'validador' : 'preparador';
+    if (despachoArea === 'validador' && !canValidate) {
+      despachoArea = 'preparador';
+      view = 'preparador';
+      state.config.despachoView = 'preparador';
+    }
     var savedScreen = state.config.despachoScreen || 'registro';
     if (savedScreen === 'lista') savedScreen = 'validador';
-    if (canValidate) savedScreen = 'validador';
-    else if (savedScreen === 'validador') savedScreen = 'registro';
+    if (despachoArea === 'preparador' && savedScreen === 'validador') savedScreen = 'registro';
+    if (despachoArea === 'validador') savedScreen = 'validador';
     state.config.despachoScreen = savedScreen;
     global.PlatformStore.saveConfig(state.config);
 
     global.PlatformDespachoUI.render(host, state.dataDespacho, {
       user: state.user,
       canValidate: canValidate,
+      despachoArea: despachoArea,
       screen: savedScreen,
       onScreenChange: function (s) {
         state.config.despachoScreen = s;

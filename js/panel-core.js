@@ -267,11 +267,16 @@
 
   function saveDespachoSession(user) {
     if (!global.localStorage || !user) return;
+    var area = user.despachoArea;
+    if (area !== 'preparador' && area !== 'validador') {
+      area = user.role === 'validador' ? 'validador' : 'preparador';
+    }
     localStorage.setItem(DESPACHO_SESSION_KEY, JSON.stringify({
       userId: user.id,
       username: user.username,
       name: user.name,
       role: user.role,
+      despachoArea: area,
       expiresAt: Date.now() + SESSION_MS
     }));
   }

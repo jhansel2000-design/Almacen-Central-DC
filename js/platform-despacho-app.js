@@ -30,6 +30,7 @@
   var state = {
     user: null,
     screen: 'registro',
+    despachoArea: 'preparador',
     _sessionTouchBound: false
   };
 
@@ -168,6 +169,7 @@
         showAuthError('Tu usuario no tiene acceso como Validador. Elige Preparador.');
         return;
       }
+      user.despachoArea = area;
       PC.clearDespachoLoginAttempts();
       PC.persistRememberedLoginUsername(
         'despacho',
@@ -220,7 +222,9 @@
       PC.clearDespachoSession();
       return false;
     }
-    state.screen = Auth.canValidate(user.role) ? 'validador' : 'registro';
+    state.despachoArea = session.despachoArea === 'validador' ? 'validador' : 'preparador';
+    user.despachoArea = state.despachoArea;
+    state.screen = state.despachoArea === 'validador' ? 'validador' : 'registro';
     enterApp(user);
     return true;
   }
@@ -245,20 +249,20 @@
     }
     var badge = $('despRoleBadge');
     if (!badge) return;
-    badge.textContent = Auth.getRoleLabel
-      ? Auth.getRoleLabel(state.user)
-      : (Auth.ROLE_LABELS[state.user.role] || state.user.role);
-    badge.className = 'role-badge desp-role-' + state.user.role;
+    badge.textContent = state.despachoArea === 'validador'
+      ? (Auth.getRoleLabel ? Auth.getRoleLabel(state.user) : 'Validador')
+      : 'Preparador';
+    badge.className = 'role-badge desp-role-' + (state.despachoArea === 'validador' ? 'validador' : 'preparador');
   }
 
   function renderDespacho() {
     var host = $('despModule');
     if (!host || !global.PlatformDespachoUI) return;
-    var canValidate = Auth.canValidate(state.user.role);
 
     global.PlatformDespachoUI.render(host, global.PlatformDespachoStore.load(), {
       user: state.user,
-      canValidate: canValidate,
+      canValidate: Auth.canValidate(state.user.role),
+      despachoArea: state.despachoArea || 'preparador',
       screen: state.screen,
       onScreenChange: function (s) {
         state.screen = s;
@@ -279,7 +283,9 @@
 
   function enterApp(user) {
     state.user = user;
-    state.screen = Auth.canValidate(user.role) ? 'validador' : 'registro';
+    state.despachoArea = user.despachoArea === 'validador' ? 'validador' : 'preparador';
+    state.screen = state.despachoArea === 'validador' ? 'validador' : 'registro';
+    user.despachoArea = state.despachoArea;
     document.body.classList.add('desp-controller-mode');
     clearLocalPresentOverlays();
     setAuthVisible(false);
@@ -304,6 +310,7 @@
     if (global.PlatformDespachoUI) global.PlatformDespachoUI.destroy();
     PC.clearDespachoSession();
     state.user = null;
+    state.despachoArea = 'preparador';
     state._sessionTouchBound = false;
     setAuthVisible(true);
     var pwd = $('despAuthPassword');

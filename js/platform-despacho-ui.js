@@ -159,9 +159,10 @@
     return 'registro';
   }
 
-  function resolveScreenForRole(screen, canValidate) {
+  function resolveScreenForRole(screen, despachoArea) {
     screen = normalizeScreen(screen);
-    if (canValidate) return 'validador';
+    despachoArea = despachoArea === 'validador' ? 'validador' : 'preparador';
+    if (despachoArea === 'validador') return 'validador';
     if (screen === 'validador') return 'registro';
     return screen;
   }
@@ -200,13 +201,14 @@
   function renderNavEntrada(screen, data, opts) {
     screen = normalizeScreen(screen);
     opts = opts || {};
+    var despachoArea = opts.despachoArea === 'validador' ? 'validador' : 'preparador';
     var canValidate = !!opts.canValidate;
     var sharingBarcode = DS.getLiveShare(data);
     var liveBarcode = !!(sharingBarcode && sharingBarcode.active);
     var sharingLista = DS.getLiveShareLista(data);
     var liveLista = !!(sharingLista && sharingLista.active);
 
-    if (canValidate) {
+    if (despachoArea === 'validador') {
       return '<nav class="desp-entrada-nav desp-entrada-nav--1" role="tablist" aria-label="Panel validador">' +
         renderEntradaBtn({
           id: 'validador',
@@ -651,7 +653,8 @@
     lastOpts = opts;
     data = data || DS.load();
     var canValidate = !!opts.canValidate;
-    var screen = resolveScreenForRole(opts.screen, canValidate);
+    var despachoArea = opts.despachoArea === 'validador' ? 'validador' : 'preparador';
+    var screen = resolveScreenForRole(opts.screen, despachoArea);
     if (opts.onScreenChange && screen !== normalizeScreen(opts.screen)) {
       opts.onScreenChange(screen);
     }
