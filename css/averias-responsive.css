@@ -362,10 +362,107 @@ body.averias-dash-view {
     margin: 0;
     padding: 10px 14px;
     font-size: 0.82rem;
-    line-height: 1.4;
+    line-height: 1.45;
     color: #ffb74d;
     background: rgba(255, 152, 0, 0.12);
     border-bottom: 1px solid rgba(255, 152, 0, 0.25);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 10px;
+  }
+
+  .averias-app .av-sync-banner-text {
+    flex: 1 1 200px;
+  }
+
+  .averias-app .av-sync-banner-btn {
+    flex-shrink: 0;
+    padding: 8px 14px;
+    border: none;
+    border-radius: 8px;
+    background: #ff9800;
+    color: #1a1208;
+    font-weight: 700;
+    font-size: 0.82rem;
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+
+  .averias-app .av-sync-banner-hint {
+    flex: 1 1 100%;
+    font-size: 0.75rem;
+    opacity: 0.9;
+  }
+
+  .averias-app .av-cloud-modal[hidden] {
+    display: none !important;
+  }
+
+  .averias-app .av-cloud-modal:not([hidden]) {
+    display: flex;
+  }
+
+  .averias-app .av-cloud-modal-content {
+    max-width: 420px;
+    text-align: left;
+  }
+
+  .averias-app .av-cloud-help {
+    margin: 0 0 10px;
+    font-size: 0.88rem;
+    color: #c9d1d9;
+  }
+
+  .averias-app .av-cloud-steps {
+    margin: 0 0 12px 18px;
+    padding: 0;
+    font-size: 0.82rem;
+    color: #8b949e;
+  }
+
+  .averias-app .av-cloud-steps a {
+    color: #58a6ff;
+  }
+
+  .averias-app .av-cloud-label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 0.8rem;
+    color: #8b949e;
+  }
+
+  .averias-app .av-cloud-input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 10px 12px;
+    margin-bottom: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.25);
+    color: #e6edf3;
+    font-size: 0.9rem;
+  }
+
+  .averias-app .av-cloud-note {
+    margin: 0 0 12px;
+    font-size: 0.75rem;
+    color: #8b949e;
+    line-height: 1.4;
+  }
+
+  .averias-app .av-cloud-status {
+    margin: 10px 0 0;
+    font-size: 0.82rem;
+    line-height: 1.4;
+  }
+
+  .averias-app .av-cloud-status.ok {
+    color: #3fb950;
+  }
+
+  .averias-app .av-cloud-status.err {
+    color: #f85149;
   }
 
   .averias-app .av-sync-banner[hidden] {

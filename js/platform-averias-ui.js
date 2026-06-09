@@ -37,6 +37,7 @@
     }
     if (typeof closeDrawer === 'function') closeDrawer();
     initFitScreen();
+    initCorrectionModal();
     showWelcome();
   }
 // Data Management
@@ -81,6 +82,7 @@
         let selectedTurno = 'A';
         let hasPhoto = false;
         let pendingCorrection = null;
+        var correctionLockUntil = 0;
 
         const moduleTitles = {
             home: 'Almacén Central',
@@ -193,24 +195,39 @@
             return true;
         }
 
+        function isPendingStatus(record) {
+            return String(record && record.status || 'PENDIENTE').toUpperCase() !== 'CORREGIDO';
+        }
+
+        function assignMissingIds(list, seedBase) {
+            var maxId = list.reduce(function (max, r) {
+                var n = Number(r && r.id);
+                return isFinite(n) && n > max ? n : max;
+            }, seedBase || Date.now());
+            var assigned = false;
+            list.forEach(function (r) {
+                if (!r) return;
+                if (r.id == null || r.id === '') {
+                    maxId += 1;
+                    r.id = maxId;
+                    assigned = true;
+                }
+                if (!r.status) r.status = 'PENDIENTE';
+            });
+            return assigned;
+        }
+
         function ensureRecordStatuses() {
-            var base = Date.now();
-            allIncidences.forEach(function (r, idx) {
-                if (r.id == null) r.id = base + idx;
-                if (!r.status) r.status = 'PENDIENTE';
-            });
-            allDamages.forEach(function (r, idx) {
-                if (r.id == null) r.id = base + 10000 + idx;
-                if (!r.status) r.status = 'PENDIENTE';
-            });
-            allSecurity.forEach(function (r, idx) {
-                if (r.id == null) r.id = base + 20000 + idx;
-                if (!r.status) r.status = 'PENDIENTE';
-            });
-            allAudits.forEach(function (r, idx) {
-                if (r.id == null) r.id = base + 30000 + idx;
-                if (!r.status) r.status = 'PENDIENTE';
-            });
+            var changed = false;
+            changed = assignMissingIds(allIncidences, 1000) || changed;
+            changed = assignMissingIds(allDamages, 200000) || changed;
+            changed = assignMissingIds(allSecurity, 300000) || changed;
+            changed = assignMissingIds(allAudits, 400000) || changed;
+            allIncidences.forEach(function (r) { if (r && !r.status) r.status = 'PENDIENTE'; });
+            allDamages.forEach(function (r) { if (r && !r.status) r.status = 'PENDIENTE'; });
+            allSecurity.forEach(function (r) { if (r && !r.status) r.status = 'PENDIENTE'; });
+            allAudits.forEach(function (r) { if (r && !r.status) r.status = 'PENDIENTE'; });
+            return changed;
         }
 
         function sameRecordId(a, b) {
@@ -234,9 +251,10 @@
             if (applyingRemoteSnapshot) return;
             try {
                 applyingRemoteSnapshot = true;
-                ensureRecordStatuses();
+                var idsAssigned = ensureRecordStatuses();
                 writeIndividualKeys();
                 var snap = buildSnapshot();
+                snap.updatedAt = new Date().toISOString();
                 localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(snap));
                 if (global.PlatformAveriasCloudSync && global.PlatformAveriasCloudSync.push) {
                     global.PlatformAveriasCloudSync.push(snap).then(function (result) {
@@ -251,6 +269,8 @@
                             }
                         }
                     });
+                } else if (idsAssigned) {
+                    /* ids nuevos guardados solo en local */
                 }
             } finally {
                 applyingRemoteSnapshot = false;
@@ -277,6 +297,7 @@
             if (snapRaw) {
                 try {
                     if (applySnapshot(JSON.parse(snapRaw))) {
+                        if (ensureRecordStatuses()) persistSnapshot();
                         updateAllStats();
                         return;
                     }
@@ -334,6 +355,7 @@
         }
 
         function reloadFromSyncDebounced() {
+            if (Date.now() < correctionLockUntil) return;
             clearTimeout(reloadSyncTimer);
             reloadSyncTimer = setTimeout(reloadFromSync, 80);
         }
@@ -1160,15 +1182,13 @@
                 message = '¿Marcar equipo ' + id + ' como DISPONIBLE?';
             }
 
-            document.getElementById('modalTitle').textContent = title;
-            document.getElementById('modalMessage').textContent = message;
-            document.getElementById('modal').classList.add('show');
+            showCorrectionModal(title, message);
         }
 
         function filterIncidences() {
             const locationFilter = document.getElementById('correctLocation').value.toUpperCase();
             incidences = allIncidences.filter(inc => 
-                inc.status === 'PENDIENTE' && 
+                isPendingStatus(inc) && 
                 inc.location.toUpperCase().includes(locationFilter)
             );
 
@@ -1224,7 +1244,7 @@
             var filterEl = document.getElementById('damagesCorrectFilter');
             var filter = filterEl ? filterEl.value.toUpperCase() : '';
             var pending = allDamages.filter(function (d) {
-                return d.status === 'PENDIENTE' && String(d.codigo || '').toUpperCase().indexOf(filter) !== -1;
+                return isPendingStatus(d) && String(d.codigo || '').toUpperCase().indexOf(filter) !== -1;
             });
             var countEl = document.getElementById('damagesPendingCount');
             if (countEl) countEl.textContent = pending.length;
@@ -1252,7 +1272,7 @@
             var filterEl = document.getElementById('securityCorrectFilter');
             var filter = filterEl ? filterEl.value.toUpperCase() : '';
             var pending = allSecurity.filter(function (s) {
-                return s.status === 'PENDIENTE' && String(s.area || '').toUpperCase().indexOf(filter) !== -1;
+                return isPendingStatus(s) && String(s.area || '').toUpperCase().indexOf(filter) !== -1;
             });
             var countEl = document.getElementById('securityPendingCount');
             if (countEl) countEl.textContent = pending.length;
@@ -1286,7 +1306,7 @@
             var filterEl = document.getElementById('auditCorrectFilter');
             var filter = filterEl ? filterEl.value.toUpperCase() : '';
             var pending = allAudits.filter(function (a) {
-                return a.status === 'PENDIENTE' && String(a.pasillo || '').toUpperCase().indexOf(filter) !== -1;
+                return isPendingStatus(a) && String(a.pasillo || '').toUpperCase().indexOf(filter) !== -1;
             });
             var countEl = document.getElementById('auditPendingCount');
             if (countEl) countEl.textContent = pending.length;
@@ -1349,6 +1369,7 @@
                     inc.status = 'CORREGIDO';
                     inc.correctedBy = currentEmployee.name;
                     inc.correctionDate = ts;
+                    correctionLockUntil = Date.now() + 4000;
                     saveData();
                     filterIncidences();
                     corrected = true;
@@ -1359,6 +1380,7 @@
                     dmg.status = 'CORREGIDO';
                     dmg.correctedBy = currentEmployee.name;
                     dmg.correctionDate = ts;
+                    correctionLockUntil = Date.now() + 4000;
                     saveDamagesData();
                     filterDamagesPending();
                     corrected = true;
@@ -1369,6 +1391,7 @@
                     sec.status = 'CORREGIDO';
                     sec.correctedBy = currentEmployee.name;
                     sec.correctionDate = ts;
+                    correctionLockUntil = Date.now() + 4000;
                     saveSecurityData();
                     filterSecurityPending();
                     corrected = true;
@@ -1379,6 +1402,7 @@
                     aud.status = 'CORREGIDO';
                     aud.correctedBy = currentEmployee.name;
                     aud.correctionDate = ts;
+                    correctionLockUntil = Date.now() + 4000;
                     saveAuditsData();
                     filterAuditPending();
                     corrected = true;
@@ -1390,6 +1414,7 @@
                     eq.estado = 'DISPONIBLE';
                     eq.ultimaActualizacion = ts;
                     eq.correctedBy = currentEmployee.name;
+                    correctionLockUntil = Date.now() + 4000;
                     saveEquipmentData();
                     updateEquipmentStats();
                     renderEquipmentCorrectList();
@@ -1397,8 +1422,7 @@
                 }
             }
 
-            pendingCorrection = null;
-            closeModal();
+            hideCorrectionModal();
 
             if (corrected && global.PlatformToast) {
                 global.PlatformToast.success('Registro marcado como corregido', 3000);
@@ -1414,9 +1438,9 @@
 
         // Stats
         function updateStats() {
-            const pending = allIncidences.filter(i => i.status === 'PENDIENTE').length;
-            const corrected = allIncidences.filter(i => i.status === 'CORREGIDO').length;
-            const critical = allIncidences.filter(i => i.status === 'PENDIENTE' && i.type === 'ALTO').length;
+            const pending = allIncidences.filter(i => isPendingStatus(i)).length;
+            const corrected = allIncidences.filter(i => !isPendingStatus(i)).length;
+            const critical = allIncidences.filter(i => isPendingStatus(i) && i.type === 'ALTO').length;
             const totalPl = allIncidences.length;
             const total = pending + corrected;
             const completion = total === 0 ? 0 : Math.round((corrected / total) * 100);
@@ -1431,7 +1455,7 @@
 
         function updateDamagesStats() {
             const today = new Date().toISOString().split('T')[0];
-            const pending = allDamages.filter(d => d.status === 'PENDIENTE').length;
+            const pending = allDamages.filter(d => isPendingStatus(d)).length;
             const total = allDamages.length;
             const almacen = allDamages.filter(d => d.area === 'Almacén').length;
             const devolucion = allDamages.filter(d => d.area === 'Devolución').length;
@@ -1601,11 +1625,52 @@
             alert('CSV de inspección de equipos exportado');
         }
 
-        // Modal
-        function closeModal() {
+        function showCorrectionModal(title, message) {
+            var modal = document.getElementById('modal');
+            if (!modal) return;
+            document.getElementById('modalTitle').textContent = title;
+            document.getElementById('modalMessage').textContent = message;
+            modal.classList.add('show');
+            modal.removeAttribute('hidden');
+            modal.setAttribute('aria-hidden', 'false');
+            document.body.classList.add('av-modal-open');
+        }
+
+        function hideCorrectionModal() {
             pendingCorrection = null;
             var modal = document.getElementById('modal');
-            if (modal) modal.classList.remove('show');
+            if (modal) {
+                modal.classList.remove('show');
+                modal.setAttribute('hidden', 'hidden');
+                modal.setAttribute('aria-hidden', 'true');
+            }
+            document.body.classList.remove('av-modal-open');
+        }
+
+        function initCorrectionModal() {
+            var modal = document.getElementById('modal');
+            var confirmBtn = document.getElementById('modalConfirmBtn');
+            var cancelBtn = modal && modal.querySelector('.modal-btn-cancel');
+            if (confirmBtn && !confirmBtn.__avBound) {
+                confirmBtn.__avBound = true;
+                confirmBtn.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    confirmModal();
+                });
+            }
+            if (cancelBtn && !cancelBtn.__avBound) {
+                cancelBtn.__avBound = true;
+                cancelBtn.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    hideCorrectionModal();
+                });
+            }
+            if (modal && !modal.__avBound) {
+                modal.__avBound = true;
+                modal.addEventListener('click', function (e) {
+                    if (e.target === modal) hideCorrectionModal();
+                });
+            }
         }
 
         function confirmModal() {
@@ -1613,7 +1678,11 @@
                 confirmCorrection();
                 return;
             }
-            closeModal();
+            hideCorrectionModal();
+        }
+
+        function closeModal() {
+            hideCorrectionModal();
         }
 
         
