@@ -1,36 +1,21 @@
 /**
  * Alertas de voz — nuevo IDC en seguimiento validador
+ * Lee solo lo escrito en IDC, jaula y cliente.
  */
 (function (global) {
   'use strict';
 
-  var DIGIT_WORDS = [
-    'cero', 'uno', 'dos', 'tres', 'cuatro', 'cinco', 'seis', 'siete', 'ocho', 'nueve'
-  ];
-
-  function formatPasilloForSpeech(jaula) {
-    jaula = String(jaula || '').trim();
-    if (!jaula) return 'sin pasillo asignado';
-    var spoken = jaula.replace(/[-_/]+/g, ' ').replace(/\s+/g, ' ').trim();
-    spoken = spoken.replace(/\d/g, function (d) {
-      var n = parseInt(d, 10);
-      return DIGIT_WORDS[n] != null ? DIGIT_WORDS[n] : d;
-    });
-    return 'pasillo ' + spoken;
-  }
-
-  function formatClienteForSpeech(cliente) {
-    cliente = String(cliente || '').trim();
-    if (!cliente) return '';
-    return ' Cliente ' + cliente.replace(/\s+/g, ' ') + '.';
-  }
-
   function buildNuevoIdcMessage(pedido) {
     if (!pedido) return '';
-    var jaula = formatPasilloForSpeech(pedido.jaula);
-    var msg = 'Atención validador. Hay un nuevo IDC pendiente en el ' + jaula + '.';
-    msg += formatClienteForSpeech(pedido.cliente);
-    return msg;
+    var idc = String(pedido.idc || '').trim();
+    var jaula = String(pedido.jaula || '').trim();
+    var cliente = String(pedido.cliente || '').trim();
+    var parts = [];
+    if (idc) parts.push('IDC ' + idc);
+    if (jaula) parts.push('Jaula ' + jaula);
+    if (cliente) parts.push('Cliente ' + cliente);
+    if (!parts.length) return '';
+    return parts.join('. ') + '.';
   }
 
   function speak(message, opts) {
@@ -48,7 +33,7 @@
       if (opts.cancel !== false) global.speechSynthesis.cancel();
       var utter = new global.SpeechSynthesisUtterance(message);
       utter.lang = 'es-DO';
-      utter.rate = 0.92;
+      utter.rate = 0.95;
       utter.pitch = 1;
       utter.volume = 0.88;
       var voices = global.speechSynthesis.getVoices ? global.speechSynthesis.getVoices() : [];

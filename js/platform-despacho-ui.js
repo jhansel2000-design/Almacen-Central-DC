@@ -45,7 +45,7 @@
     knownValidatorIds[pedido.id] = true;
   }
 
-  function resetPasilloTouched() {
+  function resetJaulaTouched() {
     pasilloTouched.prep = false;
     pasilloTouched.share = false;
   }
@@ -58,7 +58,7 @@
   function liveStatusText(live) {
     if (!live || !live.active) return '';
     var txt = 'Transmitiendo en pantalla externa · ' + formatIdc(live.idc);
-    if (live.jaula) txt += ' · Pasillo ' + live.jaula;
+    if (live.jaula) txt += ' · Jaula ' + live.jaula;
     return txt;
   }
 
@@ -188,7 +188,7 @@
     global.PlatformDespachoBarcode.render(imgEl, code, opts || {});
   }
 
-  function guardPasilloField(input, key, onCleared) {
+  function guardJaulaField(input, key, onCleared) {
     if (!input) return;
     input.setAttribute('autocomplete', 'off');
     input.setAttribute('autocorrect', 'off');
@@ -216,11 +216,11 @@
   function updateBarcodePanel(host, idc, jaula, estado) {
     var img = host.querySelector('#despBarcodeImg');
     var label = host.querySelector('#despBarcodeLabel');
-    var jaulaEl = host.querySelector('#despBarcodePasillo');
+    var jaulaEl = host.querySelector('#despBarcodeJaula');
     var estadoEl = host.querySelector('#despBarcodeEstado');
     var code = formatIdc(idc);
     if (label) label.textContent = code || '—';
-    if (jaulaEl) jaulaEl.textContent = jaula ? ('Pasillo ' + jaula) : '';
+    if (jaulaEl) jaulaEl.textContent = jaula ? ('Jaula ' + jaula) : '';
     if (estadoEl && DS && DS.ESTADOS) {
       estadoEl.innerHTML = estadoBadge(estado || 'facturado');
     }
@@ -248,7 +248,7 @@
     }
     return '<div class="desp-table-wrap desp-lista-preview-wrap">' +
       '<table class="desp-table desp-lista-preview-table">' +
-      '<thead><tr><th>IDC</th><th>Pasillo</th><th>Estado</th></tr></thead><tbody>' +
+      '<thead><tr><th>IDC</th><th>Jaula</th><th>Estado</th></tr></thead><tbody>' +
       pedidos.map(function (p) {
         return '<tr><td><strong class="desp-idc">' + esc(formatIdc(p.idc)) + '</strong></td>' +
           '<td>' + esc(p.jaula) + '</td><td>' + estadoBadge(p.estado) + '</td></tr>';
@@ -301,7 +301,7 @@
         id: 'registro',
         screen: 'registro',
         icon: '📋',
-        title: 'Seguimiento IDC y pasillo',
+        title: 'Seguimiento IDC y jaula',
         sub: 'Registro · envíos al validador',
         active: screen === 'registro',
         live: false
@@ -353,16 +353,16 @@
     return '<section class="desp-panel desp-panel--registro" aria-labelledby="despRegistroTitle">' +
       '<header class="desp-panel-head">' +
       '<div><span class="desp-eyebrow">Operador · Preparador</span>' +
-      '<h3 id="despRegistroTitle">Seguimiento IDC y pasillo</h3>' +
-      '<p class="desp-panel-sub">Registre IDC y pasillo como <strong>Facturado</strong> — ingresa <strong>automáticamente</strong> al seguimiento validador.</p></div>' +
+      '<h3 id="despRegistroTitle">Seguimiento IDC y jaula</h3>' +
+      '<p class="desp-panel-sub">Registre IDC y jaula como <strong>Facturado</strong> — ingresa <strong>automáticamente</strong> al seguimiento validador.</p></div>' +
       '</header>' +
       '<div class="desp-prep-main">' +
       '<form class="desp-form" id="despPrepForm" autocomplete="off" onsubmit="return false">' +
       '<div class="desp-form-grid">' +
       '<label class="desp-field"><span>ID pedido (IDC)</span>' +
       '<input type="text" id="despIdc" name="idc" inputmode="text" placeholder="Escriba el IDC" autocapitalize="off" autocomplete="off"></label>' +
-      '<label class="desp-field"><span>Pasillo</span>' +
-      '<input type="text" id="despPasillo" name="x_dc_prep_pasillo" placeholder="Escriba el pasillo" autocomplete="off" autocorrect="off" spellcheck="false" inputmode="text" aria-label="Pasillo"></label>' +
+      '<label class="desp-field"><span>Jaula</span>' +
+      '<input type="text" id="despJaula" name="x_dc_prep_pasillo" placeholder="Escriba la jaula" autocomplete="off" autocorrect="off" spellcheck="false" inputmode="text" aria-label="Jaula"></label>' +
       '<label class="desp-field"><span>Nombre del cliente</span>' +
       '<input type="text" id="despCliente" name="cliente" placeholder="Nombre del cliente" autocomplete="off" autocorrect="off" spellcheck="false"></label>' +
       renderPrepEstadoField('prepEstado') +
@@ -370,11 +370,11 @@
       '<div class="desp-prep-actions desp-prep-actions--single">' +
       '<button type="button" class="btn btn-primary desp-action-btn desp-btn-update" id="despBtnUpdateIdc">' +
       '<span class="desp-action-btn-icon" aria-hidden="true">📋</span>' +
-      '<span class="desp-action-btn-text">Registrar IDC y pasillo</span></button>' +
+      '<span class="desp-action-btn-text">Registrar IDC y jaula</span></button>' +
       '</div>' +
       '</form>' +
       '<section class="desp-jaula-map" aria-labelledby="despJaulaMapTitle">' +
-      '<h4 id="despJaulaMapTitle">IDC por pasillo · activos en validador</h4>' +
+      '<h4 id="despJaulaMapTitle">IDC por jaula · activos en validador</h4>' +
       '<p class="desp-muted desp-jaula-map-sub">IDC que el validador aún no ha retirado del seguimiento</p>' +
       renderJaulaMap(DS.getPedidosVisiblesValidador(data.pedidos)) +
       '</section>' +
@@ -391,7 +391,7 @@
       '<div class="desp-table-wrap">' +
       '<table class="desp-table desp-table--registro-envios">' +
       '<thead><tr>' +
-      '<th>IDC</th><th>Cliente</th><th>Pasillo</th><th>Operador</th><th>Estado validador</th><th>Vista</th><th>Registro</th><th></th>' +
+      '<th>IDC</th><th>Cliente</th><th>Jaula</th><th>Operador</th><th>Estado validador</th><th>Vista</th><th>Registro</th><th></th>' +
       '</tr></thead><tbody>' +
       (pedidos.length ? pedidos.map(function (p) {
         var activo = p.visibleValidador !== false;
@@ -421,7 +421,7 @@
       '<header class="desp-panel-head">' +
       '<div><span class="desp-eyebrow">Opción 1 · Lectores / escaneo</span>' +
       '<h3 id="despBarcodeTitle">Compartir IDC como código de barras</h3>' +
-      '<p class="desp-panel-sub">Escriba IDC y pasillo · se refleja en vivo en la pantalla externa al compartir</p></div>' +
+      '<p class="desp-panel-sub">Escriba IDC y jaula · se refleja en vivo en la pantalla externa al compartir</p></div>' +
       (sharing ? '<span class="desp-share-live-tag"><span class="desp-live-dot"></span> EN VIVO</span>' : '') +
       '</header>' +
       '<p class="desp-share-status" id="despShareStatus"' + (sharing ? '' : ' hidden') + '>' +
@@ -433,8 +433,8 @@
       '<div class="desp-form-grid">' +
       '<label class="desp-field"><span>IDC a mostrar</span>' +
       '<input type="text" id="despShareIdc" name="idc" inputmode="text" placeholder="Escriba el IDC" autocapitalize="off" autocomplete="off"></label>' +
-      '<label class="desp-field"><span>Pasillo</span>' +
-      '<input type="text" id="despSharePasillo" name="x_dc_share_pasillo" placeholder="Escriba el pasillo" autocomplete="off" autocorrect="off" spellcheck="false" inputmode="text" aria-label="Pasillo"></label>' +
+      '<label class="desp-field"><span>Jaula</span>' +
+      '<input type="text" id="despShareJaula" name="x_dc_share_pasillo" placeholder="Escriba la jaula" autocomplete="off" autocorrect="off" spellcheck="false" inputmode="text" aria-label="Jaula"></label>' +
       renderPrepEstadoField('shareEstado') +
       '</div>' +
       '<div class="desp-prep-actions desp-prep-actions--single">' +
@@ -444,7 +444,7 @@
       '</div>' +
       '</form>' +
       '<div class="desp-recent">' +
-      '<h4>Cargar IDC desde registro <span class="desp-muted">(solo copia el IDC, no el pasillo)</span></h4>' +
+      '<h4>Cargar IDC desde registro <span class="desp-muted">(solo copia el IDC, no la jaula)</span></h4>' +
       renderPedidosMiniShare(DS.getPedidosSeguimientoPreparador(data.pedidos).slice(0, 8)) +
       '</div></div>' +
       '<aside class="desp-barcode-panel" id="despBarcodePanel" aria-label="Vista previa local">' +
@@ -454,7 +454,7 @@
       '<img id="despBarcodeImg" class="desp-barcode-img" alt="Código de barras IDC" width="300" height="100">' +
       '</div>' +
       '<p class="desp-barcode-idc" id="despBarcodeLabel">—</p>' +
-      '<p class="desp-barcode-jaula" id="despBarcodePasillo"></p>' +
+      '<p class="desp-barcode-jaula" id="despBarcodeJaula"></p>' +
       '<div id="despBarcodeEstado"></div>' +
       '</aside></div></section>';
   }
@@ -485,7 +485,7 @@
     }
     return '<div class="desp-table-wrap desp-lista-vivo-wrap">' +
       '<table class="desp-table desp-table--lista-vivo" aria-label="Seguimiento validador en vivo">' +
-      '<thead><tr><th>IDC</th><th>Cliente</th><th>Pasillo</th><th>Estado</th><th>Fecha y hora</th>' +
+      '<thead><tr><th>IDC</th><th>Cliente</th><th>Jaula</th><th>Estado</th><th>Fecha y hora</th>' +
       (canRemove ? '<th>Validador</th>' : '') +
       '</tr></thead><tbody>' +
       pedidos.map(function (p) {
@@ -537,7 +537,7 @@
 
   function capturePrepForm(host) {
     var idc = host.querySelector('#despIdc');
-    var jaula = host.querySelector('#despPasillo');
+    var jaula = host.querySelector('#despJaula');
     var cliente = host.querySelector('#despCliente');
     if (!idc && !jaula) return null;
     return {
@@ -551,7 +551,7 @@
   function restorePrepForm(host, snap) {
     if (!snap || !host) return;
     var idc = host.querySelector('#despIdc');
-    var jaula = host.querySelector('#despPasillo');
+    var jaula = host.querySelector('#despJaula');
     var cliente = host.querySelector('#despCliente');
     if (idc) idc.value = snap.idc || '';
     if (cliente) cliente.value = snap.cliente || '';
@@ -567,7 +567,7 @@
 
   function captureShareForm(host) {
     var idc = host.querySelector('#despShareIdc');
-    var jaula = host.querySelector('#despSharePasillo');
+    var jaula = host.querySelector('#despShareJaula');
     if (!idc && !jaula) return null;
     return {
       idc: idc ? idc.value : '',
@@ -579,7 +579,7 @@
   function restoreShareForm(host, snap) {
     if (!snap || !host) return;
     var idc = host.querySelector('#despShareIdc');
-    var jaula = host.querySelector('#despSharePasillo');
+    var jaula = host.querySelector('#despShareJaula');
     if (idc) idc.value = snap.idc || '';
     if (jaula) {
       jaula.value = snap.jaula || '';
@@ -631,7 +631,7 @@
 
   function getPrepFormValues(host) {
     var idcEl = host.querySelector('#despIdc');
-    var pasilloEl = host.querySelector('#despPasillo');
+    var pasilloEl = host.querySelector('#despJaula');
     var clienteEl = host.querySelector('#despCliente');
     return {
       idc: idcEl ? idcEl.value : '',
@@ -643,7 +643,7 @@
 
   function getShareFormValues(host) {
     var idcEl = host.querySelector('#despShareIdc');
-    var pasilloEl = host.querySelector('#despSharePasillo');
+    var pasilloEl = host.querySelector('#despShareJaula');
     return {
       idc: idcEl ? idcEl.value : '',
       jaula: pasilloValueFromField(pasilloEl, 'share'),
@@ -657,7 +657,7 @@
     }
     return '<ul class="desp-mini-list">' + list.map(function (p) {
       return '<li><button type="button" class="desp-mini-idc desp-mini-idc--share" data-idc="' + esc(p.idc) + '" data-estado="' + esc(p.estado) + '">' +
-        '<strong>' + esc(formatIdc(p.idc)) + '</strong></button> · Pasillo ' + esc(p.jaula) + ' · ' +
+        '<strong>' + esc(formatIdc(p.idc)) + '</strong></button> · Jaula ' + esc(p.jaula) + ' · ' +
         estadoBadge(p.estado) + '</li>';
     }).join('') + '</ul>';
   }
@@ -669,7 +669,7 @@
     return '<ul class="desp-mini-list">' + list.map(function (p) {
       return '<li><button type="button" class="desp-mini-idc" data-idc="' + esc(p.idc) + '" data-estado="' + esc(p.estado) + '">' +
         '<strong>' + esc(formatIdc(p.idc)) + '</strong></button> · ' +
-        esc(fmtCliente(p)) + ' · Pasillo ' + esc(p.jaula) + ' · ' +
+        esc(fmtCliente(p)) + ' · Jaula ' + esc(p.jaula) + ' · ' +
         esc(fmtDt(p.createdAt || p.updatedAt)) + ' · ' +
         estadoBadge(p.estado) + '</li>';
     }).join('') + '</ul>';
@@ -692,7 +692,7 @@
     return '<div class="desp-jaula-grid">' + keys.map(function (jaula) {
       var items = byJaula[jaula];
       return '<article class="desp-jaula-card">' +
-        '<header class="desp-jaula-card-head"><span class="desp-jaula-num">Pasillo ' + esc(jaula) + '</span>' +
+        '<header class="desp-jaula-card-head"><span class="desp-jaula-num">Jaula ' + esc(jaula) + '</span>' +
         '<span class="desp-jaula-count">' + items.length + ' IDC</span></header>' +
         '<ul class="desp-jaula-idc-list">' + items.map(function (p) {
           return '<li><strong class="desp-idc">' + esc(formatIdc(p.idc)) + '</strong> ' +
@@ -723,7 +723,7 @@
       '</header>' +
       '<div class="desp-filters">' +
       '<label class="desp-filter"><span>Buscar</span>' +
-      '<input type="search" id="despSearch" placeholder="IDC, cliente o pasillo…" value="' + esc(filterQ) + '"></label>' +
+      '<input type="search" id="despSearch" placeholder="IDC, cliente o jaula…" value="' + esc(filterQ) + '"></label>' +
       '<label class="desp-filter"><span>Estado</span>' +
       '<select id="despFilterEstado">' +
       '<option value="">Todos (validador)</option>' +
@@ -737,7 +737,7 @@
       '<div class="desp-table-wrap">' +
       '<table class="desp-table" id="despValTable">' +
       '<thead><tr>' +
-      '<th>IDC</th><th>Cliente</th><th>Pasillo</th><th>Estado</th><th>Fecha y hora</th>' +
+      '<th>IDC</th><th>Cliente</th><th>Jaula</th><th>Estado</th><th>Fecha y hora</th>' +
       (canValidate ? '<th>Acción</th>' : '') +
       '<th></th>' +
       '</tr></thead><tbody>' +
@@ -758,7 +758,7 @@
       '<div class="desp-table-wrap">' +
       '<table class="desp-table desp-table--archivo">' +
       '<thead><tr>' +
-      '<th>IDC</th><th>Cliente</th><th>Pasillo (al retirar)</th><th>Estado</th><th>Retirado</th><th>Por</th>' +
+      '<th>IDC</th><th>Cliente</th><th>Jaula (al retirar)</th><th>Estado</th><th>Retirado</th><th>Por</th>' +
       (canValidate ? '<th></th>' : '') +
       '</tr></thead><tbody>' +
       (archivados.length ? archivados.map(function (p) {
@@ -804,7 +804,7 @@
     return '<div class="desp-hist-modal-inner">' +
       '<header class="desp-hist-head">' +
       '<h4>Pedido ' + esc(formatIdc(pedido.idc)) + ' · Cliente ' + esc(fmtCliente(pedido)) +
-      ' · Pasillo ' + esc(pedido.archivadoPasillo != null ? pedido.archivadoPasillo : pedido.jaula) + '</h4>' +
+      ' · Jaula ' + esc(pedido.archivadoPasillo != null ? pedido.archivadoPasillo : pedido.jaula) + '</h4>' +
       '<p>Estado actual: ' + estadoBadge(pedido.estado) + '</p></header>' +
       '<div class="desp-table-wrap"><table class="desp-table desp-table--hist">' +
       '<thead><tr><th>Fecha</th><th>Usuario</th><th>Panel</th><th>Cambio</th><th>Nota</th></tr></thead>' +
@@ -836,7 +836,7 @@
       unbindSync = null;
     }
 
-    resetPasilloTouched();
+    resetJaulaTouched();
 
     var operadorStats = despachoArea === 'preparador' ? DS.countKpiOperador(data.pedidos) : null;
     var validadorCounts = despachoArea === 'validador'
@@ -847,7 +847,7 @@
       '<div class="desp-dashboard" id="despDashboard">' +
       '<header class="desp-dash-header">' +
       '<div><span class="desp-dash-eyebrow">Almacén Central DC · Despacho</span>' +
-      '<h2 class="desp-dash-title">Seguimiento IDC · Pasillo</h2>' +
+      '<h2 class="desp-dash-title">Seguimiento IDC · Jaula</h2>' +
       '<p class="desp-dash-sub">' + (despachoArea === 'preparador'
         ? 'Registro operador → validador automático · ' +
           esc(String(operadorStats.activos || 0)) + ' activos · ' +
@@ -881,10 +881,10 @@
 
     if (screen === 'barcode' && host.querySelector('#despBarcodePanel')) {
       var shareIdc = host.querySelector('#despShareIdc');
-      var sharePasillo = host.querySelector('#despSharePasillo');
+      var shareJaula = host.querySelector('#despShareJaula');
       updateBarcodePanel(host,
         shareIdc ? shareIdc.value : '',
-        pasilloValueFromField(sharePasillo, 'share'),
+        pasilloValueFromField(shareJaula, 'share'),
         prepEstadoValue(host, 'shareEstado'));
       updateShareScreenUi(host, data);
     }
@@ -912,7 +912,7 @@
   }
 
   function bindEvents(host, data, opts, userName) {
-    function onSharePasilloCleared() {
+    function onShareJaulaCleared() {
       var idcEl = host.querySelector('#despShareIdc');
       updateBarcodePanel(host,
         idcEl ? idcEl.value : '',
@@ -924,8 +924,8 @@
       }
     }
 
-    guardPasilloField(host.querySelector('#despPasillo'), 'prep');
-    guardPasilloField(host.querySelector('#despSharePasillo'), 'share', onSharePasilloCleared);
+    guardJaulaField(host.querySelector('#despJaula'), 'prep');
+    guardJaulaField(host.querySelector('#despShareJaula'), 'share', onShareJaulaCleared);
 
     host.querySelectorAll('[data-desp-screen]').forEach(function (btn) {
       btn.addEventListener('click', function () {
@@ -959,7 +959,7 @@
     var shareForm = host.querySelector('#despShareForm');
     if (shareForm) {
       var shareIdcInput = host.querySelector('#despShareIdc');
-      var sharePasilloInput = host.querySelector('#despSharePasillo');
+      var shareJaulaInput = host.querySelector('#despShareJaula');
       var livePushTimer = null;
 
       function pushLiveToExternal() {
@@ -971,14 +971,14 @@
       function syncSharePreview() {
         updateBarcodePanel(host,
           shareIdcInput ? shareIdcInput.value : '',
-          pasilloValueFromField(sharePasilloInput, 'share'),
+          pasilloValueFromField(shareJaulaInput, 'share'),
           prepEstadoValue(host, 'shareEstado'));
         clearTimeout(livePushTimer);
         livePushTimer = setTimeout(pushLiveToExternal, 120);
       }
 
       if (shareIdcInput) shareIdcInput.addEventListener('input', syncSharePreview);
-      if (sharePasilloInput) sharePasilloInput.addEventListener('input', syncSharePreview);
+      if (shareJaulaInput) shareJaulaInput.addEventListener('input', syncSharePreview);
       host.querySelectorAll('input[name="shareEstado"]').forEach(function (r) {
         r.addEventListener('change', syncSharePreview);
       });
@@ -1031,11 +1031,11 @@
         var isShare = btn.classList.contains('desp-mini-idc--share');
         if (isShare) {
           var shareIdcEl = host.querySelector('#despShareIdc');
-          var sharePasilloEl = host.querySelector('#despSharePasillo');
+          var shareJaulaEl = host.querySelector('#despShareJaula');
           if (shareIdcEl) shareIdcEl.value = idc || '';
           var shareRadio = host.querySelector('input[name="shareEstado"][value="' + estado + '"]');
           if (shareRadio) shareRadio.checked = true;
-          updateBarcodePanel(host, idc, pasilloValueFromField(sharePasilloEl, 'share'), estado);
+          updateBarcodePanel(host, idc, pasilloValueFromField(shareJaulaEl, 'share'), estado);
           if (DS.isLiveShareActive()) {
             var vals = getShareFormValues(host);
             DS.syncLiveShare(vals.idc, vals.jaula, vals.estado, userName);
@@ -1105,7 +1105,7 @@
         var idc = btn.getAttribute('data-idc') || '';
         var pasillo = btn.getAttribute('data-pasillo') || '';
         var msg = '¿Quitar ' + idc + ' del seguimiento validador?';
-        if (pasillo) msg += ' Pasillo: ' + pasillo + '.';
+        if (pasillo) msg += ' Jaula: ' + pasillo + '.';
         msg += ' Quedará en el registro histórico.';
         if (!global.confirm(msg)) return;
         var res = DS.archivarDeVistaValidador(pedidoId, userName);

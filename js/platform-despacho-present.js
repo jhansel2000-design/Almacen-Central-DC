@@ -85,10 +85,10 @@
     mountEl.setAttribute('aria-hidden', 'false');
     document.body.classList.add('desp-live-present-on');
 
-    var hasPasillo = !!String(share.jaula || '').trim();
+    var hasJaula = !!String(share.jaula || '').trim();
     var shellCls = 'desp-present-shell' +
       (shouldShowOnThisPage() ? ' desp-present-shell--tv' : '') +
-      (hasPasillo ? ' desp-present-shell--has-pasillo' : ' desp-present-shell--no-pasillo');
+      (hasJaula ? ' desp-present-shell--has-pasillo' : ' desp-present-shell--no-pasillo');
 
     mountEl.innerHTML =
       '<div class="' + shellCls + '">' +
@@ -101,7 +101,7 @@
       '<div class="desp-present-meta desp-present-meta--tv">' +
       '<p class="desp-present-label">IDC activo</p>' +
       '<p class="desp-present-idc">' + esc(idc) + '</p>' +
-      (hasPasillo ? '<p class="desp-present-jaula">Pasillo <strong>' + esc(share.jaula) + '</strong></p>' : '') +
+      (hasJaula ? '<p class="desp-present-jaula">Jaula <strong>' + esc(share.jaula) + '</strong></p>' : '') +
       '<div class="desp-present-estado-wrap">' + estadoHtml(share.estado) + '</div>' +
       '<p class="desp-present-by">Preparador: ' + esc(share.sharedBy || '—') + '</p>' +
       '</div></div></div></div>';

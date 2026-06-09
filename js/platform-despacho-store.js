@@ -275,7 +275,7 @@
     usuario = usuario || '—';
 
     if (!idc) return { ok: false, error: 'Ingrese el ID del pedido (IDC).' };
-    if (!jaula) return { ok: false, error: 'Ingrese el pasillo.' };
+    if (!jaula) return { ok: false, error: 'Ingrese la jaula.' };
 
     var data = load();
     var idx = findByIdc(data.pedidos, idc);
@@ -335,7 +335,7 @@
     jaula = String(jaula || '').trim();
     usuario = usuario || '—';
     if (!idc) return { ok: false, error: 'Ingrese el ID del pedido (IDC).' };
-    if (!jaula) return { ok: false, error: 'Ingrese el pasillo.' };
+    if (!jaula) return { ok: false, error: 'Ingrese la jaula.' };
     var data = load();
     var idx = findByIdc(data.pedidos, idc);
     if (idx < 0) return { ok: false, error: 'Pedido no encontrado.' };
@@ -647,7 +647,7 @@
       panel: 'validador',
       desde: pedido.estado,
       hacia: pedido.estado,
-      nota: 'Retirado de vista validador · IDC ' + pedido.idc + ' · Pasillo ' + (pasillo || '—')
+      nota: 'Retirado de vista validador · IDC ' + pedido.idc + ' · Jaula ' + (pasillo || '—')
     });
     save(data);
     return { ok: true, data: data, pedido: pedido };

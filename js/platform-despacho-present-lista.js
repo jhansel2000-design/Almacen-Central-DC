@@ -106,8 +106,8 @@
       '<p class="desp-lista-present-meta">' + esc(String(pedidos.length)) + ' IDC en validación · Validador: ' +
       esc(share.sharedBy || '—') + '</p></div>' +
       '<div class="desp-lista-present-table-wrap">' +
-      '<table class="desp-lista-present-table" aria-label="Lista IDC y pasillos en vivo">' +
-      '<thead><tr><th>IDC</th><th>Cliente</th><th>Pasillo</th><th>Fecha y hora</th><th>Estado</th></tr></thead>' +
+      '<table class="desp-lista-present-table" aria-label="Lista IDC y jaulas en vivo">' +
+      '<thead><tr><th>IDC</th><th>Cliente</th><th>Jaula</th><th>Fecha y hora</th><th>Estado</th></tr></thead>' +
       '<tbody>' + renderTableRows(pedidos) + '</tbody></table></div></div></div>';
 
     lastSig = listaSignature(share, pedidos);
