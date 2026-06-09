@@ -74,7 +74,7 @@ body.despacho-dash-view .ai-insights-bar {
 .desp-flujo-step--amber { background: rgba(245, 158, 11, 0.12); color: #d4a017; border-color: rgba(245, 158, 11, 0.28); }
 .desp-flujo-step--blue { background: rgba(59, 130, 246, 0.12); color: #5b8fd4; border-color: rgba(59, 130, 246, 0.28); }
 .desp-flujo-step--red { background: rgba(239, 68, 68, 0.14); color: #f87171; border-color: rgba(239, 68, 68, 0.35); }
-.desp-flujo-step--yellow { background: rgba(234, 179, 8, 0.14); color: #fbbf24; border-color: rgba(234, 179, 8, 0.35); }
+.desp-flujo-step--yellow { background: rgba(250, 204, 21, 0.2); color: #fde047; border-color: rgba(250, 204, 21, 0.5); }
 .desp-flujo-step--green { background: rgba(16, 185, 129, 0.14); color: #34d399; border-color: rgba(16, 185, 129, 0.32); }
 .desp-flujo-step--orange { background: rgba(249, 115, 22, 0.14); color: #e8890a; border-color: rgba(249, 115, 22, 0.32); }
 .desp-flujo-step--purple { background: rgba(168, 85, 247, 0.14); color: #a78bfa; border-color: rgba(168, 85, 247, 0.32); }
@@ -331,7 +331,13 @@ body.despacho-dash-view .ai-insights-bar {
 .desp-estado--amber { background: rgba(245, 158, 11, 0.12); color: #d4a017; border-color: rgba(245, 158, 11, 0.28); }
 .desp-estado--blue { background: rgba(59, 130, 246, 0.12); color: #5b8fd4; border-color: rgba(59, 130, 246, 0.28); }
 .desp-estado--red { background: rgba(239, 68, 68, 0.14); color: #f87171; border-color: rgba(239, 68, 68, 0.35); }
-.desp-estado--yellow { background: rgba(234, 179, 8, 0.14); color: #fbbf24; border-color: rgba(234, 179, 8, 0.35); }
+.desp-dashboard .desp-estado--yellow,
+.desp-dashboard .desp-flujo-step--yellow,
+.desp-dashboard .desp-lista-present-estado--yellow {
+  background: rgba(250, 204, 21, 0.2);
+  color: #fde047;
+  border-color: rgba(250, 204, 21, 0.5);
+}
 .desp-estado--green { background: rgba(16, 185, 129, 0.14); color: #34d399; border-color: rgba(16, 185, 129, 0.32); }
 .desp-estado--orange { background: rgba(249, 115, 22, 0.14); color: #e8890a; border-color: rgba(249, 115, 22, 0.32); }
 .desp-estado--purple { background: rgba(168, 85, 247, 0.14); color: #a78bfa; border-color: rgba(168, 85, 247, 0.32); }
@@ -377,22 +383,28 @@ body.despacho-dash-view .ai-insights-bar {
   line-height: 1.2;
 }
 
-.desp-btn-set-estado--red {
+.desp-dashboard .desp-btn-set-estado.btn.btn-ghost.desp-btn-set-estado--red {
   background: rgba(239, 68, 68, 0.14) !important;
   color: #f87171 !important;
   border-color: rgba(239, 68, 68, 0.35) !important;
 }
 
-.desp-btn-set-estado--yellow {
-  background: rgba(234, 179, 8, 0.14) !important;
-  color: #fbbf24 !important;
-  border-color: rgba(234, 179, 8, 0.35) !important;
+.desp-dashboard .desp-btn-set-estado.btn.btn-ghost.desp-btn-set-estado--yellow {
+  background: rgba(250, 204, 21, 0.2) !important;
+  color: #fde047 !important;
+  border-color: rgba(250, 204, 21, 0.5) !important;
 }
 
-.desp-btn-set-estado--green {
+.desp-dashboard .desp-btn-set-estado.btn.btn-ghost.desp-btn-set-estado--green {
   background: rgba(16, 185, 129, 0.14) !important;
   color: #34d399 !important;
   border-color: rgba(16, 185, 129, 0.32) !important;
+}
+
+.desp-dashboard .desp-btn-set-estado--yellow:hover:not(:disabled) {
+  background: rgba(250, 204, 21, 0.28) !important;
+  color: #fef08a !important;
+  border-color: rgba(250, 204, 21, 0.6) !important;
 }
 
 .desp-btn-set-estado .desp-estado-icon {
@@ -408,19 +420,76 @@ body.despacho-dash-view .ai-insights-bar {
   filter: brightness(1.08);
 }
 
-html[data-theme="light"] .desp-btn-set-estado--red {
+html[data-theme="light"] .desp-dashboard .desp-estado--yellow,
+html[data-theme="light"] .desp-dashboard .desp-lista-present-estado--yellow {
+  color: #ca8a04 !important;
+  background: rgba(234, 179, 8, 0.18) !important;
+  border-color: rgba(202, 138, 4, 0.45) !important;
+}
+
+html[data-theme="light"] .desp-dashboard .desp-btn-set-estado--red {
   color: #dc2626 !important;
   background: rgba(239, 68, 68, 0.12) !important;
 }
 
-html[data-theme="light"] .desp-btn-set-estado--yellow {
+html[data-theme="light"] .desp-dashboard .desp-btn-set-estado--yellow {
   color: #ca8a04 !important;
-  background: rgba(234, 179, 8, 0.12) !important;
+  background: rgba(234, 179, 8, 0.18) !important;
+  border-color: rgba(202, 138, 4, 0.45) !important;
 }
 
-html[data-theme="light"] .desp-btn-set-estado--green {
+html[data-theme="light"] .desp-dashboard .desp-btn-set-estado--green {
   color: #059669 !important;
   background: rgba(16, 185, 129, 0.12) !important;
+}
+
+/* KPI validador — resumen por estado */
+.desp-kpi-strip--validador {
+  grid-template-columns: repeat(3, 1fr);
+  margin-bottom: 1rem;
+}
+
+.desp-kpi--estado {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.12rem;
+  padding: 0.75rem 0.5rem;
+}
+
+.desp-kpi--estado.desp-kpi--red {
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.35);
+}
+
+.desp-kpi--estado.desp-kpi--yellow {
+  background: rgba(250, 204, 21, 0.18);
+  border-color: rgba(250, 204, 21, 0.45);
+}
+
+.desp-kpi--estado.desp-kpi--yellow .desp-kpi-val,
+.desp-kpi--estado.desp-kpi--yellow .desp-kpi-lbl,
+.desp-kpi--estado.desp-kpi--yellow .desp-estado-icon {
+  color: #fde047;
+}
+
+.desp-kpi--estado.desp-kpi--green {
+  background: rgba(16, 185, 129, 0.12);
+  border-color: rgba(16, 185, 129, 0.32);
+}
+
+.desp-kpi-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 1.15rem;
+  margin-bottom: 0.15rem;
+}
+
+html[data-theme="light"] .desp-kpi--estado.desp-kpi--yellow .desp-kpi-val,
+html[data-theme="light"] .desp-kpi--estado.desp-kpi--yellow .desp-kpi-lbl,
+html[data-theme="light"] .desp-kpi--estado.desp-kpi--yellow .desp-estado-icon {
+  color: #ca8a04;
 }
 
 /* Filtros validador */
@@ -1070,7 +1139,7 @@ body.desp-live-lista-on:not(.desp-live-present-on) .desp-live-present-lista {
 .desp-lista-present-estado--amber { background: rgba(245, 158, 11, 0.12); color: #d4a017; border-color: rgba(245, 158, 11, 0.28); }
 .desp-lista-present-estado--blue { background: rgba(59, 130, 246, 0.12); color: #5b8fd4; border-color: rgba(59, 130, 246, 0.28); }
 .desp-lista-present-estado--red { background: rgba(239, 68, 68, 0.14); color: #f87171; border-color: rgba(239, 68, 68, 0.35); }
-.desp-lista-present-estado--yellow { background: rgba(234, 179, 8, 0.14); color: #fbbf24; border-color: rgba(234, 179, 8, 0.35); }
+.desp-lista-present-estado--yellow { background: rgba(250, 204, 21, 0.2); color: #fde047; border-color: rgba(250, 204, 21, 0.5); }
 .desp-lista-present-estado--green { background: rgba(16, 185, 129, 0.14); color: #34d399; border-color: rgba(16, 185, 129, 0.32); }
 .desp-lista-present-estado .desp-estado-icon { color: inherit; }
 

@@ -136,6 +136,20 @@
       '</div>';
   }
 
+  function kpiStripValidador(counts) {
+    counts = counts || {};
+    return '<div class="desp-kpi-strip desp-kpi-strip--validador" aria-label="Resumen seguimiento validador">' +
+      DS.VALIDADOR_ESTADOS.map(function (id) {
+        var e = DS.ESTADOS[id];
+        var icon = DS.renderEstadoIconSvg ? DS.renderEstadoIconSvg(id, { compact: true }) : '';
+        return '<article class="desp-kpi desp-kpi--' + esc(e.color) + ' desp-kpi--estado">' +
+          (icon ? '<span class="desp-kpi-icon">' + icon + '</span>' : '') +
+          '<span class="desp-kpi-val">' + esc(String(counts[id] || 0)) + '</span>' +
+          '<span class="desp-kpi-lbl">' + esc(e.short) + '</span></article>';
+      }).join('') +
+      '</div>';
+  }
+
   function kpiStripOperador(stats) {
     stats = stats || {};
     return '<div class="desp-kpi-strip desp-kpi-strip--operador">' +
@@ -678,6 +692,7 @@
     });
     var archivados = DS.getPedidosArchivadosValidador(data.pedidos);
     var canValidate = opts && opts.canValidate;
+    var valCounts = DS.countByEstado(data.pedidos, { soloValidador: true });
 
     return '<section class="desp-panel desp-panel--val" aria-labelledby="despValTitle">' +
       '<header class="desp-panel-head">' +
@@ -686,6 +701,7 @@
       '<p class="desp-panel-sub">IDC del operador entran como <strong>Pend. validar</strong>. Usted marca <strong>Cargado</strong> o quita del seguimiento — nunca quedan En proceso.</p></div>' +
       '<span class="desp-live-badge" title="Sincronización activa"><span class="desp-live-dot"></span> En vivo</span>' +
       '</header>' +
+      kpiStripValidador(valCounts) +
       '<div class="desp-filters">' +
       '<label class="desp-filter"><span>Buscar</span>' +
       '<input type="search" id="despSearch" placeholder="IDC, cliente o pasillo…" value="' + esc(filterQ) + '"></label>' +
@@ -803,11 +819,10 @@
 
     resetPasilloTouched();
 
-    var counts = DS.countByEstado(data.pedidos, {
-      soloPreparador: despachoArea === 'preparador',
-      soloValidador: despachoArea === 'validador'
-    });
     var operadorStats = despachoArea === 'preparador' ? DS.countKpiOperador(data.pedidos) : null;
+    var validadorCounts = despachoArea === 'validador'
+      ? DS.countByEstado(data.pedidos, { soloValidador: true })
+      : null;
 
     host.innerHTML =
       '<div class="desp-dashboard" id="despDashboard">' +
@@ -822,7 +837,9 @@
       '</p></div>' +
       flujoHtml() +
       '</header>' +
-      (despachoArea === 'preparador' ? kpiStripOperador(operadorStats) : kpiStrip(counts, despachoArea)) +
+      (despachoArea === 'preparador'
+        ? kpiStripOperador(operadorStats)
+        : kpiStripValidador(validadorCounts)) +
       renderNavEntrada(screen, data, opts) +
       '<div class="desp-panels">' +
       (screen === 'barcode'
