@@ -347,7 +347,25 @@ body.averias-dash-view {
     animation: avSyncPulse 2s ease-in-out infinite;
   }
 
-  .averias-app .av-sync-live.is-pulse {
+  .averias-app .av-sync-status-line {
+  margin: 0;
+  padding: 6px 14px 8px;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.averias-app .av-sync-status-ok {
+  color: #8b949e;
+  background: rgba(63, 185, 80, 0.06);
+}
+
+.averias-app .av-sync-status-err {
+  color: #f85149;
+  background: rgba(248, 81, 73, 0.1);
+}
+
+.averias-app .av-sync-live.is-pulse {
     animation: avSyncPulse 1s ease-in-out infinite;
     color: #56d364;
   }

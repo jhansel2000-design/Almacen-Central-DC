@@ -206,10 +206,14 @@
             };
         }
 
-        function applySnapshot(snap) {
+        function applySnapshot(snap, preferIncoming) {
             if (!snap || typeof snap !== 'object') return false;
             if (global.PlatformAveriasCloudSync && global.PlatformAveriasCloudSync.mergeAveriasSnapshots) {
-                snap = global.PlatformAveriasCloudSync.mergeAveriasSnapshots(buildSnapshot(), snap);
+                if (preferIncoming) {
+                    snap = global.PlatformAveriasCloudSync.mergeAveriasSnapshots(snap, buildSnapshot());
+                } else {
+                    snap = global.PlatformAveriasCloudSync.mergeAveriasSnapshots(buildSnapshot(), snap);
+                }
             }
             allIncidences = Array.isArray(snap.incidences) ? snap.incidences : [];
             allDamages = Array.isArray(snap.damages) ? snap.damages : [];
@@ -308,15 +312,23 @@
                 localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(snap));
                 if (global.PlatformAveriasCloudSync && global.PlatformAveriasCloudSync.push) {
                     return global.PlatformAveriasCloudSync.push(snap).then(function (result) {
-                        if (result && !result.ok && global.PlatformAveriasCloudSync.isCloudConfigured &&
-                            global.PlatformAveriasCloudSync.isCloudConfigured()) {
+                        var cloud = global.PlatformAveriasCloudSync.isCloudConfigured &&
+                            global.PlatformAveriasCloudSync.isCloudConfigured();
+                        if (result && result.ok && global.PlatformAveriasCloudSync.schedulePullBurst) {
+                            global.PlatformAveriasCloudSync.schedulePullBurst();
+                        }
+                        if (result && !result.ok && cloud) {
                             if (global.PlatformToast) {
-                                global.PlatformToast.warn('Guardado local OK; reintentando sync en la nube…', 3500);
+                                global.PlatformToast.error('Reporte NO llegó a la nube. Otros dispositivos no lo verán.', 6000);
+                            } else {
+                                alert('Error: el reporte no se subió a la nube. Otros dispositivos no lo verán.');
                             }
-                        } else if (result && !result.ok && !global.PlatformAveriasCloudSync.isCloudConfigured()) {
+                        } else if (result && !result.ok && !cloud) {
                             if (global.PlatformToast) {
-                                global.PlatformToast.warn('Solo en este dispositivo — active la nube para sync global', 4500);
+                                global.PlatformToast.warn('Solo en este dispositivo — active la nube (banner amarillo)', 5000);
                             }
+                        } else if (result && result.ok && cloud && global.PlatformToast) {
+                            global.PlatformToast.success('Reporte enviado — otros dispositivos lo verán en ~1s', 2200);
                         }
                         return result || { ok: true };
                     });
@@ -432,7 +444,7 @@
             var countsBefore = countReports(buildSnapshot());
             isLoadingRemoteSnapshot = true;
             try {
-                applySnapshot(snap);
+                applySnapshot(snap, true);
                 writeIndividualKeys();
             } finally {
                 isLoadingRemoteSnapshot = false;

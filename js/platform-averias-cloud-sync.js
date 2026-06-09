@@ -52,6 +52,21 @@
 
   function applyCloudOverride(cfg) {
     cfg = cfg || {};
+    var siteJb = cfg.averiasJsonBin;
+    var siteHasSharedBin = !!(siteJb && siteJb.enabled && siteJb.binId && siteJb.accessKey);
+
+    /* En GitHub Pages todos deben usar el MISMO bin del site-config, no bins locales del celular */
+    if (isPublicHost() && siteHasSharedBin) {
+      try {
+        global.localStorage.removeItem(CLOUD_OVERRIDE_KEY);
+      } catch (e) { /* noop */ }
+      return cfg;
+    }
+
+    if (siteHasSharedBin) {
+      return cfg;
+    }
+
     try {
       var raw = global.localStorage.getItem(CLOUD_OVERRIDE_KEY);
       if (!raw) return cfg;
@@ -60,18 +75,24 @@
         cfg.averiasJsonBin = {
           enabled: true,
           binId: o.binId,
-          accessKey: o.accessKey
+          accessKey: o.accessKey,
+          keyType: 'master'
         };
-        if (!cfg.pollSeconds) cfg.pollSeconds = 2;
+        if (!cfg.pollSeconds) cfg.pollSeconds = 1;
         cfg.realtime = cfg.realtime !== false;
       }
     } catch (e) { /* noop */ }
     return cfg;
   }
 
-  function hasJsonBinConfig() {
+  function getJsonBinConfig() {
     var jb = siteConfig && siteConfig.averiasJsonBin;
-    return !!(jb && jb.enabled && jb.binId && jb.accessKey);
+    if (!jb || !jb.enabled || !jb.binId || !jb.accessKey) return null;
+    return jb;
+  }
+
+  function hasJsonBinConfig() {
+    return !!getJsonBinConfig();
   }
 
   function hasFirebaseConfig() {
@@ -122,7 +143,7 @@
   function pollIntervalMs() {
     var sec = (siteConfig && siteConfig.pollSeconds) || 1;
     if (siteConfig && siteConfig.realtime === false) sec = 8;
-    return Math.max(0.8, sec) * 1000;
+    return Math.max(0.4, sec) * 1000;
   }
 
   function mergeAveriasSnapshots(local, remote) {
@@ -235,11 +256,13 @@
     }
   }
 
-  function applySnapshotToLocal(snap, silent) {
+  function applySnapshotToLocal(snap, silent, source) {
     if (!snap || !global.localStorage) return false;
     var current = getLocalSnapshot();
-    if (current) {
+    if (current && source !== 'jsonbin') {
       snap = mergeAveriasSnapshots(current, snap);
+    } else if (current && source === 'jsonbin') {
+      snap = mergeAveriasSnapshots(snap, current);
     }
     var json = JSON.stringify(snap);
     var sig = snapshotSignature(snap);
@@ -250,7 +273,8 @@
     if (global.PlatformAveriasUI && global.PlatformAveriasUI.getSnapshotSignature) {
       memoryStale = global.PlatformAveriasUI.getSnapshotSignature() !== sig;
     }
-    if (!storageChanged && !remoteNewer && !memoryStale) return false;
+    var forceUi = source === 'jsonbin' && (remoteNewer || memoryStale);
+    if (!storageChanged && !remoteNewer && !memoryStale && !forceUi) return false;
     try {
       if (storageChanged || remoteNewer) {
         global.localStorage.setItem(SNAPSHOT_KEY, json);
@@ -423,6 +447,7 @@
   }
 
   function pullFromStatic() {
+    if (hasJsonBinConfig()) return Promise.resolve(null);
     staticPollCounter += 1;
     var hasFastSource = isCloudConfigured() || canUseServerApi();
     if (hasFastSource && staticPollCounter % 3 !== 0) {
@@ -431,19 +456,34 @@
     return fetchJson(staticDataUrl() + '?t=' + Date.now()).catch(function () { return null; });
   }
 
+  var lastJsonBinError = 0;
+  var lastJsonBinOk = 0;
+
   function pullFromJsonBin() {
-    var jb = siteConfig && siteConfig.averiasJsonBin;
-    if (!jb || !jb.enabled || !jb.binId || !jb.accessKey) return Promise.resolve(null);
-    return global.fetch('https://api.jsonbin.io/v3/b/' + jb.binId + '/latest', {
+    var jb = getJsonBinConfig();
+    if (!jb) return Promise.resolve(null);
+    var url = 'https://api.jsonbin.io/v3/b/' + jb.binId + '/latest?t=' + Date.now();
+    return global.fetch(url, {
       headers: jsonBinAuthHeaders(jb),
       cache: 'no-store',
       mode: 'cors'
     }).then(function (res) {
-      if (!res.ok) throw new Error('jsonbin');
+      if (!res.ok) {
+        lastJsonBinError = Date.now();
+        throw new Error('jsonbin ' + res.status);
+      }
       return res.json();
     }).then(function (body) {
-      return body && body.record ? body.record : null;
-    }).catch(function () { return null; });
+      lastJsonBinOk = Date.now();
+      var record = body && body.record ? body.record : null;
+      if (record && body.metadata && body.metadata.createdAt && !record.updatedAt) {
+        record.updatedAt = body.metadata.createdAt;
+      }
+      return record;
+    }).catch(function () {
+      lastJsonBinError = Date.now();
+      return null;
+    });
   }
 
   function pullFromFirebaseOnce() {
@@ -456,33 +496,37 @@
   function pullAll() {
     if (pulling) return Promise.resolve(getLocalSnapshot());
     pulling = true;
-    return Promise.all([
-      pullFromServer(),
-      pullFromCloudProxy(),
-      pullFromStatic(),
-      pullFromJsonBin(),
-      pullFromFirebaseOnce()
-    ]).then(function (parts) {
-      var merged = getLocalSnapshot() || EMPTY;
-      parts.forEach(function (part) {
-        if (part) merged = mergeAveriasSnapshots(merged, part);
-      });
-      if (merged) {
-        var prevSig = snapshotSignature(getLocalSnapshot());
-        applySnapshotToLocal(merged);
-        if (snapshotSignature(merged) !== prevSig) {
-          schedulePullBurst();
+    return pullFromJsonBin().then(function (jsonBinSnap) {
+      var tasks = [pullFromServer(), pullFromCloudProxy(), pullFromStatic(), pullFromFirebaseOnce()];
+      return Promise.all(tasks).then(function (parts) {
+        var merged = getLocalSnapshot() || EMPTY;
+        if (jsonBinSnap) {
+          merged = mergeAveriasSnapshots(merged, jsonBinSnap);
         }
-        lastPullAt = Date.now();
-      }
-      return merged;
+        parts.forEach(function (part) {
+          if (part) merged = mergeAveriasSnapshots(merged, part);
+        });
+        if (jsonBinSnap) {
+          merged = mergeAveriasSnapshots(merged, jsonBinSnap);
+        }
+        if (merged) {
+          var prevSig = snapshotSignature(getLocalSnapshot());
+          applySnapshotToLocal(merged, false, jsonBinSnap ? 'jsonbin' : 'merge');
+          if (snapshotSignature(merged) !== prevSig || jsonBinSnap) {
+            schedulePullBurst();
+          }
+          lastPullAt = Date.now();
+          updateSyncStatusUi();
+        }
+        return merged;
+      });
     }).finally(function () {
       pulling = false;
     });
   }
 
   function schedulePullBurst() {
-    [200, 500, 1000, 2000, 4000].forEach(function (ms) {
+    [100, 300, 600, 1200, 2500, 5000].forEach(function (ms) {
       global.setTimeout(function () { pullAll(); }, ms);
     });
   }
@@ -499,8 +543,8 @@
   }
 
   function pushToJsonBin(snap) {
-    var jb = siteConfig && siteConfig.averiasJsonBin;
-    if (!jb || !jb.enabled || !jb.binId || !jb.accessKey) return Promise.resolve(false);
+    var jb = getJsonBinConfig();
+    if (!jb) return Promise.resolve(false);
     var headers = jsonBinAuthHeaders(jb);
     headers['Content-Type'] = 'application/json';
     return global.fetch('https://api.jsonbin.io/v3/b/' + jb.binId, {
@@ -508,7 +552,17 @@
       headers: headers,
       body: JSON.stringify(snap),
       mode: 'cors'
-    }).then(function (res) { return res.ok; }).catch(function () { return false; });
+    }).then(function (res) {
+      if (res.ok) {
+        lastJsonBinOk = Date.now();
+        return true;
+      }
+      lastJsonBinError = Date.now();
+      return false;
+    }).catch(function () {
+      lastJsonBinError = Date.now();
+      return false;
+    });
   }
 
   function pushToFirebase(snap) {
@@ -537,7 +591,8 @@
         pushToJsonBin(snap),
         pushToFirebase(snap)
       ]).then(function (results) {
-        var ok = results.some(Boolean);
+        var jsonBinOk = results[2];
+        var ok = hasJsonBinConfig() ? !!jsonBinOk : results.some(Boolean);
         if (ok) {
           if (isLanHost()) {
             global.fetch('/api/publish-averias-live', {
@@ -557,7 +612,7 @@
             global.setTimeout(function () { resolve(attempt(n + 1)); }, 400);
           });
         }
-        return { ok: false, reason: 'no-cloud' };
+        return { ok: false, reason: hasJsonBinConfig() ? 'jsonbin-fail' : 'no-cloud' };
       });
     }
 
@@ -668,6 +723,27 @@
     btn.classList.toggle('sync-live', !!active && isCloudConfigured());
   }
 
+  function updateSyncStatusUi() {
+    var el = global.document.getElementById('avSyncStatus');
+    if (!el) return;
+    var jb = getJsonBinConfig();
+    if (!jb) {
+      el.textContent = 'Sin nube: cada celular guarda por separado. Pulse «Activar ahora» arriba.';
+      el.className = 'av-sync-status-line av-sync-status-err';
+      return;
+    }
+    var ago = lastPullAt ? Math.round((Date.now() - lastPullAt) / 1000) : -1;
+    var recentErr = lastJsonBinError && (Date.now() - lastJsonBinError) < 15000;
+    if (recentErr && ago > 15) {
+      el.textContent = 'Problema de conexión con la nube. Compruebe internet y recargue (Ctrl+F5).';
+      el.className = 'av-sync-status-line av-sync-status-err';
+      return;
+    }
+    el.className = 'av-sync-status-line av-sync-status-ok';
+    el.textContent = 'Sync automático · todos los dispositivos comparten datos · hace ' +
+      (ago >= 0 ? ago + ' s' : '—');
+  }
+
   function updateSyncUi() {
     var btn = global.document.getElementById('btnSyncAverias');
     if (btn) {
@@ -689,11 +765,27 @@
     if (live) {
       live.hidden = !isCloudConfigured();
     }
+    updateSyncStatusUi();
   }
 
   function activateCloud(masterKey) {
     var key = String(masterKey || '').trim();
     if (!key) return Promise.reject(new Error('Master Key requerida'));
+
+    var sharedBin = getJsonBinConfig();
+    if (sharedBin && isPublicHost()) {
+      return pullAll().then(function () {
+        var local = getLocalSnapshot() || EMPTY;
+        return pushSnapshot(local).then(function () {
+          return {
+            ok: true,
+            binId: sharedBin.binId,
+            shared: true,
+            hint: 'Usando nube compartida del sistema. Todos los dispositivos sincronizados.'
+          };
+        });
+      });
+    }
 
     if (canUseServerApi()) {
       return global.fetch(apiUrl('/api/setup-averias-cloud'), {
@@ -731,20 +823,26 @@
         if (!res.ok) throw new Error((body && body.message) || 'Error JSONBin');
         var binId = body.metadata && body.metadata.id;
         if (!binId) throw new Error('JSONBin no devolvió binId');
-        try {
-          global.localStorage.setItem(CLOUD_OVERRIDE_KEY, JSON.stringify({ binId: binId, accessKey: key }));
-        } catch (e) { /* noop */ }
+        if (!isPublicHost()) {
+          try {
+            global.localStorage.setItem(CLOUD_OVERRIDE_KEY, JSON.stringify({ binId: binId, accessKey: key }));
+          } catch (e) { /* noop */ }
+        }
         siteConfig = applyCloudOverride(siteConfig || {});
-        siteConfig.averiasJsonBin = { enabled: true, binId: binId, accessKey: key };
-        siteConfig.pollSeconds = 2;
+        if (!siteConfig.averiasJsonBin || !siteConfig.averiasJsonBin.binId) {
+          siteConfig.averiasJsonBin = { enabled: true, binId: binId, accessKey: key, keyType: 'master' };
+        }
+        siteConfig.pollSeconds = 1;
         siteConfig.realtime = true;
         updateSyncUi();
         return pullAll().then(function () {
           return {
             ok: true,
-            binId: binId,
-            localOnly: true,
-            hint: 'Activo solo en este celular. En el PC servidor ejecute SETUP-AVERIAS-CLOUD.bat para que todos lo vean.'
+            binId: siteConfig.averiasJsonBin.binId || binId,
+            localOnly: !isPublicHost(),
+            hint: isPublicHost()
+              ? 'Nube compartida activa para todos los dispositivos.'
+              : 'Activo en este dispositivo. Ejecute SETUP-AVERIAS-CLOUD.bat en el PC servidor.'
           };
         });
       });
