@@ -40,7 +40,7 @@
       icon: '',
       iconType: 'lupa',
       fase: 'validacion',
-      color: 'orange',
+      color: 'red',
       preparador: false,
       validador: true
     },
@@ -51,7 +51,7 @@
       icon: '',
       iconType: 'check',
       fase: 'validacion',
-      color: 'purple',
+      color: 'yellow',
       preparador: false,
       validador: true
     },

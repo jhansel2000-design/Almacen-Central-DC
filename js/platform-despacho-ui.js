@@ -430,7 +430,7 @@
     DS.VALIDADOR_ESTADOS.forEach(function (id) {
       var e = DS.ESTADOS[id];
       var isCurrent = p.estado === id;
-      var cls = 'desp-btn-set-estado btn btn-ghost';
+      var cls = 'desp-btn-set-estado btn btn-ghost desp-btn-set-estado--' + esc(e.color);
       if (isCurrent) cls += ' is-current';
       html += '<button type="button" class="' + cls + '" data-pedido-id="' + esc(p.id) + '" data-estado="' + esc(id) + '"' +
         (isCurrent ? ' disabled aria-current="true"' : '') + ' title="' + esc(e.label) + '">' +
