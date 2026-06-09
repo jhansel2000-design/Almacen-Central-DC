@@ -230,9 +230,9 @@
   function renderPanelRegistroComun(data) {
     return '<section class="desp-panel desp-panel--registro" aria-labelledby="despRegistroTitle">' +
       '<header class="desp-panel-head">' +
-      '<div><span class="desp-eyebrow">Fuente de visibilidad · Preparador y Validador</span>' +
+      '<div><span class="desp-eyebrow">Operador · Preparador</span>' +
       '<h3 id="despRegistroTitle">Seguimiento IDC y pasillo</h3>' +
-      '<p class="desp-panel-sub">Registre IDC y pasillo — los validadores ven aquí dónde está cada pedido. Al actualizar, vuelve a la vista activa.</p></div>' +
+      '<p class="desp-panel-sub">Solo <strong>En proceso</strong> y <strong>Facturado</strong>. Cuando el validador cambia el estado, el IDC sale de aquí al instante.</p></div>' +
       '</header>' +
       '<div class="desp-prep-main">' +
       '<form class="desp-form" id="despPrepForm" autocomplete="off" onsubmit="return false">' +
@@ -259,13 +259,12 @@
       '</form>' +
       '<div class="desp-recent">' +
       '<h4>Últimos registrados <span class="desp-muted">(solo copia el IDC)</span></h4>' +
-      renderPedidosMini(DS.filterPedidos(data.pedidos, { fase: 'preparacion' }).slice(0, 5)
-        .concat(DS.filterPedidos(data.pedidos, { estado: 'facturado' }).slice(0, 5)).slice(0, 6)) +
+      renderPedidosMini(DS.getPedidosSeguimientoPreparador(data.pedidos).slice(0, 6)) +
       '</div>' +
       '<section class="desp-jaula-map" aria-labelledby="despJaulaMapTitle">' +
-      '<h4 id="despJaulaMapTitle">IDC por pasillo · vista validadores</h4>' +
-      '<p class="desp-muted desp-jaula-map-sub">Solo IDC visibles para validadores — actualización en vivo</p>' +
-      renderJaulaMap(DS.getPedidosVisiblesValidador(data.pedidos)) +
+      '<h4 id="despJaulaMapTitle">IDC por pasillo · seguimiento operador</h4>' +
+      '<p class="desp-muted desp-jaula-map-sub">Solo En proceso / Facturado — no incluye validación ni IDC retirados</p>' +
+      renderJaulaMap(DS.getPedidosSeguimientoPreparador(data.pedidos)) +
       '</section></div></section>';
   }
 
@@ -307,7 +306,7 @@
       '</form>' +
       '<div class="desp-recent">' +
       '<h4>Cargar IDC desde registro <span class="desp-muted">(solo copia el IDC, no el pasillo)</span></h4>' +
-      renderPedidosMiniShare(DS.filterPedidos(data.pedidos, { fase: 'preparacion' }).slice(0, 8)) +
+      renderPedidosMiniShare(DS.getPedidosSeguimientoPreparador(data.pedidos).slice(0, 8)) +
       '</div></div>' +
       '<aside class="desp-barcode-panel" id="despBarcodePanel" aria-label="Vista previa local">' +
       '<h4 class="desp-barcode-title">Vista previa (solo aquí)</h4>' +
@@ -328,7 +327,7 @@
       '<header class="desp-panel-head">' +
       '<div><span class="desp-eyebrow">Opción 2 · Validadores</span>' +
       '<h3 id="despListaTitle">Compartir lista IDC y jaulas</h3>' +
-      '<p class="desp-panel-sub">Todos los IDC activos · los validadores ven la tabla en su pantalla externa</p></div>' +
+      '<p class="desp-panel-sub">IDC en validación · los que el validador quita no vuelven al seguimiento del operador</p></div>' +
       (sharing ? '<span class="desp-share-live-tag desp-share-live-tag--lista"><span class="desp-live-dot"></span> EN VIVO</span>' : '') +
       '</header>' +
       '<p class="desp-share-status desp-share-status--lista" id="despListaShareStatus"' + (sharing ? '' : ' hidden') + '>' +
@@ -343,7 +342,7 @@
       '</div>' +
       '<section class="desp-lista-preview" aria-labelledby="despListaPreviewTitle">' +
       '<h4 id="despListaPreviewTitle">Vista previa · lo que ven los validadores</h4>' +
-      renderListaPreviewTable(pedidos, 'Registre IDC en seguimiento para que aparezcan aquí.') +
+      renderListaPreviewTable(pedidos, 'Cuando un IDC pase a validación aparecerá aquí y en la pantalla TV.') +
       '</section></div></section>';
   }
 
@@ -484,13 +483,12 @@
   }
 
   function renderJaulaMap(pedidos) {
-    var prepList = DS.filterPedidos(pedidos, { fase: 'preparacion' })
-      .concat(DS.filterPedidos(pedidos, { estado: 'facturado' }));
-    if (!prepList.length) {
-      return '<p class="desp-muted">Sin IDC asignados por el preparador todavía.</p>';
+    pedidos = pedidos || [];
+    if (!pedidos.length) {
+      return '<p class="desp-muted">Sin IDC en seguimiento del operador.</p>';
     }
     var byJaula = {};
-    prepList.forEach(function (p) {
+    pedidos.forEach(function (p) {
       var j = String(p.jaula || '—').trim() || '—';
       if (!byJaula[j]) byJaula[j] = [];
       byJaula[j].push(p);
@@ -513,15 +511,19 @@
   function renderTablaValidacion(data, opts) {
     var filterEstado = (opts && opts.filterEstado) || '';
     var filterQ = (opts && opts.filterQ) || '';
-    var list = DS.filterPedidos(data.pedidos, { estado: filterEstado, q: filterQ, visiblesValidador: true });
+    var list = DS.filterPedidos(data.pedidos, {
+      estado: filterEstado,
+      q: filterQ,
+      soloValidador: true
+    });
     var archivados = DS.getPedidosArchivadosValidador(data.pedidos);
     var canValidate = opts && opts.canValidate;
 
     return '<section class="desp-panel desp-panel--val" aria-labelledby="despValTitle">' +
       '<header class="desp-panel-head">' +
-      '<div><span class="desp-eyebrow">Validación</span>' +
-      '<h3 id="despValTitle">Vista activa para validadores</h3>' +
-      '<p class="desp-panel-sub">IDC y pasillo visibles desde seguimiento · puede cambiar estado o quitar de la vista</p></div>' +
+      '<div><span class="desp-eyebrow">Validador</span>' +
+      '<h3 id="despValTitle">Seguimiento en validación</h3>' +
+      '<p class="desp-panel-sub">Solo IDC en validación (no En proceso ni Facturado). Usted quita los que terminó — no vuelven al operador.</p></div>' +
       '<span class="desp-live-badge" title="Sincronización activa"><span class="desp-live-dot"></span> En vivo</span>' +
       '</header>' +
       '<div class="desp-filters">' +
@@ -529,8 +531,8 @@
       '<input type="search" id="despSearch" placeholder="IDC o pasillo…" value="' + esc(filterQ) + '"></label>' +
       '<label class="desp-filter"><span>Estado</span>' +
       '<select id="despFilterEstado">' +
-      '<option value="">Todos</option>' +
-      Object.keys(DS.ESTADOS).map(function (id) {
+      '<option value="">Todos (validación)</option>' +
+      DS.VALIDADOR_ESTADOS.map(function (id) {
         var e = DS.ESTADOS[id];
         return '<option value="' + esc(id) + '"' + (filterEstado === id ? ' selected' : '') + '>' +
           esc(e.icon) + ' ' + esc(e.label) + '</option>';
@@ -545,8 +547,8 @@
       '<th></th>' +
       '</tr></thead><tbody>' +
       (list.length ? list.map(function (p) { return renderValidadorRow(p, opts); }).join('') :
-        '<tr><td colspan="' + (canValidate ? 6 : 5) + '" class="desp-empty-row">No hay IDC visibles' +
-        (filterEstado || filterQ ? ' con este filtro' : ' — registre en seguimiento') + '.</td></tr>') +
+        '<tr><td colspan="' + (canValidate ? 6 : 5) + '" class="desp-empty-row">No hay IDC en validación' +
+        (filterEstado || filterQ ? ' con este filtro' : ' — el operador debe pasarlos desde En proceso/Facturado') + '.</td></tr>') +
       '</tbody></table></div>' +
       renderRegistroArchivados(archivados, canValidate) +
       '</section>';
@@ -557,7 +559,7 @@
     return '<section class="desp-archivo-section" aria-labelledby="despArchivoTitle">' +
       '<header class="desp-archivo-head">' +
       '<h4 id="despArchivoTitle">Registro de IDC retirados de vista</h4>' +
-      '<p class="desp-muted desp-archivo-sub">Historial con pasillo donde estaba · consulta futura</p></header>' +
+      '<p class="desp-muted desp-archivo-sub">IDC que el validador quitó · no se muestran al operador · consulta futura</p></header>' +
       '<div class="desp-table-wrap">' +
       '<table class="desp-table desp-table--archivo">' +
       '<thead><tr>' +
@@ -653,7 +655,9 @@
       '<header class="desp-dash-header">' +
       '<div><span class="desp-dash-eyebrow">Almacén Central DC · Despacho</span>' +
       '<h2 class="desp-dash-title">Seguimiento IDC · Pasillo</h2>' +
-      '<p class="desp-dash-sub">Panel compartido preparador y validador · ' + esc(String((data.pedidos || []).length)) + ' pedido(s)</p></div>' +
+      '<p class="desp-dash-sub">Operador: En proceso / Facturado · Validador: estados de validación · ' +
+      esc(String(DS.getPedidosSeguimientoPreparador(data.pedidos).length)) + ' en operador · ' +
+      esc(String(DS.getPedidosVisiblesValidador(data.pedidos).length)) + ' en validación</p></div>' +
       flujoHtml() +
       '</header>' +
       kpiStrip(counts) +

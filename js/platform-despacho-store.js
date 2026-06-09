@@ -277,6 +277,8 @@
       return { ok: true, data: data, pedido: pedido, unchanged: true };
     }
 
+    var prevFase = ESTADOS[prev] ? ESTADOS[prev].fase : '';
+    var newFase = ESTADOS[nuevoEstado] ? ESTADOS[nuevoEstado].fase : '';
     var ts = nowIso();
     pedido.estado = nuevoEstado;
     pedido.updatedAt = ts;
@@ -287,7 +289,9 @@
       panel: 'validador',
       desde: prev,
       hacia: nuevoEstado,
-      nota: 'Cambio de estado validador'
+      nota: (prevFase === 'preparacion' && newFase !== 'preparacion')
+        ? 'Pasó a validación — sale del seguimiento del operador'
+        : 'Cambio de estado validador'
     });
     save(data);
     return { ok: true, data: data, pedido: pedido };
@@ -319,6 +323,16 @@
     }
     if (opts.archivadosValidador) {
       list = list.filter(function (p) { return p.visibleValidador === false; });
+    }
+    if (opts.soloPreparador) {
+      list = list.filter(function (p) {
+        return PREPARADOR_ESTADOS.indexOf(p.estado) >= 0 && p.visibleValidador !== false;
+      });
+    }
+    if (opts.soloValidador) {
+      list = list.filter(function (p) {
+        return VALIDADOR_ESTADOS.indexOf(p.estado) >= 0 && p.visibleValidador !== false;
+      });
     }
     list.sort(function (a, b) {
       return (b.updatedAt || '').localeCompare(a.updatedAt || '');
@@ -469,6 +483,9 @@
     if (idx < 0) return { ok: false, error: 'Pedido no encontrado.' };
 
     var pedido = data.pedidos[idx];
+    if (VALIDADOR_ESTADOS.indexOf(pedido.estado) < 0) {
+      return { ok: false, error: 'Solo puede quitar IDC que estén en validación (no En proceso ni Facturado).' };
+    }
     if (pedido.visibleValidador === false) {
       return { ok: true, data: data, pedido: pedido, unchanged: true };
     }
@@ -493,9 +510,15 @@
     return { ok: true, data: data, pedido: pedido };
   }
 
+  function getPedidosSeguimientoPreparador(pedidos) {
+    return getPedidosActivos((pedidos || []).filter(function (p) {
+      return p.visibleValidador !== false && PREPARADOR_ESTADOS.indexOf(p.estado) >= 0;
+    }));
+  }
+
   function getPedidosVisiblesValidador(pedidos) {
     return getPedidosActivos((pedidos || []).filter(function (p) {
-      return p.visibleValidador !== false;
+      return p.visibleValidador !== false && VALIDADOR_ESTADOS.indexOf(p.estado) >= 0;
     }));
   }
 
@@ -542,6 +565,7 @@
     registrarPedido: registrarPedido,
     cambiarEstado: cambiarEstado,
     archivarDeVistaValidador: archivarDeVistaValidador,
+    getPedidosSeguimientoPreparador: getPedidosSeguimientoPreparador,
     getPedidosVisiblesValidador: getPedidosVisiblesValidador,
     getPedidosArchivadosValidador: getPedidosArchivadosValidador,
     filterPedidos: filterPedidos,
