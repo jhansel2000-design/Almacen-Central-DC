@@ -38,6 +38,7 @@
       label: 'Pendiente por validar',
       short: 'Pend. validar',
       icon: '',
+      iconType: 'lupa',
       fase: 'validacion',
       color: 'orange',
       preparador: false,
@@ -48,6 +49,7 @@
       label: 'Validado',
       short: 'Validado',
       icon: '',
+      iconType: 'check',
       fase: 'validacion',
       color: 'purple',
       preparador: false,
@@ -58,6 +60,7 @@
       label: 'Cargado',
       short: 'Cargado',
       icon: '',
+      iconType: 'truck',
       fase: 'despacho',
       color: 'green',
       preparador: false,
@@ -459,6 +462,30 @@
     return e ? (e.short || e.label) : id;
   }
 
+  function renderEstadoIconSvg(estadoId, opts) {
+    opts = opts || {};
+    var e = ESTADOS[estadoId];
+    if (!e || !e.iconType) return '';
+    var cls = 'desp-estado-icon desp-estado-icon--' + e.iconType;
+    if (opts.compact) cls += ' desp-estado-icon--sm';
+    if (opts.inBtn) cls += ' desp-estado-icon--btn';
+    var svg = '';
+    if (e.iconType === 'lupa') {
+      svg = '<svg class="desp-estado-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">' +
+        '<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>';
+    } else if (e.iconType === 'check') {
+      svg = '<svg class="desp-estado-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">' +
+        '<path d="M20 6L9 17l-5-5"/></svg>';
+    } else if (e.iconType === 'truck') {
+      svg = '<svg class="desp-estado-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+        '<path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/>' +
+        '<path d="M15 18h2"/>' +
+        '<path d="M19 18h2v-3.34a1 1 0 0 0-.76-.97L19 13V9a1 1 0 0 0-1-1h-3"/>' +
+        '<circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg>';
+    }
+    return '<span class="' + cls + '" aria-hidden="true">' + svg + '</span>';
+  }
+
   function formatHistorialEntry(h) {
     if (!h) return '—';
     var desde = h.desde ? (ESTADOS[h.desde] ? ESTADOS[h.desde].short : h.desde) : '—';
@@ -713,6 +740,7 @@
     filterPedidos: filterPedidos,
     countByEstado: countByEstado,
     formatEstado: formatEstado,
+    renderEstadoIconSvg: renderEstadoIconSvg,
     formatHistorialEntry: formatHistorialEntry,
     formatIdc: formatIdc,
     getLiveShare: getLiveShare,

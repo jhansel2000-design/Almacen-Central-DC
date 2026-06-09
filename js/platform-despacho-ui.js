@@ -102,7 +102,9 @@
 
   function estadoBadge(estadoId) {
     var e = DS.ESTADOS[estadoId] || { label: estadoId, color: 'neutral', short: estadoId };
+    var icon = DS.renderEstadoIconSvg ? DS.renderEstadoIconSvg(estadoId) : '';
     return '<span class="desp-estado desp-estado--' + esc(e.color) + '">' +
+      icon +
       '<span class="desp-estado-text">' + esc(e.short || e.label) + '</span></span>';
   }
 
@@ -110,9 +112,10 @@
     return '<div class="desp-flujo" aria-label="Flujo de despacho">' +
       DS.FLUJO.map(function (id, i) {
         var e = DS.ESTADOS[id];
+        var icon = DS.renderEstadoIconSvg ? DS.renderEstadoIconSvg(id, { compact: true }) : '';
         return (i > 0 ? '<span class="desp-flujo-arrow" aria-hidden="true">→</span>' : '') +
           '<span class="desp-flujo-step desp-flujo-step--' + esc(e.color) + '">' +
-          esc(e.short || e.label) + '</span>';
+          icon + '<span>' + esc(e.short || e.label) + '</span></span>';
       }).join('') +
       '</div>';
   }
@@ -431,8 +434,8 @@
       if (isCurrent) cls += ' is-current';
       html += '<button type="button" class="' + cls + '" data-pedido-id="' + esc(p.id) + '" data-estado="' + esc(id) + '"' +
         (isCurrent ? ' disabled aria-current="true"' : '') + ' title="' + esc(e.label) + '">' +
-        esc(compact ? (e.short || e.label) : (e.short || e.label)) +
-        '</button>';
+        (DS.renderEstadoIconSvg ? DS.renderEstadoIconSvg(id, { compact: compact, inBtn: true }) : '') +
+        '<span>' + esc(e.short || e.label) + '</span></button>';
     });
     html += '</div>';
     return html;

@@ -33,9 +33,10 @@
   function estadoHtml(estadoId) {
     var store = DS();
     if (!store) return esc(estadoId || '—');
-    var e = store.ESTADOS[estadoId] || { label: estadoId, icon: '●', short: estadoId, color: 'neutral' };
+    var e = store.ESTADOS[estadoId] || { label: estadoId, short: estadoId, color: 'neutral' };
+    var icon = store.renderEstadoIconSvg ? store.renderEstadoIconSvg(estadoId) : '';
     return '<span class="desp-lista-present-estado desp-lista-present-estado--' + esc(e.color) + '">' +
-      esc(e.short || e.label) + '</span>';
+      icon + '<span>' + esc(e.short || e.label) + '</span></span>';
   }
 
   function listaSignature(share, pedidos) {
