@@ -648,48 +648,63 @@
     }
 
     setLoginLoading(true);
-    function attemptLogin() {
-      try {
-        var hash = PC.sha256Sync(password);
-        var user = global.PlatformAdmin.authenticate(username, hash);
+    var Sec = global.PlatformSecurity;
+    var verifyHuman = Sec && Sec.verifyBeforeLogin
+      ? Sec.verifyBeforeLogin({ portal: 'wms', form: $('authForm') })
+      : Promise.resolve({ ok: true });
+
+    verifyHuman.then(function (human) {
+      if (!human.ok) {
         setLoginLoading(false);
-        if (!user) {
-          PC.recordLoginFailure();
-          var msg = 'Usuario o contraseña incorrectos.';
-          if (global.PlatformWebUsers && global.PlatformWebUsers.isPublicWeb &&
-              global.PlatformWebUsers.isPublicWeb() && !global.PlatformAdmin.isPrimaryLoginName(username)) {
-            msg = 'Usuario o contraseña incorrectos. Verifica los datos que te dio el administrador.';
-          }
-          showAuthError(msg);
-          return;
-        }
-        PC.clearLoginAttempts();
-        PC.persistRememberedLoginUsername(
-          'wms',
-          username,
-          !!($('authRememberUser') && $('authRememberUser').checked)
-        );
-        var sessionPayload = user;
-        if (global.PlatformAdmin.isPrimaryAdminUser(user)) {
-          sessionPayload = Object.assign({}, user, {
-            username: '',
-            name: 'Administrador general'
-          });
-        }
-        PC.saveSession(sessionPayload);
-        enterApp(user);
-        var siteLabel = (global.PlatformSite && global.PlatformSite.product) || 'Almacén Central DC';
-        toastNotify('Bienvenido a ' + siteLabel + ', ' + global.PlatformAdmin.getDisplayName(user) + '.', 'ok');
-      } catch (err) {
-        setLoginLoading(false);
-        showAuthError('No se pudo validar la sesión. Intenta de nuevo.');
+        showAuthError(human.error || 'Completa la verificación humana.');
+        if (Sec && Sec.resetHumanVerify) Sec.resetHumanVerify($('authForm'));
+        return;
       }
-    }
-    if (global.PlatformWebUsers && global.PlatformWebUsers.refresh) {
-      global.PlatformWebUsers.refresh().then(attemptLogin).catch(attemptLogin);
-    } else {
-      attemptLogin();
-    }
+
+      function attemptLogin() {
+        try {
+          var hash = PC.sha256Sync(password);
+          var user = global.PlatformAdmin.authenticate(username, hash);
+          setLoginLoading(false);
+          if (!user) {
+            PC.recordLoginFailure();
+            if (Sec && Sec.resetHumanVerify) Sec.resetHumanVerify($('authForm'));
+            var msg = 'Usuario o contraseña incorrectos.';
+            if (global.PlatformWebUsers && global.PlatformWebUsers.isPublicWeb &&
+                global.PlatformWebUsers.isPublicWeb() && !global.PlatformAdmin.isPrimaryLoginName(username)) {
+              msg = 'Usuario o contraseña incorrectos. Verifica los datos que te dio el administrador.';
+            }
+            showAuthError(msg);
+            return;
+          }
+          PC.clearLoginAttempts();
+          PC.persistRememberedLoginUsername(
+            'wms',
+            username,
+            !!($('authRememberUser') && $('authRememberUser').checked)
+          );
+          var sessionPayload = user;
+          if (global.PlatformAdmin.isPrimaryAdminUser(user)) {
+            sessionPayload = Object.assign({}, user, {
+              username: '',
+              name: 'Administrador general'
+            });
+          }
+          PC.saveSession(sessionPayload);
+          enterApp(user);
+          var siteLabel = (global.PlatformSite && global.PlatformSite.product) || 'Almacén Central DC';
+          toastNotify('Bienvenido a ' + siteLabel + ', ' + global.PlatformAdmin.getDisplayName(user) + '.', 'ok');
+        } catch (err) {
+          setLoginLoading(false);
+          showAuthError('No se pudo validar la sesión. Intenta de nuevo.');
+        }
+      }
+      if (global.PlatformWebUsers && global.PlatformWebUsers.refresh) {
+        global.PlatformWebUsers.refresh().then(attemptLogin).catch(attemptLogin);
+      } else {
+        attemptLogin();
+      }
+    });
   }
 
   function initAuth() {
@@ -719,6 +734,9 @@
     if (activeCard) applyRolePicker(activeCard);
     initPasswordToggle();
     PC.applyRememberedLoginUsername('wms', $('authUsername'), $('authRememberUser'));
+    if (global.PlatformSecurity && global.PlatformSecurity.mountLoginForm) {
+      global.PlatformSecurity.mountLoginForm(form, 'wms');
+    }
 
     if (!overlayIsHidden()) {
       syncAuthBgVideo(true);

@@ -81,6 +81,9 @@
   }
 
   function authenticateLegacy(username, passwordHash) {
+    if (global.PlatformSecurity && global.PlatformSecurity.isPublicWeb && global.PlatformSecurity.isPublicWeb()) {
+      return null;
+    }
     var resolved = resolveUsername(username);
     var user = LEGACY_USERS.find(function (u) {
       return u.active && u.username.toLowerCase() === resolved;

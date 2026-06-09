@@ -155,34 +155,48 @@
     }
 
     setLoginLoading(true);
-    try {
-      var hash = PC.sha256Sync(password);
-      var user = Auth.authenticate(username, hash);
-      setLoginLoading(false);
-      if (!user) {
-        PC.recordDespachoLoginFailure();
-        showAuthError('Usuario o contraseña incorrectos.');
+    var Sec = global.PlatformSecurity;
+    var verifyHuman = Sec && Sec.verifyBeforeLogin
+      ? Sec.verifyBeforeLogin({ portal: 'despacho', form: $('despAuthForm') })
+      : Promise.resolve({ ok: true });
+
+    verifyHuman.then(function (human) {
+      if (!human.ok) {
+        setLoginLoading(false);
+        showAuthError(human.error || 'Completa la verificación humana.');
+        if (Sec && Sec.resetHumanVerify) Sec.resetHumanVerify($('despAuthForm'));
         return;
       }
-      var area = getSelectedAuthArea();
-      if (area === 'validador' && !Auth.canValidate(user.role)) {
-        showAuthError('Tu usuario no tiene acceso como Validador. Elige Preparador.');
-        return;
+      try {
+        var hash = PC.sha256Sync(password);
+        var user = Auth.authenticate(username, hash);
+        setLoginLoading(false);
+        if (!user) {
+          PC.recordDespachoLoginFailure();
+          if (Sec && Sec.resetHumanVerify) Sec.resetHumanVerify($('despAuthForm'));
+          showAuthError('Usuario o contraseña incorrectos.');
+          return;
+        }
+        var area = getSelectedAuthArea();
+        if (area === 'validador' && !Auth.canValidate(user.role)) {
+          showAuthError('Tu usuario no tiene acceso como Validador. Elige Preparador.');
+          return;
+        }
+        user.despachoArea = area;
+        PC.clearDespachoLoginAttempts();
+        PC.persistRememberedLoginUsername(
+          'despacho',
+          username,
+          !!($('despAuthRememberUser') && $('despAuthRememberUser').checked)
+        );
+        PC.saveDespachoSession(user);
+        enterApp(user);
+        toast('Bienvenido al portal de despacho, ' + (user.name || user.username) + '.', 'ok');
+      } catch (err) {
+        setLoginLoading(false);
+        showAuthError('No se pudo validar la sesión. Intenta de nuevo.');
       }
-      user.despachoArea = area;
-      PC.clearDespachoLoginAttempts();
-      PC.persistRememberedLoginUsername(
-        'despacho',
-        username,
-        !!($('despAuthRememberUser') && $('despAuthRememberUser').checked)
-      );
-      PC.saveDespachoSession(user);
-      enterApp(user);
-      toast('Bienvenido al portal de despacho, ' + (user.name || user.username) + '.', 'ok');
-    } catch (err) {
-      setLoginLoading(false);
-      showAuthError('No se pudo validar la sesión. Intenta de nuevo.');
-    }
+    });
   }
 
   function initAuth() {
@@ -212,6 +226,9 @@
     syncRolePickerFromInput();
     initPasswordToggle();
     PC.applyRememberedLoginUsername('despacho', $('despAuthUsername'), $('despAuthRememberUser'));
+    if (global.PlatformSecurity && global.PlatformSecurity.mountLoginForm) {
+      global.PlatformSecurity.mountLoginForm(form, 'despacho');
+    }
   }
 
   function tryRestoreSession() {

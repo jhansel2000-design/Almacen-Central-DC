@@ -11,6 +11,7 @@
  */
 
 const http = require('http');
+const https = require('https');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
@@ -75,6 +76,61 @@ function ensureDataDir() {
   if (!fs.existsSync(DATA_DIR)) {
     fs.mkdirSync(DATA_DIR, { recursive: true });
   }
+}
+
+function loadSyncSecrets() {
+  const fp = path.join(DATA_DIR, 'sync-secrets.local.json');
+  if (!fs.existsSync(fp)) return {};
+  try {
+    return JSON.parse(fs.readFileSync(fp, 'utf8'));
+  } catch (e) {
+    return {};
+  }
+}
+
+function verifyTurnstileToken(token, remoteIp) {
+  return new Promise(function (resolve) {
+    const secrets = loadSyncSecrets();
+    const secret = process.env.TURNSTILE_SECRET_KEY || secrets.turnstileSecretKey || '';
+    if (!secret) {
+      resolve({ ok: true, skipped: true });
+      return;
+    }
+    if (!token) {
+      resolve({ ok: false, error: 'Token de verificación humana requerido.' });
+      return;
+    }
+    const body = new URLSearchParams({
+      secret: secret,
+      response: token,
+      remoteip: remoteIp || ''
+    }).toString();
+    const req = https.request({
+      hostname: 'challenges.cloudflare.com',
+      path: '/turnstile/v0/siteverify',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Content-Length': Buffer.byteLength(body)
+      }
+    }, function (res) {
+      let data = '';
+      res.on('data', function (c) { data += c; });
+      res.on('end', function () {
+        try {
+          const j = JSON.parse(data);
+          resolve(j.success ? { ok: true } : { ok: false, error: 'Verificación humana rechazada.' });
+        } catch (e) {
+          resolve({ ok: false, error: 'Respuesta de verificación inválida.' });
+        }
+      });
+    });
+    req.on('error', function () {
+      resolve({ ok: false, error: 'No se pudo validar con Turnstile.' });
+    });
+    req.write(body);
+    req.end();
+  });
 }
 
 function getLanAddresses() {
@@ -224,6 +280,18 @@ function handleApi(req, res, url) {
       clients: sseClients.size,
       stores: Object.keys(STORES),
       relay: true
+    });
+  }
+
+  if (req.method === 'POST' && p === '/api/verify-human') {
+    return readBody(req).then(function (body) {
+      const token = body && body.token;
+      const ip = req.socket && req.socket.remoteAddress;
+      return verifyTurnstileToken(token, ip).then(function (result) {
+        sendJson(res, result.ok ? 200 : 403, result);
+      });
+    }).catch(function (err) {
+      sendJson(res, 400, { ok: false, error: err.message || 'Solicitud inválida' });
     });
   }
 

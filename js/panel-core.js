@@ -128,19 +128,50 @@
     return Promise.resolve(sha256Sync(text));
   }
 
-  function getLoginAttempts() {
-    if (!global.localStorage) return { count: 0, lockedUntil: 0 };
+  function readAttempts(key) {
+    var base = { count: 0, lockedUntil: 0 };
+    var ls = base;
+    var ss = base;
     try {
-      return JSON.parse(localStorage.getItem(LOGIN_ATTEMPTS_KEY)) || { count: 0, lockedUntil: 0 };
+      if (global.localStorage) ls = JSON.parse(localStorage.getItem(key)) || base;
+    } catch (e) { ls = base; }
+    try {
+      if (global.sessionStorage) ss = JSON.parse(sessionStorage.getItem(key)) || base;
+    } catch (e2) { ss = base; }
+    return {
+      count: Math.max(ls.count || 0, ss.count || 0),
+      lockedUntil: Math.max(ls.lockedUntil || 0, ss.lockedUntil || 0)
+    };
+  }
+
+  function writeAttempts(key, data) {
+    var raw = JSON.stringify(data || { count: 0, lockedUntil: 0 });
+    if (global.localStorage) localStorage.setItem(key, raw);
+    if (global.sessionStorage) sessionStorage.setItem(key, raw);
+  }
+
+  function deviceFingerprint() {
+    try {
+      var ua = (global.navigator && navigator.userAgent) || '';
+      var lang = (global.navigator && navigator.language) || '';
+      return sha256Sync(String(ua).slice(0, 160) + '|' + lang).slice(0, 20);
     } catch (e) {
-      return { count: 0, lockedUntil: 0 };
+      return '';
     }
   }
 
+  function sessionFingerprintOk(s) {
+    if (!s || !s.fp) return true;
+    return s.fp === deviceFingerprint();
+  }
+
+  function getLoginAttempts() {
+    if (!global.localStorage && !global.sessionStorage) return { count: 0, lockedUntil: 0 };
+    return readAttempts(LOGIN_ATTEMPTS_KEY);
+  }
+
   function saveLoginAttempts(data) {
-    if (global.localStorage) {
-      localStorage.setItem(LOGIN_ATTEMPTS_KEY, JSON.stringify(data));
-    }
+    writeAttempts(LOGIN_ATTEMPTS_KEY, data);
   }
 
   function checkLoginAllowed() {
@@ -175,7 +206,7 @@
       var raw = localStorage.getItem(SESSION_KEY);
       if (!raw) return null;
       var s = JSON.parse(raw);
-      if (!s || !s.expiresAt || Date.now() > s.expiresAt) {
+      if (!s || !s.expiresAt || Date.now() > s.expiresAt || !sessionFingerprintOk(s)) {
         localStorage.removeItem(SESSION_KEY);
         return null;
       }
@@ -192,6 +223,7 @@
       username: user.username,
       name: user.name,
       role: user.role,
+      fp: deviceFingerprint(),
       expiresAt: Date.now() + SESSION_MS
     }));
   }
@@ -209,18 +241,12 @@
   }
 
   function getDespachoLoginAttempts() {
-    if (!global.localStorage) return { count: 0, lockedUntil: 0 };
-    try {
-      return JSON.parse(localStorage.getItem(DESPACHO_LOGIN_ATTEMPTS_KEY)) || { count: 0, lockedUntil: 0 };
-    } catch (e) {
-      return { count: 0, lockedUntil: 0 };
-    }
+    if (!global.localStorage && !global.sessionStorage) return { count: 0, lockedUntil: 0 };
+    return readAttempts(DESPACHO_LOGIN_ATTEMPTS_KEY);
   }
 
   function saveDespachoLoginAttempts(data) {
-    if (global.localStorage) {
-      localStorage.setItem(DESPACHO_LOGIN_ATTEMPTS_KEY, JSON.stringify(data));
-    }
+    writeAttempts(DESPACHO_LOGIN_ATTEMPTS_KEY, data);
   }
 
   function checkDespachoLoginAllowed() {
@@ -255,7 +281,7 @@
       var raw = localStorage.getItem(DESPACHO_SESSION_KEY);
       if (!raw) return null;
       var s = JSON.parse(raw);
-      if (!s || !s.expiresAt || Date.now() > s.expiresAt) {
+      if (!s || !s.expiresAt || Date.now() > s.expiresAt || !sessionFingerprintOk(s)) {
         localStorage.removeItem(DESPACHO_SESSION_KEY);
         return null;
       }
@@ -277,6 +303,7 @@
       name: user.name,
       role: user.role,
       despachoArea: area,
+      fp: deviceFingerprint(),
       expiresAt: Date.now() + SESSION_MS
     }));
   }
@@ -293,18 +320,12 @@
   }
 
   function getAveriasLoginAttempts() {
-    if (!global.localStorage) return { count: 0, lockedUntil: 0 };
-    try {
-      return JSON.parse(localStorage.getItem(AVERIAS_LOGIN_ATTEMPTS_KEY)) || { count: 0, lockedUntil: 0 };
-    } catch (e) {
-      return { count: 0, lockedUntil: 0 };
-    }
+    if (!global.localStorage && !global.sessionStorage) return { count: 0, lockedUntil: 0 };
+    return readAttempts(AVERIAS_LOGIN_ATTEMPTS_KEY);
   }
 
   function saveAveriasLoginAttempts(data) {
-    if (global.localStorage) {
-      localStorage.setItem(AVERIAS_LOGIN_ATTEMPTS_KEY, JSON.stringify(data));
-    }
+    writeAttempts(AVERIAS_LOGIN_ATTEMPTS_KEY, data);
   }
 
   function checkAveriasLoginAllowed() {
@@ -338,7 +359,7 @@
       var raw = localStorage.getItem(AVERIAS_SESSION_KEY);
       if (!raw) return null;
       var s = JSON.parse(raw);
-      if (!s || !s.expiresAt || Date.now() > s.expiresAt) {
+      if (!s || !s.expiresAt || Date.now() > s.expiresAt || !sessionFingerprintOk(s)) {
         localStorage.removeItem(AVERIAS_SESSION_KEY);
         return null;
       }
@@ -355,6 +376,7 @@
       username: user.username,
       name: user.name,
       role: user.role,
+      fp: deviceFingerprint(),
       expiresAt: Date.now() + SESSION_MS
     }));
   }

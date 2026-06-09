@@ -123,28 +123,42 @@
     }
 
     setLoginLoading(true);
-    try {
-      var hash = PC.sha256Sync(password);
-      var user = Auth.authenticate(username, hash);
-      setLoginLoading(false);
-      if (!user) {
-        PC.recordAveriasLoginFailure();
-        showAuthError('Usuario o contraseña incorrectos.');
+    var Sec = global.PlatformSecurity;
+    var verifyHuman = Sec && Sec.verifyBeforeLogin
+      ? Sec.verifyBeforeLogin({ portal: 'averias', form: $('avAuthForm') })
+      : Promise.resolve({ ok: true });
+
+    verifyHuman.then(function (human) {
+      if (!human.ok) {
+        setLoginLoading(false);
+        showAuthError(human.error || 'Completa la verificación humana.');
+        if (Sec && Sec.resetHumanVerify) Sec.resetHumanVerify($('avAuthForm'));
         return;
       }
-      PC.clearAveriasLoginAttempts();
-      PC.persistRememberedLoginUsername(
-        'averias',
-        username,
-        !!($('avAuthRememberUser') && $('avAuthRememberUser').checked)
-      );
-      PC.saveAveriasSession(user);
-      enterApp(user);
-      toast('Bienvenido, ' + (Auth.getDisplayName ? Auth.getDisplayName(user) : user.name) + '.', 'ok');
-    } catch (err) {
-      setLoginLoading(false);
-      showAuthError('No se pudo validar la sesión. Intenta de nuevo.');
-    }
+      try {
+        var hash = PC.sha256Sync(password);
+        var user = Auth.authenticate(username, hash);
+        setLoginLoading(false);
+        if (!user) {
+          PC.recordAveriasLoginFailure();
+          if (Sec && Sec.resetHumanVerify) Sec.resetHumanVerify($('avAuthForm'));
+          showAuthError('Usuario o contraseña incorrectos.');
+          return;
+        }
+        PC.clearAveriasLoginAttempts();
+        PC.persistRememberedLoginUsername(
+          'averias',
+          username,
+          !!($('avAuthRememberUser') && $('avAuthRememberUser').checked)
+        );
+        PC.saveAveriasSession(user);
+        enterApp(user);
+        toast('Bienvenido, ' + (Auth.getDisplayName ? Auth.getDisplayName(user) : user.name) + '.', 'ok');
+      } catch (err) {
+        setLoginLoading(false);
+        showAuthError('No se pudo validar la sesión. Intenta de nuevo.');
+      }
+    });
   }
 
   function initAuth() {
@@ -157,6 +171,9 @@
     });
     initPasswordToggle();
     PC.applyRememberedLoginUsername('averias', $('avAuthUsername'), $('avAuthRememberUser'));
+    if (global.PlatformSecurity && global.PlatformSecurity.mountLoginForm) {
+      global.PlatformSecurity.mountLoginForm(form, 'averias');
+    }
   }
 
   function tryRestoreSession() {

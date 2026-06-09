@@ -18,5 +18,10 @@
     "accessKey": "$2a$10$QtkeZBCgSXuqFhEmaDkUlOotaT/0nQYmnACfqc7kMonTD0wZ7vE1K",
     "keyType": "master"
   },
-  "help": "Tiempo real: JSONBin cada ~1s. Indicador LIVE = sync activa. No refresque la pagina."
+  "help": "Tiempo real: JSONBin cada ~1s. Indicador LIVE = sync activa. No refresque la pagina.",
+  "security": {
+    "turnstileSiteKey": "",
+    "humanVerifyMinMs": 1200,
+    "help": "Turnstile gratis: https://dash.cloudflare.com → Turnstile. Site key aquí; secret key en data/sync-secrets.local.json"
+  }
 }
