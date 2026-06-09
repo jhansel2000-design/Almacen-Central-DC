@@ -219,7 +219,7 @@ else ok('TV dashboard: slides=' + g.PlatformTvDashboard.TV_SLIDES.join(','));
     fail('PlatformDespachoStore missing');
     return;
   }
-  var reg = DS.registrarPedido('TEST-1001', 'J-99', 'en_proceso', 'verify');
+  var reg = DS.registrarPedido('TEST-1001', 'J-99', 'facturado', 'verify');
   if (!reg.ok || !reg.pedido) fail('Despacho registrarPedido failed');
   var val = DS.cambiarEstado(reg.pedido.id, 'pendiente_carga', 'validador');
   if (!val.ok || val.pedido.estado !== 'pendiente_carga') fail('Despacho cambiarEstado failed');

@@ -507,6 +507,18 @@ html[data-theme="light"] .desp-kpi--estado.desp-kpi--yellow .desp-estado-icon {
   color: #ca8a04;
 }
 
+.desp-field--estado-fijo .desp-estado-fijo {
+  margin-top: 0.35rem;
+}
+
+.desp-field--estado-fijo > span {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
 /* Filtros validador */
 .desp-filters {
   display: flex;

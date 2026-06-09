@@ -71,9 +71,9 @@
     }
   };
 
-  var PREPARADOR_ESTADOS = ['en_proceso', 'facturado'];
+  var PREPARADOR_ESTADOS = ['facturado'];
   var VALIDADOR_ESTADOS = ['pendiente_carga', 'en_validacion', 'listo_despacho'];
-  var FLUJO = ['en_proceso', 'facturado', 'pendiente_carga', 'en_validacion', 'listo_despacho'];
+  var FLUJO = ['facturado', 'pendiente_carga', 'en_validacion', 'listo_despacho'];
 
   function uid() {
     return 'ped_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 7);
@@ -100,7 +100,7 @@
       active: true,
       idc: formatIdc(liveShare.idc || ''),
       jaula: String(liveShare.jaula || '').trim(),
-      estado: ESTADOS[liveShare.estado] ? liveShare.estado : 'en_proceso',
+      estado: ESTADOS[liveShare.estado] ? liveShare.estado : 'facturado',
       updatedAt: liveShare.updatedAt || nowIso(),
       sharedBy: liveShare.sharedBy || '—'
     };
@@ -159,6 +159,7 @@
     if (!estadoOperador || PREPARADOR_ESTADOS.indexOf(estadoOperador) < 0) {
       estadoOperador = inferEstadoOperador(p);
     }
+    if (estadoOperador === 'en_proceso') estadoOperador = 'facturado';
     return {
       id: p.id || uid(),
       idc: formatIdc(p.idc || ''),
@@ -190,7 +191,7 @@
       if (/facturado/i.test(n)) return 'facturado';
       if (/en proceso/i.test(n)) return 'en_proceso';
     }
-    return 'en_proceso';
+    return 'facturado';
   }
 
   function save(data) {
@@ -244,7 +245,7 @@
   }
 
   function promoverASeguimientoValidador(pedido, estadoOperador, usuario, ts) {
-    estadoOperador = PREPARADOR_ESTADOS.indexOf(estadoOperador) >= 0 ? estadoOperador : 'en_proceso';
+    estadoOperador = PREPARADOR_ESTADOS.indexOf(estadoOperador) >= 0 ? estadoOperador : 'facturado';
     var opLabel = ESTADOS[estadoOperador] ? ESTADOS[estadoOperador].short : estadoOperador;
     var prevEstado = pedido.estado;
     pedido.seguimientoValidador = true;
@@ -270,7 +271,7 @@
     idc = formatIdc(idc);
     jaula = String(jaula || '').trim();
     cliente = String(cliente || '').trim();
-    estado = ESTADOS[estado] && PREPARADOR_ESTADOS.indexOf(estado) >= 0 ? estado : 'en_proceso';
+    estado = ESTADOS[estado] && PREPARADOR_ESTADOS.indexOf(estado) >= 0 ? estado : 'facturado';
     usuario = usuario || '—';
 
     if (!idc) return { ok: false, error: 'Ingrese el ID del pedido (IDC).' };
@@ -530,7 +531,7 @@
   function startLiveShare(idc, jaula, estado, usuario) {
     idc = formatIdc(idc);
     jaula = String(jaula || '').trim();
-    estado = ESTADOS[estado] && PREPARADOR_ESTADOS.indexOf(estado) >= 0 ? estado : 'en_proceso';
+    estado = ESTADOS[estado] && PREPARADOR_ESTADOS.indexOf(estado) >= 0 ? estado : 'facturado';
     var data = load();
     data.liveShare = {
       active: true,

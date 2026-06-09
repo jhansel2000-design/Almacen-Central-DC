@@ -222,7 +222,7 @@
     if (label) label.textContent = code || '—';
     if (jaulaEl) jaulaEl.textContent = jaula ? ('Pasillo ' + jaula) : '';
     if (estadoEl && DS && DS.ESTADOS) {
-      estadoEl.innerHTML = estadoBadge(estado || 'en_proceso');
+      estadoEl.innerHTML = estadoBadge(estado || 'facturado');
     }
     renderBarcodeImg(img, code, { height: 96, fontSize: 22, width: 2.3 });
   }
@@ -318,12 +318,43 @@
       '</nav>';
   }
 
+  function renderPrepEstadoField(inputName) {
+    inputName = inputName || 'prepEstado';
+    var ids = DS.PREPARADOR_ESTADOS;
+    if (!ids.length) return '';
+    if (ids.length === 1) {
+      var singleId = ids[0];
+      return '<div class="desp-field desp-field--estado desp-field--estado-fijo">' +
+        '<span>Estado · preparador</span>' +
+        '<input type="hidden" name="' + esc(inputName) + '" value="' + esc(singleId) + '">' +
+        '<div class="desp-estado-fijo">' + estadoBadge(singleId) + '</div></div>';
+    }
+    return '<fieldset class="desp-field desp-field--estado"><legend>Estado · preparador</legend>' +
+      '<div class="desp-estado-pick">' +
+      ids.map(function (id, i) {
+        var e = DS.ESTADOS[id];
+        return '<label class="desp-radio desp-radio--' + esc(e.color) + '">' +
+          '<input type="radio" name="' + esc(inputName) + '" value="' + esc(id) + '"' + (i === 0 ? ' checked' : '') + '>' +
+          '<span>' + esc(e.short || e.label) + '</span></label>';
+      }).join('') +
+      '</div></fieldset>';
+  }
+
+  function prepEstadoValue(host, inputName) {
+    inputName = inputName || 'prepEstado';
+    if (!host) return 'facturado';
+    var hidden = host.querySelector('input[name="' + inputName + '"][type="hidden"]');
+    if (hidden) return hidden.value || 'facturado';
+    var checked = host.querySelector('input[name="' + inputName + '"]:checked');
+    return checked ? checked.value : 'facturado';
+  }
+
   function renderPanelRegistroComun(data) {
     return '<section class="desp-panel desp-panel--registro" aria-labelledby="despRegistroTitle">' +
       '<header class="desp-panel-head">' +
       '<div><span class="desp-eyebrow">Operador · Preparador</span>' +
       '<h3 id="despRegistroTitle">Seguimiento IDC y pasillo</h3>' +
-      '<p class="desp-panel-sub">Registre IDC y pasillo como <strong>En proceso</strong> o <strong>Facturado</strong> — ingresa <strong>automáticamente</strong> al seguimiento validador.</p></div>' +
+      '<p class="desp-panel-sub">Registre IDC y pasillo como <strong>Facturado</strong> — ingresa <strong>automáticamente</strong> al seguimiento validador.</p></div>' +
       '</header>' +
       '<div class="desp-prep-main">' +
       '<form class="desp-form" id="despPrepForm" autocomplete="off" onsubmit="return false">' +
@@ -334,15 +365,7 @@
       '<input type="text" id="despPasillo" name="x_dc_prep_pasillo" placeholder="Escriba el pasillo" autocomplete="off" autocorrect="off" spellcheck="false" inputmode="text" aria-label="Pasillo"></label>' +
       '<label class="desp-field"><span>Nombre del cliente</span>' +
       '<input type="text" id="despCliente" name="cliente" placeholder="Nombre del cliente" autocomplete="off" autocorrect="off" spellcheck="false"></label>' +
-      '<fieldset class="desp-field desp-field--estado"><legend>Estado · preparador</legend>' +
-      '<div class="desp-estado-pick">' +
-      DS.PREPARADOR_ESTADOS.map(function (id, i) {
-        var e = DS.ESTADOS[id];
-        return '<label class="desp-radio desp-radio--' + esc(e.color) + '">' +
-          '<input type="radio" name="prepEstado" value="' + esc(id) + '"' + (i === 0 ? ' checked' : '') + '>' +
-          '<span>' + esc(e.short || e.label) + '</span></label>';
-      }).join('') +
-      '</div></fieldset>' +
+      renderPrepEstadoField('prepEstado') +
       '</div>' +
       '<div class="desp-prep-actions desp-prep-actions--single">' +
       '<button type="button" class="btn btn-primary desp-action-btn desp-btn-update" id="despBtnUpdateIdc">' +
@@ -376,7 +399,7 @@
         var vistaBadge = activo
           ? '<span class="desp-vista-badge desp-vista-badge--activo">Activo</span>'
           : '<span class="desp-vista-badge desp-vista-badge--retirado">Retirado</span>';
-        var opEstado = p.estadoOperador || 'en_proceso';
+        var opEstado = p.estadoOperador || 'facturado';
         return '<tr data-pedido-id="' + esc(p.id) + '">' +
           '<td><strong class="desp-idc">' + esc(formatIdc(p.idc)) + '</strong></td>' +
           '<td class="desp-cliente">' + esc(fmtCliente(p)) + '</td>' +
@@ -412,15 +435,7 @@
       '<input type="text" id="despShareIdc" name="idc" inputmode="text" placeholder="Escriba el IDC" autocapitalize="off" autocomplete="off"></label>' +
       '<label class="desp-field"><span>Pasillo</span>' +
       '<input type="text" id="despSharePasillo" name="x_dc_share_pasillo" placeholder="Escriba el pasillo" autocomplete="off" autocorrect="off" spellcheck="false" inputmode="text" aria-label="Pasillo"></label>' +
-      '<fieldset class="desp-field desp-field--estado"><legend>Estado · preparador</legend>' +
-      '<div class="desp-estado-pick">' +
-      DS.PREPARADOR_ESTADOS.map(function (id, i) {
-        var e = DS.ESTADOS[id];
-        return '<label class="desp-radio desp-radio--' + esc(e.color) + '">' +
-          '<input type="radio" name="shareEstado" value="' + esc(id) + '"' + (i === 0 ? ' checked' : '') + '>' +
-          '<span>' + esc(e.short || e.label) + '</span></label>';
-      }).join('') +
-      '</div></fieldset>' +
+      renderPrepEstadoField('shareEstado') +
       '</div>' +
       '<div class="desp-prep-actions desp-prep-actions--single">' +
       '<button type="button" class="btn desp-action-btn desp-btn-share desp-btn-share--barcode' + (sharing ? ' is-live' : '') + '" id="despBtnShareScreen">' +
@@ -524,13 +539,12 @@
     var idc = host.querySelector('#despIdc');
     var jaula = host.querySelector('#despPasillo');
     var cliente = host.querySelector('#despCliente');
-    var estadoEl = host.querySelector('input[name="prepEstado"]:checked');
     if (!idc && !jaula) return null;
     return {
       idc: idc ? idc.value : '',
       jaula: pasilloValueFromField(jaula, 'prep'),
       cliente: cliente ? cliente.value : '',
-      estado: estadoEl ? estadoEl.value : 'en_proceso'
+      estado: prepEstadoValue(host, 'prepEstado')
     };
   }
 
@@ -554,12 +568,11 @@
   function captureShareForm(host) {
     var idc = host.querySelector('#despShareIdc');
     var jaula = host.querySelector('#despSharePasillo');
-    var estadoEl = host.querySelector('input[name="shareEstado"]:checked');
     if (!idc && !jaula) return null;
     return {
       idc: idc ? idc.value : '',
       jaula: pasilloValueFromField(jaula, 'share'),
-      estado: estadoEl ? estadoEl.value : 'en_proceso'
+      estado: prepEstadoValue(host, 'shareEstado')
     };
   }
 
@@ -620,23 +633,21 @@
     var idcEl = host.querySelector('#despIdc');
     var pasilloEl = host.querySelector('#despPasillo');
     var clienteEl = host.querySelector('#despCliente');
-    var estadoEl = host.querySelector('input[name="prepEstado"]:checked');
     return {
       idc: idcEl ? idcEl.value : '',
       jaula: pasilloValueFromField(pasilloEl, 'prep'),
       cliente: clienteEl ? clienteEl.value : '',
-      estado: estadoEl ? estadoEl.value : 'en_proceso'
+      estado: prepEstadoValue(host, 'prepEstado')
     };
   }
 
   function getShareFormValues(host) {
     var idcEl = host.querySelector('#despShareIdc');
     var pasilloEl = host.querySelector('#despSharePasillo');
-    var estadoEl = host.querySelector('input[name="shareEstado"]:checked');
     return {
       idc: idcEl ? idcEl.value : '',
       jaula: pasilloValueFromField(pasilloEl, 'share'),
-      estado: estadoEl ? estadoEl.value : 'en_proceso'
+      estado: prepEstadoValue(host, 'shareEstado')
     };
   }
 
@@ -707,7 +718,7 @@
       '<header class="desp-panel-head">' +
       '<div><span class="desp-eyebrow">Validador</span>' +
       '<h3 id="despValTitle">Seguimiento validador</h3>' +
-      '<p class="desp-panel-sub">IDC del operador entran como <strong>Pend. por cargar</strong>. Usted marca <strong>Cargado</strong> o quita del seguimiento — nunca quedan En proceso.</p></div>' +
+      '<p class="desp-panel-sub">IDC del operador entran como <strong>Pend. por cargar</strong>. Usted marca <strong>Cargado</strong> o quita del seguimiento.</p></div>' +
       '<span class="desp-live-badge" title="Sincronización activa"><span class="desp-live-dot"></span> En vivo</span>' +
       '</header>' +
       '<div class="desp-filters">' +
@@ -871,11 +882,10 @@
     if (screen === 'barcode' && host.querySelector('#despBarcodePanel')) {
       var shareIdc = host.querySelector('#despShareIdc');
       var sharePasillo = host.querySelector('#despSharePasillo');
-      var shareEstadoEl = host.querySelector('input[name="shareEstado"]:checked');
       updateBarcodePanel(host,
         shareIdc ? shareIdc.value : '',
         pasilloValueFromField(sharePasillo, 'share'),
-        shareEstadoEl ? shareEstadoEl.value : 'en_proceso');
+        prepEstadoValue(host, 'shareEstado'));
       updateShareScreenUi(host, data);
     }
 
@@ -903,12 +913,11 @@
 
   function bindEvents(host, data, opts, userName) {
     function onSharePasilloCleared() {
-      var estadoEl = host.querySelector('input[name="shareEstado"]:checked');
       var idcEl = host.querySelector('#despShareIdc');
       updateBarcodePanel(host,
         idcEl ? idcEl.value : '',
         '',
-        estadoEl ? estadoEl.value : 'en_proceso');
+        prepEstadoValue(host, 'shareEstado'));
       if (DS.isLiveShareActive()) {
         var vals = getShareFormValues(host);
         DS.syncLiveShare(vals.idc, '', vals.estado, userName);
@@ -960,11 +969,10 @@
       }
 
       function syncSharePreview() {
-        var estadoEl = host.querySelector('input[name="shareEstado"]:checked');
         updateBarcodePanel(host,
           shareIdcInput ? shareIdcInput.value : '',
           pasilloValueFromField(sharePasilloInput, 'share'),
-          estadoEl ? estadoEl.value : 'en_proceso');
+          prepEstadoValue(host, 'shareEstado'));
         clearTimeout(livePushTimer);
         livePushTimer = setTimeout(pushLiveToExternal, 120);
       }
@@ -1019,7 +1027,7 @@
     host.querySelectorAll('.desp-mini-idc').forEach(function (btn) {
       btn.addEventListener('click', function () {
         var idc = btn.getAttribute('data-idc');
-        var estado = btn.getAttribute('data-estado') || 'en_proceso';
+        var estado = btn.getAttribute('data-estado') || 'facturado';
         var isShare = btn.classList.contains('desp-mini-idc--share');
         if (isShare) {
           var shareIdcEl = host.querySelector('#despShareIdc');
