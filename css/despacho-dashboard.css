@@ -1186,6 +1186,10 @@ body.desp-live-lista-on:not(.desp-live-present-on) .desp-live-present-lista {
   box-shadow: 0 8px 28px rgba(124, 58, 237, 0.25);
 }
 
+.desp-prep-actions--single {
+  grid-template-columns: 1fr;
+}
+
 html[data-theme="light"] .desp-btn-send-validador {
   color: #5b21b6;
   background: linear-gradient(135deg, rgba(124, 58, 237, 0.12), rgba(79, 70, 229, 0.08));
