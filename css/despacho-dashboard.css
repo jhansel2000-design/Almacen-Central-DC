@@ -1204,10 +1204,20 @@ body.desp-live-lista-on:not(.desp-live-present-on) .desp-live-present-lista {
 }
 
 .desp-lista-present-totales {
-  display: grid;
+  display: none;
   grid-template-columns: repeat(3, 1fr);
   gap: 0.65rem;
   margin-bottom: 0.85rem;
+}
+
+body.desp-display-mode .desp-lista-present-totales {
+  display: grid;
+}
+
+body.desp-controller-mode .desp-lista-present-totales,
+.desp-dashboard .desp-lista-present-totales,
+.desp-validador-stack .desp-lista-present-totales {
+  display: none !important;
 }
 
 .desp-lista-present-total {

@@ -136,12 +136,6 @@
       '</div>';
   }
 
-  function getValidadorCounts(pedidos) {
-    return DS.countResumenValidador
-      ? DS.countResumenValidador(pedidos)
-      : DS.countByEstado(pedidos, { soloValidador: true });
-  }
-
   function kpiStripOperador(stats) {
     stats = stats || {};
     return '<div class="desp-kpi-strip desp-kpi-strip--operador">' +
@@ -821,9 +815,6 @@
     resetJaulaTouched();
 
     var operadorStats = despachoArea === 'preparador' ? DS.countKpiOperador(data.pedidos) : null;
-    var validadorCounts = despachoArea === 'validador'
-      ? getValidadorCounts(data.pedidos)
-      : null;
 
     host.innerHTML =
       '<div class="desp-dashboard" id="despDashboard">' +
@@ -834,10 +825,7 @@
         ? 'Registro operador → validador automático · ' +
           esc(String(operadorStats.activos || 0)) + ' activos · ' +
           esc(String(operadorStats.total || 0)) + ' enviados en total'
-        : 'Validador · ' +
-          esc(String(validadorCounts.pendiente_carga || 0)) + ' pend. · ' +
-          esc(String(validadorCounts.en_validacion || 0)) + ' validados · ' +
-          esc(String(validadorCounts.listo_despacho || 0)) + ' cargados') +
+        : 'Panel validador · gestione IDC y comparta el seguimiento en pantalla TV') +
       '</p></div>' +
       flujoHtml() +
       '</header>' +

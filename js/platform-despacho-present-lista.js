@@ -82,6 +82,7 @@
   }
 
   function renderTotalesBar(data) {
+    if (!displayMode) return '';
     var store = DS();
     if (!store) return '';
     var counts = store.countResumenValidador
