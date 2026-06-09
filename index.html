@@ -32,7 +32,7 @@
   <link rel="stylesheet" href="css/executive-comfort.css">
   <link rel="stylesheet" href="css/auth-cinematic.css?v=18">
   <link rel="stylesheet" href="css/auth-security.css?v=3">
-  <link rel="stylesheet" href="css/auth-portals-layout.css?v=1">
+  <link rel="stylesheet" href="css/auth-portals-layout.css?v=2">
   <link rel="stylesheet" href="css/perf-lite.css?v=17">
   <link rel="stylesheet" href="css/despacho-auth.css?v=20">
   <link rel="stylesheet" href="css/averias-auth.css?v=3">
@@ -71,40 +71,32 @@
             </div>
           </header>
           <p class="auth-brand-tag">Almacén Central DC · 300-001</p>
-          <p class="auth-brand-desc">Importa Excels del almacén, visualiza KPIs y gráficos de operación, facturas y productividad. Cada módulo mantiene sus datos separados para piso y gerencia.</p>
-          <div class="auth-feature-grid" role="list">
-            <article class="auth-feature-card" role="listitem">
-              <span class="auth-feature-icon auth-feature-icon--ops" aria-hidden="true">⬡</span>
-              <div class="auth-feature-body">
-                <strong>Operaciones</strong>
-                <span>Abiertos, en proceso y tendencias por área</span>
-              </div>
-            </article>
-            <article class="auth-feature-card" role="listitem">
-              <span class="auth-feature-icon auth-feature-icon--fac" aria-hidden="true">$</span>
-              <div class="auth-feature-body">
-                <strong>Facturas</strong>
-                <span>Ventas por almacén en RD$ y metas diarias</span>
-              </div>
-            </article>
-            <article class="auth-feature-card" role="listitem">
-              <span class="auth-feature-icon auth-feature-icon--prod" aria-hidden="true">▣</span>
-              <div class="auth-feature-body">
-                <strong>Productividad</strong>
-                <span>Rendimiento por empleado y ranking</span>
-              </div>
-            </article>
-            <article class="auth-feature-card" role="listitem">
-              <span class="auth-feature-icon auth-feature-icon--rep" aria-hidden="true">☰</span>
-              <div class="auth-feature-body">
-                <strong>Reportes</strong>
-                <span>Informe consolidado y exportación PDF / TXT</span>
-              </div>
-            </article>
-          </div>
+          <section class="auth-portals-section auth-portals-section--hero" id="authExternalPortals" aria-label="Portales independientes">
+            <header class="auth-portals-head">
+              <p class="auth-portals-eyebrow">Acceso independiente</p>
+              <h3 class="auth-portals-title">Portales de piso y despacho</h3>
+            </header>
+            <div class="auth-portals-grid auth-portals-grid--hero">
+              <a href="despacho.html" class="auth-portal-card auth-portal-card--despacho">
+                <span class="auth-portal-icon" aria-hidden="true">🚚</span>
+                <div class="auth-portal-body">
+                  <strong>Portal de Despacho</strong>
+                  <span>Preparador y validador de pedidos</span>
+                  <span class="auth-portal-cta">Entrar a despacho →</span>
+                </div>
+              </a>
+              <a href="averias.html" class="auth-portal-card auth-portal-card--averias">
+                <span class="auth-portal-icon" aria-hidden="true">⚠️</span>
+                <div class="auth-portal-body">
+                  <strong>Operaciones de Piso</strong>
+                  <span>Averías, 5S, seguridad y equipos</span>
+                  <span class="auth-portal-cta">Entrar a operaciones →</span>
+                </div>
+              </a>
+            </div>
+          </section>
         </div>
       </aside>
-      <div class="auth-stack">
       <div class="auth-glass-card auth-glass-card--login">
         <form id="authForm" class="auth-form" novalidate action="#" method="post">
           <h2 id="authTitle" class="auth-heading">Acceso ejecutivo</h2>
@@ -158,31 +150,6 @@
           <p class="auth-hint">Elige tu área. La contraseña no se guarda en el equipo.</p>
           <p id="authError" class="auth-error" role="alert" aria-live="polite"></p>
         </form>
-      </div>
-      <section class="auth-portals-section" id="authExternalPortals" aria-label="Portales independientes">
-        <header class="auth-portals-head">
-          <p class="auth-portals-eyebrow">Acceso independiente</p>
-          <h3 class="auth-portals-title">Portales de piso y despacho</h3>
-        </header>
-        <div class="auth-portals-grid">
-          <a href="despacho.html" class="auth-portal-card auth-portal-card--despacho">
-            <span class="auth-portal-icon" aria-hidden="true">🚚</span>
-            <div class="auth-portal-body">
-              <strong>Portal de Despacho</strong>
-              <span>Preparador y validador de pedidos</span>
-              <span class="auth-portal-cta">Entrar →</span>
-            </div>
-          </a>
-          <a href="averias.html" class="auth-portal-card auth-portal-card--averias">
-            <span class="auth-portal-icon" aria-hidden="true">⚠️</span>
-            <div class="auth-portal-body">
-              <strong>Operaciones de Piso</strong>
-              <span>Averías, 5S, seguridad y equipos</span>
-              <span class="auth-portal-cta">Entrar →</span>
-            </div>
-          </a>
-        </div>
-      </section>
       </div>
     </div>
   </div>

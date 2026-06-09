@@ -23,7 +23,7 @@
   width: 100%;
 }
 
-/* Portales debajo del login (index) */
+/* Portales debajo del login (index) — o en panel hero */
 .auth-portals-section {
   padding: 1rem 1.1rem 1.05rem;
   border-radius: 18px;
@@ -32,6 +32,46 @@
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.28);
+}
+
+/* Portales dentro del panel izquierdo (WMS) */
+.auth-portals-section--hero {
+  margin-top: 0.35rem;
+  padding: 0;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  pointer-events: auto;
+}
+
+.auth-hero-panel .auth-portals-head {
+  margin-bottom: 0.85rem;
+}
+
+.auth-portals-grid--hero {
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+}
+
+.auth-portals-grid--hero .auth-portal-card {
+  padding: 1rem 1.05rem;
+  border-radius: 14px;
+}
+
+.auth-portals-grid--hero .auth-portal-body strong {
+  font-size: 0.95rem;
+}
+
+.auth-portals-grid--hero .auth-portal-body span:not(.auth-portal-cta) {
+  font-size: 0.78rem;
+}
+
+.auth-portals-grid--hero .auth-portal-icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  font-size: 1.2rem;
 }
 
 .auth-portals-head {
@@ -202,7 +242,11 @@ html[data-theme="light"] .auth-hub-link {
     width: 100%;
   }
 
-  .auth-portals-grid {
+  .auth-portals-grid:not(.auth-portals-grid--hero) {
+    grid-template-columns: 1fr;
+  }
+
+  .auth-portals-grid--hero {
     grid-template-columns: 1fr;
   }
 
