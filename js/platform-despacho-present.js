@@ -29,14 +29,15 @@
     return [share.idc, share.jaula, share.estado, share.updatedAt].join('|');
   }
 
-  function renderBarcode(svgEl, idc) {
-    if (!svgEl || !global.PlatformDespachoBarcode || !DS()) return;
+  function renderBarcode(imgEl, idc) {
+    if (!imgEl || !global.PlatformDespachoBarcode || !DS()) return;
     var code = DS().formatIdc(idc);
     if (!code) {
-      svgEl.innerHTML = '';
+      imgEl.removeAttribute('src');
+      imgEl.alt = '';
       return;
     }
-    global.PlatformDespachoBarcode.render(svgEl, code, {
+    global.PlatformDespachoBarcode.render(imgEl, code, {
       height: 100,
       fontSize: 24,
       width: 2.4,
@@ -63,10 +64,10 @@
     mountEl.innerHTML =
       '<div class="desp-present-shell">' +
       '<div class="desp-present-inner">' +
-      '<div class="desp-present-badge"><span class="desp-present-dot"></span> EN VIVO · Pantalla compartida</div>' +
+      '<div class="desp-present-badge"><span class="desp-present-dot"></span> EN VIVO · Código de barras IDC</div>' +
       '<div class="desp-present-grid">' +
       '<div class="desp-present-barcode-wrap">' +
-      '<svg class="desp-present-barcode" id="despPresentBarcode" role="img" aria-label="Código de barras"></svg>' +
+      '<img class="desp-present-barcode desp-barcode-img" id="despPresentBarcode" alt="Código de barras IDC" width="320" height="120">' +
       '</div>' +
       '<div class="desp-present-meta">' +
       '<p class="desp-present-label">IDC activo</p>' +

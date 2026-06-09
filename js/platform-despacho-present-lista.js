@@ -1,0 +1,147 @@
+/**
+ * Presentación en vivo — lista IDC + jaula + estado para validadores
+ */
+(function (global) {
+  'use strict';
+
+  var esc = global.PanelCore ? global.PanelCore.esc : function (s) {
+    return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  };
+
+  var bound = false;
+  var mountEl = null;
+  var lastSig = '';
+
+  function DS() {
+    return global.PlatformDespachoStore;
+  }
+
+  function estadoHtml(estadoId) {
+    var store = DS();
+    if (!store) return esc(estadoId || '—');
+    var e = store.ESTADOS[estadoId] || { label: estadoId, icon: '●', short: estadoId, color: 'neutral' };
+    return '<span class="desp-lista-present-estado desp-lista-present-estado--' + esc(e.color) + '">' +
+      esc(e.icon) + ' ' + esc(e.short || e.label) + '</span>';
+  }
+
+  function listaSignature(share, pedidos) {
+    if (!share || !share.active) return '';
+    var rows = (pedidos || []).map(function (p) {
+      return [p.idc, p.jaula, p.estado, p.updatedAt].join(':');
+    }).join('|');
+    return share.updatedAt + '::' + rows;
+  }
+
+  function renderTableRows(pedidos) {
+    if (!pedidos.length) {
+      return '<tr><td colspan="3" class="desp-lista-present-empty">Sin IDC registrados todavía.</td></tr>';
+    }
+    return pedidos.map(function (p) {
+      var store = DS();
+      var idc = store ? store.formatIdc(p.idc) : p.idc;
+      return '<tr>' +
+        '<td class="desp-lista-present-idc">' + esc(idc) + '</td>' +
+        '<td class="desp-lista-present-jaula">' + esc(p.jaula || '—') + '</td>' +
+        '<td class="desp-lista-present-estado-cell">' + estadoHtml(p.estado) + '</td>' +
+        '</tr>';
+    }).join('');
+  }
+
+  function renderMount(share, data) {
+    if (!mountEl) return;
+    if (!share || !share.active) {
+      mountEl.hidden = true;
+      mountEl.setAttribute('aria-hidden', 'true');
+      mountEl.innerHTML = '';
+      document.body.classList.remove('desp-live-lista-on');
+      lastSig = '';
+      return;
+    }
+
+    data = data || (DS() ? DS().load() : { pedidos: [] });
+    var pedidos = DS() ? DS().getPedidosActivos(data.pedidos) : (data.pedidos || []);
+
+    mountEl.hidden = false;
+    mountEl.setAttribute('aria-hidden', 'false');
+    document.body.classList.add('desp-live-lista-on');
+
+    mountEl.innerHTML =
+      '<div class="desp-lista-present-shell">' +
+      '<div class="desp-lista-present-inner">' +
+      '<div class="desp-lista-present-head">' +
+      '<div class="desp-lista-present-badge"><span class="desp-lista-present-dot"></span> EN VIVO · Lista para validadores</div>' +
+      '<p class="desp-lista-present-meta">' + esc(String(pedidos.length)) + ' IDC activo(s) · Preparador: ' +
+      esc(share.sharedBy || '—') + '</p></div>' +
+      '<div class="desp-lista-present-table-wrap">' +
+      '<table class="desp-lista-present-table" aria-label="Lista IDC y jaulas en vivo">' +
+      '<thead><tr><th>IDC</th><th>Jaula</th><th>Estado</th></tr></thead>' +
+      '<tbody>' + renderTableRows(pedidos) + '</tbody></table></div></div></div>';
+
+    lastSig = listaSignature(share, pedidos);
+  }
+
+  function refreshFromStore() {
+    var store = DS();
+    if (!store) return;
+    var data = store.load();
+    var share = store.getLiveShareLista ? store.getLiveShareLista(data) : null;
+    if (!share || !share.active) {
+      renderMount(null);
+      return;
+    }
+    var pedidos = store.getPedidosActivos(data.pedidos);
+    var sig = listaSignature(share, pedidos);
+    if (sig === lastSig) return;
+    renderMount(share, data);
+  }
+
+  function ensureMount() {
+    if (mountEl && mountEl.isConnected) return mountEl;
+    mountEl = document.getElementById('despGlobalLiveLista');
+    if (!mountEl) {
+      mountEl = document.createElement('div');
+      mountEl.id = 'despGlobalLiveLista';
+      mountEl.className = 'desp-live-present-lista';
+      mountEl.hidden = true;
+      mountEl.setAttribute('aria-live', 'polite');
+      document.body.appendChild(mountEl);
+    }
+    return mountEl;
+  }
+
+  function bind() {
+    if (bound) return;
+    bound = true;
+    ensureMount();
+
+    function onUpdate() {
+      refreshFromStore();
+    }
+
+    global.addEventListener('despacho-updated', onUpdate);
+    global.addEventListener('despacho-live-lista', onUpdate);
+    global.addEventListener('storage', function (ev) {
+      if (ev.key === (DS() && DS().STORAGE_KEY)) onUpdate();
+    });
+
+    if (typeof global.BroadcastChannel !== 'undefined') {
+      var bc = new global.BroadcastChannel('despacho-live-lista');
+      bc.onmessage = function () { onUpdate(); };
+    }
+
+    refreshFromStore();
+  }
+
+  function unbind() {
+    bound = false;
+    if (mountEl) renderMount(null);
+  }
+
+  global.PlatformDespachoPresentLista = {
+    bind: bind,
+    unbind: unbind,
+    refresh: refreshFromStore,
+    render: renderMount,
+    renderTableRows: renderTableRows
+  };
+})(typeof window !== 'undefined' ? window : this);

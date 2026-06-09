@@ -532,10 +532,18 @@ html[data-theme="light"] .desp-flujo {
   justify-content: center;
 }
 
-.desp-barcode-svg {
+.desp-barcode-svg,
+.desp-barcode-img {
+  display: block;
   width: 100%;
   max-width: 100%;
   height: auto;
+  background: #fff;
+}
+
+.desp-present-barcode.desp-barcode-img {
+  max-width: 320px;
+  margin: 0 auto;
 }
 
 .desp-barcode-idc {
@@ -842,6 +850,246 @@ body.desp-live-present-on {
   margin: 0;
   font-size: 0.78rem;
   color: #8b949e;
+}
+
+/* —— Presentación lista validadores (global, separada del barcode) —— */
+.desp-live-present-lista {
+  z-index: 7990;
+  width: 100%;
+}
+
+.desp-live-present-lista[hidden] {
+  display: none !important;
+}
+
+body.desp-live-lista-on:not(.desp-live-present-on) .desp-live-present-lista {
+  position: sticky;
+  top: 0;
+}
+
+.desp-lista-present-shell {
+  background: linear-gradient(135deg, #0a1929 0%, #102a43 100%);
+  border-bottom: 3px solid #1976d2;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+}
+
+.desp-lista-present-inner {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0.75rem 1.25rem 1rem;
+}
+
+.desp-lista-present-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  margin-bottom: 0.65rem;
+}
+
+.desp-lista-present-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #60a5fa;
+}
+
+.desp-lista-present-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #60a5fa;
+  animation: despPresentPulse 1.2s ease-in-out infinite;
+}
+
+.desp-lista-present-meta {
+  margin: 0;
+  font-size: 0.78rem;
+  color: #8b949e;
+}
+
+.desp-lista-present-table-wrap {
+  overflow-x: auto;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.desp-lista-present-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.desp-lista-present-table th {
+  text-align: left;
+  padding: 0.55rem 0.75rem;
+  background: rgba(25, 118, 210, 0.2);
+  color: #90caf9;
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.desp-lista-present-table td {
+  padding: 0.5rem 0.75rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  color: #e6edf3;
+}
+
+.desp-lista-present-table tbody tr:nth-child(even) {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.desp-lista-present-idc {
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: #fff;
+}
+
+.desp-lista-present-jaula {
+  font-weight: 600;
+  color: #ff9800;
+}
+
+.desp-lista-present-estado {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.desp-lista-present-estado--amber { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+.desp-lista-present-estado--blue { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
+.desp-lista-present-estado--orange { background: rgba(249, 115, 22, 0.2); color: #fb923c; }
+.desp-lista-present-estado--purple { background: rgba(168, 85, 247, 0.2); color: #c084fc; }
+.desp-lista-present-estado--green { background: rgba(34, 197, 94, 0.2); color: #4ade80; }
+
+.desp-lista-present-empty {
+  text-align: center;
+  color: #8b949e;
+  padding: 1rem !important;
+}
+
+/* Entrada — secciones separadas */
+.desp-entrada-nav {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.65rem;
+  margin: 0 0 1rem;
+}
+
+.desp-entrada-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.85rem 1rem;
+  border-radius: 12px;
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.12));
+  background: var(--surface-2, rgba(255, 255, 255, 0.04));
+  color: var(--text);
+  font-weight: 700;
+  font-size: 0.92rem;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+}
+
+.desp-entrada-btn:hover {
+  border-color: rgba(255, 152, 0, 0.45);
+  background: rgba(255, 152, 0, 0.08);
+}
+
+.desp-entrada-btn.active {
+  border-color: rgba(255, 152, 0, 0.65);
+  background: rgba(255, 152, 0, 0.14);
+  box-shadow: 0 0 0 1px rgba(255, 152, 0, 0.2);
+}
+
+.desp-entrada-btn--pantalla.has-live {
+  border-color: rgba(86, 211, 100, 0.55);
+  color: #56d364;
+}
+
+.desp-entrada-nav--3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.desp-entrada-btn--barcode.has-live,
+.desp-entrada-btn--lista.has-live {
+  border-color: rgba(86, 211, 100, 0.55);
+  color: #56d364;
+}
+
+.desp-prep-actions--single {
+  grid-template-columns: 1fr;
+}
+
+/* Panel lista compartida */
+.desp-lista-share-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.desp-lista-share-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-width: 480px;
+}
+
+.desp-btn-share-lista {
+  background: linear-gradient(135deg, #1565c0, #1976d2);
+  color: #fff;
+  border: none;
+  font-weight: 800;
+  font-size: 0.95rem;
+  padding: 0.85rem 1rem;
+}
+
+.desp-btn-share-lista.is-live {
+  background: linear-gradient(135deg, #b71c1c, #c62828);
+  animation: despShareGlow 2s ease-in-out infinite;
+}
+
+.desp-lista-share-hint {
+  margin: 0;
+  font-size: 0.82rem;
+}
+
+.desp-lista-preview h4 {
+  margin: 0 0 0.65rem;
+}
+
+.desp-share-live-tag--lista {
+  background: rgba(59, 130, 246, 0.15);
+  color: #60a5fa;
+}
+
+.desp-share-status--lista {
+  background: rgba(59, 130, 246, 0.12);
+  border-color: rgba(59, 130, 246, 0.35);
+  color: #60a5fa;
+}
+
+@media (max-width: 900px) {
+  .desp-entrada-nav--3 {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .desp-entrada-nav {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* Preparador — botones principales */

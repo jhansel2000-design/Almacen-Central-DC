@@ -29,7 +29,7 @@
 
   var state = {
     user: null,
-    view: 'preparador',
+    screen: 'registro',
     _sessionTouchBound: false
   };
 
@@ -254,19 +254,13 @@
     var host = $('despModule');
     if (!host || !global.PlatformDespachoUI) return;
     var canValidate = Auth.canValidate(state.user.role);
-    var view = state.view;
-    if (!canValidate) view = 'preparador';
-    if (view === 'validador' && !canValidate) view = 'preparador';
-    if (view === 'combinado' && !canValidate) view = 'preparador';
 
     global.PlatformDespachoUI.render(host, global.PlatformDespachoStore.load(), {
-      view: view,
       user: state.user,
       canValidate: canValidate,
-      internalNav: true,
-      onViewChange: function (v) {
-        state.view = v;
-        renderDespacho();
+      screen: state.screen,
+      onScreenChange: function (s) {
+        state.screen = s;
       }
     });
 
@@ -280,14 +274,6 @@
 
   function enterApp(user) {
     state.user = user;
-    var area = getSelectedAuthArea();
-    if (area === 'validador' && Auth.canValidate(user.role)) {
-      state.view = 'validador';
-    } else if (area === 'preparador') {
-      state.view = 'preparador';
-    } else {
-      state.view = Auth.canValidate(user.role) ? 'combinado' : 'preparador';
-    }
     setAuthVisible(false);
     updateRoleBadge();
     renderDespacho();
@@ -342,6 +328,7 @@
       document.addEventListener('despacho-updated', function () {
         if (state.user) {
           if (global.PlatformDespachoPresent) global.PlatformDespachoPresent.refresh();
+          if (global.PlatformDespachoPresentLista) global.PlatformDespachoPresentLista.refresh();
           renderDespacho();
         }
       });
@@ -352,7 +339,14 @@
         }
       });
 
+      document.addEventListener('despacho-live-lista', function () {
+        if (state.user && global.PlatformDespachoPresentLista) {
+          global.PlatformDespachoPresentLista.refresh();
+        }
+      });
+
       if (global.PlatformDespachoPresent) global.PlatformDespachoPresent.bind();
+      if (global.PlatformDespachoPresentLista) global.PlatformDespachoPresentLista.bind();
 
       document.addEventListener('lan-sync', function (ev) {
         if (!state.user) return;

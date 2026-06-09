@@ -8,6 +8,9 @@
   var broadcast = typeof global.BroadcastChannel !== 'undefined'
     ? new global.BroadcastChannel('despacho-live-share')
     : null;
+  var broadcastLista = typeof global.BroadcastChannel !== 'undefined'
+    ? new global.BroadcastChannel('despacho-live-lista')
+    : null;
 
   var ESTADOS = {
     en_proceso: {
@@ -80,7 +83,8 @@
       version: 1,
       updatedAt: nowIso(),
       pedidos: [],
-      liveShare: null
+      liveShare: null,
+      liveShareLista: null
     };
   }
 
@@ -96,6 +100,15 @@
     };
   }
 
+  function normalizeLiveShareLista(liveShareLista) {
+    if (!liveShareLista || !liveShareLista.active) return null;
+    return {
+      active: true,
+      updatedAt: liveShareLista.updatedAt || nowIso(),
+      sharedBy: liveShareLista.sharedBy || '—'
+    };
+  }
+
   function load() {
     if (!global.localStorage) return emptyPayload();
     try {
@@ -106,6 +119,7 @@
       data.module = 'despacho';
       data.pedidos = data.pedidos.map(normalizePedido);
       data.liveShare = normalizeLiveShare(data.liveShare);
+      data.liveShareLista = normalizeLiveShareLista(data.liveShareLista);
       return data;
     } catch (e) {
       return emptyPayload();
@@ -322,6 +336,17 @@
     }
   }
 
+  function notifyLiveShareLista(share) {
+    try {
+      global.dispatchEvent(new CustomEvent('despacho-live-lista', {
+        detail: { share: share, at: nowIso() }
+      }));
+    } catch (e) { /* noop */ }
+    if (broadcastLista) {
+      try { broadcastLista.postMessage({ at: Date.now() }); } catch (e) { /* noop */ }
+    }
+  }
+
   function getLiveShare(data) {
     data = data || load();
     return data.liveShare && data.liveShare.active ? data.liveShare : null;
@@ -384,6 +409,50 @@
     return startLiveShare(idc, jaula, estado, usuario);
   }
 
+  function getLiveShareLista(data) {
+    data = data || load();
+    return data.liveShareLista && data.liveShareLista.active ? data.liveShareLista : null;
+  }
+
+  function isLiveShareListaActive(data) {
+    return !!getLiveShareLista(data);
+  }
+
+  function startLiveShareLista(usuario) {
+    var data = load();
+    data.liveShareLista = {
+      active: true,
+      updatedAt: nowIso(),
+      sharedBy: usuario || '—'
+    };
+    save(data);
+    notifyLiveShareLista(data.liveShareLista);
+    return { ok: true, data: data, liveShareLista: data.liveShareLista };
+  }
+
+  function stopLiveShareLista(usuario) {
+    var data = load();
+    data.liveShareLista = null;
+    save(data);
+    notifyLiveShareLista(null);
+    return { ok: true, data: data, stoppedBy: usuario };
+  }
+
+  function toggleLiveShareLista(usuario) {
+    if (isLiveShareListaActive()) {
+      return stopLiveShareLista(usuario);
+    }
+    return startLiveShareLista(usuario);
+  }
+
+  function getPedidosActivos(pedidos) {
+    return (pedidos || []).slice().sort(function (a, b) {
+      var ja = String(a.jaula || '').localeCompare(String(b.jaula || ''), 'es', { numeric: true });
+      if (ja !== 0) return ja;
+      return String(a.idc || '').localeCompare(String(b.idc || ''), 'es', { numeric: true });
+    });
+  }
+
   function bindSync(callback) {
     if (!callback) return function () {};
     function onCustom(ev) {
@@ -421,6 +490,12 @@
     stopLiveShare: stopLiveShare,
     syncLiveShare: syncLiveShare,
     toggleLiveShare: toggleLiveShare,
+    getLiveShareLista: getLiveShareLista,
+    isLiveShareListaActive: isLiveShareListaActive,
+    startLiveShareLista: startLiveShareLista,
+    stopLiveShareLista: stopLiveShareLista,
+    toggleLiveShareLista: toggleLiveShareLista,
+    getPedidosActivos: getPedidosActivos,
     bindSync: bindSync
   };
 })(typeof window !== 'undefined' ? window : this);
