@@ -136,26 +136,10 @@
       '</div>';
   }
 
-  function kpiStripValidador(counts) {
-    counts = counts || {};
-    return '<div class="desp-kpi-strip desp-kpi-strip--validador" aria-label="Resumen seguimiento validador">' +
-      DS.VALIDADOR_ESTADOS.map(function (id) {
-        var e = DS.ESTADOS[id];
-        var icon = DS.renderEstadoIconSvg ? DS.renderEstadoIconSvg(id, { compact: true }) : '';
-        var lbl = e.kpiLabel || e.short || e.label;
-        return '<article class="desp-kpi desp-kpi--' + esc(e.color) + ' desp-kpi--estado">' +
-          (icon ? '<span class="desp-kpi-icon">' + icon + '</span>' : '') +
-          '<span class="desp-kpi-val">' + esc(String(counts[id] || 0)) + '</span>' +
-          '<span class="desp-kpi-lbl">' + esc(lbl) + '</span></article>';
-      }).join('') +
-      '</div>';
-  }
-
-  function renderValidadorResumen(counts) {
-    return '<section class="desp-val-resumen" aria-labelledby="despValResumenTitle">' +
-      '<h4 id="despValResumenTitle" class="desp-val-resumen-title">Resumen del seguimiento</h4>' +
-      kpiStripValidador(counts) +
-      '</section>';
+  function getValidadorCounts(pedidos) {
+    return DS.countResumenValidador
+      ? DS.countResumenValidador(pedidos)
+      : DS.countByEstado(pedidos, { soloValidador: true });
   }
 
   function kpiStripOperador(stats) {
@@ -510,11 +494,9 @@
   function renderPanelValidador(data, opts) {
     var sharing = DS.getLiveShareLista(data);
     var pedidos = DS.getPedidosVisiblesValidador(data.pedidos);
-    var valCounts = DS.countByEstado(data.pedidos, { soloValidador: true });
     opts = opts || {};
     var canRemove = !!opts.canValidate;
     return '<div class="desp-validador-stack">' +
-      renderValidadorResumen(valCounts) +
       '<section class="desp-panel desp-panel--val-share" aria-labelledby="despValShareTitle">' +
       '<header class="desp-panel-head">' +
       '<div><span class="desp-eyebrow">Pantalla externa · Validador</span>' +
@@ -840,7 +822,7 @@
 
     var operadorStats = despachoArea === 'preparador' ? DS.countKpiOperador(data.pedidos) : null;
     var validadorCounts = despachoArea === 'validador'
-      ? DS.countByEstado(data.pedidos, { soloValidador: true })
+      ? getValidadorCounts(data.pedidos)
       : null;
 
     host.innerHTML =
@@ -859,9 +841,7 @@
       '</p></div>' +
       flujoHtml() +
       '</header>' +
-      (despachoArea === 'preparador'
-        ? kpiStripOperador(operadorStats)
-        : kpiStripValidador(validadorCounts)) +
+      (despachoArea === 'preparador' ? kpiStripOperador(operadorStats) : '') +
       renderNavEntrada(screen, data, opts) +
       '<div class="desp-panels">' +
       (screen === 'barcode'

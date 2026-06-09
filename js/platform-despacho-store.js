@@ -700,6 +700,16 @@
     return stats;
   }
 
+  /** Totales visibles en el panel del validador (activos, no retirados). */
+  function countResumenValidador(pedidos) {
+    var activos = getPedidosVisiblesValidador(pedidos);
+    var counts = { total: activos.length };
+    VALIDADOR_ESTADOS.forEach(function (id) {
+      counts[id] = activos.filter(function (p) { return p.estado === id; }).length;
+    });
+    return counts;
+  }
+
   function getPedidosActivos(pedidos) {
     return (pedidos || []).slice().sort(function (a, b) {
       var ja = String(a.jaula || '').localeCompare(String(b.jaula || ''), 'es', { numeric: true });
@@ -741,6 +751,7 @@
     getPedidosArchivadosValidador: getPedidosArchivadosValidador,
     getRegistroEnviadosValidador: getRegistroEnviadosValidador,
     countKpiOperador: countKpiOperador,
+    countResumenValidador: countResumenValidador,
     filterPedidos: filterPedidos,
     countByEstado: countByEstado,
     formatEstado: formatEstado,

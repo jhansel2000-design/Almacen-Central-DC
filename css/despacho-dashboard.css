@@ -448,14 +448,109 @@ html[data-theme="light"] .desp-dashboard .desp-btn-set-estado--green {
   margin-bottom: 1rem;
   padding: 1rem 1.15rem;
   border-radius: 16px;
-  border: 1px solid var(--border);
+  border: 2px solid var(--border);
   background: var(--bg-elevated);
 }
 
+.desp-panel--val .desp-val-resumen--inline {
+  margin: 0 0 1.15rem;
+  padding: 1.15rem 1.25rem;
+  border-color: color-mix(in srgb, var(--accent, #60a5fa) 35%, var(--border));
+  background: color-mix(in srgb, var(--bg-elevated) 92%, var(--accent, #60a5fa) 8%);
+}
+
 .desp-val-resumen-title {
-  margin: 0 0 0.75rem;
-  font-size: 0.95rem;
-  font-weight: 700;
+  margin: 0 0 0.85rem;
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--text-strong, var(--text));
+  letter-spacing: 0.01em;
+}
+
+.desp-val-totales-bar {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+}
+
+.desp-dashboard > .desp-val-totales-bar {
+  margin-bottom: 0.25rem;
+}
+
+.desp-dashboard > .desp-val-total-foot {
+  margin-bottom: 1rem;
+}
+
+@media (max-width: 640px) {
+  .desp-val-totales-bar { grid-template-columns: 1fr; }
+}
+
+.desp-val-total {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  padding: 0.85rem 0.65rem;
+  border-radius: 14px;
+  border: 2px solid var(--border);
+  background: var(--bg, #0f172a);
+  text-align: center;
+}
+
+.desp-val-total--red {
+  border-color: #f87171;
+  background: color-mix(in srgb, #f87171 12%, var(--bg-elevated));
+}
+
+.desp-val-total--yellow {
+  border-color: #fbbf24;
+  background: color-mix(in srgb, #fbbf24 12%, var(--bg-elevated));
+}
+
+.desp-val-total--green {
+  border-color: #34d399;
+  background: color-mix(in srgb, #34d399 12%, var(--bg-elevated));
+}
+
+.desp-val-total-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.95;
+}
+
+.desp-val-total-num {
+  display: block;
+  font-size: clamp(2rem, 5vw, 2.75rem);
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.desp-val-total--red .desp-val-total-num { color: #f87171; }
+.desp-val-total--yellow .desp-val-total-num { color: #fbbf24; }
+.desp-val-total--green .desp-val-total-num { color: #34d399; }
+
+.desp-val-total-lbl {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-strong, var(--text));
+  line-height: 1.25;
+}
+
+.desp-val-total-foot {
+  margin: 0.85rem 0 0;
+  font-size: 0.9rem;
+  color: var(--muted);
+  text-align: center;
+}
+
+.desp-val-total-foot strong {
+  font-size: 1.1rem;
   color: var(--text-strong, var(--text));
 }
 
@@ -1106,6 +1201,67 @@ body.desp-live-lista-on:not(.desp-live-present-on) .desp-live-present-lista {
   margin: 0;
   font-size: 0.78rem;
   color: #8b949e;
+}
+
+.desp-lista-present-totales {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.65rem;
+  margin-bottom: 0.85rem;
+}
+
+.desp-lista-present-total {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+  padding: 0.65rem 0.5rem;
+  border-radius: 12px;
+  border: 2px solid rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.25);
+  text-align: center;
+}
+
+.desp-lista-present-total--red {
+  border-color: #f87171;
+  background: rgba(248, 113, 113, 0.12);
+}
+
+.desp-lista-present-total--yellow {
+  border-color: #fbbf24;
+  background: rgba(251, 191, 36, 0.12);
+}
+
+.desp-lista-present-total--green {
+  border-color: #34d399;
+  background: rgba(52, 211, 153, 0.12);
+}
+
+.desp-lista-present-total-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.desp-lista-present-total-num {
+  font-size: clamp(1.75rem, 4vw, 2.5rem);
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.desp-lista-present-total--red .desp-lista-present-total-num { color: #f87171; }
+.desp-lista-present-total--yellow .desp-lista-present-total-num { color: #fbbf24; }
+.desp-lista-present-total--green .desp-lista-present-total-num { color: #34d399; }
+
+.desp-lista-present-total-lbl {
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #e6edf3;
+  line-height: 1.2;
 }
 
 .desp-lista-present-table-wrap {

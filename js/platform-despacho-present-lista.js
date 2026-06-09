@@ -39,12 +39,15 @@
       icon + '<span>' + esc(e.short || e.label) + '</span></span>';
   }
 
-  function listaSignature(share, pedidos) {
+  function listaSignature(share, pedidos, counts) {
     if (!share || !share.active) return '';
     var rows = (pedidos || []).map(function (p) {
       return [p.idc, p.cliente, p.jaula, p.estado, p.createdAt, p.updatedAt].join(':');
     }).join('|');
-    return share.updatedAt + '::' + rows;
+    var countSig = counts
+      ? [counts.pendiente_carga, counts.en_validacion, counts.listo_despacho, counts.total].join(',')
+      : '';
+    return share.updatedAt + '::' + countSig + '::' + rows;
   }
 
   function fmtDtLista(iso) {
@@ -78,6 +81,25 @@
     }).join('');
   }
 
+  function renderTotalesBar(data) {
+    var store = DS();
+    if (!store) return '';
+    var counts = store.countResumenValidador
+      ? store.countResumenValidador(data.pedidos || [])
+      : { total: 0 };
+    return '<div class="desp-lista-present-totales" role="group" aria-label="Totales por estado">' +
+      store.VALIDADOR_ESTADOS.map(function (id) {
+        var e = store.ESTADOS[id];
+        var icon = store.renderEstadoIconSvg ? store.renderEstadoIconSvg(id, { compact: true }) : '';
+        var lbl = e.kpiLabel || e.short || e.label;
+        return '<div class="desp-lista-present-total desp-lista-present-total--' + esc(e.color) + '">' +
+          (icon ? '<span class="desp-lista-present-total-icon" aria-hidden="true">' + icon + '</span>' : '') +
+          '<span class="desp-lista-present-total-num">' + esc(String(counts[id] || 0)) + '</span>' +
+          '<span class="desp-lista-present-total-lbl">' + esc(lbl) + '</span></div>';
+      }).join('') +
+      '</div>';
+  }
+
   function renderMount(share, data) {
     if (!mountEl) return;
     if (!shouldShowOnThisPage() || !share || !share.active) {
@@ -93,6 +115,7 @@
 
     data = data || (DS() ? DS().load() : { pedidos: [] });
     var pedidos = DS() ? DS().getPedidosVisiblesValidador(data.pedidos) : [];
+    var counts = DS() && DS().countResumenValidador ? DS().countResumenValidador(data.pedidos) : null;
 
     mountEl.hidden = false;
     mountEl.setAttribute('aria-hidden', 'false');
@@ -105,12 +128,13 @@
       '<div class="desp-lista-present-badge"><span class="desp-lista-present-dot"></span> EN VIVO · Seguimiento validador</div>' +
       '<p class="desp-lista-present-meta">' + esc(String(pedidos.length)) + ' IDC en validación · Validador: ' +
       esc(share.sharedBy || '—') + '</p></div>' +
+      renderTotalesBar(data) +
       '<div class="desp-lista-present-table-wrap">' +
       '<table class="desp-lista-present-table" aria-label="Lista IDC y jaulas en vivo">' +
       '<thead><tr><th>IDC</th><th>Cliente</th><th>Jaula</th><th>Fecha y hora</th><th>Estado</th></tr></thead>' +
       '<tbody>' + renderTableRows(pedidos) + '</tbody></table></div></div></div>';
 
-    lastSig = listaSignature(share, pedidos);
+    lastSig = listaSignature(share, pedidos, counts);
   }
 
   function refreshFromStore() {
@@ -127,7 +151,8 @@
       return;
     }
     var pedidos = store.getPedidosVisiblesValidador(data.pedidos);
-    var sig = listaSignature(share, pedidos);
+    var counts = store.countResumenValidador ? store.countResumenValidador(data.pedidos) : null;
+    var sig = listaSignature(share, pedidos, counts);
     if (sig === lastSig) return;
     renderMount(share, data);
   }
