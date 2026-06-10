@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-06-09T16:00:00.000Z",
+  "updatedAt": "2026-06-10T14:30:00.000Z",
   "users": [
     {
       "id": "u_enmanuel_vasquez",
@@ -18,6 +18,16 @@
       "name": "Luis R.",
       "role": "administrador",
       "passwordHash": "1f2f22f172e3529b358064fda210ff44c7c7f5a7efc1736ab059f2a1f376273a",
+      "areas": [],
+      "active": true,
+      "extraPermissions": []
+    },
+    {
+      "id": "u_cesar_astacio",
+      "username": "CESAR.ASTACIO",
+      "name": "Cesar Andres Astacio",
+      "role": "administrador",
+      "passwordHash": "71cd077f82f0aa594108ba5997b2f5da699f519226ac659657048735adbdd827",
       "areas": [],
       "active": true,
       "extraPermissions": []
