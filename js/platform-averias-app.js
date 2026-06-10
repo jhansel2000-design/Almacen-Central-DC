@@ -63,22 +63,36 @@
     if (overlay) {
       overlay.classList.toggle('is-hidden', !visible);
       overlay.setAttribute('aria-hidden', visible ? 'false' : 'true');
-      overlay.style.pointerEvents = visible ? 'auto' : 'none';
-      if (visible) ensureAuthTouch();
+      if (visible) {
+        overlay.style.removeProperty('pointer-events');
+        ensureAuthTouch();
+      } else {
+        overlay.style.pointerEvents = 'none';
+      }
     }
     if (app) {
       app.classList.toggle('is-hidden', visible);
-      app.style.pointerEvents = visible ? 'none' : 'auto';
       if (visible) {
+        app.style.pointerEvents = 'none';
         app.setAttribute('aria-hidden', 'true');
         app.setAttribute('inert', '');
       } else {
+        app.style.pointerEvents = 'auto';
         app.removeAttribute('aria-hidden');
         app.removeAttribute('inert');
       }
     }
     document.body.classList.toggle('auth-locked', visible);
     document.body.classList.toggle('averias-dash-view', !visible);
+    if (!visible) {
+      if (global.PlatformAveriasUI && global.PlatformAveriasUI.bindClickBridge) {
+        global.PlatformAveriasUI.bindClickBridge();
+      }
+      global.requestAnimationFrame(function () {
+        var menuBtn = $('btn-menu');
+        if (menuBtn && typeof menuBtn.focus === 'function') menuBtn.focus({ preventScroll: true });
+      });
+    }
   }
 
   function setLoginLoading(loading) {

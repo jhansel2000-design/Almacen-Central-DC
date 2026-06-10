@@ -1233,6 +1233,20 @@
         renderDespachoModule();
       }
     });
+    document.addEventListener('averias-updated', function () {
+      updateDataStatusChips();
+      if (getActiveModule() === 'reportes') {
+        var host = $('module-reportes');
+        if (host && global.PlatformModules && global.PlatformModules.renderReportes) {
+          global.PlatformModules.renderReportes(host, {
+            operaciones: state.dataOperaciones,
+            facturas: state.dataFacturas,
+            productividad: state.dataProductividad,
+            tipoCambio: state.config && state.config.tipoCambio
+          });
+        }
+      }
+    });
     document.addEventListener('tv-dashboard-slide', function (ev) {
       if (!state._tvSnapshot || !global.PlatformTvDashboard || !ev.detail) return;
       global.PlatformTvDashboard.renderChartsForSlide(state._tvSnapshot, chartColors(), ev.detail.slide);
@@ -2156,24 +2170,15 @@
     var compliance = FX.buildMetasCompliance(state.dataFacturas.aggregates.porAlmacen, state.config.facturasMetas || {}, tc);
     var EC = global.PlatformExecutiveCharts;
     var meta = EC.getFacturasMeta ? EC.getFacturasMeta(kind || 'ventas', view.porAlmacen, compliance) : EC.facturasGerencialMeta(view.porAlmacen, compliance);
-    var header = host.querySelector('.exec-chart-header');
-    if (header) {
-      var titleEl = header.querySelector('.exec-chart-title');
-      var subEl = header.querySelector('.exec-chart-subtitle');
-      var listEl = header.querySelector('.exec-chart-insights');
-      var improvePanel = host.querySelector('.exec-improve-panel');
-      if (titleEl) titleEl.textContent = meta.title || '';
-      if (subEl) subEl.textContent = meta.subtitle || '';
-      if (listEl && meta.insights) {
-        listEl.innerHTML = meta.insights.map(function (line) { return '<li>' + line + '</li>'; }).join('');
-      }
-      if (improvePanel && global.PlatformOperationalInsights && meta.improvements) {
-        improvePanel.outerHTML = global.PlatformOperationalInsights.ideasHtml(meta.improvements);
-      } else if (!improvePanel && global.PlatformOperationalInsights && meta.improvements) {
-        host.insertAdjacentHTML('beforeend', global.PlatformOperationalInsights.ideasHtml(meta.improvements));
-      }
+    var signalsEl = host.querySelector('.fac-vis-signals');
+    if (signalsEl && EC.facturasVisualSignals) {
+      signalsEl.outerHTML = EC.facturasVisualSignals(view.porAlmacen, compliance, kind || 'ventas');
     }
-    EC.renderFromMeta(state.charts, meta, { tvMode: document.body.classList.contains('tv-mode') });
+    EC.renderFromMeta(state.charts, meta, {
+      tvMode: document.body.classList.contains('tv-mode'),
+      noDataLabels: true,
+      facVisual: true
+    });
   }
 
   function bindFacturasExecutiveChart(host) {
@@ -3385,6 +3390,17 @@
     document.addEventListener('lan-sync', function (ev) {
       refreshPublishedDataFromStore();
       var store = ev && ev.detail && ev.detail.store;
+      if (store === 'averias' && getActiveModule() === 'reportes') {
+        var host = $('module-reportes');
+        if (host && global.PlatformModules && global.PlatformModules.renderReportes) {
+          global.PlatformModules.renderReportes(host, {
+            operaciones: state.dataOperaciones,
+            facturas: state.dataFacturas,
+            productividad: state.dataProductividad,
+            tipoCambio: state.config && state.config.tipoCambio
+          });
+        }
+      }
       if (store === 'users' || store === 'accessRequests') {
         refreshSessionUser();
         refreshAccessRequestPanels();

@@ -479,3 +479,181 @@ body.tv-mode.facturas-tv-active .fac-compliance-table {
 @media (max-width: 640px) {
   .fac-kpi-row { grid-template-columns: 1fr; }
 }
+
+/* ——— Gráficos visuales (sin texto en canvas) ——— */
+.fac-charts-premium.exec-chart-view {
+  padding: 1.1rem 1.2rem 1.15rem;
+  background:
+    radial-gradient(ellipse 80% 55% at 50% 0%, rgba(59, 130, 246, 0.1), transparent 58%),
+    linear-gradient(168deg, rgba(10, 18, 32, 0.72), rgba(6, 12, 22, 0.65));
+  border-color: rgba(94, 179, 255, 0.18);
+}
+
+.exec-chart-shell--fac-visual {
+  gap: 0.65rem;
+}
+
+.fac-vis-signals {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.65rem 0.75rem;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.fac-vis-ring {
+  --fac-pct: 0;
+  position: relative;
+  width: 3.25rem;
+  height: 3.25rem;
+  border-radius: 50%;
+  background:
+    conic-gradient(#10b981 calc(var(--fac-pct) * 1%), rgba(255, 255, 255, 0.08) 0);
+  display: grid;
+  place-items: center;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.fac-vis-ring::before {
+  content: '';
+  position: absolute;
+  inset: 5px;
+  border-radius: 50%;
+  background: rgba(8, 14, 26, 0.92);
+}
+
+.fac-vis-ring-num {
+  position: relative;
+  z-index: 1;
+  font-size: 0.82rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: #ecfdf5;
+}
+
+.fac-vis-mix-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  min-width: 0;
+}
+
+.fac-vis-mix {
+  display: flex;
+  height: 0.65rem;
+  border-radius: 999px;
+  overflow: hidden;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.25);
+}
+
+.fac-vis-seg {
+  min-width: 3px;
+  transition: flex 0.35s ease, opacity 0.2s ease;
+}
+
+.fac-vis-seg:hover {
+  opacity: 0.85;
+  filter: brightness(1.08);
+}
+
+.fac-vis-sem {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.fac-vis-sem em {
+  font-style: normal;
+  font-size: 0.78rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-strong, #f1f5f9);
+  min-width: 0.85rem;
+}
+
+.fac-vis-dot {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.fac-vis-dot.ok { background: #10b981; box-shadow: 0 0 8px rgba(16, 185, 129, 0.55); }
+.fac-vis-dot.warn { background: #f59e0b; box-shadow: 0 0 8px rgba(245, 158, 11, 0.45); }
+.fac-vis-dot.danger { background: #ff6b7a; box-shadow: 0 0 8px rgba(255, 107, 122, 0.45); }
+
+.fac-vis-view-glyph {
+  font-size: 1.15rem;
+  opacity: 0.55;
+  color: #93c5fd;
+}
+
+.fac-vis-legend {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.85rem;
+  padding: 0.15rem 0;
+}
+
+.fac-vis-swatch {
+  display: inline-block;
+  width: 1.35rem;
+  height: 0.35rem;
+  border-radius: 999px;
+}
+
+.fac-vis-swatch.ok { background: #10b981; }
+.fac-vis-swatch.warn { background: #f59e0b; }
+.fac-vis-swatch.danger { background: #ff6b7a; }
+.fac-vis-swatch.meta-line {
+  width: 1.6rem;
+  height: 0;
+  border-top: 2px dashed rgba(251, 191, 36, 0.9);
+  border-radius: 0;
+}
+
+.exec-chart-canvas-wrap--fac-visual {
+  min-height: 380px;
+  height: min(48vh, 480px);
+  background:
+    radial-gradient(ellipse 75% 60% at 50% 15%, rgba(16, 185, 129, 0.1), transparent 58%),
+    linear-gradient(168deg, rgba(12, 20, 36, 0.55), rgba(6, 11, 20, 0.48));
+}
+
+.exec-chart-tabs--visual .exec-chart-tab {
+  min-width: 2.75rem;
+  padding: 0.5rem 0.65rem;
+}
+
+.fac-tab-glyph {
+  font-size: 0.95rem;
+  line-height: 1;
+  opacity: 0.82;
+}
+
+.exec-chart-tabs--visual .exec-chart-tab.active .fac-tab-glyph {
+  opacity: 1;
+  color: #93c5fd;
+}
+
+html[data-theme="light"] .fac-charts-premium.exec-chart-view {
+  background: linear-gradient(168deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 252, 0.92));
+  border-color: rgba(59, 130, 246, 0.15);
+}
+
+html[data-theme="light"] .fac-vis-signals {
+  background: rgba(15, 36, 64, 0.04);
+  border-color: rgba(15, 36, 64, 0.08);
+}
+
+html[data-theme="light"] .fac-vis-ring::before {
+  background: #fff;
+}
+
+html[data-theme="light"] .fac-vis-ring-num {
+  color: #0f172a;
+}

@@ -435,6 +435,11 @@
       chartOpts.plugins[PLUGIN_CENTER] = extra.donutCenter;
     }
 
+    if (extra && extra.facVisual) {
+      chartOpts.plugins.legend = Object.assign({ display: false }, chartOpts.plugins.legend || {});
+      chartOpts.plugins.datalabels = { display: false };
+    }
+
     var dlOpts = buildDataLabelsOptions(extra.chartType || chartOpts.type, extra.chartData, extra);
     chartOpts.plugins.datalabels = Object.assign({}, dlOpts.datalabels, (chartOpts.plugins.datalabels || {}));
 

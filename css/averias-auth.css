@@ -1,6 +1,6 @@
 /* Portal Operaciones de Piso — login WMS */
 
-.auth-overlay.av-auth-overlay {
+body.auth-locked .auth-overlay.av-auth-overlay {
   pointer-events: auto !important;
 }
 

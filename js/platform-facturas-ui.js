@@ -177,11 +177,17 @@
       (global.PlatformExecutiveCharts && global.PlatformExecutiveCharts.facturasTabsHtml
         ? global.PlatformExecutiveCharts.facturasTabsHtml()
         : '') +
-      (global.PlatformExecutiveCharts && global.PlatformExecutiveCharts.executiveShell && global.PlatformExecutiveCharts.getFacturasMeta
-        ? global.PlatformExecutiveCharts.executiveShell(
-          global.PlatformExecutiveCharts.getFacturasMeta('ventas', view.porAlmacen, compliance)
+      (global.PlatformExecutiveCharts && global.PlatformExecutiveCharts.facturasVisualShell && global.PlatformExecutiveCharts.getFacturasMeta
+        ? global.PlatformExecutiveCharts.facturasVisualShell(
+          global.PlatformExecutiveCharts.getFacturasMeta('ventas', view.porAlmacen, compliance),
+          view.porAlmacen,
+          compliance
         )
-        : '<div class="fac-chart-box"><canvas id="chartFacExecutive"></canvas></div>') +
+        : (global.PlatformExecutiveCharts && global.PlatformExecutiveCharts.executiveShell && global.PlatformExecutiveCharts.getFacturasMeta
+          ? global.PlatformExecutiveCharts.executiveShell(
+            global.PlatformExecutiveCharts.getFacturasMeta('ventas', view.porAlmacen, compliance)
+          )
+          : '<div class="fac-chart-box"><canvas id="chartFacExecutive"></canvas></div>')) +
       '</section>' +
 
       '<section class="fac-panel"><div class="fac-panel-head"><h3>Real vs metas</h3>' +

@@ -294,7 +294,7 @@
       if (global.PlatformAveriasUI && global.PlatformAveriasUI.applyRemoteSnapshot) {
         uiRefreshed = global.PlatformAveriasUI.applyRemoteSnapshot(snap, { silent: !!silent });
       }
-      if (!silent && uiRefreshed) {
+      if (!silent) {
         notifyUpdated('apply', { uiRefreshed: uiRefreshed, signature: contentSig });
       }
       updateLiveIndicator(true);

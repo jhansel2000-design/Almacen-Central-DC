@@ -854,12 +854,104 @@
 
   /* ——— Facturas ——— */
 
+  function facSemaforoColor(complianceRow, fallback, i) {
+    var c = complianceRow;
+    if (c && c.semaforoGeneral === 'ok') return 'rgba(16, 185, 129, 0.92)';
+    if (c && c.semaforoGeneral === 'danger') return 'rgba(255, 107, 122, 0.9)';
+    if (c && c.semaforoGeneral === 'warn') return 'rgba(245, 158, 11, 0.9)';
+    return fallback || PALETTE_SOFT[i % PALETTE_SOFT.length];
+  }
+
+  function facSilentScales(scalePatch) {
+    var c = themeColors();
+    scalePatch = scalePatch || {};
+    var silent = {
+      ticks: { display: false, drawTicks: false },
+      title: { display: false },
+      border: { display: false },
+      grid: { color: c.grid, drawBorder: false, drawTicks: false }
+    };
+    var out = {};
+    ['x', 'y', 'y1'].forEach(function (axis) {
+      if (!scalePatch[axis]) return;
+      out[axis] = Object.assign({}, silent, scalePatch[axis]);
+      out[axis].ticks = Object.assign({}, silent.ticks, (scalePatch[axis].ticks || {}));
+      out[axis].grid = Object.assign({}, silent.grid, (scalePatch[axis].grid || {}));
+    });
+    return out;
+  }
+
+  function facVisualChartBase() {
+    return {
+      plugins: {
+        legend: { display: false },
+        datalabels: { display: false }
+      }
+    };
+  }
+
+  function facturasVisualSignals(por, compliance, viewId) {
+    por = por || [];
+    compliance = compliance || [];
+    var totalVentas = sum(por.map(function (a) { return a.ventasPesos; })) || 1;
+    var ok = 0;
+    var warn = 0;
+    var danger = 0;
+    compliance.forEach(function (c) {
+      if (c.semaforoGeneral === 'ok') ok++;
+      else if (c.semaforoGeneral === 'warn') warn++;
+      else if (c.semaforoGeneral === 'danger') danger++;
+    });
+    var avgPct = compliance.length
+      ? Math.round(sum(compliance.map(function (c) { return c.pctVentas != null ? c.pctVentas : 0; })) / compliance.length)
+      : 0;
+    var ringPct = Math.min(100, Math.max(0, avgPct));
+    var segments = por.map(function (a, i) {
+      var share = Math.max(3, Math.round((a.ventasPesos / totalVentas) * 100));
+      var comp = compliance.find(function (x) { return x.almacen === a.almacen; });
+      var color = facSemaforoColor(comp, PALETTE[i % PALETTE.length], i);
+      return '<span class="fac-vis-seg" style="flex:' + share + ';background:' + color + '" title="' + htmlEsc(a.almacen) + '"></span>';
+    }).join('');
+    var viewGlyph = viewId === 'cumplimiento' ? '◐' : viewId === 'participacion' ? '◎' : viewId === 'ordenes' ? '▥' : '▮';
+    return '<div class="fac-vis-signals" data-fac-view="' + htmlEsc(viewId || 'ventas') + '">' +
+      '<div class="fac-vis-ring" style="--fac-pct:' + ringPct + '" aria-hidden="true">' +
+      '<span class="fac-vis-ring-num">' + ringPct + '</span></div>' +
+      '<div class="fac-vis-mix-wrap">' +
+      '<div class="fac-vis-mix" aria-hidden="true">' + segments + '</div>' +
+      '<div class="fac-vis-sem" aria-hidden="true">' +
+      '<span class="fac-vis-dot ok"></span><em>' + ok + '</em>' +
+      '<span class="fac-vis-dot warn"></span><em>' + warn + '</em>' +
+      '<span class="fac-vis-dot danger"></span><em>' + danger + '</em>' +
+      '</div></div>' +
+      '<span class="fac-vis-view-glyph" aria-hidden="true">' + viewGlyph + '</span></div>';
+  }
+
+  function facturasVisualShell(meta, por, compliance) {
+    meta = meta || {};
+    var viewId = meta.viewId || 'ventas';
+    return '<div class="exec-chart-shell exec-chart-shell--fac-visual">' +
+      facturasVisualSignals(por, compliance, viewId) +
+      '<div class="fac-vis-legend" aria-hidden="true">' +
+      '<span class="fac-vis-swatch ok"></span>' +
+      '<span class="fac-vis-swatch warn"></span>' +
+      '<span class="fac-vis-swatch danger"></span>' +
+      '<span class="fac-vis-swatch meta-line"></span>' +
+      '</div>' +
+      '<div class="exec-chart-canvas-wrap exec-chart-canvas-wrap--fac-visual">' +
+      '<canvas id="' + (meta.canvasId || 'chartFacExecutive') + '" role="img" aria-label="' + htmlEsc(meta.title || 'Gráfico facturación') + '"></canvas>' +
+      '</div></div>';
+  }
+
   function facturasTabsHtml() {
-    return '<div class="exec-chart-tabs" role="tablist">' +
-      '<button type="button" class="exec-chart-tab active" data-fac-chart="ventas">Ventas vs meta</button>' +
-      '<button type="button" class="exec-chart-tab" data-fac-chart="cumplimiento">Cumplimiento</button>' +
-      '<button type="button" class="exec-chart-tab" data-fac-chart="participacion">Participación</button>' +
-      '<button type="button" class="exec-chart-tab" data-fac-chart="ordenes">Órdenes</button>' +
+    return '<div class="exec-chart-tabs exec-chart-tabs--visual" role="tablist">' +
+      '<button type="button" class="exec-chart-tab active" data-fac-chart="ventas" title="Ventas vs meta" aria-label="Ventas vs meta">' +
+      '<span class="fac-tab-glyph" aria-hidden="true">▮▮</span></button>' +
+      '<button type="button" class="exec-chart-tab" data-fac-chart="cumplimiento" title="Cumplimiento" aria-label="Cumplimiento">' +
+      '<span class="fac-tab-glyph" aria-hidden="true">◐</span></button>' +
+      '<button type="button" class="exec-chart-tab" data-fac-chart="participacion" title="Participación" aria-label="Participación">' +
+      '<span class="fac-tab-glyph" aria-hidden="true">◎</span></button>' +
+      '<button type="button" class="exec-chart-tab" data-fac-chart="ordenes" title="Órdenes" aria-label="Órdenes">' +
+      '<span class="fac-tab-glyph" aria-hidden="true">▥</span></button>' +
       '</div>';
   }
 
@@ -877,41 +969,55 @@
     var pct = compliance.map(function (c) {
       return c.pctVentas != null ? c.pctVentas : (c.pctOrdenes != null ? c.pctOrdenes : 0);
     });
+    var xMax = Math.max(120, Math.ceil(Math.max.apply(null, pct.concat([100])) / 10) * 10);
     return {
+      viewId: 'cumplimiento',
       eyebrow: 'Facturación',
-      title: 'Cumplimiento de metas por almacén',
-      subtitle: 'Barras horizontales = % logrado · línea de referencia al 100%',
-      insights: ['Meta de referencia: <strong>100%</strong> en ventas u órdenes'],
+      title: 'Cumplimiento de metas',
       canvasId: 'chartFacExecutive',
       chart: {
         type: 'bar',
         valueFormat: 'percent',
+        preserveDatasetFunctions: true,
         data: {
           labels: labels,
-          datasets: [{
-            label: '% cumplimiento',
-            data: pct,
-            backgroundColor: pct.map(function (p, i) {
-              var c = compliance[i];
-              if (c.semaforoGeneral === 'ok') return 'rgba(16, 185, 129, 0.9)';
-              if (c.semaforoGeneral === 'danger') return 'rgba(255, 107, 122, 0.88)';
-              if (c.semaforoGeneral === 'warn') return 'rgba(245, 158, 11, 0.88)';
-              return PALETTE_SOFT[i % PALETTE_SOFT.length];
-            }),
-            borderRadius: 6
-          }]
+          datasets: [
+            {
+              label: 'Cumplimiento',
+              data: pct,
+              backgroundColor: pct.map(function (p, i) {
+                return facSemaforoColor(compliance[i], PALETTE_SOFT[i % PALETTE_SOFT.length], i);
+              }),
+              borderRadius: 10,
+              maxBarThickness: 44,
+              barPercentage: 0.78,
+              categoryPercentage: 0.86
+            },
+            {
+              type: 'line',
+              label: 'Meta',
+              data: labels.map(function () { return 100; }),
+              borderColor: 'rgba(251, 191, 36, 0.9)',
+              borderWidth: 2,
+              borderDash: [7, 5],
+              pointRadius: 0,
+              fill: false,
+              tension: 0
+            }
+          ]
         },
-        options: {
+        options: Object.assign({}, facVisualChartBase(), {
           indexAxis: 'y',
-          scales: {
+          layout: { padding: { top: 8, right: 16, bottom: 8, left: 8 } },
+          scales: facSilentScales({
             x: {
               min: 0,
-              max: Math.max(120, Math.ceil(Math.max.apply(null, pct.concat([100])) / 10) * 10),
-              ticks: { callback: function (v) { return v + '%'; } }
-            }
-          },
-          plugins: { legend: { display: false } }
-        }
+              max: xMax,
+              grid: { display: true, drawOnChartArea: true, color: 'rgba(255,255,255,0.06)' }
+            },
+            y: { grid: { display: false } }
+          })
+        })
       }
     };
   }
@@ -920,11 +1026,15 @@
     por = por || [];
     var totalVentas = sum(por.map(function (a) { return a.ventasPesos; }));
     var light = document.documentElement.getAttribute('data-theme') === 'light';
+    var mainLabel = totalVentas >= 1000000
+      ? (totalVentas / 1000000).toFixed(1) + 'M'
+      : totalVentas >= 1000
+        ? (totalVentas / 1000).toFixed(0) + 'K'
+        : String(Math.round(totalVentas));
     return {
+      viewId: 'participacion',
       eyebrow: 'Facturación',
-      title: 'Participación en ventas (RD$)',
-      subtitle: 'Porción por almacén · total en el centro',
-      insights: [por[0] ? 'Mayor peso: <strong>' + por[0].almacen + '</strong> (' + fmtMoneyRd(por[0].ventasPesos) + ')' : '—'],
+      title: 'Participación en ventas',
       canvasId: 'chartFacExecutive',
       chart: {
         type: 'doughnut',
@@ -933,51 +1043,63 @@
           labels: por.map(function (a) { return a.almacen; }),
           datasets: [{
             data: por.map(function (a) { return a.ventasPesos; }),
-            backgroundColor: PALETTE,
-            borderWidth: 3,
-            borderColor: light ? '#ffffff' : 'rgba(8, 14, 24, 0.75)'
+            backgroundColor: por.map(function (a, i) { return PALETTE[i % PALETTE.length]; }),
+            borderWidth: 4,
+            borderColor: light ? '#ffffff' : 'rgba(8, 14, 24, 0.82)',
+            hoverOffset: 14
           }]
         },
-        options: {
-          cutout: '72%',
-          plugins: {
-            legend: { position: 'bottom', align: 'center' },
+        options: Object.assign({}, facVisualChartBase(), {
+          cutout: '68%',
+          layout: { padding: 12 },
+          plugins: Object.assign({}, facVisualChartBase().plugins, {
             donutCenter: {
-              text: {
-                main: fmtMoneyRd(totalVentas),
-                sub: por.length + ' almacenes'
-              },
+              text: { main: mainLabel, sub: String(por.length) },
               color: light ? '#0f172a' : '#f8fafc',
               subColor: light ? '#64748b' : '#94a3b8',
-              sizeMain: 17,
-              sizeSub: 11
+              sizeMain: 22,
+              sizeSub: 13
             }
-          }
-        }
+          })
+        })
       }
     };
   }
 
   function facturasOrdenesMeta(por) {
-    por = por || [];
+    por = (por || []).slice().sort(function (a, b) { return (b.ordenes || 0) - (a.ordenes || 0); });
+    var maxOrd = Math.max.apply(null, por.map(function (a) { return a.ordenes || 0; }).concat([1]));
     return {
+      viewId: 'ordenes',
       eyebrow: 'Facturación',
-      title: 'Órdenes de venta por almacén',
-      subtitle: 'Volumen operativo comercial vinculado al despacho',
-      insights: [por[0] ? 'Más órdenes: <strong>' + por[0].almacen + '</strong> (' + por[0].ordenes + ')' : '—'],
+      title: 'Órdenes por almacén',
       canvasId: 'chartFacExecutive',
       chart: {
         type: 'bar',
+        preserveDatasetFunctions: true,
         data: {
           labels: por.map(function (a) { return a.almacen; }),
           datasets: [{
             label: 'Órdenes',
             data: por.map(function (a) { return a.ordenes; }),
-            backgroundColor: '#7c3aed',
-            borderRadius: 10
+            backgroundColor: por.map(function (a, i) {
+              var intensity = 0.45 + ((a.ordenes || 0) / maxOrd) * 0.55;
+              return 'rgba(124, 58, 237, ' + intensity.toFixed(2) + ')';
+            }),
+            borderRadius: 12,
+            maxBarThickness: 52,
+            barPercentage: 0.72,
+            categoryPercentage: 0.82
           }]
         },
-        options: { plugins: { legend: { display: false } } }
+        options: Object.assign({}, facVisualChartBase(), {
+          indexAxis: 'y',
+          layout: { padding: { top: 8, right: 12, bottom: 8, left: 8 } },
+          scales: facSilentScales({
+            x: { grid: { display: true, color: 'rgba(255,255,255,0.06)' } },
+            y: { grid: { display: false } }
+          })
+        })
       }
     };
   }
@@ -991,138 +1113,112 @@
     var chartRows = isTv ? por.slice(0, 10) : por;
     var labels = chartRows.map(function (a) { return a.almacen; });
     var ventas = chartRows.map(function (a) { return a.ventasPesos; });
-    var pct = por.map(function (a) {
+    var pct = chartRows.map(function (a) {
       var c = compliance.find(function (x) { return x.almacen === a.almacen; });
       if (!c) return 0;
       return c.pctVentas != null ? c.pctVentas : (c.pctOrdenes != null ? c.pctOrdenes : 0);
     });
-    var top = por[0];
+    var y1Max = Math.max(120, Math.ceil(Math.max.apply(null, pct.concat([100])) / 10) * 10);
+    var barColors = chartRows.map(function (a, i) {
+      var c = compliance.find(function (x) { return x.almacen === a.almacen; });
+      return facSemaforoColor(c, PALETTE_SOFT[i % PALETTE_SOFT.length], i);
+    });
+    var comboChart = {
+      type: 'bar',
+      valueFormat: 'money',
+      preserveDatasetFunctions: true,
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: 'Ventas',
+            data: ventas,
+            backgroundColor: barColors,
+            borderRadius: isTv ? 12 : 10,
+            maxBarThickness: isTv ? 48 : 44,
+            barPercentage: 0.76,
+            categoryPercentage: 0.85,
+            xAxisID: 'x'
+          },
+          {
+            label: 'Meta',
+            type: 'line',
+            order: 0,
+            data: pct,
+            borderColor: 'rgba(251, 191, 36, 0.95)',
+            backgroundColor: 'rgba(251, 191, 36, 0.08)',
+            borderWidth: 3,
+            pointRadius: 5,
+            pointHoverRadius: 8,
+            pointBackgroundColor: '#fffbeb',
+            pointBorderColor: '#fbbf24',
+            pointBorderWidth: 2,
+            fill: true,
+            tension: 0.35,
+            xAxisID: 'x1',
+            yAxisID: 'y'
+          }
+        ]
+      },
+      options: Object.assign({}, facVisualChartBase(), {
+        indexAxis: 'y',
+        layout: { padding: { top: 6, right: isTv ? 84 : 20, bottom: 6, left: 8 } },
+        scales: facSilentScales({
+          x: {
+            beginAtZero: true,
+            grid: { display: true, color: 'rgba(255,255,255,0.06)' }
+          },
+          x1: {
+            position: 'top',
+            min: 0,
+            max: y1Max,
+            grid: { display: false, drawOnChartArea: false },
+            ticks: { display: false }
+          },
+          y: { grid: { display: false } }
+        })
+      })
+    };
     if (isTv) {
       return {
+        viewId: 'ventas',
         eyebrow: 'Facturación',
         title: 'Ventas por almacén',
-        subtitle: 'Top almacenes por RD$ · lectura horizontal para modo TV',
-        insights: [
-          top ? 'Líder en ventas: <strong>' + top.almacen + '</strong> (' + fmtMoneyRd(top.ventasPesos) + ')' : '—',
-          'Ventas totales: <strong>' + fmtMoneyRd(sum(por.map(function (a) { return a.ventasPesos; }))) + '</strong>'
-        ],
         canvasId: 'chartFacExecutive',
         chart: {
           type: 'bar',
           valueFormat: 'money',
+          preserveDatasetFunctions: true,
           data: {
             labels: labels,
             datasets: [{
-              label: 'Ventas RD$',
+              label: 'Ventas',
               data: ventas,
-              backgroundColor: chartRows.map(function (a, i) {
-                var c = compliance.find(function (x) { return x.almacen === a.almacen; });
-                if (c && c.semaforoGeneral === 'ok') return 'rgba(16, 185, 129, 0.92)';
-                if (c && c.semaforoGeneral === 'danger') return 'rgba(255, 107, 122, 0.9)';
-                if (c && c.semaforoGeneral === 'warn') return 'rgba(245, 158, 11, 0.9)';
-                return PALETTE_SOFT[i % PALETTE_SOFT.length];
-              }),
+              backgroundColor: barColors,
               borderRadius: 12,
               maxBarThickness: 48
             }]
           },
-          options: {
+          options: Object.assign({}, facVisualChartBase(), {
             indexAxis: 'y',
-            plugins: {
-              legend: { display: false },
-              datalabels: {
-                display: true,
-                anchor: 'end',
-                align: 'right',
-                offset: 8,
-                formatter: function (v) { return fmtMoneyRd(v); },
-                font: { size: 15, weight: '800' },
-                color: '#f8fafc',
-                textStrokeColor: 'rgba(6, 11, 20, 0.85)',
-                textStrokeWidth: 3
-              }
-            },
             layout: { padding: { top: 6, right: 84, bottom: 6, left: 8 } },
-            scales: {
-              x: {
-                beginAtZero: true,
-                ticks: {
-                  callback: function (v) {
-                    if (v >= 1000000) return (v / 1000000).toFixed(v >= 10000000 ? 0 : 1) + 'M';
-                    if (v >= 1000) return (v / 1000).toFixed(v >= 10000 ? 0 : 1) + 'K';
-                    return v;
-                  }
-                }
-              },
-              y: {
-                ticks: { autoSkip: false }
-              }
-            }
-          }
+            scales: facSilentScales({
+              x: { beginAtZero: true, grid: { display: true, color: 'rgba(255,255,255,0.06)' } },
+              y: { grid: { display: false } }
+            }),
+            plugins: Object.assign({}, facVisualChartBase().plugins, {
+              datalabels: { display: false }
+            })
+          })
         }
       };
     }
     return {
+      viewId: 'ventas',
       eyebrow: 'Facturación',
-      title: 'Desempeño comercial por almacén',
-      subtitle: 'Barras = ventas en RD$ · línea = % cumplimiento de meta (todo en una sola lectura)',
-      insights: [
-        top ? 'Líder en ventas: <strong>' + top.almacen + '</strong> (' + fmtMoneyRd(top.ventasPesos) + ')' : '—',
-        'Almacenes: <strong>' + por.length + '</strong>',
-        'Ventas totales mostradas: <strong>' + fmtMoneyRd(sum(ventas)) + '</strong>'
-      ],
+      title: 'Desempeño comercial',
       canvasId: 'chartFacExecutive',
-      chart: {
-        type: 'bar',
-        valueFormat: 'money',
-        data: {
-          labels: labels,
-          datasets: [
-            {
-              label: 'Ventas RD$',
-              data: ventas,
-              backgroundColor: por.map(function (a, i) {
-                var c = compliance.find(function (x) { return x.almacen === a.almacen; });
-                if (c && c.semaforoGeneral === 'ok') return 'rgba(16, 185, 129, 0.9)';
-                if (c && c.semaforoGeneral === 'danger') return 'rgba(255, 107, 122, 0.88)';
-                if (c && c.semaforoGeneral === 'warn') return 'rgba(245, 158, 11, 0.88)';
-                return PALETTE_SOFT[i % PALETTE_SOFT.length];
-              }),
-              borderRadius: 6,
-              yAxisID: 'y'
-            },
-            {
-              label: '% meta',
-              type: 'line',
-              order: 1,
-              data: pct,
-              borderColor: '#fbbf24',
-              backgroundColor: 'rgba(251, 191, 36, 0.12)',
-              borderWidth: 3,
-              pointRadius: 0,
-              pointHoverRadius: 7,
-              pointBackgroundColor: '#fffbeb',
-              pointBorderColor: '#fbbf24',
-              pointBorderWidth: 2,
-              yAxisID: 'y1',
-              tension: 0.32
-            }
-          ]
-        },
-        options: {
-          scales: {
-            y: { position: 'left', title: { display: true, text: 'Ventas RD$', color: themeColors().muted } },
-            y1: {
-              position: 'right',
-              grid: { drawOnChartArea: false },
-              min: 0,
-              max: Math.max(120, Math.ceil(Math.max.apply(null, pct.concat([100])) / 10) * 10),
-              title: { display: true, text: '% cumplimiento', color: themeColors().muted },
-              ticks: { callback: function (v) { return v + '%'; } }
-            }
-          }
-        }
-      }
+      chart: comboChart
     };
   }
 
@@ -1148,6 +1244,7 @@
 
   function getFacturasMeta(viewId, por, compliance) {
     var meta = facturasMetaByView(viewId, por, compliance);
+    meta.viewId = viewId || meta.viewId || 'ventas';
     if (global.PlatformOperationalInsights) {
       global.PlatformOperationalInsights.attachToMeta(meta, 'facturas', viewId, { por: por, compliance: compliance });
     }
@@ -1182,6 +1279,8 @@
     facturasGerencialMeta: facturasGerencialMeta,
     facturasMetaByView: facturasMetaByView,
     facturasTabsHtml: facturasTabsHtml,
+    facturasVisualShell: facturasVisualShell,
+    facturasVisualSignals: facturasVisualSignals,
     fmtNum: fmtNum,
     fmtMoneyRd: fmtMoneyRd
   };

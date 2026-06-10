@@ -174,6 +174,26 @@
       '<h4>' + esc(title) + '</h4><ul>' + itemsHtml + '</ul></div>';
   }
 
+  function loadAveriasSnapshot() {
+    try {
+      var raw = global.localStorage && global.localStorage.getItem('averias_dc_snapshot');
+      return raw ? JSON.parse(raw) : null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function countAveriasPending(snap) {
+    if (!snap) return 0;
+    function pending(list) {
+      return (list || []).filter(function (r) {
+        return String(r && r.status || 'PENDIENTE').toUpperCase() !== 'CORREGIDO';
+      }).length;
+    }
+    return pending(snap.incidences) + pending(snap.damages) + pending(snap.securityIncidents) +
+      pending(snap.audits5s) + pending(snap.equipmentInspections);
+  }
+
   function renderReportes(host, ctx) {
     if (!host) return;
     ctx = ctx || {};
@@ -229,6 +249,22 @@
       }
     }
     html += reportBlock('Productividad', 'prod', prodItems);
+
+    var avSnap = loadAveriasSnapshot();
+    var avItems = '<li class="muted">Sin reportes de piso sincronizados</li>';
+    if (avSnap) {
+      var avPending = countAveriasPending(avSnap);
+      var avTotal = (avSnap.incidences || []).length + (avSnap.damages || []).length +
+        (avSnap.securityIncidents || []).length + (avSnap.audits5s || []).length +
+        (avSnap.equipmentInspections || []).length;
+      avItems = '<li>Actualizado: <strong>' + esc(avSnap.updatedAt || '—') + '</strong></li>' +
+        '<li>Reportes totales: <strong>' + avTotal + '</strong></li>' +
+        '<li>Pendientes de corrección: <strong>' + avPending + '</strong></li>' +
+        '<li>Paletas: <strong>' + (avSnap.incidences || []).length + '</strong> · Averías: <strong>' +
+        (avSnap.damages || []).length + '</strong> · Seguridad: <strong>' +
+        (avSnap.securityIncidents || []).length + '</strong></li>';
+    }
+    html += reportBlock('Operaciones de piso', 'ops', avItems);
 
     html += '</div><div class="export-actions" data-perm="export.data">' +
       '<button type="button" class="btn btn-primary" id="btnReportExportPdf">Exportar reporte PDF</button>' +

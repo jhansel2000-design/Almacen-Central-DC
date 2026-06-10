@@ -16,12 +16,54 @@
     };
   }
 
+  function bindInlineClickHandlers(root) {
+    if (!root || !root.querySelectorAll) return;
+    root.querySelectorAll('[onclick]').forEach(function (el) {
+      if (el.dataset.avClickBound === '1') return;
+      var raw = el.getAttribute('onclick');
+      if (!raw || !String(raw).trim()) return;
+      el.dataset.avClickBound = '1';
+      el.removeAttribute('onclick');
+      el.addEventListener('click', function (ev) {
+        try {
+          var fn = new Function('return function (event) { ' + raw + ' }')();
+          fn.call(el, ev);
+        } catch (err) {
+          console.error('[Operaciones] Acción fallida:', raw, err);
+          if (global.PlatformToast) global.PlatformToast.error('No se pudo ejecutar la acción.');
+        }
+      });
+    });
+  }
+
+  function initAveriasClickBridge() {
+    var app = document.getElementById('avApp');
+    if (!app) return;
+    bindInlineClickHandlers(app);
+    bindInlineClickHandlers(document.getElementById('cloudSetupModal'));
+    if (global.__avClickBridgeObs) return;
+    global.__avClickBridgeObs = new MutationObserver(function (mutations) {
+      mutations.forEach(function (m) {
+        m.addedNodes.forEach(function (node) {
+          if (node.nodeType !== 1) return;
+          if (node.hasAttribute && node.hasAttribute('onclick')) {
+            bindInlineClickHandlers(node.parentNode || app);
+          }
+          bindInlineClickHandlers(node);
+        });
+      });
+    });
+    global.__avClickBridgeObs.observe(app, { childList: true, subtree: true });
+  }
+
   function startApp(user) {
     currentEmployee = mapSessionUser(user);
     if (!currentEmployee) return;
+    initAveriasClickBridge();
     var main = document.getElementById('mainApp');
     if (main) main.classList.remove('hidden');
-    document.getElementById('drawerUser').textContent = currentEmployee.name + ' (' + currentEmployee.role + ')';
+    var drawerUser = document.getElementById('drawerUser');
+    if (drawerUser) drawerUser.textContent = currentEmployee.name + ' (' + currentEmployee.role + ')';
     var auditAuditor = document.getElementById('auditAuditor');
     if (auditAuditor) auditAuditor.value = currentEmployee.name;
     var damageFecha = document.getElementById('damageFecha');
@@ -2300,6 +2342,7 @@
 
   global.PlatformAveriasUI = {
     start: startApp,
+    bindClickBridge: initAveriasClickBridge,
     applyRemoteSnapshot: applyRemoteSnapshot,
     getSnapshotSignature: getSnapshotSignature
   };

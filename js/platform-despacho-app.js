@@ -55,13 +55,17 @@
     if (overlay) {
       overlay.classList.toggle('is-hidden', !visible);
       overlay.setAttribute('aria-hidden', visible ? 'false' : 'true');
+      if (!visible) overlay.style.pointerEvents = 'none';
+      else overlay.style.removeProperty('pointer-events');
     }
     if (app) {
       app.classList.toggle('is-hidden', visible);
       if (visible) {
+        app.style.pointerEvents = 'none';
         app.setAttribute('aria-hidden', 'true');
         app.setAttribute('inert', '');
       } else {
+        app.style.pointerEvents = 'auto';
         app.removeAttribute('aria-hidden');
         app.removeAttribute('inert');
       }
