@@ -12,7 +12,7 @@
   var mountEl = null;
   var lastSig = '';
   var displayMode = false;
-  var LAYOUT_REV = '2';
+  var LAYOUT_REV = '3';
 
   function DS() {
     return global.PlatformDespachoStore;
@@ -83,8 +83,18 @@
       (shouldShowOnThisPage() ? ' desp-present-shell--tv' : '') +
       (hasJaula ? ' desp-present-shell--has-pasillo' : ' desp-present-shell--no-pasillo');
 
+    var brandHtml = shouldShowOnThisPage()
+      ? '<div class="desp-present-brand" aria-hidden="true">' +
+        '<img class="desp-present-brand-logo" src="assets/img/dc-logo-128.png?v=4" alt="" width="56" height="56" decoding="async">' +
+        '<div class="desp-present-brand-copy">' +
+        '<span class="desp-present-brand-name">Almacén Central</span>' +
+        '<span class="desp-present-brand-sub">Despacho · DC</span>' +
+        '</div></div>'
+      : '';
+
     mountEl.innerHTML =
       '<div class="' + shellCls + '">' +
+      brandHtml +
       '<div class="desp-present-inner desp-present-inner--tv">' +
       '<div class="desp-present-badge"><span class="desp-present-dot"></span> EN VIVO · Código de barras IDC</div>' +
       '<div class="desp-present-grid desp-present-grid--tv">' +
