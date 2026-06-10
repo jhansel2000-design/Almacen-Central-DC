@@ -13,7 +13,7 @@
   var lastSig = '';
   var displayMode = false;
   var LAYOUT_REV = '14';
-  var BARCODE_REV = 'notext-hq-xl';
+  var BARCODE_REV = 'notext-hq-xxl';
   var fitBound = false;
 
   function ensureAmbientEl() {
@@ -139,7 +139,7 @@
         if (!shouldShowOnThisPage()) return;
         var targetH = barcodeRenderHeight(imgEl);
         var prevH = Number(imgEl.getAttribute('data-render-h') || 0);
-        if (targetH - prevH > 36) {
+        if (targetH - prevH > 24) {
           renderBarcode(imgEl, imgEl.alt);
         }
       });
@@ -162,16 +162,27 @@
   }
 
   function barcodeRenderHeight(imgEl) {
-    if (!imgEl) return 320;
-    var wrap = imgEl.closest('.desp-present-barcode-wrap');
-    var stage = imgEl.closest('.desp-present-stage');
+    if (!imgEl) return 400;
     var inner = mountEl && mountEl.querySelector('.desp-present-inner--tv');
+    var wrap = imgEl.closest('.desp-present-barcode-wrap');
+    var meta = mountEl && mountEl.querySelector('.desp-present-meta--tv');
+    var badge = mountEl && mountEl.querySelector('.desp-present-badge');
     var avail = 0;
-    if (wrap && wrap.clientHeight > 60) avail = wrap.clientHeight;
-    else if (stage && stage.clientHeight > 80) avail = Math.round(stage.clientHeight * 0.82);
-    else if (inner && inner.clientHeight > 200) avail = Math.round(inner.clientHeight * 0.42);
-    if (!avail) return 320;
-    return Math.min(480, Math.max(260, Math.round(avail * 0.92)));
+
+    if (wrap && wrap.clientHeight > 80) {
+      avail = wrap.clientHeight;
+    } else if (inner && inner.clientHeight > 180) {
+      var reserve = 0;
+      if (meta && meta.offsetHeight) reserve += meta.offsetHeight + 10;
+      else reserve += 120;
+      if (badge && badge.offsetHeight) reserve += badge.offsetHeight + 12;
+      else reserve += 32;
+      reserve += 64;
+      avail = Math.max(220, inner.clientHeight - reserve);
+    }
+
+    if (!avail) return 400;
+    return Math.min(720, Math.max(300, Math.round(avail * 0.98)));
   }
 
   function renderBarcode(imgEl, idc) {
@@ -188,10 +199,10 @@
       tv: true,
       height: barH,
       fontSize: 44,
-      width: 5,
-      margin: 18,
+      width: 6,
+      margin: 12,
       showText: false,
-      scale: 4
+      scale: 5
     } : {
       height: 100,
       fontSize: 24,
