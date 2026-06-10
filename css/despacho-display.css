@@ -357,7 +357,7 @@ body.desp-display-mode .desp-present-grid--tv {
 }
 
 body.desp-display-mode .desp-present-content {
-  width: min(99.5vw, 1360px);
+  width: min(98vw, 1080px);
   max-width: 100%;
   flex: 1 1 0;
   min-height: 0;
@@ -365,20 +365,20 @@ body.desp-display-mode .desp-present-content {
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: clamp(0.3rem, 0.75vh, 0.55rem);
+  gap: clamp(0.45rem, 1vh, 0.75rem);
 }
 
 body.desp-display-mode .desp-present-stage {
   position: relative;
   z-index: 2;
   width: 100%;
-  flex: 0 1 auto;
+  flex: 1 1 0;
   min-height: 0;
   display: flex;
   flex-direction: column;
   align-items: stretch;
   gap: 0;
-  padding: clamp(0.35rem, 0.75vh, 0.6rem);
+  padding: clamp(0.5rem, 1vh, 0.85rem);
   border-radius: clamp(16px, 2vw, 24px);
   background:
     linear-gradient(155deg, rgba(14, 22, 40, 0.96), rgba(7, 12, 24, 0.92)),
@@ -463,16 +463,16 @@ body.desp-display-mode .desp-present-stage::after {
 body.desp-display-mode .desp-present-barcode-wrap,
 body.desp-display-mode .desp-present-barcode-wrap--tv {
   position: relative;
-  flex: 0 1 auto;
+  flex: 1 1 0;
   width: 100%;
-  min-height: 0;
-  max-height: min(30dvh, 300px);
+  min-height: clamp(140px, 22vh, 220px);
+  max-height: none;
   display: flex;
   flex-direction: column;
-  align-items: stretch;
+  align-items: center;
   justify-content: center;
-  gap: 0;
-  padding: clamp(0.35rem, 0.65vh, 0.5rem) clamp(0.45rem, 1vw, 0.75rem);
+  gap: 0.25rem;
+  padding: clamp(0.5rem, 1vh, 0.75rem) clamp(0.65rem, 1.5vw, 1.1rem);
   border-radius: clamp(14px, 1.6vw, 18px);
   background:
     linear-gradient(180deg, #ffffff 0%, #faf7f2 48%, #f3efe8 100%);
@@ -485,23 +485,25 @@ body.desp-display-mode .desp-present-barcode-wrap--tv {
 }
 
 body.desp-display-mode .desp-present-scan-tag {
-  display: none;
+  font-size: clamp(0.62rem, 1.1vw, 0.72rem);
+  font-weight: 800;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(255, 152, 0, 0.75);
 }
 
 body.desp-display-mode .desp-present-barcode.desp-barcode-img,
 body.desp-display-mode .desp-present-barcode.desp-barcode-img--tv,
 body.desp-display-mode .desp-present-barcode.desp-barcode-img--hq {
   display: block;
-  width: 100%;
+  width: auto;
   height: auto;
   max-width: 100%;
-  max-height: min(28dvh, 280px);
-  margin: 0 auto;
+  max-height: 100%;
   object-fit: contain;
-  object-position: center;
   image-rendering: -webkit-optimize-contrast;
   image-rendering: crisp-edges;
-  filter: contrast(1.08);
+  filter: contrast(1.06);
 }
 
 body.desp-display-mode .desp-present-meta,
