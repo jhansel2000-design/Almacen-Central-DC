@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-06-10T16:00:00.000Z",
+  "updatedAt": "2026-06-10T17:00:00.000Z",
   "users": [
     {
       "id": "u_enmanuel_vasquez",
@@ -38,6 +38,16 @@
       "name": "Samuel Cordero",
       "role": "validador",
       "passwordHash": "72d63f420a92223ab53e511119b07095b6c90f06b134270a97548e6a476be974",
+      "areas": [],
+      "active": true,
+      "extraPermissions": ["reportes.view", "export.data", "filter.apply"]
+    },
+    {
+      "id": "u_anthony_sanchez",
+      "username": "ANTHONY.SANCHEZ",
+      "name": "Anthony Jose Sanchez",
+      "role": "validador",
+      "passwordHash": "e6d1ff6a2766ee5d246579eb70e7a4e0747dc5d6de569dac256727b5e1871b72",
       "areas": [],
       "active": true,
       "extraPermissions": ["reportes.view", "export.data", "filter.apply"]
