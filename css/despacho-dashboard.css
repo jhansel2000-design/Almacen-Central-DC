@@ -848,8 +848,10 @@ html[data-theme="light"] .desp-flujo {
 .desp-barcode-jaula {
   margin: 0 0 0.75rem;
   text-align: center;
-  font-size: 0.9rem;
-  color: var(--muted);
+  font-size: clamp(1rem, 2.2vw, 1.35rem);
+  font-weight: 800;
+  color: #ff9800;
+  letter-spacing: 0.03em;
 }
 
 .desp-btn-barcode-fs {
@@ -1110,13 +1112,15 @@ body.desp-live-present-on {
 
 .desp-present-jaula {
   margin: 0 0 0.5rem;
-  font-size: 1.1rem;
-  color: #e6edf3;
+  font-size: clamp(1.15rem, 2.8vw, 1.75rem);
+  font-weight: 800;
+  color: #ff9800;
+  letter-spacing: 0.04em;
 }
 
 .desp-present-jaula strong {
-  color: #ff9800;
-  font-size: 1.25rem;
+  color: inherit;
+  font-size: inherit;
 }
 
 .desp-present-estado-wrap {

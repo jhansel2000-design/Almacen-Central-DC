@@ -58,7 +58,7 @@
   function liveStatusText(live) {
     if (!live || !live.active) return '';
     var txt = 'Transmitiendo en pantalla externa · ' + formatIdc(live.idc);
-    if (live.jaula) txt += ' · Jaula ' + live.jaula;
+    if (live.jaula) txt += ' · ' + live.jaula;
     return txt;
   }
 
@@ -191,17 +191,13 @@
     setTimeout(purgeAutofill, 450);
   }
 
-  function updateBarcodePanel(host, idc, jaula, estado) {
+  function updateBarcodePanel(host, idc, jaula) {
     var img = host.querySelector('#despBarcodeImg');
     var label = host.querySelector('#despBarcodeLabel');
     var jaulaEl = host.querySelector('#despBarcodeJaula');
-    var estadoEl = host.querySelector('#despBarcodeEstado');
     var code = formatIdc(idc);
     if (label) label.textContent = code || '—';
-    if (jaulaEl) jaulaEl.textContent = jaula ? ('Jaula ' + jaula) : '';
-    if (estadoEl && DS && DS.ESTADOS) {
-      estadoEl.innerHTML = estadoBadge(estado || 'facturado');
-    }
+    if (jaulaEl) jaulaEl.textContent = jaula ? String(jaula) : '';
     renderBarcodeImg(img, code, { height: 96, fontSize: 22, width: 2.3 });
   }
 
@@ -399,7 +395,7 @@
       '<header class="desp-panel-head">' +
       '<div><span class="desp-eyebrow">Opción 1 · Lectores / escaneo</span>' +
       '<h3 id="despBarcodeTitle">Compartir IDC como código de barras</h3>' +
-      '<p class="desp-panel-sub">Escriba IDC y jaula · se refleja en vivo en la pantalla externa al compartir</p></div>' +
+      '<p class="desp-panel-sub">Escriba IDC y referencia · se refleja en vivo en la pantalla externa al compartir</p></div>' +
       (sharing ? '<span class="desp-share-live-tag"><span class="desp-live-dot"></span> EN VIVO</span>' : '') +
       '</header>' +
       '<p class="desp-share-status" id="despShareStatus"' + (sharing ? '' : ' hidden') + '>' +
@@ -411,9 +407,8 @@
       '<div class="desp-form-grid">' +
       '<label class="desp-field"><span>IDC a mostrar</span>' +
       '<input type="text" id="despShareIdc" name="idc" inputmode="text" placeholder="Escriba el IDC" autocapitalize="off" autocomplete="off"></label>' +
-      '<label class="desp-field"><span>Jaula</span>' +
-      '<input type="text" id="despShareJaula" name="x_dc_share_pasillo" placeholder="Escriba la jaula" autocomplete="off" autocorrect="off" spellcheck="false" inputmode="text" aria-label="Jaula"></label>' +
-      renderPrepEstadoField('shareEstado') +
+      '<label class="desp-field"><span>Referencia</span>' +
+      '<input type="text" id="despShareJaula" name="x_dc_share_pasillo" placeholder="Nombre, jaula o lo que escriba el operador" autocomplete="off" autocorrect="off" spellcheck="false" inputmode="text" aria-label="Referencia"></label>' +
       '</div>' +
       '<div class="desp-prep-actions desp-prep-actions--single">' +
       '<button type="button" class="btn desp-action-btn desp-btn-share desp-btn-share--barcode' + (sharing ? ' is-live' : '') + '" id="despBtnShareScreen">' +
@@ -433,7 +428,6 @@
       '</div>' +
       '<p class="desp-barcode-idc" id="despBarcodeLabel">—</p>' +
       '<p class="desp-barcode-jaula" id="despBarcodeJaula"></p>' +
-      '<div id="despBarcodeEstado"></div>' +
       '</aside></div></section>';
   }
 
@@ -548,7 +542,7 @@
     return {
       idc: idc ? idc.value : '',
       jaula: pasilloValueFromField(jaula, 'share'),
-      estado: prepEstadoValue(host, 'shareEstado')
+      estado: 'facturado'
     };
   }
 
@@ -561,11 +555,7 @@
       jaula.value = snap.jaula || '';
       pasilloTouched.share = !!snap.jaula;
     }
-    if (snap.estado) {
-      var radio = host.querySelector('input[name="shareEstado"][value="' + snap.estado + '"]');
-      if (radio) radio.checked = true;
-    }
-    updateBarcodePanel(host, snap.idc, pasilloTouched.share ? snap.jaula : '', snap.estado);
+    updateBarcodePanel(host, snap.idc, pasilloTouched.share ? snap.jaula : '');
   }
 
   function updateShareScreenUi(host, data) {
@@ -623,7 +613,7 @@
     return {
       idc: idcEl ? idcEl.value : '',
       jaula: pasilloValueFromField(pasilloEl, 'share'),
-      estado: prepEstadoValue(host, 'shareEstado')
+      estado: 'facturado'
     };
   }
 
@@ -852,8 +842,7 @@
       var shareJaula = host.querySelector('#despShareJaula');
       updateBarcodePanel(host,
         shareIdc ? shareIdc.value : '',
-        pasilloValueFromField(shareJaula, 'share'),
-        prepEstadoValue(host, 'shareEstado'));
+        pasilloValueFromField(shareJaula, 'share'));
       updateShareScreenUi(host, data);
     }
 
@@ -884,8 +873,7 @@
       var idcEl = host.querySelector('#despShareIdc');
       updateBarcodePanel(host,
         idcEl ? idcEl.value : '',
-        '',
-        prepEstadoValue(host, 'shareEstado'));
+        '');
       if (DS.isLiveShareActive()) {
         var vals = getShareFormValues(host);
         DS.syncLiveShare(vals.idc, '', vals.estado, userName);
@@ -939,17 +927,13 @@
       function syncSharePreview() {
         updateBarcodePanel(host,
           shareIdcInput ? shareIdcInput.value : '',
-          pasilloValueFromField(shareJaulaInput, 'share'),
-          prepEstadoValue(host, 'shareEstado'));
+          pasilloValueFromField(shareJaulaInput, 'share'));
         clearTimeout(livePushTimer);
         livePushTimer = setTimeout(pushLiveToExternal, 120);
       }
 
       if (shareIdcInput) shareIdcInput.addEventListener('input', syncSharePreview);
       if (shareJaulaInput) shareJaulaInput.addEventListener('input', syncSharePreview);
-      host.querySelectorAll('input[name="shareEstado"]').forEach(function (r) {
-        r.addEventListener('change', syncSharePreview);
-      });
 
       var btnShare = host.querySelector('#despBtnShareScreen');
       if (btnShare) {
@@ -1001,9 +985,7 @@
           var shareIdcEl = host.querySelector('#despShareIdc');
           var shareJaulaEl = host.querySelector('#despShareJaula');
           if (shareIdcEl) shareIdcEl.value = idc || '';
-          var shareRadio = host.querySelector('input[name="shareEstado"][value="' + estado + '"]');
-          if (shareRadio) shareRadio.checked = true;
-          updateBarcodePanel(host, idc, pasilloValueFromField(shareJaulaEl, 'share'), estado);
+          updateBarcodePanel(host, idc, pasilloValueFromField(shareJaulaEl, 'share'));
           if (DS.isLiveShareActive()) {
             var vals = getShareFormValues(host);
             DS.syncLiveShare(vals.idc, vals.jaula, vals.estado, userName);

@@ -213,12 +213,14 @@ body.desp-display-mode .desp-present-idc {
 
 body.desp-display-mode .desp-present-jaula {
   margin: 0;
-  font-size: clamp(1.25rem, 3vw, 2rem);
+  font-size: clamp(1.35rem, 3.5vw, 2.5rem);
+  font-weight: 900;
+  color: #ff9800;
 }
 
 body.desp-display-mode .desp-present-jaula strong {
-  font-size: clamp(1.4rem, 3.5vw, 2.5rem);
-  color: #ff9800;
+  font-size: inherit;
+  color: inherit;
 }
 
 body.desp-display-mode .desp-present-estado-wrap {
