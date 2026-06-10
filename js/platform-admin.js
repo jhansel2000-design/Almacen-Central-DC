@@ -23,6 +23,7 @@
     'tv.mode': 'Modo TV',
     'admin.panel': 'Panel administración completo',
     'export.data': 'Exportar datos',
+    'reportes.view': 'Ver módulo Reportes',
     'despacho.use': 'Módulo Despacho (preparador)',
     'despacho.validate': 'Validador de despacho',
     'access.request': 'Solicitar acceso a configuración',
@@ -30,7 +31,7 @@
   };
 
   var SECONDARY_ADMIN_PERMISSIONS = [
-    'dashboard.view', 'filter.apply', 'data.import', 'export.data',
+    'dashboard.view', 'filter.apply', 'data.import', 'export.data', 'reportes.view',
     'ai.use', 'tv.mode', 'despacho.use', 'despacho.validate', 'logs.view'
   ];
 
@@ -40,11 +41,11 @@
 
   var ROLE_PERMISSIONS = {
     administrador: SECONDARY_ADMIN_PERMISSIONS,
-    supervisor: ['dashboard.view', 'filter.apply', 'data.import', 'export.data', 'logs.view', 'ai.use', 'tv.mode', 'despacho.use', 'despacho.validate'],
-    colaborador: ['dashboard.view', 'filter.apply', 'data.import', 'export.data', 'ai.use', 'tv.mode', 'despacho.use', 'despacho.validate', 'access.request'],
+    supervisor: ['dashboard.view', 'filter.apply', 'data.import', 'export.data', 'reportes.view', 'logs.view', 'ai.use', 'tv.mode', 'despacho.use', 'despacho.validate'],
+    colaborador: ['dashboard.view', 'filter.apply', 'data.import', 'export.data', 'reportes.view', 'ai.use', 'tv.mode', 'despacho.use', 'despacho.validate', 'access.request'],
     operador: ['dashboard.view', 'tv.mode', 'despacho.use'],
     preparador: ['dashboard.view', 'tv.mode', 'despacho.use'],
-    validador: ['dashboard.view', 'tv.mode', 'despacho.use', 'despacho.validate']
+    validador: ['dashboard.view', 'tv.mode', 'despacho.use', 'despacho.validate', 'reportes.view', 'export.data', 'filter.apply']
   };
 
   var ROLE_LABELS = {

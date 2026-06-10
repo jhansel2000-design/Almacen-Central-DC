@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-06-10T15:00:00.000Z",
+  "updatedAt": "2026-06-10T16:00:00.000Z",
   "users": [
     {
       "id": "u_enmanuel_vasquez",
@@ -40,7 +40,7 @@
       "passwordHash": "72d63f420a92223ab53e511119b07095b6c90f06b134270a97548e6a476be974",
       "areas": [],
       "active": true,
-      "extraPermissions": []
+      "extraPermissions": ["reportes.view", "export.data", "filter.apply"]
     }
   ]
 }
