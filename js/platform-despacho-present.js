@@ -12,7 +12,32 @@
   var mountEl = null;
   var lastSig = '';
   var displayMode = false;
-  var LAYOUT_REV = '6';
+  var LAYOUT_REV = '7';
+
+  function ensureAmbientEl() {
+    if (!mountEl || !shouldShowOnThisPage()) return null;
+    var amb = mountEl.querySelector('#despPresentAmbient');
+    if (!amb) {
+      amb = document.createElement('div');
+      amb.id = 'despPresentAmbient';
+      amb.className = 'desp-present-ambient';
+      amb.setAttribute('aria-hidden', 'true');
+      amb.innerHTML =
+        '<span class="desp-present-orb desp-present-orb--1"></span>' +
+        '<span class="desp-present-orb desp-present-orb--2"></span>' +
+        '<span class="desp-present-orb desp-present-orb--3"></span>' +
+        '<span class="desp-present-frame-accent desp-present-frame-accent--tl"></span>' +
+        '<span class="desp-present-frame-accent desp-present-frame-accent--br"></span>';
+      mountEl.insertBefore(amb, mountEl.firstChild);
+    }
+    return amb;
+  }
+
+  function setAmbientVisible(show) {
+    var amb = mountEl && mountEl.querySelector('#despPresentAmbient');
+    if (!amb) return;
+    amb.hidden = !show;
+  }
 
   function brandMarkup() {
     return '<img class="desp-present-brand-logo" src="assets/img/dc-logo-128.png?v=4" alt="" width="56" height="56" decoding="async">' +
@@ -96,6 +121,7 @@
       var oldShell = mountEl.querySelector('.desp-present-shell');
       if (oldShell) oldShell.remove();
       setBrandVisible(false);
+      setAmbientVisible(false);
       if (global.document && global.document.body) {
         global.document.body.classList.remove('desp-live-present-on');
       }
@@ -108,7 +134,9 @@
     mountEl.setAttribute('aria-hidden', 'false');
     document.body.classList.add('desp-live-present-on');
     ensureBrandEl();
+    ensureAmbientEl();
     setBrandVisible(true);
+    setAmbientVisible(true);
 
     var hasJaula = !!String(share.jaula || '').trim();
     var shellCls = 'desp-present-shell' +
@@ -126,14 +154,20 @@
       '<div class="desp-present-badge"><span class="desp-present-dot"></span> EN VIVO · Código de barras IDC</div>' +
       '<div class="desp-present-grid desp-present-grid--tv">' +
       '<div class="desp-present-stage">' +
+      '<span class="desp-present-corner desp-present-corner--tl" aria-hidden="true"></span>' +
+      '<span class="desp-present-corner desp-present-corner--tr" aria-hidden="true"></span>' +
+      '<span class="desp-present-corner desp-present-corner--bl" aria-hidden="true"></span>' +
+      '<span class="desp-present-corner desp-present-corner--br" aria-hidden="true"></span>' +
       '<div class="desp-present-barcode-wrap desp-present-barcode-wrap--tv">' +
+      '<span class="desp-present-scan-tag" aria-hidden="true">ESCANEO IDC</span>' +
       '<img class="desp-present-barcode desp-barcode-img" id="despPresentBarcode" alt="Código de barras IDC">' +
       '</div>' +
       '<div class="desp-present-meta desp-present-meta--tv">' +
+      '<div class="desp-present-meta-divider" aria-hidden="true"></div>' +
       '<p class="desp-present-label">IDC activo</p>' +
-      '<p class="desp-present-idc">' + esc(idc) + '</p>' +
-      (hasJaula ? '<p class="desp-present-jaula">' + esc(share.jaula) + '</p>' : '') +
-      '<p class="desp-present-by">Preparador: ' + esc(share.sharedBy || '—') + '</p>' +
+      '<p class="desp-present-idc"><span class="desp-present-idc-value">' + esc(idc) + '</span></p>' +
+      (hasJaula ? '<p class="desp-present-jaula"><span class="desp-present-jaula-value">' + esc(share.jaula) + '</span></p>' : '') +
+      '<p class="desp-present-by"><span class="desp-present-by-label">Preparador</span> ' + esc(share.sharedBy || '—') + '</p>' +
       '</div></div></div></div>';
 
     renderBarcode(shell.querySelector('#despPresentBarcode'), idc);
