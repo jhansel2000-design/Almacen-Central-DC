@@ -16,29 +16,116 @@
     };
   }
 
+  function parseOnclickArg(token, el, ev) {
+    token = String(token || '').trim();
+    if (!token) return undefined;
+    if (token === 'this') return el;
+    if (token === 'event') return ev;
+    var q = token.charAt(0);
+    if ((q === "'" || q === '"') && token.charAt(token.length - 1) === q) {
+      return token.slice(1, -1);
+    }
+    if (/^-?\d+(?:\.\d+)?$/.test(token)) return Number(token);
+    if (token === 'true') return true;
+    if (token === 'false') return false;
+    if (token === 'null') return null;
+    return token;
+  }
+
+  function splitOnclickArgs(argsStr) {
+    var args = [];
+    var cur = '';
+    var quote = null;
+    for (var i = 0; i < argsStr.length; i++) {
+      var c = argsStr[i];
+      if (quote) {
+        cur += c;
+        if (c === quote && argsStr[i - 1] !== '\\') quote = null;
+        continue;
+      }
+      if (c === "'" || c === '"') {
+        quote = c;
+        cur += c;
+        continue;
+      }
+      if (c === ',') {
+        args.push(cur);
+        cur = '';
+        continue;
+      }
+      cur += c;
+    }
+    if (cur.trim()) args.push(cur);
+    return args;
+  }
+
+  function runOnclickAction(raw, el, ev) {
+    raw = String(raw || '').trim();
+    if (!raw) return;
+    raw.split(';').forEach(function (stmt) {
+      stmt = stmt.trim();
+      if (!stmt) return;
+      var match = stmt.match(/^([A-Za-z_$][\w.$]*)\s*\(([\s\S]*)\)$/);
+      if (!match) throw new Error('Acción no reconocida: ' + stmt);
+      var fn = global[match[1]];
+      if (typeof fn !== 'function') throw new Error('Función no disponible: ' + match[1]);
+      var argTokens = match[2].trim() ? splitOnclickArgs(match[2]) : [];
+      var args = argTokens.map(function (t) { return parseOnclickArg(t, el, ev); });
+      fn.apply(global, args);
+    });
+  }
+
   function bindInlineClickHandlers(root) {
     if (!root || !root.querySelectorAll) return;
-    root.querySelectorAll('[onclick]').forEach(function (el) {
-      if (el.dataset.avClickBound === '1') return;
-      var raw = el.getAttribute('onclick');
+    root.querySelectorAll('[onclick], [data-av-onclick]').forEach(function (el) {
+      var raw = el.getAttribute('onclick') || el.getAttribute('data-av-onclick') || el.dataset.avOnclick;
       if (!raw || !String(raw).trim()) return;
-      el.dataset.avClickBound = '1';
+      el.dataset.avOnclick = raw;
       el.removeAttribute('onclick');
-      el.addEventListener('click', function (ev) {
+      if (el.__avClickHandler) {
+        el.removeEventListener('click', el.__avClickHandler);
+      }
+      el.__avClickHandler = function (ev) {
         try {
-          var fn = new Function('return function (event) { ' + raw + ' }')();
-          fn.call(el, ev);
+          runOnclickAction(el.dataset.avOnclick || raw, el, ev);
         } catch (err) {
-          console.error('[Operaciones] Acción fallida:', raw, err);
+          console.error('[Operaciones] Acción fallida:', el.dataset.avOnclick || raw, err);
           if (global.PlatformToast) global.PlatformToast.error('No se pudo ejecutar la acción.');
         }
-      });
+      };
+      el.addEventListener('click', el.__avClickHandler);
+      el.dataset.avClickBound = '1';
+    });
+  }
+
+  function initAveriasDelegatedActions() {
+    var app = document.getElementById('avApp');
+    if (!app || global.__avDelegatedBound) return;
+    global.__avDelegatedBound = true;
+    app.addEventListener('click', function (ev) {
+      if (ev.target && ev.target.closest && ev.target.closest('[data-av-click-bound="1"]')) return;
+      var drawerItem = ev.target.closest('.drawer-item[data-module]');
+      if (drawerItem && drawerItem.dataset.module && typeof navigateToModule === 'function') {
+        ev.preventDefault();
+        navigateToModule(drawerItem.dataset.module);
+        return;
+      }
+      if (ev.target.closest('#btn-menu') && typeof toggleDrawer === 'function') {
+        ev.preventDefault();
+        toggleDrawer();
+        return;
+      }
+      if (ev.target.closest('#drawerOverlay') && typeof closeDrawer === 'function') {
+        ev.preventDefault();
+        closeDrawer();
+      }
     });
   }
 
   function initAveriasClickBridge() {
     var app = document.getElementById('avApp');
     if (!app) return;
+    initAveriasDelegatedActions();
     bindInlineClickHandlers(app);
     bindInlineClickHandlers(document.getElementById('cloudSetupModal'));
     if (global.__avClickBridgeObs) return;
@@ -2397,5 +2484,8 @@
   global.exportEquipmentCSV = exportEquipmentCSV;
   global.playSelectFeedback = playSelectFeedback;
   global.lookupProductDescription = lookupProductDescription;
+  global.showSecurityDashboard = showSecurityDashboard;
+  global.showAuditDashboard = showAuditDashboard;
+  global.showEquipmentDashboard = showEquipmentDashboard;
   global.handleLogout = handleLogout;
 })(typeof window !== 'undefined' ? window : this);
