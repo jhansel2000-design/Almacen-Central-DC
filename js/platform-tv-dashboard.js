@@ -162,6 +162,7 @@
             snap.fac.hasData = true;
             snap.fac.useAlmacenLayout = false;
             snap.fac.centralLayout = true;
+            snap.fac.useExecutiveLayout = true;
             snap.fac.tipoCambio = fm.tipoCambio;
             var varPct = fm.variationPct;
             var varStr = varPct != null && isFinite(varPct)
@@ -188,19 +189,29 @@
 
         snap.fac.hasData = true;
         snap.fac.useAlmacenLayout = true;
+        snap.fac.useExecutiveLayout = true;
         var tc = FX.resolveTipoCambio(tipoCambio);
         snap.fac.tipoCambio = tc;
+        var facKpis = FX.buildKpis(facData, tc);
+        snap.fac.execKpis = [
+          { label: 'Ventas totales', value: FX.formatMoney(facKpis.ventasPesos, 'DOP'), variant: 'dop' },
+          { label: 'Órdenes de venta', value: String(facKpis.ordenes), variant: 'orders' },
+          { label: 'Facturas', value: String(facKpis.facturas), variant: 'inv' },
+          { label: 'Almacenes', value: String(facKpis.almacenes), variant: 'wh' }
+        ];
         var agg = facData.aggregates && facData.aggregates.porAlmacen
           ? facData.aggregates
           : FX.buildAggregates(facRegs);
         var view = FX.enrichAggregatesForDisplay(agg, tc);
         var porAlm = view.porAlmacen || [];
+        snap.fac.porAlmacen = porAlm;
         var compliance = [];
         try {
           compliance = FX.buildMetasCompliance(agg.porAlmacen || porAlm, facturasMetas || {}, tc);
         } catch (eMeta) {
           compliance = [];
         }
+        snap.fac.compliance = compliance;
         var compByAlm = {};
         compliance.forEach(function (c) {
           compByAlm[c.almacen] = c;
@@ -298,22 +309,60 @@
     }).join('') + '</ul>';
   }
 
-  function facCentralFooterHtml(items, emptyText) {
+  function facUsesExecutiveLayout(block) {
+    return !!(block && block.hasData && (block.centralLayout || block.useExecutiveLayout));
+  }
+
+  function facExecKpiHtml(items, emptyLabel) {
     if (!items || !items.length) {
-      return '<p class="tv-foot-empty">' + esc(emptyText) + '</p>';
+      return '<div class="tv-kpi-empty">' + esc(emptyLabel) + '</div>';
     }
-    return '<div class="tv-fac-foot-chips">' + items.map(function (x, idx) {
-      return '<div class="tv-fac-foot-chip" style="--i:' + idx + '">' +
-        '<span class="tv-fac-foot-chip-lbl">' + esc(x.label) + '</span>' +
-        '<strong class="tv-fac-foot-chip-val">' + esc(String(x.value)) + '</strong>' +
-        '</div>';
+    return '<div class="fac-kpi-row tv-fac-exec-kpis">' + items.map(function (k) {
+      var variant = k.variant || 'default';
+      var facVariant = variant === 'warn' ? 'warn' : variant === 'money' || variant === 'total' ? 'dop' : variant;
+      return '<article class="fac-kpi fac-kpi-' + esc(facVariant) + '">' +
+        '<span class="fac-kpi-value" title="' + esc(String(k.value)) + '">' + esc(formatKpiDisplay(k.value)) + '</span>' +
+        '<span class="fac-kpi-label">' + esc(k.label) + '</span>' +
+        '</article>';
     }).join('') + '</div>';
   }
 
-  function slideFootBody(slideId, block, meta) {
-    if (slideId === 'fac' && block.centralLayout) {
-      return facCentralFooterHtml(block.footer, meta.emptyFoot);
+  function facExecutiveChartBlock(slideId, block, chartTitle) {
+    var EC = global.PlatformExecutiveCharts;
+    var canvasId = chartCanvasId(slideId);
+    if (!EC) {
+      return '<h3 class="tv-chart-title">' + esc(chartTitle) + '</h3>' +
+        '<div class="tv-chart-box"><canvas id="' + canvasId + '"></canvas></div>';
     }
+    var shell = '';
+    if (block.centralLayout) {
+      shell = EC.executiveShell({
+        eyebrow: 'Facturación · CENTRAL',
+        title: chartTitle,
+        subtitle: 'Serie diaria · montos en RD$',
+        canvasId: canvasId,
+        insights: (block.footer || []).map(function (x) {
+          return esc(x.label) + ': <strong>' + esc(String(x.value)) + '</strong>';
+        })
+      });
+    } else if (block.porAlmacen && block.porAlmacen.length) {
+      var meta = EC.getFacturasMeta('ventas', block.porAlmacen, block.compliance || []);
+      meta.canvasId = canvasId;
+      shell = (EC.facturasTabsHtml ? EC.facturasTabsHtml() : '') +
+        (EC.facturasVisualShell
+          ? EC.facturasVisualShell(meta, block.porAlmacen, block.compliance || [])
+          : EC.executiveShell(meta));
+    } else {
+      shell = EC.executiveShell({
+        eyebrow: 'Facturación',
+        title: chartTitle,
+        canvasId: canvasId
+      });
+    }
+    return '<section class="fac-panel fac-charts-single fac-charts-premium exec-chart-view tv-fac-exec">' + shell + '</section>';
+  }
+
+  function slideFootBody(slideId, block, meta) {
     return footerHtml(block.footer, meta.emptyFoot);
   }
 
@@ -321,36 +370,73 @@
     return 'tvChart' + slideId.charAt(0).toUpperCase() + slideId.slice(1);
   }
 
-  function facCentralKpiHtml(items, emptyLabel) {
-    if (!items || !items.length) {
-      return '<div class="tv-kpi-empty">' + esc(emptyLabel) + '</div>';
+  function paintFacExecutiveChart(snapshot, slideId, viewId) {
+    var block = snapshot[slideId];
+    if (!block || !facUsesExecutiveLayout(block)) return;
+    var EC = global.PlatformExecutiveCharts;
+    if (!EC) return;
+    var id = chartCanvasId(slideId);
+    var meta;
+    if (block.centralLayout) {
+      meta = EC.facturasCentralDailyMeta
+        ? EC.facturasCentralDailyMeta(
+          block.chart.labels || [],
+          block.chart.values || [],
+          block.chart.markers || [],
+          {
+            title: block.chartTitle || 'Facturación diaria',
+            canvasId: id,
+            insights: (block.footer || []).map(function (x) {
+              return esc(x.label) + ': <strong>' + esc(String(x.value)) + '</strong>';
+            })
+          }
+        )
+        : null;
+    } else {
+      meta = EC.getFacturasMeta(viewId || block._facChartView || 'ventas', block.porAlmacen || [], block.compliance || []);
+      meta.canvasId = id;
+      var slideEl = document.querySelector('.tv-slide[data-slide="' + slideId + '"]');
+      var signalsEl = slideEl && slideEl.querySelector('.fac-vis-signals');
+      if (signalsEl && EC.facturasVisualSignals) {
+        signalsEl.outerHTML = EC.facturasVisualSignals(
+          block.porAlmacen || [],
+          block.compliance || [],
+          viewId || block._facChartView || 'ventas'
+        );
+      }
     }
-    return '<div class="tv-fac-kpi-band">' + items.map(function (k, idx) {
-      var variant = k.variant || 'money';
-      return '<article class="tv-fac-kpi tv-fac-kpi--' + esc(variant) + '" style="--i:' + idx + '">' +
-        '<span class="tv-fac-kpi-glow" aria-hidden="true"></span>' +
-        '<span class="tv-fac-kpi-val" title="' + esc(String(k.value)) + '">' + esc(formatKpiDisplay(k.value)) + '</span>' +
-        '<span class="tv-fac-kpi-lbl">' + esc(k.label) + '</span>' +
-        '</article>';
-    }).join('') + '</div>';
+    if (!meta) return;
+    EC.renderFromMeta(chartInstances, meta, {
+      tvMode: true,
+      facVisual: !block.centralLayout,
+      noDataLabels: true,
+      biChart: true,
+      valueFormat: 'money'
+    });
   }
 
-  function facChartBlock(slideId, chartTitle) {
-    return '<div class="tv-fac-chart-stage">' +
-      '<div class="tv-fac-chart-head">' +
-      '<div class="tv-fac-chart-head-text">' +
-      '<span class="tv-fac-chart-eyebrow">Tendencia diaria</span>' +
-      '<h3 class="tv-chart-title tv-chart-title--fac">' + esc(chartTitle) + '</h3>' +
-      '</div>' +
-      '<span class="tv-fac-live-badge"><span class="tv-fac-live-dot" aria-hidden="true"></span>En vivo</span>' +
-      '</div>' +
-      '<div class="tv-chart-box tv-chart-box--fac"><canvas id="' + chartCanvasId(slideId) + '"></canvas></div>' +
-      '</div>';
+  function bindFacExecutiveTabs(root, snapshot) {
+    if (!root || !snapshot || !snapshot.fac) return;
+    var block = snapshot.fac;
+    if (!facUsesExecutiveLayout(block) || block.centralLayout) return;
+    var chartHost = root.querySelector('.tv-slide[data-slide="fac"] .tv-fac-exec');
+    if (!chartHost) return;
+    chartHost.querySelectorAll('.exec-chart-tab').forEach(function (btn) {
+      if (btn.dataset.tvFacTabBound === '1') return;
+      btn.dataset.tvFacTabBound = '1';
+      btn.addEventListener('click', function () {
+        chartHost.querySelectorAll('.exec-chart-tab').forEach(function (b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+        block._facChartView = btn.getAttribute('data-fac-chart') || 'ventas';
+        paintFacExecutiveChart(snapshot, 'fac', block._facChartView);
+      });
+    });
   }
 
   function facKpiBlock(slideId, block, emptyLabel) {
-    if (slideId === 'fac' && block.centralLayout) {
-      return facCentralKpiHtml(block.kpis || [], emptyLabel);
+    if (slideId === 'fac' && facUsesExecutiveLayout(block)) {
+      var items = block.centralLayout ? (block.kpis || []) : (block.execKpis || []);
+      return facExecKpiHtml(items, emptyLabel);
     }
     if (slideId === 'fac') {
       return facAlmacenKpiHtml(block.almacenes || [], emptyLabel);
@@ -361,7 +447,9 @@
   function renderSlide(slideId, snapshot) {
     var meta = SLIDE_META[slideId];
     var block = snapshot[slideId];
+    var facExec = slideId === 'fac' && facUsesExecutiveLayout(block);
     var facExtra = slideId === 'fac' && block.centralLayout ? ' tv-slide--central' : '';
+    if (facExec) facExtra += ' tv-slide--fac-exec';
     var extra = slideId === 'fac' && block.hasData
       ? '<span class="tv-tc-tag">TC ' + esc(String(block.tipoCambio)) + '</span>'
       : '';
@@ -370,11 +458,14 @@
     var footTitle = slideId === 'fac' && block.useAlmacenLayout && !block.centralLayout
       ? 'Montos por almacén'
       : 'Resumen';
-    var footClass = (slideId === 'fac' && block.centralLayout) ? ' tv-slide-foot--fac-central' : '';
-    var chartBlock = (slideId === 'fac' && block.centralLayout)
-      ? facChartBlock(slideId, chartTitle)
+    var chartBlock = facExec
+      ? facExecutiveChartBlock(slideId, block, chartTitle)
       : '<h3 class="tv-chart-title">' + esc(chartTitle) + '</h3>' +
         '<div class="tv-chart-box"><canvas id="' + chartCanvasId(slideId) + '"></canvas></div>';
+    var footSection = facExec ? '' :
+      '<div class="tv-slide-foot">' +
+      '<h3 class="tv-foot-title">' + esc(footTitle) + '</h3>' + slideFootBody(slideId, block, meta) +
+      '</div>';
     return '<section class="tv-slide' + (slideId === 'fac' ? ' tv-slide--fac' + facExtra : '') + '" data-slide="' + slideId + '">' +
       '<header class="tv-slide-head">' +
       '<span class="tv-pill ' + meta.pill + '">' + esc(meta.title) + '</span>' + extra +
@@ -382,9 +473,8 @@
       '<div class="tv-slide-grid">' +
       '<div class="tv-slide-kpis">' + kpiBlock + '</div>' +
       '<div class="tv-slide-chart">' + chartBlock + '</div>' +
-      '<div class="tv-slide-foot' + footClass + '">' +
-      '<h3 class="tv-foot-title">' + esc(footTitle) + '</h3>' + slideFootBody(slideId, block, meta) +
-      '</div></div></section>';
+      footSection +
+      '</div></section>';
   }
 
   function render(host, snapshot, clockText, opts) {
@@ -434,6 +524,7 @@
     var carouselRoot = host.querySelector('#tvCarousel') || host;
     setSlide(preserve, false);
     bindTvProgress(carouselRoot);
+    bindFacExecutiveTabs(carouselRoot, snapshot);
     return snapshot;
   }
 
@@ -470,6 +561,7 @@
       if (!slideEl) return;
       if (slideId === 'fac') {
         slideEl.classList.toggle('tv-slide--central', !!block.centralLayout);
+        slideEl.classList.toggle('tv-slide--fac-exec', facUsesExecutiveLayout(block));
       }
       var kpiHost = slideEl.querySelector('.tv-slide-kpis');
       if (kpiHost) {
@@ -480,7 +572,7 @@
       if (footHost) {
         footHost.innerHTML = slideFootInner(slideId, block, meta);
       }
-      var chartTitleEl = slideEl.querySelector('.tv-chart-title');
+      var chartTitleEl = slideEl.querySelector('.tv-chart-title, .exec-chart-title');
       if (chartTitleEl) {
         chartTitleEl.textContent = (slideId === 'fac' && block.chartTitle)
           ? block.chartTitle
@@ -683,12 +775,23 @@
     var block = snapshot[slideId];
     if (!block) return;
     if (slideId === 'fac') {
-      if (block.centralLayout) {
+      if (facUsesExecutiveLayout(block)) {
+        if (block.centralLayout) {
+          if (!block.hasData || !block.chart.labels || !block.chart.labels.length) return;
+        } else if (!block.porAlmacen || !block.porAlmacen.length) {
+          return;
+        }
+      } else if (block.centralLayout) {
         if (!block.hasData || !block.chart.labels || !block.chart.labels.length) return;
       } else if (!block.almacenes || !block.almacenes.length) {
         return;
       }
     } else if (!block.hasData) {
+      return;
+    }
+
+    if (slideId === 'fac' && facUsesExecutiveLayout(block)) {
+      paintFacExecutiveChart(snapshot, slideId, block._facChartView || 'ventas');
       return;
     }
 
@@ -744,105 +847,6 @@
         options: barOpts()
       });
     } else if (slideId === 'fac') {
-      if (block.centralLayout) {
-        var markers = block.chart.markers || [];
-        var labelCount = block.chart.labels.length;
-        var useBar = labelCount <= 4;
-        var facFs = 17;
-        var facOpts = barOpts();
-        facOpts.interaction = { mode: 'index', intersect: false };
-        facOpts.plugins.legend = { display: false };
-        facOpts.plugins.tooltip = {
-          backgroundColor: 'rgba(6, 11, 20, 0.97)',
-          titleFont: { size: facFs + 1, weight: '700' },
-          bodyFont: { size: facFs, weight: '600' },
-          padding: 14,
-          callbacks: {
-            label: function (ctx) {
-              return fmtMontoRd(ctx.raw || 0);
-            }
-          }
-        };
-        facOpts.scales = {
-          x: {
-            ticks: { color: colors.text, font: { size: facFs, weight: '700' }, maxRotation: 0 },
-            grid: { display: false }
-          },
-          y: {
-            beginAtZero: true,
-            ticks: {
-              color: colors.text,
-              font: { size: facFs, weight: '600' },
-              callback: fmtMontoAxis
-            },
-            grid: { color: colors.grid || 'rgba(255,255,255,0.08)' }
-          }
-        };
-        if (useBar) {
-          facOpts.plugins.datalabels = {
-            display: true,
-            anchor: 'end',
-            align: 'top',
-            offset: 6,
-            color: '#ecfdf5',
-            textStrokeColor: 'rgba(6, 11, 20, 0.9)',
-            textStrokeWidth: 3,
-            font: { size: facFs, weight: '800' },
-            formatter: function (v) { return fmtMontoRd(v); }
-          };
-          facOpts.layout = { padding: { top: 28, right: 12, bottom: 4, left: 8 } };
-          makeChart(id, {
-            type: 'bar',
-            valueFormat: 'money',
-            data: {
-              labels: block.chart.labels,
-              datasets: [{
-                label: 'Facturación RD$',
-                data: block.chart.values,
-                backgroundColor: 'rgba(16, 185, 129, 0.88)',
-                hoverBackgroundColor: 'rgba(52, 211, 153, 0.95)',
-                borderColor: 'rgba(167, 243, 208, 0.55)',
-                borderWidth: 1.5,
-                borderRadius: { topLeft: 12, topRight: 12, bottomLeft: 4, bottomRight: 4 },
-                maxBarThickness: labelCount === 1 ? 128 : 84,
-                barPercentage: labelCount === 1 ? 0.38 : 0.65
-              }]
-            },
-            options: facOpts
-          });
-          return;
-        }
-        facOpts.plugins.datalabels = { display: false };
-        makeChart(id, {
-          type: 'line',
-          valueFormat: 'money',
-          data: {
-            labels: block.chart.labels,
-            datasets: [{
-              label: 'Facturación RD$',
-              data: block.chart.values,
-              borderColor: '#10b981',
-              backgroundColor: 'rgba(16, 185, 129, 0.18)',
-              borderWidth: 3,
-              fill: true,
-              tension: 0.35,
-              pointRadius: markers.map(function (m) {
-                return m === 'up' || m === 'down' ? 8 : 5;
-              }),
-              pointBackgroundColor: markers.map(function (m) {
-                if (m === 'up') return 'rgba(52, 211, 153, 1)';
-                if (m === 'down') return 'rgba(255, 107, 122, 1)';
-                return '#3b82f6';
-              }),
-              pointBorderColor: '#fff',
-              pointBorderWidth: 2
-            }]
-          },
-          options: facOpts
-        });
-        return;
-      }
-
       var barColors = (block.almacenes || []).map(function (a) {
         if (a.semaforo === 'ok') return 'rgba(52, 211, 153, 0.9)';
         if (a.semaforo === 'warn') return 'rgba(251, 191, 36, 0.9)';

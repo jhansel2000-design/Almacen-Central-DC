@@ -443,229 +443,116 @@ body.tv-mode.tv-unified-active #module-general {
   grid-template-rows: minmax(0, 0.8fr) minmax(0, 1.55fr) minmax(0, 0.45fr);
 }
 
-.tv-slide--fac.tv-slide--central .tv-slide-grid {
-  grid-template-rows: minmax(0, 0.88fr) minmax(0, 1.52fr) minmax(0, 0.48fr);
+.tv-slide--fac.tv-slide--central .tv-slide-grid,
+.tv-slide--fac.tv-slide--fac-exec .tv-slide-grid {
+  grid-template-rows: auto minmax(0, 1fr);
 }
 
-.tv-slide--fac.tv-slide--central .tv-slide-kpis {
-  padding: 0.35vh 0.5vw;
+.tv-slide--fac.tv-slide--fac-exec .tv-slide-kpis {
+  padding: 0;
   background: transparent;
   border: none;
   box-shadow: none;
 }
 
-.tv-slide--fac.tv-slide--central .tv-slide-chart {
-  padding: 0.65vh 0.85vw 0.55vh;
+.tv-slide--fac.tv-slide--fac-exec .tv-slide-chart {
+  padding: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  min-height: 0;
 }
 
-.tv-fac-kpi-band {
-  display: grid;
+.tv-slide--fac.tv-slide--central .fac-kpi-row {
   grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.tv-slide--fac.tv-slide--fac-exec .fac-kpi-row {
   gap: clamp(0.45rem, 1vw, 0.85rem);
   width: 100%;
-  height: 100%;
-  align-content: stretch;
 }
 
-.tv-fac-kpi {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  padding: clamp(0.65rem, 1.4vh, 1.1rem) clamp(0.5rem, 1vw, 0.85rem);
+.tv-slide--fac.tv-slide--fac-exec .fac-kpi {
+  padding: clamp(0.75rem, 1.4vh, 1.1rem) clamp(0.65rem, 1vw, 0.95rem);
   border-radius: 18px;
+}
+
+.tv-slide--fac.tv-slide--fac-exec .fac-kpi-value {
+  font-size: clamp(1.65rem, 3.6vw, 2.85rem);
+}
+
+.tv-slide--fac.tv-slide--fac-exec .fac-kpi-label {
+  font-size: clamp(0.72rem, 1.15vw, 0.95rem);
+}
+
+.tv-slide--fac.tv-slide--fac-exec .tv-fac-exec {
+  height: 100%;
+  min-height: 0;
+  margin: 0;
+  padding: clamp(0.75rem, 1.2vh, 1rem) clamp(0.85rem, 1.2vw, 1.15rem);
+  border-radius: 20px;
   background:
-    linear-gradient(165deg, rgba(14, 24, 38, 0.92) 0%, rgba(8, 14, 26, 0.78) 100%);
+    radial-gradient(ellipse 70% 60% at 45% 0%, rgba(16, 185, 129, 0.14), transparent 60%),
+    linear-gradient(165deg, rgba(8, 18, 30, 0.92), rgba(5, 11, 22, 0.86));
   border: 1px solid rgba(52, 211, 153, 0.22);
   box-shadow:
-    0 14px 42px rgba(0, 0, 0, 0.38),
-    inset 0 1px 0 rgba(255, 255, 255, 0.06);
-  overflow: hidden;
-  min-height: 0;
-}
-
-.tv-fac-kpi-glow {
-  position: absolute;
-  inset: -40% -20% auto;
-  height: 70%;
-  background: radial-gradient(ellipse at 50% 100%, rgba(16, 185, 129, 0.22), transparent 68%);
-  pointer-events: none;
-}
-
-.tv-fac-kpi-val {
-  position: relative;
-  z-index: 1;
-  font-size: clamp(1.65rem, 3.8vw, 3rem);
-  font-weight: 800;
-  line-height: 1.05;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -0.02em;
-  color: #34d399;
-  text-shadow: 0 0 28px rgba(52, 211, 153, 0.25);
-}
-
-.tv-fac-kpi-lbl {
-  position: relative;
-  z-index: 1;
-  margin-top: 0.35em;
-  font-size: clamp(0.68rem, 1.15vw, 0.95rem);
-  font-weight: 700;
-  color: rgba(148, 163, 184, 0.95);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  line-height: 1.25;
-}
-
-.tv-fac-kpi--money .tv-fac-kpi-val { color: #34d399; }
-.tv-fac-kpi--total .tv-fac-kpi-val { color: #6ee7b7; }
-.tv-fac-kpi--warn .tv-fac-kpi-val { color: #fbbf24; text-shadow: 0 0 24px rgba(251, 191, 36, 0.2); }
-.tv-fac-kpi--warn .tv-fac-kpi-glow {
-  background: radial-gradient(ellipse at 50% 100%, rgba(251, 191, 36, 0.16), transparent 68%);
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .tv-slide--fac.tv-slide--central.active .tv-fac-kpi {
-    animation: tvFacKpiIn 0.65s cubic-bezier(0.22, 1, 0.36, 1) backwards;
-    animation-delay: calc(var(--i, 0) * 0.08s);
-  }
-}
-
-@keyframes tvFacKpiIn {
-  from { opacity: 0; transform: translateY(14px) scale(0.98); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
-}
-
-.tv-fac-chart-stage {
+    0 20px 64px rgba(0, 0, 0, 0.36),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07);
   display: flex;
   flex-direction: column;
-  flex: 1;
-  min-height: 0;
-  width: 100%;
-  border-radius: 16px;
-  padding: 0.45vh 0.35vw 0.25vh;
-  background:
-    radial-gradient(ellipse 85% 70% at 50% -10%, rgba(16, 185, 129, 0.14), transparent 58%),
-    linear-gradient(180deg, rgba(8, 16, 28, 0.55), rgba(6, 12, 22, 0.35));
-  border: 1px solid rgba(52, 211, 153, 0.14);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
-.tv-fac-chart-head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 0.75rem;
-  flex-shrink: 0;
-  margin-bottom: 0.35vh;
-  padding: 0 0.15vw;
-}
-
-.tv-fac-chart-eyebrow {
-  display: block;
-  font-size: clamp(0.58rem, 0.95vw, 0.72rem);
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: rgba(52, 211, 153, 0.75);
-  margin-bottom: 0.15em;
-}
-
-.tv-chart-title--fac {
-  margin: 0;
-  font-size: clamp(0.82rem, 1.35vw, 1.05rem);
-  font-weight: 800;
-  color: #e2e8f0;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.tv-fac-live-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45em;
-  padding: 0.35em 0.75em;
-  border-radius: 999px;
-  font-size: clamp(0.62rem, 1vw, 0.78rem);
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: #6ee7b7;
-  background: rgba(16, 185, 129, 0.12);
-  border: 1px solid rgba(52, 211, 153, 0.28);
+.tv-slide--fac.tv-slide--fac-exec .exec-chart-tabs {
+  margin-bottom: 0.45rem;
   flex-shrink: 0;
 }
 
-.tv-fac-live-dot {
-  width: 0.55em;
-  height: 0.55em;
-  border-radius: 50%;
-  background: #34d399;
-  box-shadow: 0 0 10px rgba(52, 211, 153, 0.75);
-  animation: tvFacLivePulse 1.8s ease-in-out infinite;
+.tv-slide--fac.tv-slide--fac-exec .exec-chart-tab {
+  padding: 0.42rem 0.85rem;
+  font-size: 0.74rem;
 }
 
-@keyframes tvFacLivePulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.55; transform: scale(0.82); }
-}
-
-.tv-chart-box--fac {
+.tv-slide--fac.tv-slide--fac-exec .exec-chart-shell,
+.tv-slide--fac.tv-slide--fac-exec .exec-chart-shell--fac-visual {
   flex: 1;
   min-height: 0;
-  padding: 0.15vh 0.1vw 0;
-}
-
-.tv-slide-foot--fac-central {
-  padding: 0.55vh 0.75vw;
-}
-
-.tv-slide-foot--fac-central .tv-foot-title {
-  margin-bottom: 0.55vh;
-  font-size: clamp(0.72rem, 1.1vw, 0.88rem);
-  letter-spacing: 0.1em;
-}
-
-.tv-fac-foot-chips {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: clamp(0.35rem, 0.75vw, 0.65rem);
-  flex: 1;
-  align-content: center;
-}
-
-.tv-fac-foot-chip {
   display: flex;
   flex-direction: column;
-  gap: 0.2em;
-  padding: 0.55em 0.75em;
-  border-radius: 12px;
-  background: rgba(12, 20, 32, 0.72);
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  min-width: 0;
 }
 
-.tv-fac-foot-chip-lbl {
-  font-size: clamp(0.62rem, 1vw, 0.78rem);
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--muted);
+.tv-slide--fac.tv-slide--fac-exec .exec-chart-header {
+  flex-shrink: 0;
+  padding-top: 0;
 }
 
-.tv-fac-foot-chip-val {
-  font-size: clamp(0.82rem, 1.35vw, 1.05rem);
-  font-weight: 800;
-  color: #f1f5f9;
-  line-height: 1.25;
-  overflow-wrap: anywhere;
+.tv-slide--fac.tv-slide--fac-exec .exec-chart-eyebrow {
+  margin-bottom: 0.12rem;
+  font-size: clamp(0.62rem, 0.95vw, 0.72rem);
+}
+
+.tv-slide--fac.tv-slide--fac-exec .exec-chart-title {
+  margin-bottom: 0.12rem;
+  font-size: clamp(1.15rem, 2.1vw, 1.75rem);
+}
+
+.tv-slide--fac.tv-slide--fac-exec .exec-chart-subtitle {
+  font-size: clamp(0.72rem, 1.1vw, 0.92rem);
+}
+
+.tv-slide--fac.tv-slide--fac-exec .exec-chart-insights {
+  font-size: clamp(0.72rem, 1.05vw, 0.88rem);
+}
+
+.tv-slide--fac.tv-slide--fac-exec .exec-chart-canvas-wrap,
+.tv-slide--fac.tv-slide--fac-exec .exec-chart-canvas-wrap--fac-visual,
+.tv-slide--fac.tv-slide--fac-exec .exec-chart-canvas-wrap--premium {
+  flex: 1;
+  min-height: 0;
 }
 
 @media (max-width: 900px) {
-  .tv-fac-kpi-band,
-  .tv-fac-foot-chips {
-    grid-template-columns: 1fr;
+  .tv-slide--fac.tv-slide--fac-exec .fac-kpi-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 

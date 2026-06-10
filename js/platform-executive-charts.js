@@ -1251,6 +1251,77 @@
     return meta;
   }
 
+  function facturasCentralDailyMeta(labels, values, markers, opts) {
+    labels = labels || [];
+    values = values || [];
+    markers = markers || [];
+    opts = opts || {};
+    var useBar = labels.length <= 4;
+    var datasets;
+    if (useBar) {
+      datasets = [{
+        label: 'Facturación RD$',
+        data: values,
+        backgroundColor: 'rgba(16, 185, 129, 0.88)',
+        hoverBackgroundColor: 'rgba(52, 211, 153, 0.95)',
+        borderColor: 'rgba(167, 243, 208, 0.55)',
+        borderWidth: 1.5,
+        borderRadius: { topLeft: 12, topRight: 12, bottomLeft: 4, bottomRight: 4 },
+        maxBarThickness: labels.length === 1 ? 128 : 84,
+        barPercentage: labels.length === 1 ? 0.38 : 0.65
+      }];
+    } else {
+      datasets = [{
+        label: 'Facturación RD$',
+        data: values,
+        borderColor: '#10b981',
+        backgroundColor: 'rgba(16, 185, 129, 0.18)',
+        borderWidth: 3,
+        fill: true,
+        tension: 0.35,
+        pointRadius: markers.map(function (m) {
+          return m === 'up' || m === 'down' ? 8 : 5;
+        }),
+        pointBackgroundColor: markers.map(function (m) {
+          if (m === 'up') return 'rgba(52, 211, 153, 1)';
+          if (m === 'down') return 'rgba(255, 107, 122, 1)';
+          return '#3b82f6';
+        }),
+        pointBorderColor: '#fff',
+        pointBorderWidth: 2
+      }];
+    }
+    return {
+      eyebrow: 'Facturación · CENTRAL',
+      title: opts.title || 'Facturación diaria',
+      subtitle: opts.subtitle || 'Montos en pesos dominicanos (RD$)',
+      canvasId: opts.canvasId || 'tvChartFac',
+      insights: opts.insights || [],
+      chart: {
+        type: useBar ? 'bar' : 'line',
+        valueFormat: 'money',
+        preserveDatasetFunctions: !useBar,
+        data: { labels: labels, datasets: datasets },
+        options: Object.assign({}, facVisualChartBase(), {
+          layout: { padding: { top: useBar ? 28 : 8, right: 12, bottom: 4, left: 8 } },
+          plugins: Object.assign({}, facVisualChartBase().plugins, useBar ? {
+            datalabels: {
+              display: true,
+              anchor: 'end',
+              align: 'top',
+              offset: 6,
+              color: '#ecfdf5',
+              textStrokeColor: 'rgba(6, 11, 20, 0.9)',
+              textStrokeWidth: 3,
+              font: { size: 15, weight: '800' },
+              formatter: function (v) { return fmtMoneyRd(v); }
+            }
+          } : { datalabels: { display: false } })
+        })
+      }
+    };
+  }
+
   function renderFromMeta(registry, meta, extraOpts) {
     if (!meta || !meta.chart) return;
     renderChart(registry, meta.canvasId, meta.chart, extraOpts);
@@ -1281,6 +1352,7 @@
     facturasTabsHtml: facturasTabsHtml,
     facturasVisualShell: facturasVisualShell,
     facturasVisualSignals: facturasVisualSignals,
+    facturasCentralDailyMeta: facturasCentralDailyMeta,
     fmtNum: fmtNum,
     fmtMoneyRd: fmtMoneyRd
   };
