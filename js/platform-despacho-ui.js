@@ -168,6 +168,7 @@
 
   function guardJaulaField(input, key, onCleared) {
     if (!input) return;
+    input.value = '';
     input.setAttribute('autocomplete', 'off');
     input.setAttribute('autocorrect', 'off');
     input.setAttribute('spellcheck', 'false');
@@ -175,20 +176,55 @@
     input.setAttribute('data-form-type', 'other');
     input.setAttribute('data-1p-ignore', 'true');
     input.readOnly = true;
-    input.addEventListener('focus', function unlock() {
-      input.readOnly = false;
-    }, { once: true });
-    input.addEventListener('input', function () {
-      pasilloTouched[key] = true;
-    });
-    function purgeAutofill() {
-      if (pasilloTouched[key] || !input.value) return;
+
+    var userEditing = false;
+
+    function clearAutofill() {
+      if (pasilloTouched[key] || userEditing) return;
+      if (!input.value) return;
       input.value = '';
       if (onCleared) onCleared();
     }
-    setTimeout(purgeAutofill, 0);
-    setTimeout(purgeAutofill, 120);
-    setTimeout(purgeAutofill, 450);
+
+    function markUserEdit() {
+      userEditing = true;
+      pasilloTouched[key] = true;
+    }
+
+    input.addEventListener('focus', function () {
+      input.readOnly = false;
+      userEditing = false;
+      if (!pasilloTouched[key]) input.value = '';
+      setTimeout(clearAutofill, 0);
+      setTimeout(clearAutofill, 80);
+      setTimeout(clearAutofill, 250);
+      setTimeout(clearAutofill, 600);
+    });
+
+    input.addEventListener('keydown', markUserEdit);
+    input.addEventListener('paste', markUserEdit);
+    input.addEventListener('cut', markUserEdit);
+    input.addEventListener('beforeinput', function (ev) {
+      if (ev && ev.isTrusted) markUserEdit();
+    });
+
+    input.addEventListener('input', function () {
+      if (!userEditing && !pasilloTouched[key]) {
+        input.value = '';
+        if (onCleared) onCleared();
+        return;
+      }
+      pasilloTouched[key] = true;
+    });
+
+    input.addEventListener('change', function () {
+      if (!pasilloTouched[key]) clearAutofill();
+    });
+
+    setTimeout(clearAutofill, 0);
+    setTimeout(clearAutofill, 120);
+    setTimeout(clearAutofill, 450);
+    setTimeout(clearAutofill, 1000);
   }
 
   function updateBarcodePanel(host, idc, jaula) {
@@ -335,8 +371,8 @@
       '<div class="desp-form-grid">' +
       '<label class="desp-field"><span>ID pedido (IDC)</span>' +
       '<input type="text" id="despIdc" name="idc" inputmode="text" placeholder="Escriba el IDC" autocapitalize="off" autocomplete="off"></label>' +
-      '<label class="desp-field"><span>Jaula</span>' +
-      '<input type="text" id="despJaula" name="x_dc_prep_pasillo" placeholder="Escriba la jaula" autocomplete="off" autocorrect="off" spellcheck="false" inputmode="text" aria-label="Jaula"></label>' +
+      '<label class="desp-field"><span>Referencia</span>' +
+      '<input type="text" id="despJaula" name="x_dc_prep_ref" placeholder="Escriba lo que necesite" autocomplete="off" autocorrect="off" spellcheck="false" inputmode="text" aria-label="Referencia"></label>' +
       '<label class="desp-field"><span>Nombre del cliente</span>' +
       '<input type="text" id="despCliente" name="cliente" placeholder="Nombre del cliente" autocomplete="off" autocorrect="off" spellcheck="false"></label>' +
       renderPrepEstadoField('prepEstado') +
@@ -408,7 +444,7 @@
       '<label class="desp-field"><span>IDC a mostrar</span>' +
       '<input type="text" id="despShareIdc" name="idc" inputmode="text" placeholder="Escriba el IDC" autocapitalize="off" autocomplete="off"></label>' +
       '<label class="desp-field"><span>Referencia</span>' +
-      '<input type="text" id="despShareJaula" name="x_dc_share_pasillo" placeholder="Nombre, jaula o lo que escriba el operador" autocomplete="off" autocorrect="off" spellcheck="false" inputmode="text" aria-label="Referencia"></label>' +
+      '<input type="text" id="despShareJaula" name="x_dc_share_ref" placeholder="Escriba lo que necesite" autocomplete="off" autocorrect="off" spellcheck="false" inputmode="text" aria-label="Referencia"></label>' +
       '</div>' +
       '<div class="desp-prep-actions desp-prep-actions--single">' +
       '<button type="button" class="btn desp-action-btn desp-btn-share desp-btn-share--barcode' + (sharing ? ' is-live' : '') + '" id="despBtnShareScreen">' +
