@@ -12,7 +12,7 @@
   var mountEl = null;
   var lastSig = '';
   var displayMode = false;
-  var LAYOUT_REV = '12';
+  var LAYOUT_REV = '13';
   var BARCODE_REV = 'notext-hq';
   var fitBound = false;
 
@@ -89,23 +89,23 @@
   function fitPresentToViewport() {
     if (!mountEl || mountEl.hidden || !shouldShowOnThisPage()) return;
     var inner = mountEl.querySelector('.desp-present-inner--tv');
-    var stage = mountEl.querySelector('.desp-present-stage');
-    if (!inner || !stage) return;
+    var block = mountEl.querySelector('.desp-present-content');
+    if (!inner || !block) return;
 
-    stage.style.transform = 'none';
-    stage.style.marginBottom = '0';
+    block.style.transform = 'none';
+    block.style.marginBottom = '0';
 
     var availH = inner.clientHeight - 8;
     var availW = inner.clientWidth - 8;
-    var natH = stage.offsetHeight;
-    var natW = stage.offsetWidth;
+    var natH = block.offsetHeight;
+    var natW = block.offsetWidth;
     if (!natH || !availH || !natW || !availW) return;
 
     var scale = Math.min(1, availH / natH, availW / natW);
     if (scale < 0.995) {
-      stage.style.transform = 'scale(' + scale.toFixed(4) + ')';
-      stage.style.transformOrigin = 'center center';
-      stage.style.marginBottom = String(Math.round(natH * (scale - 1))) + 'px';
+      block.style.transform = 'scale(' + scale.toFixed(4) + ')';
+      block.style.transformOrigin = 'center top';
+      block.style.marginBottom = String(Math.round(natH * (scale - 1))) + 'px';
     }
   }
 
@@ -213,6 +213,7 @@
       '<div class="desp-present-inner desp-present-inner--tv">' +
       '<div class="desp-present-badge"><span class="desp-present-dot"></span> EN VIVO · Código de barras IDC</div>' +
       '<div class="desp-present-grid desp-present-grid--tv">' +
+      '<div class="desp-present-content">' +
       '<div class="desp-present-stage">' +
       '<span class="desp-present-corner desp-present-corner--tl" aria-hidden="true"></span>' +
       '<span class="desp-present-corner desp-present-corner--tr" aria-hidden="true"></span>' +
@@ -221,7 +222,7 @@
       '<div class="desp-present-barcode-wrap desp-present-barcode-wrap--tv">' +
       '<span class="desp-present-scan-tag" aria-hidden="true">ESCANEO IDC</span>' +
       '<img class="desp-present-barcode desp-barcode-img" id="despPresentBarcode" alt="Código de barras IDC">' +
-      '</div>' +
+      '</div></div>' +
       '<div class="desp-present-meta desp-present-meta--tv">' +
       '<div class="desp-present-meta-divider" aria-hidden="true"></div>' +
       '<p class="desp-present-label">IDC activo</p>' +
