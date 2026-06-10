@@ -13,7 +13,7 @@
   var lastSig = '';
   var displayMode = false;
   var LAYOUT_REV = '14';
-  var BARCODE_REV = 'notext-hq-xxl';
+  var BARCODE_REV = 'notext-hq-wide';
   var fitBound = false;
 
   function ensureAmbientEl() {
@@ -181,8 +181,8 @@
       avail = Math.max(220, inner.clientHeight - reserve);
     }
 
-    if (!avail) return 400;
-    return Math.min(720, Math.max(300, Math.round(avail * 0.98)));
+    if (!avail) return 340;
+    return Math.min(560, Math.max(240, Math.round(avail * 0.82)));
   }
 
   function renderBarcode(imgEl, idc) {
@@ -199,8 +199,8 @@
       tv: true,
       height: barH,
       fontSize: 44,
-      width: 6,
-      margin: 12,
+      width: 7,
+      margin: 10,
       showText: false,
       scale: 5
     } : {
