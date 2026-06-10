@@ -9,7 +9,7 @@
     if (opts && opts.scale != null) return Math.max(1, Number(opts.scale) || 1);
     if (opts && opts.tv) {
       var dpr = global.devicePixelRatio || 1;
-      return Math.min(4, Math.max(3, Math.round(dpr * 2)));
+      return Math.min(5, Math.max(4, Math.round(dpr * 2)));
     }
     return 1;
   }

@@ -12,8 +12,8 @@
   var mountEl = null;
   var lastSig = '';
   var displayMode = false;
-  var LAYOUT_REV = '13';
-  var BARCODE_REV = 'notext-hq';
+  var LAYOUT_REV = '14';
+  var BARCODE_REV = 'notext-hq-xl';
   var fitBound = false;
 
   function ensureAmbientEl() {
@@ -130,7 +130,18 @@
 
   function wireBarcodeFit(imgEl) {
     if (!imgEl) return;
-    imgEl.addEventListener('load', schedulePresentFit);
+    if (imgEl.getAttribute('data-fit-wired') !== '1') {
+      imgEl.setAttribute('data-fit-wired', '1');
+      imgEl.addEventListener('load', function onBarcodeLoad() {
+        schedulePresentFit();
+        if (!shouldShowOnThisPage()) return;
+        var targetH = barcodeRenderHeight(imgEl);
+        var prevH = Number(imgEl.getAttribute('data-render-h') || 0);
+        if (targetH - prevH > 36) {
+          renderBarcode(imgEl, imgEl.alt);
+        }
+      });
+    }
     schedulePresentFit();
   }
 
@@ -148,6 +159,19 @@
     }
   }
 
+  function barcodeRenderHeight(imgEl) {
+    if (!imgEl) return 320;
+    var wrap = imgEl.closest('.desp-present-barcode-wrap');
+    var stage = imgEl.closest('.desp-present-stage');
+    var inner = mountEl && mountEl.querySelector('.desp-present-inner--tv');
+    var avail = 0;
+    if (wrap && wrap.clientHeight > 60) avail = wrap.clientHeight;
+    else if (stage && stage.clientHeight > 80) avail = Math.round(stage.clientHeight * 0.82);
+    else if (inner && inner.clientHeight > 200) avail = Math.round(inner.clientHeight * 0.42);
+    if (!avail) return 320;
+    return Math.min(480, Math.max(260, Math.round(avail * 0.92)));
+  }
+
   function renderBarcode(imgEl, idc) {
     if (!imgEl || !global.PlatformDespachoBarcode || !DS()) return;
     var code = DS().formatIdc(idc);
@@ -157,19 +181,22 @@
       return;
     }
     var tv = shouldShowOnThisPage();
+    var barH = tv ? barcodeRenderHeight(imgEl) : 100;
     global.PlatformDespachoBarcode.render(imgEl, code, tv ? {
       tv: true,
-      height: 220,
+      height: barH,
       fontSize: 44,
-      width: 4,
-      margin: 28,
-      showText: false
+      width: 5,
+      margin: 18,
+      showText: false,
+      scale: 4
     } : {
       height: 100,
       fontSize: 24,
       width: 2.4,
       showText: true
     });
+    if (tv) imgEl.setAttribute('data-render-h', String(barH));
   }
 
   function renderMount(share) {
