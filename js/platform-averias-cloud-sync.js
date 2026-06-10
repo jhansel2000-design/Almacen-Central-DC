@@ -984,16 +984,41 @@
     keys.forEach(function (k) {
       try { global.localStorage.removeItem(k); } catch (e) { /* noop */ }
     });
+    try {
+      global.localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(snap));
+      global.localStorage.setItem('averias_dc_incidences', '[]');
+      global.localStorage.setItem('averias_dc_damages', '[]');
+      global.localStorage.setItem('averias_dc_securityIncidents', '[]');
+      global.localStorage.setItem('averias_dc_audits5s', '[]');
+      global.localStorage.setItem('averias_dc_equipmentInspections', '[]');
+      global.localStorage.setItem('averias_dc_equipmentRegistry', '{}');
+    } catch (e) { /* noop */ }
     lastAppliedJson = '';
+    lastAppliedContentSig = '';
     lastRemoteUpdatedAt = '';
     if (global.PlatformAveriasUI && global.PlatformAveriasUI.applyRemoteSnapshot) {
       global.PlatformAveriasUI.applyRemoteSnapshot(snap, { silent: false });
     }
-    return pushSnapshot(snap).then(function (result) {
+    pushing = true;
+    return Promise.all([
+      pushToServer(snap),
+      pushToCloudProxy(snap),
+      pushToJsonBin(snap),
+      pushToFirebase(snap)
+    ]).then(function (results) {
+      var jsonBinOk = results[2];
+      var ok = hasJsonBinConfig() ? !!jsonBinOk : results.some(Boolean);
+      if (ok) {
+        broadcastSyncHint();
+        schedulePullBurst();
+      }
+      notifyUpdated('wipe');
       try {
         global.dispatchEvent(new CustomEvent('averias-web-wiped'));
       } catch (e) { /* noop */ }
-      return Object.assign({ ok: !!(result && result.ok) }, result || {});
+      return { ok: ok, jsonBinOk: jsonBinOk };
+    }).finally(function () {
+      pushing = false;
     });
   }
 

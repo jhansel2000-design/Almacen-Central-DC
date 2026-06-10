@@ -381,6 +381,12 @@
 
       clearLocalPresentOverlays();
 
+      document.addEventListener('despacho-web-wiped', function () {
+        if (!state.user) return;
+        if (typeof renderDespacho === 'function') renderDespacho();
+        updateDespachoSyncLabel();
+      });
+
       document.addEventListener('lan-sync', function (ev) {
         if (!state.user) return;
         if (!ev.detail || ev.detail.store === 'despacho') updateDespachoSyncLabel();

@@ -760,7 +760,15 @@
             });
             document.addEventListener('averias-updated', function (ev) { reloadFromSyncDebounced(ev); });
             document.addEventListener('averias-web-wiped', function () {
-                reloadFromSyncDebounced({ detail: { source: 'wipe' } });
+                var pull = global.PlatformAveriasCloudSync && global.PlatformAveriasCloudSync.pull;
+                if (pull) {
+                    pull().then(function () {
+                        reloadFromSync();
+                        refreshCurrentView();
+                    });
+                } else {
+                    reloadFromSyncDebounced({ detail: { source: 'wipe' } });
+                }
             });
             document.addEventListener('averias-sync-push', function () {
                 if (global.PlatformAveriasCloudSync && global.PlatformAveriasCloudSync.schedulePullBurst) {

@@ -463,22 +463,81 @@
     });
   }
 
+  function pushEmptyToLanDespacho() {
+    var empty = {
+      module: 'despacho',
+      version: 1,
+      updatedAt: new Date().toISOString(),
+      pedidos: [],
+      liveShare: null,
+      liveShareLista: null
+    };
+    return global.fetch('/api/data/despacho', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ data: empty, source: 'wipe' })
+    }).then(function (res) {
+      return { ok: res.ok, target: 'lan-despacho' };
+    }).catch(function () {
+      return { ok: false, target: 'lan-despacho', skipped: true };
+    });
+  }
+
+  function wipeDespachoData() {
+    var empty = {
+      module: 'despacho',
+      version: 1,
+      updatedAt: new Date().toISOString(),
+      pedidos: [],
+      liveShare: null,
+      liveShareLista: null
+    };
+    if (global.PlatformDespachoStore && global.PlatformDespachoStore.wipeAll) {
+      global.PlatformDespachoStore.wipeAll();
+      return { ok: true, via: 'store' };
+    }
+    if (global.localStorage && global.PlatformStore && global.PlatformStore.KEYS) {
+      try {
+        global.localStorage.setItem(global.PlatformStore.KEYS.dataDespacho, JSON.stringify(empty));
+      } catch (e) { return { ok: false }; }
+    }
+    try {
+      global.dispatchEvent(new CustomEvent('despacho-web-wiped'));
+      global.dispatchEvent(new CustomEvent('despacho-updated', { detail: { data: empty, at: empty.updatedAt } }));
+    } catch (e) { /* noop */ }
+    return { ok: true, via: 'local' };
+  }
+
   function wipeAllWebRegisteredData() {
     clearLocalAveriasData();
     var modules = clearModuleData('all');
-    return wipeCloudAveriasData().then(function (cloud) {
+    var desp = wipeDespachoData();
+    return Promise.all([
+      wipeCloudAveriasData(),
+      pushEmptyToLanDespacho()
+    ]).then(function (parts) {
+      var cloud = parts[0];
+      var lanDesp = parts[1];
       try {
         global.dispatchEvent(new CustomEvent('averias-web-wiped'));
+        global.dispatchEvent(new CustomEvent('despacho-web-wiped'));
       } catch (e) { /* noop */ }
+      if (global.PlatformAveriasCloudSync && global.PlatformAveriasCloudSync.schedulePullBurst) {
+        global.PlatformAveriasCloudSync.schedulePullBurst();
+      }
       var cloudOk = !!(cloud && cloud.ok);
+      var jsonBinOk = !!(cloud && (cloud.jsonBinOk || (cloud.jsonbin && cloud.jsonbin.ok)));
       return {
-        ok: modules.ok !== false && (cloudOk || !(cloud && cloud.error)),
+        ok: modules.ok !== false && desp.ok !== false && (cloudOk || !(cloud && cloud.error)),
         cloudOk: cloudOk,
+        jsonBinOk: jsonBinOk,
         message: cloudOk
-          ? 'Limpieza completa: reportes en la nube borrados y datos del WMS vacíos. Todos los dispositivos se actualizarán en ~1 s.'
+          ? 'Limpieza completa: reportes en 0 en la nube, WMS y portales de despacho. Los demás dispositivos se actualizan en ~1 s.'
           : 'Datos locales borrados. No se pudo vaciar la nube — compruebe internet o JSONBin.',
         modules: modules,
-        cloud: cloud
+        despacho: desp,
+        cloud: cloud,
+        lanDespacho: lanDesp
       };
     });
   }

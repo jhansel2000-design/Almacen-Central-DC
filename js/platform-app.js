@@ -1233,6 +1233,13 @@
         renderDespachoModule();
       }
     });
+    document.addEventListener('despacho-web-wiped', function () {
+      state.dataDespacho = loadDespachoData();
+      updateDataStatusChips();
+      if (getActiveModule() === 'despacho') {
+        renderDespachoModule();
+      }
+    });
     document.addEventListener('averias-updated', function () {
       updateDataStatusChips();
       if (getActiveModule() === 'reportes') {
@@ -1576,6 +1583,7 @@
       if (res.ok) {
         state.dataOperaciones = global.PlatformStore.getPublishedData('operaciones');
         state.dataProductividad = global.PlatformStore.getPublishedData('productividad');
+        state.dataDespacho = loadDespachoData();
         destroyCharts();
         renderCurrentModule();
         refreshAdminPanels();

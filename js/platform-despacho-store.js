@@ -734,6 +734,21 @@
     };
   }
 
+  function wipeAll() {
+    var empty = emptyPayload();
+    save(empty);
+    if (broadcast) {
+      try { broadcast.postMessage({ type: 'despacho-wipe', at: Date.now() }); } catch (e) { /* noop */ }
+    }
+    if (broadcastLista) {
+      try { broadcastLista.postMessage({ type: 'despacho-wipe', at: Date.now() }); } catch (e) { /* noop */ }
+    }
+    try {
+      global.dispatchEvent(new CustomEvent('despacho-web-wiped'));
+    } catch (e) { /* noop */ }
+    return empty;
+  }
+
   global.PlatformDespachoStore = {
     STORAGE_KEY: STORAGE_KEY,
     ESTADOS: ESTADOS,
@@ -770,6 +785,7 @@
     stopLiveShareLista: stopLiveShareLista,
     toggleLiveShareLista: toggleLiveShareLista,
     getPedidosActivos: getPedidosActivos,
-    bindSync: bindSync
+    bindSync: bindSync,
+    wipeAll: wipeAll
   };
 })(typeof window !== 'undefined' ? window : this);
