@@ -12,7 +12,8 @@
   var mountEl = null;
   var lastSig = '';
   var displayMode = false;
-  var LAYOUT_REV = '9';
+  var LAYOUT_REV = '10';
+  var BARCODE_REV = 'notext-hq';
 
   function ensureAmbientEl() {
     if (!mountEl || !shouldShowOnThisPage()) return null;
@@ -86,7 +87,13 @@
 
   function shareSignature(share) {
     if (!share || !share.active) return '';
-    return [LAYOUT_REV, share.idc, share.jaula, share.updatedAt].join('|');
+    return [LAYOUT_REV, BARCODE_REV, share.idc, share.jaula, share.updatedAt].join('|');
+  }
+
+  function refreshBarcodeFromShare(share) {
+    if (!mountEl || !share || !share.active) return;
+    var img = mountEl.querySelector('#despPresentBarcode');
+    if (img) renderBarcode(img, share.idc);
   }
 
   function renderBarcode(imgEl, idc) {
@@ -183,7 +190,10 @@
     }
     var share = store.getLiveShare ? store.getLiveShare() : null;
     var sig = shareSignature(share);
-    if (sig === lastSig) return;
+    if (sig === lastSig) {
+      refreshBarcodeFromShare(share);
+      return;
+    }
     renderMount(share);
   }
 

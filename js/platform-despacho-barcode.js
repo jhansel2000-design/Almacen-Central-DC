@@ -19,23 +19,29 @@
     opts = opts || {};
     var tv = !!opts.tv;
     var scale = resolveScale(opts);
+    var showText = opts.showText === true;
     try {
       var canvas = document.createElement('canvas');
-      global.JsBarcode(canvas, String(text), {
+      var barcodeOpts = {
         format: 'CODE128',
-        displayValue: opts.showText !== false,
-        fontSize: Math.round((opts.fontSize || (tv ? 44 : 20)) * scale),
-        height: Math.round((opts.height || (tv ? 200 : 72)) * scale),
+        displayValue: showText,
+        height: Math.round((opts.height || (tv ? 220 : 72)) * scale),
         width: (opts.width || (tv ? 4 : 2)) * scale,
         margin: Math.round((opts.margin || (tv ? 28 : 8)) * scale),
         background: opts.background || '#ffffff',
-        lineColor: '#000000',
-        textAlign: 'center',
-        textPosition: 'bottom',
-        textMargin: Math.round((opts.textMargin != null ? opts.textMargin : 12) * scale),
-        fontOptions: tv ? 'bold' : '',
-        font: tv ? 'bold ' + Math.round((opts.fontSize || 44) * scale) + 'px "DM Sans", ui-monospace, monospace' : 'monospace'
-      });
+        lineColor: '#000000'
+      };
+      if (showText) {
+        barcodeOpts.fontSize = Math.round((opts.fontSize || (tv ? 44 : 20)) * scale);
+        barcodeOpts.textAlign = 'center';
+        barcodeOpts.textPosition = 'bottom';
+        barcodeOpts.textMargin = Math.round((opts.textMargin != null ? opts.textMargin : 12) * scale);
+        barcodeOpts.fontOptions = tv ? 'bold' : '';
+        barcodeOpts.font = tv
+          ? 'bold ' + Math.round((opts.fontSize || 44) * scale) + 'px "DM Sans", ui-monospace, monospace'
+          : 'monospace';
+      }
+      global.JsBarcode(canvas, String(text), barcodeOpts);
       return {
         canvas: canvas,
         scale: scale,
