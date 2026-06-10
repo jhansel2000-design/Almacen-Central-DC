@@ -12,7 +12,6 @@
   var unbindSync = null;
   var lastOpts = null;
   var displayWindows = { barcode: null, lista: null };
-  var pasilloTouched = { prep: false, share: false };
   var knownValidatorIds = Object.create(null);
   var voiceAlertsReady = false;
 
@@ -45,14 +44,49 @@
     knownValidatorIds[pedido.id] = true;
   }
 
-  function resetJaulaTouched() {
-    pasilloTouched.prep = false;
-    pasilloTouched.share = false;
+  function isAutofillJunk(val) {
+    val = String(val || '').trim();
+    if (!val) return false;
+    if (/^jaula$/i.test(val)) return true;
+    if (/^referencia$/i.test(val)) return true;
+    if (/^escriba(\s|$)/i.test(val)) return true;
+    return false;
   }
 
-  function pasilloValueFromField(input, key) {
-    if (!pasilloTouched[key]) return '';
-    return input ? String(input.value || '').trim() : '';
+  function pasilloValueFromField(input) {
+    if (!input) return '';
+    var val = String(input.value || '').trim();
+    if (isAutofillJunk(val)) return '';
+    return val;
+  }
+
+  function guardJaulaField(input, onCleared) {
+    if (!input) return;
+    input.setAttribute('autocomplete', 'off');
+    input.setAttribute('autocorrect', 'off');
+    input.setAttribute('spellcheck', 'false');
+    input.setAttribute('data-lpignore', 'true');
+    input.setAttribute('data-form-type', 'other');
+    input.setAttribute('data-1p-ignore', 'true');
+    input.readOnly = true;
+
+    function purgeJunk() {
+      if (isAutofillJunk(input.value)) {
+        input.value = '';
+        if (onCleared) onCleared();
+      }
+    }
+
+    input.addEventListener('focus', function () {
+      input.readOnly = false;
+      purgeJunk();
+      setTimeout(purgeJunk, 80);
+    });
+
+    input.addEventListener('input', purgeJunk);
+    input.addEventListener('change', purgeJunk);
+    setTimeout(purgeJunk, 0);
+    setTimeout(purgeJunk, 350);
   }
 
   function liveStatusText(live) {
@@ -164,67 +198,6 @@
       return;
     }
     global.PlatformDespachoBarcode.render(imgEl, code, opts || {});
-  }
-
-  function guardJaulaField(input, key, onCleared) {
-    if (!input) return;
-    input.value = '';
-    input.setAttribute('autocomplete', 'off');
-    input.setAttribute('autocorrect', 'off');
-    input.setAttribute('spellcheck', 'false');
-    input.setAttribute('data-lpignore', 'true');
-    input.setAttribute('data-form-type', 'other');
-    input.setAttribute('data-1p-ignore', 'true');
-    input.readOnly = true;
-
-    var userEditing = false;
-
-    function clearAutofill() {
-      if (pasilloTouched[key] || userEditing) return;
-      if (!input.value) return;
-      input.value = '';
-      if (onCleared) onCleared();
-    }
-
-    function markUserEdit() {
-      userEditing = true;
-      pasilloTouched[key] = true;
-    }
-
-    input.addEventListener('focus', function () {
-      input.readOnly = false;
-      userEditing = false;
-      if (!pasilloTouched[key]) input.value = '';
-      setTimeout(clearAutofill, 0);
-      setTimeout(clearAutofill, 80);
-      setTimeout(clearAutofill, 250);
-      setTimeout(clearAutofill, 600);
-    });
-
-    input.addEventListener('keydown', markUserEdit);
-    input.addEventListener('paste', markUserEdit);
-    input.addEventListener('cut', markUserEdit);
-    input.addEventListener('beforeinput', function (ev) {
-      if (ev && ev.isTrusted) markUserEdit();
-    });
-
-    input.addEventListener('input', function () {
-      if (!userEditing && !pasilloTouched[key]) {
-        input.value = '';
-        if (onCleared) onCleared();
-        return;
-      }
-      pasilloTouched[key] = true;
-    });
-
-    input.addEventListener('change', function () {
-      if (!pasilloTouched[key]) clearAutofill();
-    });
-
-    setTimeout(clearAutofill, 0);
-    setTimeout(clearAutofill, 120);
-    setTimeout(clearAutofill, 450);
-    setTimeout(clearAutofill, 1000);
   }
 
   function updateBarcodePanel(host, idc, jaula) {
@@ -463,6 +436,7 @@
       '<img id="despBarcodeImg" class="desp-barcode-img" alt="Código de barras IDC" width="300" height="100">' +
       '</div>' +
       '<p class="desp-barcode-idc" id="despBarcodeLabel">—</p>' +
+      '<p class="desp-barcode-ref-label">Referencia</p>' +
       '<p class="desp-barcode-jaula" id="despBarcodeJaula"></p>' +
       '</aside></div></section>';
   }
@@ -548,7 +522,7 @@
     if (!idc && !jaula) return null;
     return {
       idc: idc ? idc.value : '',
-      jaula: pasilloValueFromField(jaula, 'prep'),
+      jaula: pasilloValueFromField(jaula),
       cliente: cliente ? cliente.value : '',
       estado: prepEstadoValue(host, 'prepEstado')
     };
@@ -563,7 +537,6 @@
     if (cliente) cliente.value = snap.cliente || '';
     if (jaula) {
       jaula.value = snap.jaula || '';
-      pasilloTouched.prep = !!snap.jaula;
     }
     if (snap.estado) {
       var radio = host.querySelector('input[name="prepEstado"][value="' + snap.estado + '"]');
@@ -577,7 +550,7 @@
     if (!idc && !jaula) return null;
     return {
       idc: idc ? idc.value : '',
-      jaula: pasilloValueFromField(jaula, 'share'),
+      jaula: pasilloValueFromField(jaula),
       estado: 'facturado'
     };
   }
@@ -587,11 +560,8 @@
     var idc = host.querySelector('#despShareIdc');
     var jaula = host.querySelector('#despShareJaula');
     if (idc) idc.value = snap.idc || '';
-    if (jaula) {
-      jaula.value = snap.jaula || '';
-      pasilloTouched.share = !!snap.jaula;
-    }
-    updateBarcodePanel(host, snap.idc, pasilloTouched.share ? snap.jaula : '');
+    if (jaula) jaula.value = snap.jaula || '';
+    updateBarcodePanel(host, snap.idc, snap.jaula || '');
   }
 
   function updateShareScreenUi(host, data) {
@@ -637,7 +607,7 @@
     var clienteEl = host.querySelector('#despCliente');
     return {
       idc: idcEl ? idcEl.value : '',
-      jaula: pasilloValueFromField(pasilloEl, 'prep'),
+      jaula: pasilloValueFromField(pasilloEl),
       cliente: clienteEl ? clienteEl.value : '',
       estado: prepEstadoValue(host, 'prepEstado')
     };
@@ -648,7 +618,7 @@
     var pasilloEl = host.querySelector('#despShareJaula');
     return {
       idc: idcEl ? idcEl.value : '',
-      jaula: pasilloValueFromField(pasilloEl, 'share'),
+      jaula: pasilloValueFromField(pasilloEl),
       estado: 'facturado'
     };
   }
@@ -838,7 +808,6 @@
       unbindSync = null;
     }
 
-    resetJaulaTouched();
 
     var operadorStats = despachoArea === 'preparador' ? DS.countKpiOperador(data.pedidos) : null;
 
@@ -878,7 +847,7 @@
       var shareJaula = host.querySelector('#despShareJaula');
       updateBarcodePanel(host,
         shareIdc ? shareIdc.value : '',
-        pasilloValueFromField(shareJaula, 'share'));
+        pasilloValueFromField(shareJaula));
       updateShareScreenUi(host, data);
     }
 
@@ -916,8 +885,8 @@
       }
     }
 
-    guardJaulaField(host.querySelector('#despJaula'), 'prep');
-    guardJaulaField(host.querySelector('#despShareJaula'), 'share', onShareJaulaCleared);
+    guardJaulaField(host.querySelector('#despJaula'));
+    guardJaulaField(host.querySelector('#despShareJaula'), onShareJaulaCleared);
 
     host.querySelectorAll('[data-desp-screen]').forEach(function (btn) {
       btn.addEventListener('click', function () {
@@ -963,7 +932,7 @@
       function syncSharePreview() {
         updateBarcodePanel(host,
           shareIdcInput ? shareIdcInput.value : '',
-          pasilloValueFromField(shareJaulaInput, 'share'));
+          pasilloValueFromField(shareJaulaInput));
         clearTimeout(livePushTimer);
         livePushTimer = setTimeout(pushLiveToExternal, 120);
       }
@@ -1021,7 +990,7 @@
           var shareIdcEl = host.querySelector('#despShareIdc');
           var shareJaulaEl = host.querySelector('#despShareJaula');
           if (shareIdcEl) shareIdcEl.value = idc || '';
-          updateBarcodePanel(host, idc, pasilloValueFromField(shareJaulaEl, 'share'));
+          updateBarcodePanel(host, idc, pasilloValueFromField(shareJaulaEl));
           if (DS.isLiveShareActive()) {
             var vals = getShareFormValues(host);
             DS.syncLiveShare(vals.idc, vals.jaula, vals.estado, userName);

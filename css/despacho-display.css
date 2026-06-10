@@ -550,6 +550,24 @@ body.desp-display-mode .desp-present-idc-value {
   filter: drop-shadow(0 2px 20px rgba(255, 152, 0, 0.35)) drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5));
 }
 
+body.desp-display-mode .desp-present-ref-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  width: 100%;
+  margin-top: 0.15rem;
+}
+
+body.desp-display-mode .desp-present-ref-label {
+  margin: 0;
+  font-size: clamp(0.78rem, 1.45vw, 0.95rem);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: #b0c0d4;
+}
+
 body.desp-display-mode .desp-present-jaula {
   margin: 0;
   font-weight: 900;
@@ -558,13 +576,22 @@ body.desp-display-mode .desp-present-jaula {
 
 body.desp-display-mode .desp-present-jaula-value {
   display: inline-block;
-  padding: 0.28em 0.85em;
-  font-size: clamp(1.25rem, 3vw, 2.15rem);
+  padding: 0.32em 0.95em;
+  font-size: clamp(1.35rem, 3.2vw, 2.35rem);
   color: #ffb74d;
-  background: rgba(255, 152, 0, 0.1);
-  border: 1px solid rgba(255, 152, 0, 0.28);
+  background: rgba(255, 152, 0, 0.12);
+  border: 1px solid rgba(255, 152, 0, 0.32);
   border-radius: 999px;
-  box-shadow: 0 0 24px rgba(255, 152, 0, 0.15);
+  box-shadow: 0 0 28px rgba(255, 152, 0, 0.18);
+  min-width: min(280px, 70vw);
+}
+
+body.desp-display-mode .desp-present-jaula-value--empty {
+  color: #6b7c8f;
+  background: rgba(107, 124, 143, 0.12);
+  border-color: rgba(107, 124, 143, 0.28);
+  box-shadow: none;
+  font-size: clamp(1.1rem, 2.4vw, 1.65rem);
 }
 
 body.desp-display-mode .desp-present-jaula strong {

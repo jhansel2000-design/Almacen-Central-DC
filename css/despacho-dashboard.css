@@ -845,6 +845,16 @@ html[data-theme="light"] .desp-flujo {
   color: var(--text);
 }
 
+.desp-barcode-ref-label {
+  margin: 0.45rem 0 0.1rem;
+  text-align: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
 .desp-barcode-jaula {
   margin: 0 0 0.75rem;
   text-align: center;

@@ -12,7 +12,7 @@
   var mountEl = null;
   var lastSig = '';
   var displayMode = false;
-  var LAYOUT_REV = '10';
+  var LAYOUT_REV = '11';
   var BARCODE_REV = 'notext-hq';
 
   function ensureAmbientEl() {
@@ -145,7 +145,8 @@
     setBrandVisible(true);
     setAmbientVisible(true);
 
-    var hasJaula = !!String(share.jaula || '').trim();
+    var refText = String(share.jaula || '').trim();
+    var hasJaula = !!refText;
     var shellCls = 'desp-present-shell' +
       (shouldShowOnThisPage() ? ' desp-present-shell--tv' : '') +
       (hasJaula ? ' desp-present-shell--has-pasillo' : ' desp-present-shell--no-pasillo');
@@ -173,7 +174,11 @@
       '<div class="desp-present-meta-divider" aria-hidden="true"></div>' +
       '<p class="desp-present-label">IDC activo</p>' +
       '<p class="desp-present-idc"><span class="desp-present-idc-value">' + esc(idc) + '</span></p>' +
-      (hasJaula ? '<p class="desp-present-jaula"><span class="desp-present-jaula-value">' + esc(share.jaula) + '</span></p>' : '') +
+      '<div class="desp-present-ref-block">' +
+      '<p class="desp-present-ref-label">Referencia</p>' +
+      '<p class="desp-present-jaula">' +
+      '<span class="desp-present-jaula-value' + (hasJaula ? '' : ' desp-present-jaula-value--empty') + '">' +
+      esc(hasJaula ? refText : '—') + '</span></p></div>' +
       '<p class="desp-present-by"><span class="desp-present-by-label">Preparador</span> ' + esc(share.sharedBy || '—') + '</p>' +
       '</div></div></div></div>';
 
