@@ -12,7 +12,7 @@
   var mountEl = null;
   var lastSig = '';
   var displayMode = false;
-  var LAYOUT_REV = '4';
+  var LAYOUT_REV = '5';
 
   function brandMarkup() {
     return '<img class="desp-present-brand-logo" src="assets/img/dc-logo-128.png?v=4" alt="" width="56" height="56" decoding="async">' +
@@ -75,10 +75,10 @@
     var tv = shouldShowOnThisPage();
     global.PlatformDespachoBarcode.render(imgEl, code, tv ? {
       tv: true,
-      height: 140,
-      fontSize: 32,
-      width: 3.2,
-      margin: 12,
+      height: 150,
+      fontSize: 36,
+      width: 3.4,
+      margin: 16,
       showText: true
     } : {
       height: 100,
@@ -125,6 +125,7 @@
       '<div class="desp-present-inner desp-present-inner--tv">' +
       '<div class="desp-present-badge"><span class="desp-present-dot"></span> EN VIVO · Código de barras IDC</div>' +
       '<div class="desp-present-grid desp-present-grid--tv">' +
+      '<div class="desp-present-stage">' +
       '<div class="desp-present-barcode-wrap desp-present-barcode-wrap--tv">' +
       '<img class="desp-present-barcode desp-barcode-img" id="despPresentBarcode" alt="Código de barras IDC">' +
       '</div>' +
@@ -133,7 +134,7 @@
       '<p class="desp-present-idc">' + esc(idc) + '</p>' +
       (hasJaula ? '<p class="desp-present-jaula">' + esc(share.jaula) + '</p>' : '') +
       '<p class="desp-present-by">Preparador: ' + esc(share.sharedBy || '—') + '</p>' +
-      '</div></div></div>';
+      '</div></div></div></div>';
 
     renderBarcode(shell.querySelector('#despPresentBarcode'), idc);
     lastSig = shareSignature(share);

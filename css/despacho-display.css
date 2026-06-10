@@ -16,6 +16,39 @@ body.desp-display-mode.desp-live-lista-on {
   overflow: hidden;
 }
 
+/* —— Tema elegante pantalla código de barras —— */
+body.desp-display-mode.desp-live-present-on {
+  background: #040810;
+}
+
+body.desp-display-mode.desp-live-present-on::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 90% 70% at 100% 0%, rgba(255, 152, 0, 0.16), transparent 52%),
+    radial-gradient(ellipse 70% 55% at 0% 100%, rgba(255, 152, 0, 0.09), transparent 48%),
+    radial-gradient(ellipse 55% 45% at 50% 42%, rgba(42, 62, 110, 0.28), transparent 68%),
+    linear-gradient(160deg, #050a14 0%, #0c1628 42%, #08101e 72%, #040810 100%);
+}
+
+body.desp-display-mode.desp-live-present-on::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.4;
+  background-image:
+    linear-gradient(rgba(255, 152, 0, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 152, 0, 0.045) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(ellipse 75% 70% at 50% 48%, #000 20%, transparent 72%);
+  -webkit-mask-image: radial-gradient(ellipse 75% 70% at 50% 48%, #000 20%, transparent 72%);
+}
+
 .desp-display-noscript {
   padding: 2rem;
   text-align: center;
@@ -79,6 +112,7 @@ body.desp-display-mode .desp-live-present {
   width: 100%;
   height: 100vh;
   height: 100dvh;
+  background: transparent;
 }
 
 body.desp-display-mode .desp-present-shell,
@@ -87,13 +121,12 @@ body.desp-display-mode .desp-present-shell--tv {
   min-height: 0;
   width: 100%;
   position: relative;
+  z-index: 1;
   display: flex;
   align-items: stretch;
   justify-content: center;
   border-bottom: none;
-  background:
-    radial-gradient(ellipse 90% 70% at 50% 0%, rgba(255, 152, 0, 0.1), transparent 60%),
-    #03060e;
+  background: transparent;
 }
 
 body.desp-display-mode .desp-present-brand {
@@ -166,7 +199,7 @@ body.desp-display-mode .desp-present-inner--tv {
   max-width: 1600px;
   min-height: 0;
   margin: 0 auto;
-  padding: clamp(0.75rem, 2vh, 1.5rem) clamp(1rem, 3vw, 2.5rem) clamp(1rem, 2.5vh, 2rem);
+  padding: clamp(4.5rem, 8vh, 5.5rem) clamp(1rem, 3vw, 2.5rem) clamp(1rem, 2.5vh, 2rem);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -176,13 +209,30 @@ body.desp-display-mode .desp-present-inner--tv {
 
 body.desp-display-mode .desp-present-badge {
   flex-shrink: 0;
-  font-size: clamp(0.8rem, 1.6vw, 1.05rem);
-  margin-bottom: clamp(0.5rem, 1.5vh, 1.25rem);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-bottom: clamp(0.65rem, 1.6vh, 1.35rem);
+  padding: 0.48em 1.05em;
+  font-size: clamp(0.78rem, 1.45vw, 0.98rem);
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: #6ee7a0;
+  border-radius: 999px;
+  background: rgba(6, 14, 26, 0.82);
+  border: 1px solid rgba(86, 211, 100, 0.32);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
+}
+
+body.desp-display-mode .desp-present-dot {
+  width: 9px;
+  height: 9px;
+  box-shadow: 0 0 10px rgba(86, 211, 100, 0.65);
 }
 
 body.desp-display-mode .desp-present-grid,
 body.desp-display-mode .desp-present-grid--tv {
-  flex: 1;
+  flex: 0 1 auto;
   width: 100%;
   min-height: 0;
   display: flex;
@@ -190,23 +240,56 @@ body.desp-display-mode .desp-present-grid--tv {
   align-items: center;
   justify-content: center;
   text-align: center;
-  gap: clamp(0.75rem, 2vh, 1.75rem);
+  gap: 0;
+}
+
+body.desp-display-mode .desp-present-stage {
+  position: relative;
+  z-index: 2;
+  width: min(94vw, 960px);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: clamp(1rem, 2.2vh, 1.65rem);
+  padding: clamp(1.15rem, 2.4vw, 1.85rem);
+  border-radius: clamp(18px, 2vw, 26px);
+  background: linear-gradient(155deg, rgba(12, 20, 36, 0.94), rgba(7, 12, 24, 0.9));
+  border: 1px solid rgba(255, 152, 0, 0.24);
+  box-shadow:
+    0 28px 90px rgba(0, 0, 0, 0.52),
+    0 0 0 1px rgba(255, 255, 255, 0.04) inset,
+    0 0 80px rgba(255, 152, 0, 0.07);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+body.desp-display-mode .desp-present-stage::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 12%;
+  right: 12%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 152, 0, 0.55), transparent);
+  pointer-events: none;
 }
 
 body.desp-display-mode .desp-present-barcode-wrap,
 body.desp-display-mode .desp-present-barcode-wrap--tv {
-  flex: 1 1 auto;
-  width: min(96vw, 1400px);
+  flex: none;
+  width: 100%;
   min-height: 0;
-  max-height: min(62vh, 780px);
+  max-height: none;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0;
-  border: none;
-  border-radius: 0;
-  box-shadow: none;
-  background: transparent;
+  padding: clamp(1rem, 2vw, 1.45rem) clamp(1.15rem, 2.4vw, 1.85rem) clamp(0.85rem, 1.6vw, 1.2rem);
+  border-radius: clamp(14px, 1.6vw, 18px);
+  background: linear-gradient(180deg, #ffffff 0%, #f8f5f0 100%);
+  border: 1px solid rgba(255, 152, 0, 0.18);
+  box-shadow:
+    0 14px 42px rgba(0, 0, 0, 0.38),
+    0 0 0 1px rgba(255, 255, 255, 0.65) inset;
   box-sizing: border-box;
 }
 
@@ -216,41 +299,33 @@ body.desp-display-mode .desp-present-barcode.desp-barcode-img--tv {
   width: auto;
   height: auto;
   max-width: 100%;
-  max-height: min(56vh, 720px);
+  max-height: min(48vh, 640px);
   object-fit: contain;
   image-rendering: -webkit-optimize-contrast;
   image-rendering: crisp-edges;
-  filter: drop-shadow(0 4px 24px rgba(0, 0, 0, 0.35));
+  filter: none;
 }
 
-/* Sin pasillo: barcode e IDC ocupan más pantalla */
-body.desp-display-mode .desp-present-shell--no-pasillo .desp-present-barcode-wrap--tv {
-  max-height: min(68vh, 860px);
-}
-
+/* Sin referencia: barcode e IDC ocupan más pantalla */
 body.desp-display-mode .desp-present-shell--no-pasillo .desp-present-barcode.desp-barcode-img {
-  max-height: min(62vh, 800px);
+  max-height: min(52vh, 700px);
 }
 
 body.desp-display-mode .desp-present-shell--no-pasillo .desp-present-idc {
-  font-size: clamp(3rem, 9vw, 5.5rem);
+  font-size: clamp(2.75rem, 8.5vw, 5rem);
 }
 
 body.desp-display-mode .desp-present-shell--no-pasillo .desp-present-meta--tv {
-  gap: clamp(0.25rem, 1vh, 0.65rem);
+  gap: clamp(0.35rem, 1vh, 0.75rem);
 }
 
-/* Con pasillo: reparto equilibrado */
-body.desp-display-mode .desp-present-shell--has-pasillo .desp-present-barcode-wrap--tv {
-  max-height: min(52vh, 640px);
-}
-
+/* Con referencia: reparto equilibrado */
 body.desp-display-mode .desp-present-shell--has-pasillo .desp-present-barcode.desp-barcode-img {
-  max-height: min(46vh, 580px);
+  max-height: min(42vh, 560px);
 }
 
 body.desp-display-mode .desp-present-shell--has-pasillo .desp-present-idc {
-  font-size: clamp(2.25rem, 6vw, 4rem);
+  font-size: clamp(2.1rem, 5.5vw, 3.75rem);
 }
 
 body.desp-display-mode .desp-present-meta,
@@ -260,28 +335,39 @@ body.desp-display-mode .desp-present-meta--tv {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: clamp(0.3rem, 1vh, 0.75rem);
+  gap: clamp(0.35rem, 1vh, 0.8rem);
   width: 100%;
+  padding: 0 clamp(0.5rem, 2vw, 1rem);
 }
 
 body.desp-display-mode .desp-present-label {
   margin: 0;
-  font-size: clamp(0.75rem, 1.5vw, 0.95rem);
+  font-size: clamp(0.78rem, 1.45vw, 0.95rem);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: #a8b8cc;
 }
 
 body.desp-display-mode .desp-present-idc {
   margin: 0;
   font-weight: 900;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
   line-height: 1.05;
   word-break: break-word;
+  color: #ffffff;
+  text-shadow:
+    0 2px 24px rgba(255, 152, 0, 0.22),
+    0 1px 3px rgba(0, 0, 0, 0.45);
 }
 
 body.desp-display-mode .desp-present-jaula {
   margin: 0;
-  font-size: clamp(1.35rem, 3.5vw, 2.5rem);
+  font-size: clamp(1.35rem, 3.2vw, 2.35rem);
   font-weight: 900;
-  color: #ff9800;
+  letter-spacing: 0.04em;
+  color: #ffb74d;
+  text-shadow: 0 0 28px rgba(255, 152, 0, 0.35);
 }
 
 body.desp-display-mode .desp-present-jaula strong {
@@ -301,8 +387,10 @@ body.desp-display-mode .desp-present-estado-wrap .desp-badge {
 
 body.desp-display-mode .desp-present-by {
   margin: 0;
-  font-size: clamp(0.82rem, 1.5vw, 1.05rem);
-  color: #8fa3b8;
+  font-size: clamp(0.85rem, 1.5vw, 1.05rem);
+  font-weight: 600;
+  color: #9eb0c4;
+  letter-spacing: 0.02em;
 }
 
 body.desp-display-view-barcode .desp-live-present-lista {
