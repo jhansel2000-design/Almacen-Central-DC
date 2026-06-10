@@ -157,17 +157,26 @@
     if (damageFecha) damageFecha.value = new Date().toISOString().split('T')[0];
     initEquipmentFormDefaults();
     buildEquipmentChecklist();
-    loadData();
-    if (global.PlatformAveriasCloudSync && global.PlatformAveriasCloudSync.pull) {
-      global.PlatformAveriasCloudSync.pull().then(function () {
-        loadData();
-        refreshCurrentView();
-      });
+
+    function finishBoot() {
+      loadData({ bootstrap: true });
+      refreshCurrentView();
+      if (typeof closeDrawer === 'function') closeDrawer();
+      initFitScreen();
+      initCorrectionModal();
+      showWelcome();
     }
-    if (typeof closeDrawer === 'function') closeDrawer();
-    initFitScreen();
-    initCorrectionModal();
-    showWelcome();
+
+    var cloud = global.PlatformAveriasCloudSync;
+    if (cloud && cloud.ready) {
+      cloud.ready().then(function () {
+        return cloud.pull ? cloud.pull() : null;
+      }).then(finishBoot).catch(finishBoot);
+    } else if (cloud && cloud.pull) {
+      cloud.pull().then(finishBoot).catch(finishBoot);
+    } else {
+      finishBoot();
+    }
   }
 // Data Management
         const productsCatalog = [
@@ -427,6 +436,14 @@
             localStorage.setItem('averias_dc_equipmentRegistry', JSON.stringify(equipmentRegistry));
         }
 
+        function persistLocalOnly() {
+            ensureRecordStatuses();
+            writeIndividualKeys();
+            var snap = buildSnapshot();
+            snap.updatedAt = new Date().toISOString();
+            localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(snap));
+        }
+
         function persistSnapshot(options) {
             options = options || {};
             if (isLoadingRemoteSnapshot && !options.force) {
@@ -439,6 +456,9 @@
                 snap.updatedAt = new Date().toISOString();
                 snap.localSeq = (snap.localSeq || 0) + 1;
                 localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(snap));
+                if (options.localOnly || options.bootstrap) {
+                    return Promise.resolve({ ok: true, localOnly: true });
+                }
                 if (global.PlatformAveriasCloudSync && global.PlatformAveriasCloudSync.push) {
                     return global.PlatformAveriasCloudSync.push(snap).then(function (result) {
                         var cloud = global.PlatformAveriasCloudSync.isCloudConfigured &&
@@ -487,12 +507,13 @@
             if (reg) equipmentRegistry = JSON.parse(reg);
         }
 
-        function loadData() {
+        function loadData(options) {
+            options = options || {};
             const snapRaw = localStorage.getItem(SNAPSHOT_KEY);
             if (snapRaw) {
                 try {
                     if (applySnapshot(JSON.parse(snapRaw))) {
-                        if (ensureRecordStatuses()) persistSnapshot({ force: true });
+                        if (ensureRecordStatuses()) persistLocalOnly();
                         updateAllStats();
                         lastUiSignature = contentSignature(buildSnapshot());
                         return;
@@ -501,7 +522,7 @@
             }
             loadDataFromLegacyKeys();
             ensureRecordStatuses();
-            persistSnapshot({ force: true });
+            persistLocalOnly();
             updateAllStats();
             lastUiSignature = contentSignature(buildSnapshot());
         }

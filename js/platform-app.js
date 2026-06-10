@@ -2048,13 +2048,24 @@
       return;
     }
     if (mod === 'reportes') {
-      global.PlatformModules.renderReportes($('module-reportes'), {
-        operaciones: state.dataOperaciones,
-        facturas: state.dataFacturas,
-        productividad: state.dataProductividad,
-        tipoCambio: state.config.facturasTipoCambio
-      });
-      bindReportExportButtons();
+      var renderReportesView = function () {
+        global.PlatformModules.renderReportes($('module-reportes'), {
+          operaciones: state.dataOperaciones,
+          facturas: state.dataFacturas,
+          productividad: state.dataProductividad,
+          tipoCambio: state.config.facturasTipoCambio
+        });
+        bindReportExportButtons();
+      };
+      if (global.PlatformAveriasCloudSync && global.PlatformAveriasCloudSync.ready) {
+        global.PlatformAveriasCloudSync.ready().then(function () {
+          if (global.PlatformAveriasCloudSync.pull) {
+            return global.PlatformAveriasCloudSync.pull();
+          }
+        }).then(renderReportesView).catch(renderReportesView);
+      } else {
+        renderReportesView();
+      }
       return;
     }
   }

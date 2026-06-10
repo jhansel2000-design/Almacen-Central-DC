@@ -35,6 +35,7 @@
   var lastRemoteUpdatedAt = '';
   var lastAppliedContentSig = '';
   var lastBurstAt = 0;
+  var initReady = null;
   var broadcast = typeof global.BroadcastChannel !== 'undefined'
     ? new global.BroadcastChannel('averias-dc-live')
     : null;
@@ -155,6 +156,18 @@
     var sec = (siteConfig && siteConfig.pollSeconds) || 1;
     if (siteConfig && siteConfig.realtime === false) sec = 8;
     return Math.max(1, sec) * 1000;
+  }
+
+  function countSnapshotRecords(snap) {
+    if (!snap) return 0;
+    return (snap.incidences || []).length + (snap.damages || []).length +
+      (snap.securityIncidents || []).length + (snap.audits5s || []).length +
+      (snap.equipmentInspections || []).length;
+  }
+
+  function isEmptySnapshot(snap) {
+    return countSnapshotRecords(snap) === 0 &&
+      !Object.keys(snap && snap.equipmentRegistry || {}).length;
   }
 
   function mergeAveriasSnapshots(local, remote) {
@@ -499,6 +512,7 @@
   function pullAll() {
     if (pulling) return Promise.resolve(getLocalSnapshot());
     pulling = true;
+    var localBefore = getLocalSnapshot();
     return pullFromJsonBin().then(function (jsonBinSnap) {
       var tasks = [pullFromServer(), pullFromCloudProxy(), pullFromStatic(), pullFromFirebaseOnce()];
       return Promise.all(tasks).then(function (parts) {
@@ -520,6 +534,14 @@
           }
           lastPullAt = Date.now();
           updateSyncStatusUi();
+          if (hasJsonBinConfig()) {
+            var remoteEmpty = !jsonBinSnap || isEmptySnapshot(jsonBinSnap);
+            var localHas = localBefore && !isEmptySnapshot(localBefore);
+            if (remoteEmpty && localHas) {
+              var upload = mergeAveriasSnapshots(localBefore, merged);
+              global.setTimeout(function () { pushSnapshot(upload, 2); }, 150);
+            }
+          }
         }
         return merged;
       });
@@ -588,7 +610,11 @@
     pushing = true;
     retries = retries == null ? 3 : retries;
     snap.updatedAt = new Date().toISOString();
-    applySnapshotToLocal(snap, true);
+
+    function beginPush() {
+      applySnapshotToLocal(snap, true);
+      return attempt(0);
+    }
 
     function attempt(n) {
       return Promise.all([
@@ -622,7 +648,22 @@
       });
     }
 
-    return attempt(0).finally(function () {
+    if (hasJsonBinConfig() && isEmptySnapshot(snap)) {
+      return pullFromJsonBin().then(function (remote) {
+        if (remote && !isEmptySnapshot(remote)) {
+          console.warn('[AveriasCloud] Push vacío bloqueado — la nube tiene reportes');
+          applySnapshotToLocal(mergeAveriasSnapshots(remote, snap), false, 'jsonbin');
+          return { ok: false, skipped: 'empty-would-wipe-remote' };
+        }
+        return beginPush();
+      }).catch(function () {
+        return beginPush();
+      }).finally(function () {
+        pushing = false;
+      });
+    }
+
+    return beginPush().finally(function () {
       pushing = false;
     });
   }
@@ -856,7 +897,7 @@
   }
 
   function init() {
-    return loadSiteConfig().then(function () {
+    initReady = loadSiteConfig().then(function () {
       return initFirebase();
     }).then(function () {
       return probeCurrentServer().then(function () {
@@ -908,6 +949,7 @@
         else updateLiveIndicator(false);
       }, 2000);
     });
+    return initReady;
   }
 
   if (global.document) {
@@ -958,6 +1000,7 @@
   global.PlatformAveriasCloudSync = {
     mergeAveriasSnapshots: mergeAveriasSnapshots,
     contentSignature: contentSignature,
+    countSnapshotRecords: countSnapshotRecords,
     pull: pullAll,
     push: pushSnapshot,
     wipeAll: wipeAll,
@@ -965,6 +1008,7 @@
     activateCloud: activateCloud,
     getPublicBase: function () { return resolvePublicBase(); },
     getLastPullAt: function () { return lastPullAt; },
-    schedulePullBurst: schedulePullBurst
+    schedulePullBurst: schedulePullBurst,
+    ready: function () { return initReady || Promise.resolve(); }
   };
 })(typeof window !== 'undefined' ? window : this);
