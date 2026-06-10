@@ -224,7 +224,7 @@ body.desp-display-mode .desp-present-jaula strong {
 }
 
 body.desp-display-mode .desp-present-estado-wrap {
-  margin: 0;
+  display: none !important;
 }
 
 body.desp-display-mode .desp-present-estado-wrap .desp-present-estado,

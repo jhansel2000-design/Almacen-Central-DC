@@ -12,6 +12,7 @@
   var mountEl = null;
   var lastSig = '';
   var displayMode = false;
+  var LAYOUT_REV = '2';
 
   function DS() {
     return global.PlatformDespachoStore;
@@ -30,17 +31,9 @@
     return displayMode;
   }
 
-  function estadoHtml(estadoId) {
-    var store = DS();
-    if (!store) return esc(estadoId || '—');
-    var e = store.ESTADOS[estadoId] || { label: estadoId, icon: '●', short: estadoId, color: 'neutral' };
-    return '<span class="desp-present-estado desp-present-estado--' + esc(e.color) + '">' +
-      esc(e.icon) + ' ' + esc(e.short || e.label) + '</span>';
-  }
-
   function shareSignature(share) {
     if (!share || !share.active) return '';
-    return [share.idc, share.jaula, share.estado, share.updatedAt].join('|');
+    return [LAYOUT_REV, share.idc, share.jaula, share.updatedAt].join('|');
   }
 
   function renderBarcode(imgEl, idc) {
@@ -137,7 +130,11 @@
   }
 
   function bind(opts) {
-    if (bound) return;
+    if (bound) {
+      lastSig = '';
+      refreshFromStore();
+      return;
+    }
     bound = true;
     displayMode = resolveDisplayMode(opts || {});
     ensureMount();

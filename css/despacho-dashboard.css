@@ -1124,7 +1124,7 @@ body.desp-live-present-on {
 }
 
 .desp-present-estado-wrap {
-  margin-bottom: 0.35rem;
+  display: none !important;
 }
 
 .desp-present-estado {
