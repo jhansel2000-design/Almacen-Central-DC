@@ -12,7 +12,7 @@
   var mountEl = null;
   var lastSig = '';
   var displayMode = false;
-  var LAYOUT_REV = '5';
+  var LAYOUT_REV = '6';
 
   function brandMarkup() {
     return '<img class="desp-present-brand-logo" src="assets/img/dc-logo-128.png?v=4" alt="" width="56" height="56" decoding="async">' +
