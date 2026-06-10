@@ -18,7 +18,7 @@
         height: Math.round((opts.height || (tv ? 140 : 72)) * scale),
         width: (opts.width || (tv ? 3.2 : 2)) * scale,
         margin: Math.round((opts.margin || (tv ? 20 : 8)) * scale),
-        background: '#ffffff',
+        background: opts.background || '#ffffff',
         lineColor: '#000000',
         textAlign: 'center',
         textPosition: 'bottom',

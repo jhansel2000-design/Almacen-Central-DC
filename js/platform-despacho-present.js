@@ -12,7 +12,35 @@
   var mountEl = null;
   var lastSig = '';
   var displayMode = false;
-  var LAYOUT_REV = '3';
+  var LAYOUT_REV = '4';
+
+  function brandMarkup() {
+    return '<img class="desp-present-brand-logo" src="assets/img/dc-logo-128.png?v=4" alt="" width="56" height="56" decoding="async">' +
+      '<div class="desp-present-brand-copy">' +
+      '<span class="desp-present-brand-name">Almacén Central</span>' +
+      '<span class="desp-present-brand-sub">Despacho · DC</span>' +
+      '</div>';
+  }
+
+  function ensureBrandEl() {
+    if (!mountEl || !shouldShowOnThisPage()) return null;
+    var brand = mountEl.querySelector('#despPresentBrand');
+    if (!brand) {
+      brand = document.createElement('div');
+      brand.id = 'despPresentBrand';
+      brand.className = 'desp-present-brand';
+      brand.setAttribute('aria-hidden', 'true');
+      brand.innerHTML = brandMarkup();
+      mountEl.appendChild(brand);
+    }
+    return brand;
+  }
+
+  function setBrandVisible(show) {
+    var brand = mountEl && mountEl.querySelector('#despPresentBrand');
+    if (!brand) return;
+    brand.hidden = !show;
+  }
 
   function DS() {
     return global.PlatformDespachoStore;
@@ -50,7 +78,7 @@
       height: 140,
       fontSize: 32,
       width: 3.2,
-      margin: 20,
+      margin: 12,
       showText: true
     } : {
       height: 100,
@@ -65,7 +93,9 @@
     if (!shouldShowOnThisPage() || !share || !share.active) {
       mountEl.hidden = true;
       mountEl.setAttribute('aria-hidden', 'true');
-      mountEl.innerHTML = '';
+      var oldShell = mountEl.querySelector('.desp-present-shell');
+      if (oldShell) oldShell.remove();
+      setBrandVisible(false);
       if (global.document && global.document.body) {
         global.document.body.classList.remove('desp-live-present-on');
       }
@@ -77,24 +107,21 @@
     mountEl.hidden = false;
     mountEl.setAttribute('aria-hidden', 'false');
     document.body.classList.add('desp-live-present-on');
+    ensureBrandEl();
+    setBrandVisible(true);
 
     var hasJaula = !!String(share.jaula || '').trim();
     var shellCls = 'desp-present-shell' +
       (shouldShowOnThisPage() ? ' desp-present-shell--tv' : '') +
       (hasJaula ? ' desp-present-shell--has-pasillo' : ' desp-present-shell--no-pasillo');
 
-    var brandHtml = shouldShowOnThisPage()
-      ? '<div class="desp-present-brand" aria-hidden="true">' +
-        '<img class="desp-present-brand-logo" src="assets/img/dc-logo-128.png?v=4" alt="" width="56" height="56" decoding="async">' +
-        '<div class="desp-present-brand-copy">' +
-        '<span class="desp-present-brand-name">Almacén Central</span>' +
-        '<span class="desp-present-brand-sub">Despacho · DC</span>' +
-        '</div></div>'
-      : '';
-
-    mountEl.innerHTML =
-      '<div class="' + shellCls + '">' +
-      brandHtml +
+    var shell = mountEl.querySelector('.desp-present-shell');
+    if (!shell) {
+      shell = document.createElement('div');
+      mountEl.insertBefore(shell, mountEl.querySelector('#despPresentBrand'));
+    }
+    shell.className = shellCls;
+    shell.innerHTML =
       '<div class="desp-present-inner desp-present-inner--tv">' +
       '<div class="desp-present-badge"><span class="desp-present-dot"></span> EN VIVO · Código de barras IDC</div>' +
       '<div class="desp-present-grid desp-present-grid--tv">' +
@@ -106,9 +133,9 @@
       '<p class="desp-present-idc">' + esc(idc) + '</p>' +
       (hasJaula ? '<p class="desp-present-jaula">' + esc(share.jaula) + '</p>' : '') +
       '<p class="desp-present-by">Preparador: ' + esc(share.sharedBy || '—') + '</p>' +
-      '</div></div></div></div>';
+      '</div></div></div>';
 
-    renderBarcode(mountEl.querySelector('#despPresentBarcode'), idc);
+    renderBarcode(shell.querySelector('#despPresentBarcode'), idc);
     lastSig = shareSignature(share);
   }
 
