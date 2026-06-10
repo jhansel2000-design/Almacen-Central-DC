@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-06-10T14:30:00.000Z",
+  "updatedAt": "2026-06-10T15:00:00.000Z",
   "users": [
     {
       "id": "u_enmanuel_vasquez",
@@ -28,6 +28,16 @@
       "name": "Cesar Andres Astacio",
       "role": "administrador",
       "passwordHash": "71cd077f82f0aa594108ba5997b2f5da699f519226ac659657048735adbdd827",
+      "areas": [],
+      "active": true,
+      "extraPermissions": []
+    },
+    {
+      "id": "u_samuel_cordero",
+      "username": "SAMUEL.CORDERO",
+      "name": "Samuel Cordero",
+      "role": "validador",
+      "passwordHash": "72d63f420a92223ab53e511119b07095b6c90f06b134270a97548e6a476be974",
       "areas": [],
       "active": true,
       "extraPermissions": []
