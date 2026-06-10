@@ -12,7 +12,7 @@
   var mountEl = null;
   var lastSig = '';
   var displayMode = false;
-  var LAYOUT_REV = '8';
+  var LAYOUT_REV = '9';
 
   function ensureAmbientEl() {
     if (!mountEl || !shouldShowOnThisPage()) return null;
@@ -100,12 +100,11 @@
     var tv = shouldShowOnThisPage();
     global.PlatformDespachoBarcode.render(imgEl, code, tv ? {
       tv: true,
-      height: 200,
+      height: 220,
       fontSize: 44,
       width: 4,
       margin: 28,
-      textMargin: 14,
-      showText: true
+      showText: false
     } : {
       height: 100,
       fontSize: 24,

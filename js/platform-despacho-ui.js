@@ -234,7 +234,7 @@
     var code = formatIdc(idc);
     if (label) label.textContent = code || '—';
     if (jaulaEl) jaulaEl.textContent = jaula ? String(jaula) : '';
-    renderBarcodeImg(img, code, { height: 96, fontSize: 22, width: 2.3 });
+    renderBarcodeImg(img, code, { height: 96, fontSize: 22, width: 2.3, showText: false });
   }
 
   function normalizeScreen(screen) {
