@@ -298,13 +298,59 @@
     }).join('') + '</ul>';
   }
 
+  function facCentralFooterHtml(items, emptyText) {
+    if (!items || !items.length) {
+      return '<p class="tv-foot-empty">' + esc(emptyText) + '</p>';
+    }
+    return '<div class="tv-fac-foot-chips">' + items.map(function (x, idx) {
+      return '<div class="tv-fac-foot-chip" style="--i:' + idx + '">' +
+        '<span class="tv-fac-foot-chip-lbl">' + esc(x.label) + '</span>' +
+        '<strong class="tv-fac-foot-chip-val">' + esc(String(x.value)) + '</strong>' +
+        '</div>';
+    }).join('') + '</div>';
+  }
+
+  function slideFootBody(slideId, block, meta) {
+    if (slideId === 'fac' && block.centralLayout) {
+      return facCentralFooterHtml(block.footer, meta.emptyFoot);
+    }
+    return footerHtml(block.footer, meta.emptyFoot);
+  }
+
   function chartCanvasId(slideId) {
     return 'tvChart' + slideId.charAt(0).toUpperCase() + slideId.slice(1);
   }
 
+  function facCentralKpiHtml(items, emptyLabel) {
+    if (!items || !items.length) {
+      return '<div class="tv-kpi-empty">' + esc(emptyLabel) + '</div>';
+    }
+    return '<div class="tv-fac-kpi-band">' + items.map(function (k, idx) {
+      var variant = k.variant || 'money';
+      return '<article class="tv-fac-kpi tv-fac-kpi--' + esc(variant) + '" style="--i:' + idx + '">' +
+        '<span class="tv-fac-kpi-glow" aria-hidden="true"></span>' +
+        '<span class="tv-fac-kpi-val" title="' + esc(String(k.value)) + '">' + esc(formatKpiDisplay(k.value)) + '</span>' +
+        '<span class="tv-fac-kpi-lbl">' + esc(k.label) + '</span>' +
+        '</article>';
+    }).join('') + '</div>';
+  }
+
+  function facChartBlock(slideId, chartTitle) {
+    return '<div class="tv-fac-chart-stage">' +
+      '<div class="tv-fac-chart-head">' +
+      '<div class="tv-fac-chart-head-text">' +
+      '<span class="tv-fac-chart-eyebrow">Tendencia diaria</span>' +
+      '<h3 class="tv-chart-title tv-chart-title--fac">' + esc(chartTitle) + '</h3>' +
+      '</div>' +
+      '<span class="tv-fac-live-badge"><span class="tv-fac-live-dot" aria-hidden="true"></span>En vivo</span>' +
+      '</div>' +
+      '<div class="tv-chart-box tv-chart-box--fac"><canvas id="' + chartCanvasId(slideId) + '"></canvas></div>' +
+      '</div>';
+  }
+
   function facKpiBlock(slideId, block, emptyLabel) {
     if (slideId === 'fac' && block.centralLayout) {
-      return kpiHtml(block.kpis || [], emptyLabel);
+      return facCentralKpiHtml(block.kpis || [], emptyLabel);
     }
     if (slideId === 'fac') {
       return facAlmacenKpiHtml(block.almacenes || [], emptyLabel);
@@ -324,18 +370,20 @@
     var footTitle = slideId === 'fac' && block.useAlmacenLayout && !block.centralLayout
       ? 'Montos por almacén'
       : 'Resumen';
+    var footClass = (slideId === 'fac' && block.centralLayout) ? ' tv-slide-foot--fac-central' : '';
+    var chartBlock = (slideId === 'fac' && block.centralLayout)
+      ? facChartBlock(slideId, chartTitle)
+      : '<h3 class="tv-chart-title">' + esc(chartTitle) + '</h3>' +
+        '<div class="tv-chart-box"><canvas id="' + chartCanvasId(slideId) + '"></canvas></div>';
     return '<section class="tv-slide' + (slideId === 'fac' ? ' tv-slide--fac' + facExtra : '') + '" data-slide="' + slideId + '">' +
       '<header class="tv-slide-head">' +
       '<span class="tv-pill ' + meta.pill + '">' + esc(meta.title) + '</span>' + extra +
       '</header>' +
       '<div class="tv-slide-grid">' +
       '<div class="tv-slide-kpis">' + kpiBlock + '</div>' +
-      '<div class="tv-slide-chart">' +
-      '<h3 class="tv-chart-title">' + esc(chartTitle) + '</h3>' +
-      '<div class="tv-chart-box"><canvas id="' + chartCanvasId(slideId) + '"></canvas></div>' +
-      '</div>' +
-      '<div class="tv-slide-foot">' +
-      '<h3 class="tv-foot-title">' + esc(footTitle) + '</h3>' + footerHtml(block.footer, meta.emptyFoot) +
+      '<div class="tv-slide-chart">' + chartBlock + '</div>' +
+      '<div class="tv-slide-foot' + footClass + '">' +
+      '<h3 class="tv-foot-title">' + esc(footTitle) + '</h3>' + slideFootBody(slideId, block, meta) +
       '</div></div></section>';
   }
 
@@ -405,7 +453,7 @@
     var footTitle = slideId === 'fac' && block.useAlmacenLayout && !block.centralLayout
       ? 'Montos por almacén'
       : 'Resumen';
-    return '<h3 class="tv-foot-title">' + esc(footTitle) + '</h3>' + footerHtml(block.footer, meta.emptyFoot);
+    return '<h3 class="tv-foot-title">' + esc(footTitle) + '</h3>' + slideFootBody(slideId, block, meta);
   }
 
   function updateSnapshot(host, snapshot) {
@@ -698,36 +746,73 @@
     } else if (slideId === 'fac') {
       if (block.centralLayout) {
         var markers = block.chart.markers || [];
-        var lineOpts = barOpts();
-        lineOpts.interaction = { mode: 'index', intersect: false };
-        lineOpts.plugins.legend = { display: false };
-        lineOpts.plugins.datalabels = { display: false };
-        lineOpts.plugins.tooltip = {
+        var labelCount = block.chart.labels.length;
+        var useBar = labelCount <= 4;
+        var facFs = 17;
+        var facOpts = barOpts();
+        facOpts.interaction = { mode: 'index', intersect: false };
+        facOpts.plugins.legend = { display: false };
+        facOpts.plugins.tooltip = {
           backgroundColor: 'rgba(6, 11, 20, 0.97)',
-          titleFont: { size: fs + 1, weight: '700' },
-          bodyFont: { size: fs, weight: '600' },
-          padding: 12,
+          titleFont: { size: facFs + 1, weight: '700' },
+          bodyFont: { size: facFs, weight: '600' },
+          padding: 14,
           callbacks: {
             label: function (ctx) {
               return fmtMontoRd(ctx.raw || 0);
             }
           }
         };
-        lineOpts.scales = {
+        facOpts.scales = {
           x: {
-            ticks: { color: colors.text, font: { size: fs, weight: '600' }, maxRotation: 0 },
+            ticks: { color: colors.text, font: { size: facFs, weight: '700' }, maxRotation: 0 },
             grid: { display: false }
           },
           y: {
             beginAtZero: true,
             ticks: {
               color: colors.text,
-              font: { size: fs, weight: '600' },
+              font: { size: facFs, weight: '600' },
               callback: fmtMontoAxis
             },
             grid: { color: colors.grid || 'rgba(255,255,255,0.08)' }
           }
         };
+        if (useBar) {
+          facOpts.plugins.datalabels = {
+            display: true,
+            anchor: 'end',
+            align: 'top',
+            offset: 6,
+            color: '#ecfdf5',
+            textStrokeColor: 'rgba(6, 11, 20, 0.9)',
+            textStrokeWidth: 3,
+            font: { size: facFs, weight: '800' },
+            formatter: function (v) { return fmtMontoRd(v); }
+          };
+          facOpts.layout = { padding: { top: 28, right: 12, bottom: 4, left: 8 } };
+          makeChart(id, {
+            type: 'bar',
+            valueFormat: 'money',
+            data: {
+              labels: block.chart.labels,
+              datasets: [{
+                label: 'Facturación RD$',
+                data: block.chart.values,
+                backgroundColor: 'rgba(16, 185, 129, 0.88)',
+                hoverBackgroundColor: 'rgba(52, 211, 153, 0.95)',
+                borderColor: 'rgba(167, 243, 208, 0.55)',
+                borderWidth: 1.5,
+                borderRadius: { topLeft: 12, topRight: 12, bottomLeft: 4, bottomRight: 4 },
+                maxBarThickness: labelCount === 1 ? 128 : 84,
+                barPercentage: labelCount === 1 ? 0.38 : 0.65
+              }]
+            },
+            options: facOpts
+          });
+          return;
+        }
+        facOpts.plugins.datalabels = { display: false };
         makeChart(id, {
           type: 'line',
           valueFormat: 'money',
@@ -737,12 +822,12 @@
               label: 'Facturación RD$',
               data: block.chart.values,
               borderColor: '#10b981',
-              backgroundColor: 'rgba(16, 185, 129, 0.14)',
-              borderWidth: 2.5,
+              backgroundColor: 'rgba(16, 185, 129, 0.18)',
+              borderWidth: 3,
               fill: true,
               tension: 0.35,
               pointRadius: markers.map(function (m) {
-                return m === 'up' || m === 'down' ? 7 : 4;
+                return m === 'up' || m === 'down' ? 8 : 5;
               }),
               pointBackgroundColor: markers.map(function (m) {
                 if (m === 'up') return 'rgba(52, 211, 153, 1)';
@@ -753,7 +838,7 @@
               pointBorderWidth: 2
             }]
           },
-          options: lineOpts
+          options: facOpts
         });
         return;
       }
