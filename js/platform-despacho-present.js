@@ -59,6 +59,8 @@
       brand.setAttribute('aria-hidden', 'true');
       brand.innerHTML = brandMarkup();
       mountEl.appendChild(brand);
+    } else if (!brand.querySelector('.desp-present-brand-copy')) {
+      brand.innerHTML = brandMarkup();
     }
     return brand;
   }

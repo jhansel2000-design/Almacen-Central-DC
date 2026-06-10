@@ -638,33 +638,12 @@ body.desp-display-mode .desp-present-by-label {
 }
 
 @media (max-height: 780px) {
-  body.desp-display-mode .desp-present-brand {
-    transform: scale(0.88);
-    transform-origin: top right;
-  }
-
   body.desp-display-mode .desp-present-inner--tv {
-    padding-top: 2.85rem;
+    padding-top: 3.35rem;
   }
 
   body.desp-display-mode .desp-present-stage {
     padding: 0.55rem 0.75rem;
-  }
-}
-
-@media (max-height: 620px) {
-  body.desp-display-mode .desp-present-brand-copy {
-    display: none;
-  }
-
-  body.desp-display-mode .desp-present-brand {
-    min-width: auto;
-    padding: 0.4rem;
-    transform: none;
-  }
-
-  body.desp-display-mode .desp-present-inner--tv {
-    padding-top: 2.5rem;
   }
 }
 
