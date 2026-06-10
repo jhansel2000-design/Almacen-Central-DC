@@ -471,21 +471,23 @@ body.desp-display-mode .desp-present-scan-tag {
 }
 
 body.desp-display-mode .desp-present-barcode.desp-barcode-img,
-body.desp-display-mode .desp-present-barcode.desp-barcode-img--tv {
+body.desp-display-mode .desp-present-barcode.desp-barcode-img--tv,
+body.desp-display-mode .desp-present-barcode.desp-barcode-img--hq {
   display: block;
   width: auto;
   height: auto;
-  max-width: 100%;
-  max-height: min(48vh, 640px);
+  max-width: min(100%, 880px);
+  max-height: min(52vh, 760px);
   object-fit: contain;
   image-rendering: -webkit-optimize-contrast;
   image-rendering: crisp-edges;
-  filter: none;
+  filter: contrast(1.05);
 }
 
 /* Sin referencia: barcode e IDC ocupan más pantalla */
 body.desp-display-mode .desp-present-shell--no-pasillo .desp-present-barcode.desp-barcode-img {
-  max-height: min(52vh, 700px);
+  max-height: min(58vh, 820px);
+  max-width: min(100%, 920px);
 }
 
 body.desp-display-mode .desp-present-shell--no-pasillo .desp-present-meta--tv {
@@ -494,7 +496,8 @@ body.desp-display-mode .desp-present-shell--no-pasillo .desp-present-meta--tv {
 
 /* Con referencia: reparto equilibrado */
 body.desp-display-mode .desp-present-shell--has-pasillo .desp-present-barcode.desp-barcode-img {
-  max-height: min(42vh, 560px);
+  max-height: min(46vh, 640px);
+  max-width: min(100%, 840px);
 }
 
 body.desp-display-mode .desp-present-meta,

@@ -1,47 +1,82 @@
 /**
  * Código de barras Code 128 para IDC — render vía canvas → img (evita SVG negro en tema oscuro)
+ * TV: render 3–4× en canvas y escala nítida para pantallas grandes / escáneres.
  */
 (function (global) {
   'use strict';
 
-  function renderToDataUrl(text, opts) {
-    if (!text || typeof global.JsBarcode !== 'function') return '';
+  function resolveScale(opts) {
+    if (opts && opts.scale != null) return Math.max(1, Number(opts.scale) || 1);
+    if (opts && opts.tv) {
+      var dpr = global.devicePixelRatio || 1;
+      return Math.min(4, Math.max(3, Math.round(dpr * 2)));
+    }
+    return 1;
+  }
+
+  function renderToCanvas(text, opts) {
+    if (!text || typeof global.JsBarcode !== 'function') return null;
     opts = opts || {};
     var tv = !!opts.tv;
-    var scale = opts.scale || (tv ? Math.max(2.5, global.devicePixelRatio || 2) : 1);
+    var scale = resolveScale(opts);
     try {
       var canvas = document.createElement('canvas');
       global.JsBarcode(canvas, String(text), {
         format: 'CODE128',
         displayValue: opts.showText !== false,
-        fontSize: Math.round((opts.fontSize || (tv ? 32 : 20)) * scale),
-        height: Math.round((opts.height || (tv ? 140 : 72)) * scale),
-        width: (opts.width || (tv ? 3.2 : 2)) * scale,
-        margin: Math.round((opts.margin || (tv ? 20 : 8)) * scale),
+        fontSize: Math.round((opts.fontSize || (tv ? 44 : 20)) * scale),
+        height: Math.round((opts.height || (tv ? 200 : 72)) * scale),
+        width: (opts.width || (tv ? 4 : 2)) * scale,
+        margin: Math.round((opts.margin || (tv ? 28 : 8)) * scale),
         background: opts.background || '#ffffff',
         lineColor: '#000000',
         textAlign: 'center',
         textPosition: 'bottom',
-        textMargin: Math.round(8 * scale)
+        textMargin: Math.round((opts.textMargin != null ? opts.textMargin : 12) * scale),
+        fontOptions: tv ? 'bold' : '',
+        font: tv ? 'bold ' + Math.round((opts.fontSize || 44) * scale) + 'px "DM Sans", ui-monospace, monospace' : 'monospace'
       });
-      return canvas.toDataURL('image/png');
+      return {
+        canvas: canvas,
+        scale: scale,
+        displayWidth: Math.max(1, Math.round(canvas.width / scale)),
+        displayHeight: Math.max(1, Math.round(canvas.height / scale))
+      };
     } catch (e) {
-      return '';
+      return null;
     }
+  }
+
+  function renderToDataUrl(text, opts) {
+    var out = renderToCanvas(text, opts);
+    if (!out) return '';
+    return out.canvas.toDataURL('image/png', 1);
   }
 
   function applyToImg(imgEl, text, opts) {
     if (!imgEl) return false;
-    var url = renderToDataUrl(text, opts);
-    if (!url) {
+    opts = opts || {};
+    var out = renderToCanvas(text, opts);
+    if (!out) {
       imgEl.removeAttribute('src');
+      imgEl.removeAttribute('width');
+      imgEl.removeAttribute('height');
       imgEl.alt = '';
       return false;
     }
-    imgEl.src = url;
+    imgEl.src = out.canvas.toDataURL('image/png', 1);
     imgEl.alt = String(text);
-    if (opts && opts.tv) imgEl.classList.add('desp-barcode-img--tv');
-    else imgEl.classList.remove('desp-barcode-img--tv');
+    if (opts.tv) {
+      imgEl.width = out.displayWidth;
+      imgEl.height = out.displayHeight;
+      imgEl.setAttribute('data-hq-scale', String(out.scale));
+      imgEl.classList.add('desp-barcode-img--tv', 'desp-barcode-img--hq');
+    } else {
+      imgEl.removeAttribute('width');
+      imgEl.removeAttribute('height');
+      imgEl.removeAttribute('data-hq-scale');
+      imgEl.classList.remove('desp-barcode-img--tv', 'desp-barcode-img--hq');
+    }
     return true;
   }
 
