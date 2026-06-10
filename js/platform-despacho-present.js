@@ -12,8 +12,9 @@
   var mountEl = null;
   var lastSig = '';
   var displayMode = false;
-  var LAYOUT_REV = '11';
+  var LAYOUT_REV = '12';
   var BARCODE_REV = 'notext-hq';
+  var fitBound = false;
 
   function ensureAmbientEl() {
     if (!mountEl || !shouldShowOnThisPage()) return null;
@@ -85,6 +86,54 @@
     return displayMode;
   }
 
+  function fitPresentToViewport() {
+    if (!mountEl || mountEl.hidden || !shouldShowOnThisPage()) return;
+    var inner = mountEl.querySelector('.desp-present-inner--tv');
+    var stage = mountEl.querySelector('.desp-present-stage');
+    if (!inner || !stage) return;
+
+    stage.style.transform = 'none';
+    stage.style.marginBottom = '0';
+
+    var availH = inner.clientHeight - 8;
+    var availW = inner.clientWidth - 8;
+    var natH = stage.offsetHeight;
+    var natW = stage.offsetWidth;
+    if (!natH || !availH || !natW || !availW) return;
+
+    var scale = Math.min(1, availH / natH, availW / natW);
+    if (scale < 0.995) {
+      stage.style.transform = 'scale(' + scale.toFixed(4) + ')';
+      stage.style.transformOrigin = 'center center';
+      stage.style.marginBottom = String(Math.round(natH * (scale - 1))) + 'px';
+    }
+  }
+
+  function schedulePresentFit() {
+    if (!global.requestAnimationFrame) {
+      fitPresentToViewport();
+      return;
+    }
+    global.requestAnimationFrame(function () {
+      global.requestAnimationFrame(fitPresentToViewport);
+    });
+  }
+
+  function ensureFitListeners() {
+    if (fitBound) return;
+    fitBound = true;
+    global.addEventListener('resize', schedulePresentFit);
+    if (global.visualViewport) {
+      global.visualViewport.addEventListener('resize', schedulePresentFit);
+    }
+  }
+
+  function wireBarcodeFit(imgEl) {
+    if (!imgEl) return;
+    imgEl.addEventListener('load', schedulePresentFit);
+    schedulePresentFit();
+  }
+
   function shareSignature(share) {
     if (!share || !share.active) return '';
     return [LAYOUT_REV, BARCODE_REV, share.idc, share.jaula, share.updatedAt].join('|');
@@ -93,7 +142,10 @@
   function refreshBarcodeFromShare(share) {
     if (!mountEl || !share || !share.active) return;
     var img = mountEl.querySelector('#despPresentBarcode');
-    if (img) renderBarcode(img, share.idc);
+    if (img) {
+      renderBarcode(img, share.idc);
+      wireBarcodeFit(img);
+    }
   }
 
   function renderBarcode(imgEl, idc) {
@@ -183,6 +235,8 @@
       '</div></div></div></div>';
 
     renderBarcode(shell.querySelector('#despPresentBarcode'), idc);
+    wireBarcodeFit(shell.querySelector('#despPresentBarcode'));
+    schedulePresentFit();
     lastSig = shareSignature(share);
   }
 
@@ -225,6 +279,7 @@
     bound = true;
     displayMode = resolveDisplayMode(opts || {});
     ensureMount();
+    ensureFitListeners();
 
     function onUpdate() {
       refreshFromStore();
