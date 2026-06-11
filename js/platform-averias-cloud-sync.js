@@ -108,6 +108,7 @@
   }
 
   function hasFirebaseConfig() {
+    if (global.PlatformFirebaseBridge && global.PlatformFirebaseBridge.isEnabled()) return true;
     var fb = siteConfig && siteConfig.firebase;
     return !!(fb && fb.enabled && fb.databaseURL);
   }
@@ -406,8 +407,18 @@
     return 'data/averias.json';
   }
 
+  function siteConfigUrl() {
+    if (global.PlatformSecurity && global.PlatformSecurity.configUrl) {
+      return global.PlatformSecurity.configUrl();
+    }
+    if (isPublicHost()) {
+      return '/Almacen-Central-DC/data/site-config.json';
+    }
+    return 'data/site-config.json';
+  }
+
   function loadSiteConfig() {
-    return fetchJson('data/site-config.json?t=' + Date.now()).then(function (cfg) {
+    return fetchJson(siteConfigUrl() + '?t=' + Date.now()).then(function (cfg) {
       siteConfig = applyCloudOverride(cfg || {});
       applySiteConfigRelay();
       publicBase = normalizeBase(siteConfig.publicSyncBaseUrl) || publicBase;
@@ -584,10 +595,12 @@
 
   function pushToFirebase(snap) {
     if (!global.PlatformFirebaseBridge) return Promise.resolve(false);
-    return global.PlatformFirebaseBridge.ensureReady().then(function (db) {
-      if (!db) return false;
-      firebaseDb = db;
-      return db.ref('averias/snapshot').set(snap).then(function () { return true; });
+    var payload;
+    try { payload = JSON.parse(JSON.stringify(snap || {})); } catch (e) { payload = snap; }
+    return global.PlatformFirebaseBridge.ensureReady().then(function (adapter) {
+      if (!adapter) return false;
+      firebaseDb = adapter;
+      return adapter.ref('averias/snapshot').set(payload).then(function (ok) { return !!ok; });
     }).catch(function () { return false; });
   }
 
@@ -608,6 +621,23 @@
     }
 
     function attempt(n) {
+      if (hasFirebaseConfig() && !hasJsonBinConfig()) {
+        return pushToFirebase(snap).then(function (ok) {
+          if (ok) {
+            schedulePullBurst();
+            broadcastSyncHint();
+            notifyUpdated('push-ok');
+            global.dispatchEvent(new CustomEvent('averias-sync-push', { detail: { ok: true } }));
+            return { ok: true };
+          }
+          if (n < retries) {
+            return new Promise(function (resolve) {
+              global.setTimeout(function () { resolve(attempt(n + 1)); }, 120);
+            });
+          }
+          return { ok: false, reason: 'firebase-fail' };
+        });
+      }
       return Promise.all([
         pushToServer(snap),
         pushToCloudProxy(snap),
@@ -714,7 +744,8 @@
       hasJsonBinConfig() ||
       hasFirebaseConfig() ||
       (resolvePublicBase() && serverReachable) ||
-      isLanHost()
+      isLanHost() ||
+      isPublicHost()
     );
   }
 
@@ -764,10 +795,20 @@
   function updateSyncStatusUi() {
     var el = global.document.getElementById('avSyncStatus');
     if (!el || el.hidden) return;
+    if (hasFirebaseConfig()) {
+      var ago = lastPullAt ? Math.round((Date.now() - lastPullAt) / 1000) : -1;
+      var mode = global.PlatformFirebaseBridge && global.PlatformFirebaseBridge.getMode
+        ? global.PlatformFirebaseBridge.getMode() : 'cloud';
+      el.className = 'av-sync-status-line av-sync-status-ok';
+      el.textContent = mode === 'rest'
+        ? 'Sync en vivo (Firebase) · todos los celulares comparten reportes · hace ' + (ago >= 0 ? ago + ' s' : '—')
+        : 'Sync automático · todos los dispositivos comparten datos · hace ' + (ago >= 0 ? ago + ' s' : '—');
+      return;
+    }
     var jb = getJsonBinConfig();
     if (!jb) {
-      el.textContent = 'Sin nube: cada celular guarda por separado. Pulse «Activar ahora» arriba.';
-      el.className = 'av-sync-status-line av-sync-status-err';
+      el.textContent = 'Conectando sync en la nube… recargue con Ctrl+F5 si tarda más de 5 s.';
+      el.className = 'av-sync-status-line av-sync-status-warn';
       return;
     }
     var ago = lastPullAt ? Math.round((Date.now() - lastPullAt) / 1000) : -1;
@@ -787,8 +828,8 @@
     if (btn) {
       var online = isCloudConfigured();
       btn.title = online
-        ? 'En vivo — actualiza solo (~' + ((siteConfig && siteConfig.pollSeconds) || 1) + 's). No necesita refrescar.'
-        : 'Sin nube — active sincronización cloud para compartir entre celulares';
+        ? 'En vivo (Firebase) — actualiza solo (~' + ((siteConfig && siteConfig.pollSeconds) || 1) + 's). No necesita JSONBin.'
+        : 'Pulse para sincronizar — en GitHub Pages Firebase ya está activo';
       btn.classList.toggle('cloud-active', online);
     }
     var banner = global.document.getElementById('avSyncBanner');
@@ -914,6 +955,9 @@
         }
       }, { passive: true });
       global.addEventListener('focus', function () { pullAll(); }, { passive: true });
+      global.addEventListener('firebase-connection', function () {
+        updateSyncUi();
+      });
       document.addEventListener('lan-ready', function () {
         publicBase = resolvePublicBase();
         probeCurrentServer().then(function () {

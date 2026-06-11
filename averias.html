@@ -158,7 +158,7 @@
                 <div class="av-sync-banner" id="avSyncBanner" hidden role="status">
                     <span class="av-sync-banner-text">⚠️ Falta activar sync en tiempo real — cada celular guarda reportes por separado.</span>
                     <button type="button" class="av-sync-banner-btn" id="btnActivateCloud" onclick="openCloudSetupModal()">Activar ahora</button>
-                    <span class="av-sync-banner-hint">Solución definitiva: en el PC ejecute <strong>SETUP-AVERIAS-CLOUD.bat</strong> (jsonbin.io gratis, 2 min).</span>
+                    <span class="av-sync-banner-hint">Sync automática vía <strong>Firebase</strong> — misma URL en todos los celulares. Recargue con Ctrl+F5 si no ve el indicador LIVE.</span>
                 </div>
                 <p class="av-sync-status-line av-sync-status-ok" id="avSyncStatus" hidden aria-hidden="true">Conectando sync…</p>
 
@@ -561,22 +561,33 @@
         </div>
     </div>
 
-    <!-- Activar nube JSONBin -->
+    <!-- Sincronización en vivo (Firebase — no requiere JSONBin en GitHub Pages) -->
     <div id="cloudSetupModal" class="modal av-cloud-modal" hidden>
         <div class="modal-content av-cloud-modal-content">
-            <div class="modal-title">Activar sincronización cloud</div>
-            <p class="av-cloud-help">Los celulares con internet compartirán los mismos reportes en ~2 segundos.</p>
-            <ol class="av-cloud-steps">
-                <li>Cree cuenta gratis en <a href="https://jsonbin.io" target="_blank" rel="noopener">jsonbin.io</a></li>
-                <li>Copie la <strong>Master Key</strong> (API Keys)</li>
-                <li>Péguela abajo y pulse Activar</li>
-            </ol>
-            <label class="av-cloud-label" for="cloudMasterKey">Master Key JSONBin</label>
-            <input type="password" id="cloudMasterKey" class="av-cloud-input" autocomplete="off" placeholder="Pegue su Master Key aquí">
-            <p class="av-cloud-note" id="cloudSetupNote">Desde el PC con <strong>serve-dashboard.ps1</strong> activa todos los celulares. Desde GitHub Pages solo este dispositivo hasta ejecutar el .bat en el servidor.</p>
+            <div class="modal-title">Sincronización en vivo</div>
+            <div id="cloudSetupFirebasePanel">
+                <p class="av-cloud-help">Los celulares con internet compartirán los mismos reportes en menos de 1 segundo.</p>
+                <p class="av-cloud-note"><strong>Firebase ya está activo</strong> en la web publicada. No necesita crear cuenta en jsonbin.io ni ejecutar ningún .bat en el PC.</p>
+                <ol class="av-cloud-steps">
+                    <li>Abra la <strong>misma URL</strong> en todos los celulares y PCs</li>
+                    <li>Recargue con <strong>Ctrl+F5</strong> (o cierre y vuelva a abrir en el teléfono)</li>
+                    <li>Verifique el indicador <strong>● LIVE</strong> arriba a la derecha</li>
+                </ol>
+            </div>
+            <div id="cloudSetupJsonBinPanel" hidden>
+                <p class="av-cloud-help">Opción alternativa solo si Firebase no está disponible (servidor LAN local).</p>
+                <ol class="av-cloud-steps">
+                    <li>Cree cuenta gratis en <a href="https://jsonbin.io" target="_blank" rel="noopener">jsonbin.io</a></li>
+                    <li>Copie la <strong>Master Key</strong> (API Keys)</li>
+                    <li>Péguela abajo y pulse Activar</li>
+                </ol>
+                <label class="av-cloud-label" for="cloudMasterKey">Master Key JSONBin (opcional)</label>
+                <input type="password" id="cloudMasterKey" class="av-cloud-input" autocomplete="off" placeholder="Solo para servidor LAN local">
+            </div>
+            <p class="av-cloud-note" id="cloudSetupNote">URL: https://jhansel2000-design.github.io/Almacen-Central-DC/averias.html</p>
             <div class="modal-buttons">
-                <button class="modal-btn modal-btn-cancel" type="button" onclick="closeCloudSetupModal()">Cancelar</button>
-                <button class="modal-btn modal-btn-confirm" type="button" id="cloudSetupSubmit" onclick="submitCloudSetup()">Activar</button>
+                <button class="modal-btn modal-btn-cancel" type="button" onclick="closeCloudSetupModal()">Cerrar</button>
+                <button class="modal-btn modal-btn-confirm" type="button" id="cloudSetupSubmit" onclick="submitCloudSetup()">Sincronizar ahora</button>
             </div>
             <p class="av-cloud-status" id="cloudSetupStatus" hidden></p>
         </div>
@@ -590,12 +601,12 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
   <script src="js/platform-firebase-bridge.js?v=2"></script>
   <script src="js/platform-averias-core.js?v=1"></script>
-  <script src="js/platform-averias-cloud-sync.js?v=18"></script>
+  <script src="js/platform-averias-cloud-sync.js?v=19"></script>
   <script src="js/platform-store.js"></script>
   <script src="js/platform-admin.js?v=13"></script>
   <script src="js/platform-web-users.js?v=11"></script>
   <script src="js/platform-toast.js"></script>
-  <script src="js/platform-averias-ui.js?v=21"></script>
+  <script src="js/platform-averias-ui.js?v=22"></script>
   <script src="js/platform-averias-app.js?v=6"></script>
 </body>
 </html>
