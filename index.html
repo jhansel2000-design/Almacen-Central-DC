@@ -9,7 +9,7 @@
   <meta name="theme-color" content="#e8eef5" media="(prefers-color-scheme: light)">
   <meta name="referrer" content="strict-origin-when-cross-origin">
   <meta http-equiv="X-Content-Type-Options" content="nosniff">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://cdn.sheetjs.com https://challenges.cloudflare.com https://www.gstatic.com; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' http://localhost:* http://127.0.0.1:* http://192.168.0.0/16 http://10.0.0.0/8 https://api.openai.com https://api.jsonbin.io https://*.firebaseio.com https://*.googleapis.com https://challenges.cloudflare.com; img-src 'self' data: https://challenges.cloudflare.com; media-src 'self'; frame-src https://challenges.cloudflare.com; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://cdn.sheetjs.com https://challenges.cloudflare.com https://www.gstatic.com; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' http://localhost:* http://127.0.0.1:* http://192.168.0.0/16 http://10.0.0.0/8 https://api.openai.com https://api.jsonbin.io https://*.firebaseio.com wss://*.firebaseio.com https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com https://challenges.cloudflare.com; img-src 'self' data: https://challenges.cloudflare.com; media-src 'self'; frame-src https://challenges.cloudflare.com; object-src 'none'; base-uri 'self'; form-action 'self'">
   <title>Almacén Central DC</title>
   <script src="js/platform-perf.js"></script>
   <script src="js/relay-bootstrap.js?v=2"></script>
@@ -537,7 +537,8 @@
   <script defer src="js/platform-lan-sync.js?v=13"></script>
   <script defer src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script defer src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
-  <script defer src="js/platform-web-cloud-sync.js?v=2"></script>
+  <script defer src="js/platform-firebase-bridge.js?v=1"></script>
+  <script defer src="js/platform-web-cloud-sync.js?v=3"></script>
   <script defer src="js/platform-averias-cloud-sync.js?v=17"></script>
   <script defer src="js/platform-speech.js"></script>
   <script defer src="js/platform-layout.js"></script>
@@ -550,8 +551,8 @@
   <script defer src="js/platform-excel-operaciones.js"></script>
   <script defer src="js/platform-excel-facturas.js"></script>
   <script defer src="js/platform-facturas-ui.js?v=2"></script>
-  <script defer src="js/platform-despacho-store.js?v=35"></script>
-  <script defer src="js/platform-despacho-cloud-sync.js?v=4"></script>
+  <script defer src="js/platform-despacho-store.js?v=36"></script>
+  <script defer src="js/platform-despacho-cloud-sync.js?v=5"></script>
   <script defer src="js/vendor/JsBarcode.all.min.js"></script>
   <script defer src="js/platform-despacho-barcode.js?v=6"></script>
   <script defer src="js/platform-despacho-display.js?v=1"></script>

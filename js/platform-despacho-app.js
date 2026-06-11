@@ -373,7 +373,9 @@
       PC.bindOnce($('despBtnRefresh'), 'click', renderDespacho);
 
       document.addEventListener('despacho-updated', function () {
-        if (state.user) updateDespachoSyncLabel();
+        if (state.user) {
+          renderDespacho();
+        }
       });
 
       document.addEventListener('despacho-live-share', function () { /* pantalla externa */ });
@@ -399,6 +401,12 @@
         if (d.level === 'err') {
           cloudWarnShown = true;
           toast(d.text, 'warn');
+        }
+      });
+      document.addEventListener('firebase-connection', function (ev) {
+        if (!state.user) return;
+        if (ev.detail && ev.detail.connected) {
+          toast('Sync en vivo conectada (Firebase)', 'ok');
         }
       });
 

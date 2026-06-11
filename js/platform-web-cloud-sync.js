@@ -293,34 +293,22 @@
   }
 
   function initFirebase() {
-    var fb = siteConfig && siteConfig.firebase;
-    if (!fb || !fb.enabled || !fb.databaseURL || typeof global.firebase === 'undefined') {
-      return Promise.resolve(false);
-    }
-    try {
-      if (!global.firebase.apps.length) {
-        global.firebase.initializeApp({
-          apiKey: fb.apiKey,
-          authDomain: fb.authDomain,
-          databaseURL: fb.databaseURL,
-          projectId: fb.projectId
-        });
+    if (!hasFirebaseConfig() || !global.PlatformFirebaseBridge) return Promise.resolve(false);
+    return global.PlatformFirebaseBridge.ensureReady().then(function (db) {
+      if (!db || firebaseBound) {
+        if (db) firebaseDb = db;
+        return !!db;
       }
-      firebaseDb = global.firebase.database();
-      if (!firebaseBound) {
-        firebaseBound = true;
-        firebaseDb.ref('platform/snapshot').on('value', function (snap) {
-          var val = snap.val();
-          if (!val) return;
-          var merged = mergeSnapshots(buildSnapshotFromLocal(), val);
-          applySnapshot(merged, 'firebase');
-        });
-      }
-      return Promise.resolve(true);
-    } catch (e) {
-      console.warn('[WebCloud] Firebase error:', e);
-      return Promise.resolve(false);
-    }
+      firebaseDb = db;
+      firebaseBound = true;
+      db.ref('platform/snapshot').on('value', function (snap) {
+        var val = snap.val();
+        if (!val) return;
+        var merged = mergeSnapshots(buildSnapshotFromLocal(), val);
+        applySnapshot(merged, 'firebase');
+      });
+      return true;
+    }).catch(function () { return false; });
   }
 
   function pullFromJsonBin() {
@@ -471,9 +459,11 @@
   }
 
   function pushToFirebase(snap) {
-    if (!firebaseDb) return Promise.resolve(false);
-    return firebaseDb.ref('platform/snapshot').set(snap).then(function () {
-      return true;
+    if (!global.PlatformFirebaseBridge) return Promise.resolve(false);
+    return global.PlatformFirebaseBridge.ensureReady().then(function (db) {
+      if (!db) return false;
+      firebaseDb = db;
+      return db.ref('platform/snapshot').set(snap).then(function () { return true; });
     }).catch(function () { return false; });
   }
 

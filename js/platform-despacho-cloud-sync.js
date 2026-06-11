@@ -93,7 +93,9 @@
   }
 
   function firebaseLive() {
-    return !!(firebaseDb && firebaseBound && hasFirebaseConfig());
+    if (!hasFirebaseConfig()) return false;
+    if (global.PlatformFirebaseBridge && global.PlatformFirebaseBridge.getDb()) return true;
+    return !!(firebaseDb && firebaseBound);
   }
 
   function pushDelayMs(value) {
@@ -299,34 +301,25 @@
   }
 
   function initFirebase() {
-    var fb = siteConfig && siteConfig.firebase;
-    if (!fb || !fb.enabled || !fb.databaseURL || typeof global.firebase === 'undefined') {
+    if (!hasFirebaseConfig()) return Promise.resolve(false);
+    if (!global.PlatformFirebaseBridge || !global.PlatformFirebaseBridge.ensureReady) {
       return Promise.resolve(false);
     }
-    try {
-      if (!global.firebase.apps.length) {
-        global.firebase.initializeApp({
-          apiKey: fb.apiKey,
-          authDomain: fb.authDomain,
-          databaseURL: fb.databaseURL,
-          projectId: fb.projectId
-        });
-      }
-      firebaseDb = global.firebase.database();
-      if (!firebaseBound) {
-        firebaseBound = true;
-        firebaseDb.ref('despacho/snapshot').on('value', function (snap) {
-          var val = snap.val();
-          if (!val) return;
-          var merged = mergeDespacho(getLocalData(), val);
-          applyRemote(merged, 'firebase');
-        });
-      }
-      return Promise.resolve(true);
-    } catch (e) {
-      console.warn('[DespachoCloud] Firebase init error:', e);
-      return Promise.resolve(false);
-    }
+    return global.PlatformFirebaseBridge.ensureReady().then(function (db) {
+      if (!db) return false;
+      firebaseDb = db;
+      if (firebaseBound) return true;
+      firebaseBound = true;
+      db.ref('despacho/snapshot').on('value', function (snap) {
+        var val = snap.val();
+        if (!val) return;
+        var merged = mergeDespacho(getLocalData(), val);
+        applyRemote(merged, 'firebase');
+      });
+      return true;
+    }).catch(function () {
+      return false;
+    });
   }
 
   function pullFromJsonBin() {
@@ -458,10 +451,18 @@
   }
 
   function pushToFirebase(data) {
-    if (!firebaseDb) return Promise.resolve(false);
-    return firebaseDb.ref('despacho/snapshot').set(data).then(function () {
-      return true;
-    }).catch(function () { return false; });
+    if (!global.PlatformFirebaseBridge || !global.PlatformFirebaseBridge.ensureReady) {
+      return Promise.resolve(false);
+    }
+    return global.PlatformFirebaseBridge.ensureReady().then(function (db) {
+      if (!db) return false;
+      firebaseDb = db;
+      return db.ref('despacho/snapshot').set(data).then(function () {
+        return true;
+      });
+    }).catch(function () {
+      return false;
+    });
   }
 
   function pushLocal(retries) {
@@ -469,24 +470,44 @@
     var local = getLocalData();
     if (!local || !hasLiveContent(local)) return Promise.resolve(false);
     if (!isCloudConfigured()) return Promise.resolve(false);
-    pushing = true;
-    retries = retries == null ? 2 : retries;
 
-    if (firebaseLive() && !getJsonBinConfig()) {
-      var fastPayload = Object.assign({}, local, { module: 'despacho', updatedAt: nowIso() });
-      return pushToFirebase(fastPayload).then(function (ok) {
-        if (ok) {
-          lastPushOkAt = Date.now();
-          if (broadcast) {
-            try { broadcast.postMessage({ type: 'despacho-sync', at: Date.now() }); } catch (e) { /* noop */ }
+    function runPush() {
+      pushing = true;
+      retries = retries == null ? 3 : retries;
+
+      if (hasFirebaseConfig()) {
+        var fastPayload = Object.assign({}, local, { module: 'despacho', updatedAt: nowIso() });
+        return pushToFirebase(fastPayload).then(function (ok) {
+          if (ok) {
+            lastPushOkAt = Date.now();
+            if (broadcast) {
+              try { broadcast.postMessage({ type: 'despacho-sync', at: Date.now() }); } catch (e) { /* noop */ }
+            }
+            updateSyncUi();
+            return true;
           }
-          updateSyncUi();
-        }
-        return ok;
-      }).finally(function () {
+          return pushLocalFallback(retries);
+        }).finally(function () {
+          pushing = false;
+        });
+      }
+      return pushLocalFallback(retries).finally(function () {
         pushing = false;
       });
     }
+
+    if (hasFirebaseConfig() && global.PlatformFirebaseBridge) {
+      return global.PlatformFirebaseBridge.ensureReady().then(function () {
+        return runPush();
+      });
+    }
+    return runPush();
+  }
+
+  function pushLocalFallback(retries) {
+    var local = getLocalData();
+    if (!local) return Promise.resolve(false);
+    retries = retries == null ? 2 : retries;
 
     function attempt(n, payload) {
       return Promise.all([
@@ -534,8 +555,6 @@
         lastAppliedSig = dataSignature(payload);
       }
       return attempt(0, payload || local);
-    }).finally(function () {
-      pushing = false;
     });
   }
 
@@ -544,7 +563,14 @@
       return { level: 'ok', text: 'LAN activo — sync instantáneo entre PCs en la misma red' };
     }
     if (firebaseLive()) {
+      var conn = global.PlatformFirebaseBridge && global.PlatformFirebaseBridge.isConnected && global.PlatformFirebaseBridge.isConnected();
+      if (conn === false) {
+        return { level: 'warn', text: 'Firebase conectando… recargue con Ctrl+F5 si tarda más de 5 s' };
+      }
       return { level: 'ok', text: 'Firebase en vivo — cambios en menos de 1 s entre todas las PCs' };
+    }
+    if (hasFirebaseConfig()) {
+      return { level: 'err', text: 'Firebase no conectó — Ctrl+F5 en teléfono y PC (misma URL GitHub)' };
     }
     if (serverReachable && resolvePublicBase()) {
       return { level: 'ok', text: 'Sync en vivo vía servidor · hace ' + (lastPullAt ? Math.round((Date.now() - lastPullAt) / 1000) + ' s' : '—') };
@@ -662,6 +688,9 @@
       global.addEventListener('lan-ready', function () {
         updateSyncUi();
         pullAll();
+      });
+      global.addEventListener('firebase-connection', function () {
+        updateSyncUi();
       });
       if (broadcast) {
         broadcast.onmessage = function () { pullAll(); };

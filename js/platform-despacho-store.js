@@ -243,11 +243,11 @@
           detail: { data: data, at: nowIso(), source: 'live-share' }
         }));
       } catch (e) { /* noop */ }
-      if (global.PlatformDespachoCloudSync && global.PlatformDespachoCloudSync.pushLocal) {
-        global.PlatformDespachoCloudSync.pushLocal();
-      }
     } else if (!opts.silent) {
       notify(data);
+    }
+    if (!opts.silent && global.PlatformDespachoCloudSync && global.PlatformDespachoCloudSync.pushLocal) {
+      global.PlatformDespachoCloudSync.pushLocal(3);
     }
     return true;
   }
