@@ -285,10 +285,18 @@
   function applySnapshotToLocal(snap, silent, source) {
     if (!snap || !global.localStorage) return false;
     var current = getLocalSnapshot();
-    if (current && source !== 'jsonbin') {
-      snap = mergeAveriasSnapshots(current, snap);
-    } else if (current && source === 'jsonbin') {
-      snap = mergeAveriasSnapshots(snap, current);
+    if (current) {
+      var localSeq = current.localSeq || 0;
+      var remoteSeq = snap.localSeq || 0;
+      if (source === 'firebase' && localSeq > remoteSeq) {
+        global.setTimeout(function () { pushSnapshot(current, 1); }, 50);
+        return false;
+      }
+      if (source !== 'jsonbin') {
+        snap = mergeAveriasSnapshots(current, snap);
+      } else {
+        snap = mergeAveriasSnapshots(snap, current);
+      }
     }
     var contentSig = contentSignature(snap);
     if (contentSig === lastAppliedContentSig) return false;
@@ -456,8 +464,13 @@
       db.ref('averias/snapshot').on('value', function (snap) {
         var val = snap.val();
         if (!val) return;
-        var merged = mergeAveriasSnapshots(getLocalSnapshot(), val);
-        applySnapshotToLocal(merged);
+        var local = getLocalSnapshot();
+        if (local && (local.localSeq || 0) > (val.localSeq || 0)) {
+          global.setTimeout(function () { pushSnapshot(local, 1); }, 30);
+          return;
+        }
+        var merged = mergeAveriasSnapshots(local || EMPTY, val);
+        applySnapshotToLocal(merged, false, 'firebase');
       });
       return true;
     }).catch(function () { return false; });
@@ -471,7 +484,7 @@
   }
 
   function pullFromStatic() {
-    if (hasJsonBinConfig()) return Promise.resolve(null);
+    if (hasJsonBinConfig() || hasFirebaseConfig()) return Promise.resolve(null);
     staticPollCounter += 1;
     var hasFastSource = isCloudConfigured() || canUseServerApi();
     if (hasFastSource && staticPollCounter % 3 !== 0) {
@@ -511,7 +524,11 @@
   }
 
   function pullFromFirebaseOnce() {
-    if (!firebaseDb || firebaseBound) return Promise.resolve(null);
+    if (!hasFirebaseConfig() || !global.PlatformFirebaseBridge) return Promise.resolve(null);
+    if (global.PlatformFirebaseBridge.pull) {
+      return global.PlatformFirebaseBridge.pull('averias/snapshot');
+    }
+    if (!firebaseDb) return Promise.resolve(null);
     return firebaseDb.ref('averias/snapshot').once('value').then(function (snap) {
       return snap.val() || null;
     }).catch(function () { return null; });
@@ -536,6 +553,9 @@
         }
         if (merged) {
           var prevContentSig = contentSignature(getLocalSnapshot() || EMPTY);
+          if (localBefore && countSnapshotRecords(localBefore) > countSnapshotRecords(merged)) {
+            merged = mergeAveriasSnapshots(merged, localBefore);
+          }
           var applied = applySnapshotToLocal(merged, false, jsonBinSnap ? 'jsonbin' : 'merge');
           if (applied && contentSignature(merged) !== prevContentSig) {
             schedulePullBurst();
@@ -623,15 +643,14 @@
     retries = retries == null ? 3 : retries;
     snap.updatedAt = new Date().toISOString();
 
-    function beginPush() {
-      applySnapshotToLocal(snap, true);
-      return attempt(0);
-    }
-
     function attempt(n) {
       if (hasFirebaseConfig() && !hasJsonBinConfig()) {
         return pushToFirebase(snap).then(function (ok) {
           if (ok) {
+            lastAppliedContentSig = contentSignature(snap);
+            try {
+              global.localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(snap));
+            } catch (e) { /* noop */ }
             schedulePullBurst();
             broadcastSyncHint();
             notifyUpdated('push-ok');
@@ -684,15 +703,15 @@
           applySnapshotToLocal(mergeAveriasSnapshots(remote, snap), false, 'jsonbin');
           return { ok: false, skipped: 'empty-would-wipe-remote' };
         }
-        return beginPush();
+        return attempt(0);
       }).catch(function () {
-        return beginPush();
+        return attempt(0);
       }).finally(function () {
         pushing = false;
       });
     }
 
-    return beginPush().finally(function () {
+    return attempt(0).finally(function () {
       pushing = false;
     });
   }

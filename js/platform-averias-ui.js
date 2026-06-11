@@ -456,6 +456,7 @@
                 snap.updatedAt = new Date().toISOString();
                 snap.localSeq = (snap.localSeq || 0) + 1;
                 localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(snap));
+                refreshUiAfterLocalChange();
                 if (options.localOnly || options.bootstrap) {
                     return Promise.resolve({ ok: true, localOnly: true });
                 }
@@ -468,16 +469,14 @@
                         }
                         if (result && !result.ok && cloud) {
                             if (global.PlatformToast) {
-                                global.PlatformToast.error('Reporte NO llegó a la nube. Otros dispositivos no lo verán.', 6000);
-                            } else {
-                                alert('Error: el reporte no se subió a la nube. Otros dispositivos no lo verán.');
+                                global.PlatformToast.warn('Reporte guardado en este equipo. Reintentando sync en la nube…', 5000);
                             }
                         } else if (result && !result.ok && !cloud) {
                             if (global.PlatformToast) {
-                                global.PlatformToast.warn('Solo en este dispositivo — active la nube (banner amarillo)', 5000);
+                                global.PlatformToast.warn('Reporte guardado solo en este dispositivo', 4000);
                             }
                         } else if (result && result.ok && cloud && global.PlatformToast) {
-                            global.PlatformToast.success('Reporte enviado — otros dispositivos lo verán en ~1s', 2200);
+                            global.PlatformToast.success('Reporte en vivo — visible en todos los dispositivos', 2200);
                         }
                         return result || { ok: true };
                     });
@@ -796,7 +795,10 @@
             document.addEventListener('lan-sync', function (ev) {
                 if (ev.detail && ev.detail.store === 'averias') reloadFromSyncDebounced();
             });
-            document.addEventListener('averias-updated', function (ev) { reloadFromSyncDebounced(ev); });
+            document.addEventListener('averias-updated', function (ev) {
+                if (ev.detail && ev.detail.source === 'push-ok') return;
+                reloadFromSyncDebounced(ev);
+            });
             document.addEventListener('averias-web-wiped', function () {
                 var pull = global.PlatformAveriasCloudSync && global.PlatformAveriasCloudSync.pull;
                 if (pull) {
@@ -1570,8 +1572,6 @@
             allIncidences.push(incidence);
             auditAction('REPORTAR', { module: 'pallets', location: incidence.location, product: incidence.product });
             persistSnapshot({ force: true });
-            updateStats();
-            renderReportedWorkLists();
 
             document.getElementById('reportLocation').value = '';
             document.getElementById('reportProduct').value = '';
