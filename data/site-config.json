@@ -18,7 +18,13 @@
     "accessKey": "$2a$10$QtkeZBCgSXuqFhEmaDkUlOotaT/0nQYmnACfqc7kMonTD0wZ7vE1K",
     "keyType": "master"
   },
-  "help": "Tiempo real: JSONBin cada ~1s. Indicador LIVE = sync activa. No refresque la pagina.",
+  "despachoJsonBin": {
+    "enabled": true,
+    "binId": "6a29fc62f5f4af5e29dbbdd3",
+    "accessKey": "$2a$10$QtkeZBCgSXuqFhEmaDkUlOotaT/0nQYmnACfqc7kMonTD0wZ7vE1K",
+    "keyType": "master"
+  },
+  "help": "Tiempo real: JSONBin cada ~1s. Despacho (operador/validador/TV) usa despachoJsonBin. Indicador LIVE = sync activa.",
   "security": {
     "turnstileSiteKey": "0x4AAAAAADhftTLJSQ0WxVnuiLp9UNRpOMc",
     "humanVerifyMinMs": 1200,

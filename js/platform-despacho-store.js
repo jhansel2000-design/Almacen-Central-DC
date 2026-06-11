@@ -238,6 +238,11 @@
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     if (opts.liveShareOnly) {
       notifyLiveShare(data.liveShare || null);
+      try {
+        global.dispatchEvent(new CustomEvent('despacho-updated', {
+          detail: { data: data, at: nowIso(), source: 'live-share' }
+        }));
+      } catch (e) { /* noop */ }
     } else if (!opts.silent) {
       notify(data);
     }
@@ -726,11 +731,23 @@
     function onStorage(ev) {
       if (ev.key === STORAGE_KEY) callback(load());
     }
+    function onLiveShare() {
+      callback(load());
+    }
+    function onLan(ev) {
+      if (ev.detail && ev.detail.store === 'despacho') callback(load());
+    }
     global.addEventListener('despacho-updated', onCustom);
+    global.addEventListener('despacho-live-share', onLiveShare);
+    global.addEventListener('despacho-live-lista', onLiveShare);
     global.addEventListener('storage', onStorage);
+    global.addEventListener('lan-sync', onLan);
     return function () {
       global.removeEventListener('despacho-updated', onCustom);
+      global.removeEventListener('despacho-live-share', onLiveShare);
+      global.removeEventListener('despacho-live-lista', onLiveShare);
       global.removeEventListener('storage', onStorage);
+      global.removeEventListener('lan-sync', onLan);
     };
   }
 

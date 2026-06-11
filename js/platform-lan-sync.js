@@ -65,6 +65,16 @@
         global.dispatchEvent(new CustomEvent('despacho-updated', {
           detail: { data: data, at: new Date().toISOString(), source: 'lan' }
         }));
+        if (data && data.liveShare) {
+          global.dispatchEvent(new CustomEvent('despacho-live-share', {
+            detail: { share: data.liveShare, at: new Date().toISOString(), source: 'lan' }
+          }));
+        }
+        if (data && data.liveShareLista) {
+          global.dispatchEvent(new CustomEvent('despacho-live-lista', {
+            detail: { share: data.liveShareLista, at: new Date().toISOString(), source: 'lan' }
+          }));
+        }
       } catch (e) { /* noop */ }
     }
     if (store === 'averias') {
