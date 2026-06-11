@@ -153,6 +153,7 @@
   }
 
   function pollIntervalMs() {
+    if (firebaseDb && firebaseBound && hasFirebaseConfig()) return 10000;
     var sec = (siteConfig && siteConfig.pollSeconds) || 1;
     if (siteConfig && siteConfig.realtime === false) sec = 8;
     return Math.max(1, sec) * 1000;
@@ -604,7 +605,7 @@
     if (!snap) return Promise.resolve({ ok: false, reason: 'empty' });
     if (pushing) {
       return new Promise(function (resolve) {
-        global.setTimeout(function () { resolve(pushSnapshot(snap, retries)); }, 200);
+        global.setTimeout(function () { resolve(pushSnapshot(snap, retries)); }, firebaseDb ? 80 : 200);
       });
     }
     pushing = true;
@@ -641,7 +642,7 @@
         }
         if (n < retries) {
           return new Promise(function (resolve) {
-            global.setTimeout(function () { resolve(attempt(n + 1)); }, 400);
+            global.setTimeout(function () { resolve(attempt(n + 1)); }, hasFirebaseConfig() && !hasJsonBinConfig() ? 120 : 400);
           });
         }
         return { ok: false, reason: hasJsonBinConfig() ? 'jsonbin-fail' : 'no-cloud' };

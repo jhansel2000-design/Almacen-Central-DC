@@ -937,13 +937,13 @@
       if (prepIdcInput) {
         prepIdcInput.addEventListener('input', function () {
           clearTimeout(prepLiveTimer);
-          prepLiveTimer = setTimeout(pushPrepLiveShare, 100);
+          prepLiveTimer = setTimeout(pushPrepLiveShare, 30);
         });
       }
       if (prepJaulaInput) {
         prepJaulaInput.addEventListener('input', function () {
           clearTimeout(prepLiveTimer);
-          prepLiveTimer = setTimeout(pushPrepLiveShare, 100);
+          prepLiveTimer = setTimeout(pushPrepLiveShare, 30);
         });
       }
 
@@ -989,7 +989,7 @@
           shareIdcInput ? shareIdcInput.value : '',
           pasilloValueFromField(shareJaulaInput));
         clearTimeout(livePushTimer);
-        livePushTimer = setTimeout(pushLiveToExternal, 80);
+        livePushTimer = setTimeout(pushLiveToExternal, 25);
       }
 
       if (shareIdcInput) shareIdcInput.addEventListener('input', syncSharePreview);

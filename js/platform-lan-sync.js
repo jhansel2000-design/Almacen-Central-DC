@@ -104,7 +104,7 @@
       }).catch(function (err) {
         console.warn('[LAN] Error al subir ' + store + ':', err.message);
       });
-    }, 350);
+    }, 120);
   }
 
   function hookLocalStorage() {

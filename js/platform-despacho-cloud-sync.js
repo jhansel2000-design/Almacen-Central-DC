@@ -92,6 +92,19 @@
     return !!(fb && fb.enabled && fb.databaseURL);
   }
 
+  function firebaseLive() {
+    return !!(firebaseDb && firebaseBound && hasFirebaseConfig());
+  }
+
+  function pushDelayMs(value) {
+    if (!firebaseLive()) return 120;
+    try {
+      var parsed = JSON.parse(value);
+      if (parsed && parsed.liveShare && parsed.liveShare.active) return 12;
+    } catch (e) { /* noop */ }
+    return 25;
+  }
+
   function jsonBinAuthHeaders(jb) {
     var key = jb.accessKey;
     if (jb.keyType === 'master' || /^\$2[ab]\$/.test(String(key || ''))) {
@@ -459,6 +472,22 @@
     pushing = true;
     retries = retries == null ? 2 : retries;
 
+    if (firebaseLive() && !getJsonBinConfig()) {
+      var fastPayload = Object.assign({}, local, { module: 'despacho', updatedAt: nowIso() });
+      return pushToFirebase(fastPayload).then(function (ok) {
+        if (ok) {
+          lastPushOkAt = Date.now();
+          if (broadcast) {
+            try { broadcast.postMessage({ type: 'despacho-sync', at: Date.now() }); } catch (e) { /* noop */ }
+          }
+          updateSyncUi();
+        }
+        return ok;
+      }).finally(function () {
+        pushing = false;
+      });
+    }
+
     function attempt(n, payload) {
       return Promise.all([
         pushToServer(payload),
@@ -485,7 +514,7 @@
         }
         if (n < retries) {
           return new Promise(function (resolve) {
-            global.setTimeout(function () { resolve(attempt(n + 1, payload)); }, 350);
+            global.setTimeout(function () { resolve(attempt(n + 1, payload)); }, firebaseLive() ? 120 : 350);
           });
         }
         updateSyncUi();
@@ -513,6 +542,9 @@
   function syncStatusMessage() {
     if (global.PlatformLanSync && global.PlatformLanSync.isEnabled && global.PlatformLanSync.isEnabled()) {
       return { level: 'ok', text: 'LAN activo — sync instantáneo entre PCs en la misma red' };
+    }
+    if (firebaseLive()) {
+      return { level: 'ok', text: 'Firebase en vivo — cambios en menos de 1 s entre todas las PCs' };
     }
     if (serverReachable && resolvePublicBase()) {
       return { level: 'ok', text: 'Sync en vivo vía servidor · hace ' + (lastPullAt ? Math.round((Date.now() - lastPullAt) / 1000) + ' s' : '—') };
@@ -552,6 +584,7 @@
   }
 
   function pollIntervalMs() {
+    if (firebaseLive()) return 10000;
     var sec = (siteConfig && siteConfig.pollSeconds) || 1;
     if (siteConfig && siteConfig.realtime === false) sec = 5;
     return Math.max(1, sec) * 1000;
@@ -579,14 +612,9 @@
       orig.call(this, key, value);
       if (key === STORAGE_KEY && !applyingRemote) {
         clearTimeout(hookLocalStorage.pushTimer);
-        var delay = 120;
-        try {
-          var parsed = JSON.parse(value);
-          if (parsed && parsed.liveShare && parsed.liveShare.active) delay = 60;
-        } catch (e) { /* noop */ }
         hookLocalStorage.pushTimer = global.setTimeout(function () {
           pushLocal();
-        }, delay);
+        }, pushDelayMs(value));
       }
     };
     global.localStorage.__despachoCloudHooked = true;

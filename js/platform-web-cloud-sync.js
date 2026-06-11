@@ -109,6 +109,10 @@
     return !!(fb && fb.enabled && fb.databaseURL);
   }
 
+  function firebaseLive() {
+    return !!(firebaseDb && firebaseBound && hasFirebaseConfig());
+  }
+
   function jsonBinAuthHeaders(jb) {
     var key = jb.accessKey;
     if (jb.keyType === 'master' || /^\$2[ab]\$/.test(String(key || ''))) {
@@ -481,6 +485,18 @@
     pushing = true;
     retries = retries == null ? 2 : retries;
 
+    if (firebaseLive() && !getJsonBinConfig()) {
+      local.updatedAt = nowIso();
+      return pushToFirebase(local).then(function (ok) {
+        if (ok && broadcast) {
+          try { broadcast.postMessage({ type: 'platform-sync', at: Date.now() }); } catch (e) { /* noop */ }
+        }
+        return ok;
+      }).finally(function () {
+        pushing = false;
+      });
+    }
+
     function attempt(n, payload) {
       return Promise.all([
         pushToServer(payload),
@@ -498,7 +514,7 @@
         }
         if (n < retries) {
           return new Promise(function (resolve) {
-            global.setTimeout(function () { resolve(attempt(n + 1, payload)); }, 350);
+            global.setTimeout(function () { resolve(attempt(n + 1, payload)); }, firebaseLive() ? 120 : 350);
           });
         }
         return false;
@@ -562,13 +578,14 @@
         clearTimeout(hookLocalStorage.pushTimer);
         hookLocalStorage.pushTimer = global.setTimeout(function () {
           pushLocal();
-        }, 150);
+        }, firebaseLive() ? 25 : 150);
       }
     };
     global.localStorage.__webCloudHooked = true;
   }
 
   function pollIntervalMs() {
+    if (firebaseLive()) return 10000;
     var sec = (siteConfig && siteConfig.pollSeconds) || 1;
     if (siteConfig && siteConfig.realtime === false) sec = 5;
     return Math.max(1, sec) * 1000;

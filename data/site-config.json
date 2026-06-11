@@ -5,8 +5,9 @@
   "githubPagesDataUrl": "https://jhansel2000-design.github.io/Almacen-Central-DC/data/averias.json",
   "githubPagesDespachoDataUrl": "https://jhansel2000-design.github.io/Almacen-Central-DC/data/despacho.json",
   "githubPagesPlatformDataUrl": "https://jhansel2000-design.github.io/Almacen-Central-DC/data/platform.json",
-  "pollSeconds": 2,
+  "pollSeconds": 1,
   "realtime": true,
+  "syncTargetMs": 800,
   "firebase": {
     "enabled": true,
     "apiKey": "AIzaSyBzH_tp242QEdgBAIxarFkNwPYyf9VeY6g",
@@ -32,7 +33,7 @@
     "accessKey": "",
     "keyType": "master"
   },
-  "help": "Sync web activa con Firebase (gratis). Todos ven lo mismo en GitHub Pages. Recargue con Ctrl+F5.",
+  "help": "Sync Firebase en vivo (<1s). Todos ven lo mismo en GitHub Pages. Ctrl+F5 tras cambios.",
   "security": {
     "turnstileSiteKey": "0x4AAAAAADhftTLJSQ0WxVnuiLp9UNRpOMc",
     "humanVerifyMinMs": 1200,
