@@ -404,7 +404,7 @@
       '<header class="desp-panel-head">' +
       '<div><span class="desp-eyebrow">Opción 1 · Lectores / escaneo</span>' +
       '<h3 id="despBarcodeTitle">Compartir IDC como código de barras</h3>' +
-      '<p class="desp-panel-sub">Escriba IDC y referencia · se refleja en vivo en la pantalla externa al compartir</p></div>' +
+      '<p class="desp-panel-sub">Escriba IDC y referencia · se refleja en vivo en todas las pantallas al instante</p></div>' +
       (sharing ? '<span class="desp-share-live-tag"><span class="desp-live-dot"></span> EN VIVO</span>' : '') +
       '</header>' +
       '<p class="desp-share-status" id="despShareStatus"' + (sharing ? '' : ' hidden') + '>' +
@@ -430,8 +430,8 @@
       renderPedidosMiniShare(DS.getPedidosSeguimientoPreparador(data.pedidos).slice(0, 8)) +
       '</div></div>' +
       '<aside class="desp-barcode-panel" id="despBarcodePanel" aria-label="Vista previa local">' +
-      '<h4 class="desp-barcode-title">Vista previa (solo aquí)</h4>' +
-      '<p class="desp-muted desp-barcode-hint">Referencia local. La pantalla externa muestra el mismo IDC en grande.</p>' +
+      '<h4 class="desp-barcode-title">Vista previa en vivo</h4>' +
+      '<p class="desp-muted desp-barcode-hint">Lo mismo que ven la pantalla TV y el resto del equipo.</p>' +
       '<div class="desp-barcode-stage">' +
       '<img id="despBarcodeImg" class="desp-barcode-img" alt="Código de barras IDC" width="300" height="100">' +
       '</div>' +
@@ -553,6 +553,24 @@
       jaula: pasilloValueFromField(jaula),
       estado: 'facturado'
     };
+  }
+
+  function applyRemoteLiveShareToForm(host, data) {
+    if (!host || !data) return;
+    var live = DS.getLiveShare(data);
+    if (!live || !live.active) return;
+    var idcEl = host.querySelector('#despShareIdc');
+    var jaulaEl = host.querySelector('#despShareJaula');
+    var idcVal = live.idc || '';
+    var jaulaVal = live.jaula || '';
+    if (idcEl && document.activeElement !== idcEl && idcEl.value !== idcVal) {
+      idcEl.value = idcVal;
+    }
+    if (jaulaEl && document.activeElement !== jaulaEl && pasilloValueFromField(jaulaEl) !== jaulaVal) {
+      jaulaEl.value = jaulaVal;
+    }
+    updateBarcodePanel(host, idcVal, jaulaVal);
+    updateShareScreenUi(host, data);
   }
 
   function restoreShareForm(host, snap) {
@@ -845,9 +863,14 @@
     if (screen === 'barcode' && host.querySelector('#despBarcodePanel')) {
       var shareIdc = host.querySelector('#despShareIdc');
       var shareJaula = host.querySelector('#despShareJaula');
-      updateBarcodePanel(host,
-        shareIdc ? shareIdc.value : '',
-        pasilloValueFromField(shareJaula));
+      var live = DS.getLiveShare(data);
+      if (live && live.active) {
+        restoreShareForm(host, { idc: live.idc, jaula: live.jaula, estado: live.estado });
+      } else {
+        updateBarcodePanel(host,
+          shareIdc ? shareIdc.value : '',
+          pasilloValueFromField(shareJaula));
+      }
       updateShareScreenUi(host, data);
     }
 
@@ -866,8 +889,10 @@
         filterQ: searchEl ? searchEl.value : (opts.filterQ || ''),
         filterEstado: filtEl ? filtEl.value : (opts.filterEstado || '')
       }));
-      if (screen === 'barcode') restoreShareForm(host, formSnap);
-      else if (screen === 'registro') restorePrepForm(host, formSnap);
+      if (screen === 'barcode') {
+        restoreShareForm(host, formSnap);
+        applyRemoteLiveShareToForm(host, fresh);
+      } else if (screen === 'registro') restorePrepForm(host, formSnap);
       if (screen === 'barcode') updateShareScreenUi(host, fresh);
       if (screen === 'validador') updateShareListaUi(host, fresh);
     });
@@ -879,9 +904,9 @@
       updateBarcodePanel(host,
         idcEl ? idcEl.value : '',
         '');
-      if (DS.isLiveShareActive()) {
-        var vals = getShareFormValues(host);
-        DS.syncLiveShare(vals.idc, '', vals.estado, userName);
+      var vals = getShareFormValues(host);
+      if (DS.isLiveShareActive() || String(vals.idc || '').trim()) {
+        DS.publishLiveShare(vals.idc, '', vals.estado, userName);
       }
     }
 
@@ -899,6 +924,29 @@
 
     var form = host.querySelector('#despPrepForm');
     if (form) {
+      var prepLiveTimer = null;
+      var prepIdcInput = host.querySelector('#despIdc');
+      var prepJaulaInput = host.querySelector('#despJaula');
+
+      function pushPrepLiveShare() {
+        var vals = getPrepFormValues(host);
+        if (!String(vals.idc || '').trim()) return;
+        DS.publishLiveShare(vals.idc, vals.jaula, vals.estado, userName);
+      }
+
+      if (prepIdcInput) {
+        prepIdcInput.addEventListener('input', function () {
+          clearTimeout(prepLiveTimer);
+          prepLiveTimer = setTimeout(pushPrepLiveShare, 100);
+        });
+      }
+      if (prepJaulaInput) {
+        prepJaulaInput.addEventListener('input', function () {
+          clearTimeout(prepLiveTimer);
+          prepLiveTimer = setTimeout(pushPrepLiveShare, 100);
+        });
+      }
+
       var btnUpdate = host.querySelector('#despBtnUpdateIdc');
       if (btnUpdate) {
         btnUpdate.addEventListener('click', function () {
@@ -910,6 +958,7 @@
           }
           if (!res.updated) announceNuevoIdcPedido(res.pedido);
           toast(res.updated ? 'IDC actualizado — en seguimiento validador' : 'IDC registrado — en seguimiento validador', 'success');
+          DS.publishLiveShare(vals.idc, vals.jaula, vals.estado, userName);
           var snap = capturePrepForm(host);
           render(host, res.data, opts);
           restorePrepForm(host, snap);
@@ -924,9 +973,15 @@
       var livePushTimer = null;
 
       function pushLiveToExternal() {
-        if (!DS.isLiveShareActive()) return;
         var vals = getShareFormValues(host);
-        DS.syncLiveShare(vals.idc, vals.jaula, vals.estado, userName);
+        if (!String(vals.idc || '').trim() && !String(vals.jaula || '').trim()) {
+          if (DS.isLiveShareActive()) {
+            DS.publishLiveShare('', '', vals.estado, userName);
+          }
+          return;
+        }
+        DS.publishLiveShare(vals.idc, vals.jaula, vals.estado, userName);
+        updateShareScreenUi(host, DS.load());
       }
 
       function syncSharePreview() {
@@ -934,7 +989,7 @@
           shareIdcInput ? shareIdcInput.value : '',
           pasilloValueFromField(shareJaulaInput));
         clearTimeout(livePushTimer);
-        livePushTimer = setTimeout(pushLiveToExternal, 120);
+        livePushTimer = setTimeout(pushLiveToExternal, 80);
       }
 
       if (shareIdcInput) shareIdcInput.addEventListener('input', syncSharePreview);
@@ -956,9 +1011,9 @@
             return;
           }
           ensureDisplayWindow('barcode');
-          DS.syncLiveShare(vals.idc, vals.jaula, vals.estado, userName);
+          DS.publishLiveShare(vals.idc, vals.jaula, vals.estado, userName);
           updateShareScreenUi(host, res.data);
-          toast('Pantalla externa activa — lo que escriba se ve en vivo', 'success');
+          toast('Pantalla externa activa — lo que escriba se ve en vivo en todas las PCs', 'success');
         });
       }
     }
@@ -991,9 +1046,11 @@
           var shareJaulaEl = host.querySelector('#despShareJaula');
           if (shareIdcEl) shareIdcEl.value = idc || '';
           updateBarcodePanel(host, idc, pasilloValueFromField(shareJaulaEl));
-          if (DS.isLiveShareActive()) {
+          if (DS.isLiveShareActive() || String(idc || '').trim()) {
             var vals = getShareFormValues(host);
-            DS.syncLiveShare(vals.idc, vals.jaula, vals.estado, userName);
+            if (!vals.idc && idc) vals.idc = idc;
+            DS.publishLiveShare(vals.idc, vals.jaula, vals.estado, userName);
+            updateShareScreenUi(host, DS.load());
           }
           return;
         }

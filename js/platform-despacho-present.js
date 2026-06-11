@@ -12,7 +12,7 @@
   var mountEl = null;
   var lastSig = '';
   var displayMode = false;
-  var LAYOUT_REV = '14';
+  var LAYOUT_REV = '15';
   var BARCODE_REV = 'notext-hq-xxl';
   var fitBound = false;
 

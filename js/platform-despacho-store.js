@@ -243,6 +243,9 @@
           detail: { data: data, at: nowIso(), source: 'live-share' }
         }));
       } catch (e) { /* noop */ }
+      if (global.PlatformDespachoCloudSync && global.PlatformDespachoCloudSync.pushLocal) {
+        global.PlatformDespachoCloudSync.pushLocal();
+      }
     } else if (!opts.silent) {
       notify(data);
     }
@@ -559,17 +562,31 @@
   }
 
   function syncLiveShare(idc, jaula, estado, usuario) {
+    return publishLiveShare(idc, jaula, estado, usuario, { requireActive: true });
+  }
+
+  function publishLiveShare(idc, jaula, estado, usuario, opts) {
+    opts = opts || {};
+    idc = formatIdc(idc);
+    jaula = String(jaula || '').trim();
+    estado = ESTADOS[estado] && PREPARADOR_ESTADOS.indexOf(estado) >= 0 ? estado : 'facturado';
     var data = load();
-    if (!data.liveShare || !data.liveShare.active) {
+    var prev = data.liveShare;
+    if (opts.requireActive && (!prev || !prev.active)) {
+      return { ok: true, synced: false, data: data };
+    }
+    if (!idc && !jaula && opts.requireActive) {
       return { ok: true, synced: false, data: data };
     }
     data.liveShare = {
       active: true,
-      idc: formatIdc(idc),
-      jaula: String(jaula || '').trim(),
-      estado: ESTADOS[estado] && PREPARADOR_ESTADOS.indexOf(estado) >= 0 ? estado : data.liveShare.estado,
+      idc: idc,
+      jaula: jaula,
+      estado: ESTADOS[estado] && PREPARADOR_ESTADOS.indexOf(estado) >= 0
+        ? estado
+        : ((prev && prev.estado) || 'facturado'),
       updatedAt: nowIso(),
-      sharedBy: data.liveShare.sharedBy || usuario || '—'
+      sharedBy: usuario || (prev && prev.sharedBy) || '—'
     };
     persistData(data, { liveShareOnly: true });
     return { ok: true, synced: true, data: data, liveShare: data.liveShare };
@@ -795,6 +812,7 @@
     startLiveShare: startLiveShare,
     stopLiveShare: stopLiveShare,
     syncLiveShare: syncLiveShare,
+    publishLiveShare: publishLiveShare,
     toggleLiveShare: toggleLiveShare,
     getLiveShareLista: getLiveShareLista,
     isLiveShareListaActive: isLiveShareListaActive,

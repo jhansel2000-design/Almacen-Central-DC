@@ -303,9 +303,14 @@
       orig.call(this, key, value);
       if (key === STORAGE_KEY && !applyingRemote) {
         clearTimeout(hookLocalStorage.pushTimer);
+        var delay = 120;
+        try {
+          var parsed = JSON.parse(value);
+          if (parsed && parsed.liveShare && parsed.liveShare.active) delay = 60;
+        } catch (e) { /* noop */ }
         hookLocalStorage.pushTimer = global.setTimeout(function () {
           pushLocal();
-        }, 280);
+        }, delay);
       }
     };
     global.localStorage.__despachoCloudHooked = true;
