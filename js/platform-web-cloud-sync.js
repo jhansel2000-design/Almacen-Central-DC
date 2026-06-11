@@ -105,11 +105,15 @@
   }
 
   function hasFirebaseConfig() {
+    if (global.PlatformFirebaseBridge && global.PlatformFirebaseBridge.isEnabled()) return true;
     var fb = siteConfig && siteConfig.firebase;
     return !!(fb && fb.enabled && fb.databaseURL);
   }
 
   function firebaseLive() {
+    if (global.PlatformFirebaseBridge && global.PlatformFirebaseBridge.isEnabled()) {
+      return !!(global.PlatformFirebaseBridge.isConnected() || global.PlatformFirebaseBridge.isRestMode());
+    }
     return !!(firebaseDb && firebaseBound && hasFirebaseConfig());
   }
 
@@ -323,7 +327,7 @@
         lastJsonBinError = Date.now();
         if (!warnedJsonBin && res.status === 403) {
           warnedJsonBin = true;
-          showSyncBanner('err', 'Sync web pausada (JSONBin agotado). Ejecute SETUP-WEB-SYNC.bat con una Master Key nueva.');
+          showSyncBanner('warn', 'Sync web — use Firebase (Ctrl+F5). JSONBin ya no es necesario.');
         }
         throw new Error('jsonbin ' + res.status);
       }
@@ -374,8 +378,12 @@
     return fetchJson(staticDataUrl() + '?t=' + Date.now()).catch(function () { return null; });
   }
 
-  function pullFromFirebaseOnce() {
-    if (!firebaseDb || firebaseBound) return Promise.resolve(null);
+  function pullFirebaseInitial() {
+    if (!hasFirebaseConfig() || !global.PlatformFirebaseBridge) return Promise.resolve(null);
+    if (global.PlatformFirebaseBridge.pull) {
+      return global.PlatformFirebaseBridge.pull('platform/snapshot');
+    }
+    if (!firebaseDb) return Promise.resolve(null);
     return firebaseDb.ref('platform/snapshot').once('value').then(function (snap) {
       return snap.val() || null;
     }).catch(function () { return null; });
@@ -391,7 +399,7 @@
         pullFromServer(),
         pullFromCloudProxy(),
         pullFromStatic(),
-        pullFromFirebaseOnce()
+        pullFirebaseInitial()
       ]).then(function (parts) {
         var merged = localBefore;
         parts.forEach(function (part) {
@@ -460,10 +468,12 @@
 
   function pushToFirebase(snap) {
     if (!global.PlatformFirebaseBridge) return Promise.resolve(false);
-    return global.PlatformFirebaseBridge.ensureReady().then(function (db) {
-      if (!db) return false;
-      firebaseDb = db;
-      return db.ref('platform/snapshot').set(snap).then(function () { return true; });
+    var payload;
+    try { payload = JSON.parse(JSON.stringify(snap || {})); } catch (e) { payload = snap; }
+    return global.PlatformFirebaseBridge.ensureReady().then(function (adapter) {
+      if (!adapter) return false;
+      firebaseDb = adapter;
+      return adapter.ref('platform/snapshot').set(payload).then(function (ok) { return !!ok; });
     }).catch(function () { return false; });
   }
 
@@ -472,52 +482,62 @@
     var local = buildSnapshotFromLocal();
     if (!local || !hasAnyData(local)) return Promise.resolve(false);
     if (!isCloudConfigured()) return Promise.resolve(false);
-    pushing = true;
-    retries = retries == null ? 2 : retries;
 
-    if (firebaseLive() && !getJsonBinConfig()) {
-      local.updatedAt = nowIso();
-      return pushToFirebase(local).then(function (ok) {
-        if (ok && broadcast) {
-          try { broadcast.postMessage({ type: 'platform-sync', at: Date.now() }); } catch (e) { /* noop */ }
-        }
-        return ok;
+    function runPush() {
+      pushing = true;
+      retries = retries == null ? 2 : retries;
+
+      if (hasFirebaseConfig() && !getJsonBinConfig()) {
+        local.updatedAt = nowIso();
+        return pushToFirebase(local).then(function (ok) {
+          if (ok && broadcast) {
+            try { broadcast.postMessage({ type: 'platform-sync', at: Date.now() }); } catch (e) { /* noop */ }
+          }
+          return ok;
+        }).finally(function () {
+          pushing = false;
+        });
+      }
+
+      function attempt(n, payload) {
+        return Promise.all([
+          pushToServer(payload),
+          pushToCloudProxy(payload),
+          pushToJsonBin(payload),
+          pushToFirebase(payload)
+        ]).then(function (results) {
+          var jsonBinOk = results[2];
+          var ok = getJsonBinConfig() ? (jsonBinOk || results[0] || results[1] || results[3]) : results.some(Boolean);
+          if (ok) {
+            if (broadcast) {
+              try { broadcast.postMessage({ type: 'platform-sync', at: Date.now() }); } catch (e) { /* noop */ }
+            }
+            return true;
+          }
+          if (n < retries) {
+            return new Promise(function (resolve) {
+              global.setTimeout(function () { resolve(attempt(n + 1, payload)); }, firebaseLive() ? 120 : 350);
+            });
+          }
+          return false;
+        });
+      }
+
+      return pullFromJsonBin().then(function (remote) {
+        var payload = mergeSnapshots(local, remote);
+        if (payload) lastAppliedSig = snapshotSignature(payload);
+        return attempt(0, payload || local);
       }).finally(function () {
         pushing = false;
       });
     }
 
-    function attempt(n, payload) {
-      return Promise.all([
-        pushToServer(payload),
-        pushToCloudProxy(payload),
-        pushToJsonBin(payload),
-        pushToFirebase(payload)
-      ]).then(function (results) {
-        var jsonBinOk = results[2];
-        var ok = getJsonBinConfig() ? (jsonBinOk || results[0] || results[1] || results[3]) : results.some(Boolean);
-        if (ok) {
-          if (broadcast) {
-            try { broadcast.postMessage({ type: 'platform-sync', at: Date.now() }); } catch (e) { /* noop */ }
-          }
-          return true;
-        }
-        if (n < retries) {
-          return new Promise(function (resolve) {
-            global.setTimeout(function () { resolve(attempt(n + 1, payload)); }, firebaseLive() ? 120 : 350);
-          });
-        }
-        return false;
+    if (hasFirebaseConfig() && global.PlatformFirebaseBridge) {
+      return global.PlatformFirebaseBridge.ensureReady().then(function () {
+        return runPush();
       });
     }
-
-    return pullFromJsonBin().then(function (remote) {
-      var payload = mergeSnapshots(local, remote);
-      if (payload) lastAppliedSig = snapshotSignature(payload);
-      return attempt(0, payload || local);
-    }).finally(function () {
-      pushing = false;
-    });
+    return runPush();
   }
 
   function showSyncBanner(level, text) {
@@ -532,7 +552,7 @@
       btn.textContent = 'Cómo activar';
       btn.addEventListener('click', function () {
         if (global.PlatformToast) {
-          global.PlatformToast.warning('Ejecute SETUP-WEB-SYNC.bat en su PC, pegue una Master Key nueva de jsonbin.io, espere 2 min y Ctrl+F5 en todas las PCs.', 12000);
+          global.PlatformToast.info('Sync en vivo vía Firebase — misma URL en todos los dispositivos. Ctrl+F5 si no ve cambios.', 10000);
         }
       });
       existing.appendChild(btn);
@@ -546,14 +566,14 @@
     bar.innerHTML = '<span>' + text + '</span> <button type="button" class="web-cloud-sync-banner__btn">Cómo activar</button>';
     bar.querySelector('button').addEventListener('click', function () {
       if (global.PlatformToast) {
-        global.PlatformToast.warning('Ejecute SETUP-WEB-SYNC.bat en su PC, pegue una Master Key nueva de jsonbin.io, espere 2 min y Ctrl+F5 en todas las PCs.', 12000);
+        global.PlatformToast.info('Sync en vivo vía Firebase — misma URL en todos los dispositivos. Ctrl+F5 si no ve cambios.', 10000);
       }
     });
     global.document.body.appendChild(bar);
   }
 
   function hideSyncBannerIfOk() {
-    if (!lastJsonBinOk) return;
+    if (!hasFirebaseConfig() && !lastJsonBinOk) return;
     var bar = global.document && global.document.getElementById('webCloudSyncBanner');
     if (bar) bar.hidden = true;
   }
@@ -568,7 +588,7 @@
         clearTimeout(hookLocalStorage.pushTimer);
         hookLocalStorage.pushTimer = global.setTimeout(function () {
           pushLocal();
-        }, firebaseLive() ? 25 : 150);
+        }, hasFirebaseConfig() ? 20 : 150);
       }
     };
     global.localStorage.__webCloudHooked = true;
@@ -601,18 +621,25 @@
         return initFirebase();
       });
     }).then(function () {
+      return pullFirebaseInitial();
+    }).then(function (remoteFirebase) {
       hookLocalStorage();
       var local = buildSnapshotFromLocal();
-      if (local) lastAppliedSig = snapshotSignature(local);
-      if (getJsonBinConfig() && !lastJsonBinOk && lastJsonBinError) {
-        showSyncBanner('err', 'Sync web inactiva — ejecute SETUP-WEB-SYNC.bat (JSONBin agotado)');
+      if (remoteFirebase && hasAnyData(remoteFirebase)) {
+        applySnapshot(mergeSnapshots(local, remoteFirebase), 'firebase');
       }
+      if (local) lastAppliedSig = snapshotSignature(buildSnapshotFromLocal() || local);
       return pullAll().then(function () {
-        if (local && hasAnyData(local)) return pushLocal();
+        if (local && hasAnyData(local) && !remoteFirebase) {
+          return pushLocal();
+        }
       });
     }).then(function () {
       if (!isCloudConfigured()) return;
       startPolling();
+      global.addEventListener('firebase-connection', function () {
+        if (hasFirebaseConfig()) hideSyncBannerIfOk();
+      });
       global.addEventListener('visibilitychange', function () {
         if (global.document.visibilityState === 'visible') {
           probeCurrentServer().then(function () { pullAll(); });

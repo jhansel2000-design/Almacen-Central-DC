@@ -436,6 +436,14 @@
     }).catch(function () { return false; });
   }
 
+  function pullFirebaseInitial() {
+    if (!hasFirebaseConfig() || !global.PlatformFirebaseBridge) return Promise.resolve(null);
+    if (global.PlatformFirebaseBridge.pull) {
+      return global.PlatformFirebaseBridge.pull('averias/snapshot');
+    }
+    return Promise.resolve(null);
+  }
+
   function initFirebase() {
     if (!hasFirebaseConfig() || !global.PlatformFirebaseBridge) return Promise.resolve(false);
     return global.PlatformFirebaseBridge.ensureReady().then(function (db) {
@@ -932,6 +940,11 @@
     initReady = loadSiteConfig().then(function () {
       return initFirebase();
     }).then(function () {
+      return pullFirebaseInitial();
+    }).then(function (remoteFirebase) {
+      if (remoteFirebase) {
+        applySnapshotToLocal(mergeAveriasSnapshots(getLocalSnapshot(), remoteFirebase), true, 'firebase');
+      }
       return probeCurrentServer().then(function () {
         updateSyncUi();
         return tryPromoteLocalCloudConfig();

@@ -169,6 +169,12 @@
     payload.module = mod;
     payload.updatedAt = new Date().toISOString();
     localStorage.setItem(key, JSON.stringify(payload));
+    if (global.PlatformWebCloudSync && global.PlatformWebCloudSync.pushLocal) {
+      global.PlatformWebCloudSync.pushLocal(3);
+    }
+    if (mod === 'despacho' && global.PlatformDespachoCloudSync && global.PlatformDespachoCloudSync.pushLocal) {
+      global.PlatformDespachoCloudSync.pushLocal(3);
+    }
     return true;
   }
 
