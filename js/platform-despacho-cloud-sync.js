@@ -88,14 +88,16 @@
   }
 
   function hasFirebaseConfig() {
+    if (global.PlatformFirebaseBridge && global.PlatformFirebaseBridge.isEnabled()) return true;
     var fb = siteConfig && siteConfig.firebase;
     return !!(fb && fb.enabled && fb.databaseURL);
   }
 
   function firebaseLive() {
-    if (!hasFirebaseConfig()) return false;
-    if (global.PlatformFirebaseBridge && global.PlatformFirebaseBridge.getDb()) return true;
-    return !!(firebaseDb && firebaseBound);
+    if (global.PlatformFirebaseBridge && global.PlatformFirebaseBridge.isEnabled()) {
+      return !!(global.PlatformFirebaseBridge.isConnected() || global.PlatformFirebaseBridge.isRestMode());
+    }
+    return !!(firebaseDb && firebaseBound && hasFirebaseConfig());
   }
 
   function pushDelayMs(value) {
@@ -370,8 +372,12 @@
     return fetchJson(staticDataUrl() + '?t=' + Date.now()).catch(function () { return null; });
   }
 
-  function pullFromFirebaseOnce() {
-    if (!firebaseDb || firebaseBound) return Promise.resolve(null);
+  function pullFirebaseInitial() {
+    if (!hasFirebaseConfig() || !global.PlatformFirebaseBridge) return Promise.resolve(null);
+    if (global.PlatformFirebaseBridge.pull) {
+      return global.PlatformFirebaseBridge.pull('despacho/snapshot');
+    }
+    if (!firebaseDb) return Promise.resolve(null);
     return firebaseDb.ref('despacho/snapshot').once('value').then(function (snap) {
       return snap.val() || null;
     }).catch(function () { return null; });
@@ -387,7 +393,7 @@
         pullFromServer(),
         pullFromCloudProxy(),
         pullFromStatic(),
-        pullFromFirebaseOnce()
+        pullFirebaseInitial()
       ]).then(function (parts) {
         var merged = localBefore;
         parts.forEach(function (part) {
@@ -454,15 +460,26 @@
     if (!global.PlatformFirebaseBridge || !global.PlatformFirebaseBridge.ensureReady) {
       return Promise.resolve(false);
     }
-    return global.PlatformFirebaseBridge.ensureReady().then(function (db) {
-      if (!db) return false;
-      firebaseDb = db;
-      return db.ref('despacho/snapshot').set(data).then(function () {
-        return true;
+    var payload = sanitizeForCloud(data);
+    return global.PlatformFirebaseBridge.ensureReady().then(function (adapter) {
+      if (!adapter) return false;
+      firebaseDb = adapter;
+      return adapter.ref('despacho/snapshot').set(payload).then(function (ok) {
+        if (!ok) console.warn('[DespachoCloud] Firebase push falló');
+        return !!ok;
       });
-    }).catch(function () {
+    }).catch(function (err) {
+      console.warn('[DespachoCloud] Firebase push error:', err);
       return false;
     });
+  }
+
+  function sanitizeForCloud(data) {
+    try {
+      return JSON.parse(JSON.stringify(data || {}));
+    } catch (e) {
+      return data;
+    }
   }
 
   function pushLocal(retries) {
@@ -564,8 +581,12 @@
     }
     if (firebaseLive()) {
       var conn = global.PlatformFirebaseBridge && global.PlatformFirebaseBridge.isConnected && global.PlatformFirebaseBridge.isConnected();
+      var mode = global.PlatformFirebaseBridge && global.PlatformFirebaseBridge.getMode && global.PlatformFirebaseBridge.getMode();
       if (conn === false) {
         return { level: 'warn', text: 'Firebase conectando… recargue con Ctrl+F5 si tarda más de 5 s' };
+      }
+      if (mode === 'rest') {
+        return { level: 'ok', text: 'Sync en vivo activa (nube) — cambios cada ~0.5 s entre teléfono y PC' };
       }
       return { level: 'ok', text: 'Firebase en vivo — cambios en menos de 1 s entre todas las PCs' };
     }
@@ -652,18 +673,22 @@
         return initFirebase();
       });
     }).then(function () {
+      return pullFirebaseInitial();
+    }).then(function (remoteFirebase) {
       hookLocalStorage();
       var local = getLocalData();
-      if (local) lastAppliedSig = dataSignature(local);
+      if (remoteFirebase) {
+        applyRemote(mergeDespacho(local, remoteFirebase), 'firebase');
+      }
+      if (local) lastAppliedSig = dataSignature(getLocalData() || local);
       if (!isCloudConfigured()) {
-        console.warn('[DespachoCloud] Sync limitada — configure LAN o JSONBin');
+        console.warn('[DespachoCloud] Sync limitada — configure LAN o Firebase');
         updateSyncUi();
         return;
       }
       return pullAll().then(function () {
         var after = getLocalData();
-        if (after && !lastAppliedSig) lastAppliedSig = dataSignature(after);
-        if (local && hasLiveContent(local)) {
+        if (local && hasLiveContent(local) && !remoteFirebase) {
           var remoteEmpty = !after || !hasLiveContent(after);
           if (remoteEmpty || (local.updatedAt && after.updatedAt && local.updatedAt > after.updatedAt)) {
             return pushLocal();

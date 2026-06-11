@@ -406,7 +406,8 @@
       document.addEventListener('firebase-connection', function (ev) {
         if (!state.user) return;
         if (ev.detail && ev.detail.connected) {
-          toast('Sync en vivo conectada (Firebase)', 'ok');
+          var mode = ev.detail.mode === 'rest' ? ' (nube directa)' : ' (Firebase)';
+          toast('Sync en vivo conectada' + mode, 'ok');
         }
       });
 
