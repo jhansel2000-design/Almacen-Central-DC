@@ -19,13 +19,19 @@ const { URL } = require('url');
 const webUsersExport = require('../scripts/export-web-users.js');
 const { pushWebUsersGit } = require('../scripts/push-web-users-git.js');
 const averiasExport = require('../scripts/export-averias.js');
+const despachoExport = require('../scripts/export-despacho.js');
+const platformExport = require('../scripts/export-platform.js');
 const { pushAveriasGit } = require('../scripts/push-averias-git.js');
+const { pushDespachoGit } = require('../scripts/push-despacho-git.js');
+const { pushPlatformGit } = require('../scripts/push-platform-git.js');
 const { setupAveriasCloud } = require('../scripts/setup-averias-cloud.js');
 const { ensureAveriasCloud } = require('../scripts/ensure-averias-cloud.js');
 const jsonbinCloud = require('../scripts/jsonbin-cloud.js');
 const { pushSiteConfigGit } = require('../scripts/setup-averias-cloud.js');
 
 var averiasGitPushTimer = null;
+var despachoGitPushTimer = null;
+var platformGitPushTimer = null;
 
 const args = process.argv.slice(2);
 function argValue(flag, fallback) {
@@ -199,6 +205,21 @@ function writeStore(name, data) {
       console.warn('[LAN] No se pudo exportar averias.json:', e.message);
     }
   }
+  if (name === 'despacho') {
+    try {
+      despachoExport.writeDespachoFile(ROOT, data);
+      scheduleDespachoGitPush();
+    } catch (e) {
+      console.warn('[LAN] No se pudo exportar despacho.json:', e.message);
+    }
+  }
+  if (name === 'operaciones' || name === 'productividad' || name === 'facturas') {
+    try {
+      schedulePlatformExport();
+    } catch (e) {
+      console.warn('[LAN] No se pudo exportar platform.json:', e.message);
+    }
+  }
   const stat = fs.statSync(fp);
   return { mtime: stat.mtimeMs, size: stat.size };
 }
@@ -212,6 +233,34 @@ function scheduleAveriasGitPush() {
       console.warn('[LAN] Git push averias omitido:', String(e.stderr || e.message || e));
     });
   }, 3000);
+}
+
+function scheduleDespachoGitPush() {
+  clearTimeout(despachoGitPushTimer);
+  despachoGitPushTimer = setTimeout(function () {
+    pushDespachoGit(ROOT).then(function (r) {
+      if (r && r.pushed) console.log('[LAN] Despacho publicado a GitHub (data/despacho.json)');
+    }).catch(function (e) {
+      console.warn('[LAN] Git push despacho omitido:', String(e.stderr || e.message || e));
+    });
+  }, 2000);
+}
+
+function schedulePlatformExport() {
+  clearTimeout(platformGitPushTimer);
+  platformGitPushTimer = setTimeout(function () {
+    var snap = platformExport.emptyPlatformSnapshot();
+    ['operaciones', 'productividad', 'facturas'].forEach(function (name) {
+      var row = readStore(name);
+      if (row && row.data) snap[name] = row.data;
+    });
+    platformExport.writePlatformFile(ROOT, snap);
+    pushPlatformGit(ROOT).then(function (r) {
+      if (r && r.pushed) console.log('[LAN] WMS publicado a GitHub (data/platform.json)');
+    }).catch(function (e) {
+      console.warn('[LAN] Git push platform omitido:', String(e.stderr || e.message || e));
+    });
+  }, 2500);
 }
 
 function broadcast(event, payload) {
@@ -448,6 +497,101 @@ function handleApi(req, res, url) {
       scheduleAveriasGitPush();
       return jsonbinCloud.pushAveriasToJsonBin(ROOT, snap).then(function (pushed) {
         broadcast('update', { store: 'averias', at: snap.updatedAt, source: 'cloud' });
+        return sendJson(res, 200, { ok: true, updatedAt: snap.updatedAt, jsonbin: !!pushed });
+      });
+    }).catch(function (e) {
+      return sendJson(res, 400, { ok: false, error: e.message });
+    });
+  }
+
+  if (req.method === 'GET' && p === '/api/cloud/despacho') {
+    return jsonbinCloud.pullDespachoFromJsonBin(ROOT).then(function (remote) {
+      if (remote) return sendJson(res, 200, { ok: true, data: remote, source: 'jsonbin' });
+      const row = readStore('despacho');
+      const local = row && row.data ? row.data : despachoExport.readDespachoFile(ROOT);
+      return sendJson(res, 200, { ok: true, data: local || despachoExport.emptyData(), source: 'local' });
+    }).catch(function (e) {
+      return sendJson(res, 500, { ok: false, error: e.message });
+    });
+  }
+
+  if (req.method === 'PUT' && p === '/api/cloud/despacho') {
+    return readBody(req).then(function (body) {
+      var data = body && body.data ? body.data : null;
+      if (!data) return sendJson(res, 400, { ok: false, error: 'data requerida' });
+      data.updatedAt = new Date().toISOString();
+      try { writeStore('despacho', data); } catch (e) { /* noop */ }
+      despachoExport.writeDespachoFile(ROOT, data);
+      scheduleDespachoGitPush();
+      return jsonbinCloud.pushDespachoToJsonBin(ROOT, data).then(function (pushed) {
+        broadcast('update', { store: 'despacho', at: data.updatedAt, source: 'cloud' });
+        return sendJson(res, 200, { ok: true, updatedAt: data.updatedAt, jsonbin: !!pushed });
+      });
+    }).catch(function (e) {
+      return sendJson(res, 400, { ok: false, error: e.message });
+    });
+  }
+
+  if (req.method === 'POST' && p === '/api/publish-despacho-live') {
+    return readBody(req).then(function (body) {
+      var data = body && body.data ? body.data : null;
+      if (!data) {
+        const row = readStore('despacho');
+        data = row && row.data ? row.data : despachoExport.readDespachoFile(ROOT);
+      }
+      if (!data) return sendJson(res, 400, { ok: false, error: 'Sin datos de despacho' });
+      despachoExport.writeDespachoFile(ROOT, data);
+      return pushDespachoGit(ROOT).then(function (gitResult) {
+        return sendJson(res, 200, {
+          ok: true,
+          live: true,
+          updatedAt: data.updatedAt,
+          committed: !!gitResult.committed,
+          pushed: !!gitResult.pushed,
+          file: 'data/despacho.json',
+          webUrl: 'https://jhansel2000-design.github.io/Almacen-Central-DC/data/despacho.json'
+        });
+      }).catch(function (gitErr) {
+        return sendJson(res, 200, {
+          ok: true,
+          live: false,
+          updatedAt: data.updatedAt,
+          file: 'data/despacho.json',
+          gitError: String(gitErr.stderr || gitErr.message || gitErr)
+        });
+      });
+    }).catch(function (e) {
+      return sendJson(res, 400, { ok: false, error: e.message });
+    });
+  }
+
+  if (req.method === 'GET' && p === '/api/cloud/platform') {
+    return jsonbinCloud.pullPlatformFromJsonBin(ROOT).then(function (remote) {
+      if (remote) return sendJson(res, 200, { ok: true, data: remote, source: 'jsonbin' });
+      var snap = platformExport.readPlatformFile(ROOT);
+      ['operaciones', 'productividad', 'facturas'].forEach(function (name) {
+        var row = readStore(name);
+        if (row && row.data) snap[name] = row.data;
+      });
+      return sendJson(res, 200, { ok: true, data: snap, source: 'local' });
+    }).catch(function (e) {
+      return sendJson(res, 500, { ok: false, error: e.message });
+    });
+  }
+
+  if (req.method === 'PUT' && p === '/api/cloud/platform') {
+    return readBody(req).then(function (body) {
+      var snap = body && body.data ? body.data : null;
+      if (!snap) return sendJson(res, 400, { ok: false, error: 'data requerida' });
+      snap.updatedAt = new Date().toISOString();
+      ['operaciones', 'productividad', 'facturas'].forEach(function (name) {
+        if (snap[name]) {
+          try { writeStore(name, snap[name]); } catch (e) { /* noop */ }
+        }
+      });
+      platformExport.writePlatformFile(ROOT, snap);
+      schedulePlatformExport();
+      return jsonbinCloud.pushPlatformToJsonBin(ROOT, snap).then(function (pushed) {
         return sendJson(res, 200, { ok: true, updatedAt: snap.updatedAt, jsonbin: !!pushed });
       });
     }).catch(function (e) {

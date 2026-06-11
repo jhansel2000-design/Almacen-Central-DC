@@ -1,11 +1,16 @@
 /**
- * Sincronización en tiempo real — Despacho (operador ↔ validador ↔ pantalla TV)
- * JSONBin + LAN + proxy + GitHub static + Firebase + polling ~1s
+ * Sync web — operaciones, productividad, facturas (lo que ves = lo ven todos)
+ * JSONBin + Firebase + LAN + GitHub static + polling ~1s
  */
 (function (global) {
   'use strict';
 
-  var STORAGE_KEY = 'almacen_platform_data_despacho';
+  var STORES = {
+    operaciones: 'almacen_platform_data_operaciones',
+    productividad: 'almacen_platform_data_productividad',
+    facturas: 'almacen_platform_data_facturas'
+  };
+
   var pollTimer = null;
   var pushing = false;
   var pulling = false;
@@ -17,13 +22,12 @@
   var lastAppliedSig = '';
   var lastJsonBinError = 0;
   var lastJsonBinOk = 0;
-  var lastPushOkAt = 0;
   var staticPollCounter = 0;
   var firebaseDb = null;
   var firebaseBound = false;
   var warnedJsonBin = false;
   var broadcast = typeof global.BroadcastChannel !== 'undefined'
-    ? new global.BroadcastChannel('despacho-cloud-live')
+    ? new global.BroadcastChannel('platform-web-cloud')
     : null;
 
   function nowIso() {
@@ -64,9 +68,7 @@
     if (global.PlatformSecurity && global.PlatformSecurity.configUrl) {
       return global.PlatformSecurity.configUrl();
     }
-    if (isPublicHost()) {
-      return '/Almacen-Central-DC/data/site-config.json';
-    }
+    if (isPublicHost()) return '/Almacen-Central-DC/data/site-config.json';
     return 'data/site-config.json';
   }
 
@@ -74,6 +76,7 @@
     return fetchJson(siteConfigUrl() + '?t=' + Date.now()).then(function (cfg) {
       siteConfig = cfg || {};
       publicBase = normalizeBase(siteConfig.publicSyncBaseUrl) || publicBase;
+      applySiteConfigRelay();
       return siteConfig;
     }).catch(function () {
       siteConfig = siteConfig || {};
@@ -81,8 +84,22 @@
     });
   }
 
+  function applySiteConfigRelay() {
+    var url = siteConfig && normalizeBase(siteConfig.publicSyncBaseUrl);
+    if (!url || !global.PlatformNetworkRelay || !global.PlatformNetworkRelay.saveRelayConfig) return;
+    global.PlatformNetworkRelay.saveRelayConfig({
+      enabled: true,
+      baseUrl: url,
+      autoRedirect: false
+    });
+    if (global.PlatformNetworkRelay.applyRelayFromConfig) {
+      global.PlatformNetworkRelay.applyRelayFromConfig();
+    }
+    publicBase = url;
+  }
+
   function getJsonBinConfig() {
-    var jb = siteConfig && siteConfig.despachoJsonBin;
+    var jb = siteConfig && siteConfig.platformJsonBin;
     if (!jb || !jb.enabled || !jb.binId || !jb.accessKey) return null;
     return jb;
   }
@@ -127,13 +144,13 @@
   }
 
   function staticDataUrl() {
-    if (siteConfig && siteConfig.githubPagesDespachoDataUrl) {
-      return siteConfig.githubPagesDespachoDataUrl;
+    if (siteConfig && siteConfig.githubPagesPlatformDataUrl) {
+      return siteConfig.githubPagesPlatformDataUrl;
     }
     if (isPublicHost()) {
-      return 'https://jhansel2000-design.github.io/Almacen-Central-DC/data/despacho.json';
+      return 'https://jhansel2000-design.github.io/Almacen-Central-DC/data/platform.json';
     }
-    return 'data/despacho.json';
+    return 'data/platform.json';
   }
 
   function isCloudConfigured() {
@@ -146,119 +163,103 @@
     );
   }
 
-  function getLocalData() {
+  function moduleUpdatedAt(data) {
+    return Date.parse(data && data.updatedAt) || 0;
+  }
+
+  function buildSnapshotFromLocal() {
     if (!global.localStorage) return null;
-    try {
-      var raw = localStorage.getItem(STORAGE_KEY);
-      return raw ? JSON.parse(raw) : null;
-    } catch (e) {
-      return null;
-    }
+    var snap = {
+      version: 1,
+      updatedAt: nowIso(),
+      operaciones: null,
+      productividad: null,
+      facturas: null
+    };
+    var maxT = 0;
+    Object.keys(STORES).forEach(function (mod) {
+      try {
+        var raw = localStorage.getItem(STORES[mod]);
+        if (!raw) return;
+        var parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === 'object') {
+          snap[mod] = parsed;
+          maxT = Math.max(maxT, moduleUpdatedAt(parsed));
+        }
+      } catch (e) { /* noop */ }
+    });
+    if (maxT) snap.updatedAt = new Date(maxT).toISOString();
+    return snap;
   }
 
-  function pedidoTime(p) {
-    return Date.parse(p && p.updatedAt) || Date.parse(p && p.createdAt) || 0;
-  }
-
-  function shareTime(share) {
-    return Date.parse(share && share.updatedAt) || 0;
-  }
-
-  function mergeDespacho(local, remote) {
+  function mergeSnapshots(local, remote) {
     if (!remote) return local;
     if (!local) return remote;
-
-    var map = {};
-    (local.pedidos || []).forEach(function (p) {
-      if (p && p.id) map[p.id] = p;
+    var merged = {
+      version: 1,
+      updatedAt: nowIso(),
+      operaciones: null,
+      productividad: null,
+      facturas: null
+    };
+    Object.keys(STORES).forEach(function (mod) {
+      var a = local[mod];
+      var b = remote[mod];
+      if (!a) merged[mod] = b;
+      else if (!b) merged[mod] = a;
+      else merged[mod] = moduleUpdatedAt(a) >= moduleUpdatedAt(b) ? a : b;
     });
-    (remote.pedidos || []).forEach(function (p) {
-      if (!p || !p.id) return;
-      var prev = map[p.id];
-      if (!prev || pedidoTime(p) >= pedidoTime(prev)) map[p.id] = p;
-    });
-
-    var merged = Object.assign({}, (Date.parse(remote.updatedAt) || 0) >= (Date.parse(local.updatedAt) || 0) ? remote : local, {
-      module: 'despacho',
-      pedidos: Object.keys(map).map(function (k) { return map[k]; })
-    });
-
-    merged.liveShare = shareTime(remote.liveShare) >= shareTime(local.liveShare)
-      ? remote.liveShare
-      : local.liveShare;
-    merged.liveShareLista = shareTime(remote.liveShareLista) >= shareTime(local.liveShareLista)
-      ? remote.liveShareLista
-      : local.liveShareLista;
-
     var tLocal = Date.parse(local.updatedAt) || 0;
     var tRemote = Date.parse(remote.updatedAt) || 0;
     merged.updatedAt = new Date(Math.max(tLocal, tRemote)).toISOString();
     return merged;
   }
 
-  function dataSignature(data) {
-    if (!data) return '';
-    var ped = (data.pedidos || []).map(function (p) {
-      return String(p.id) + ':' + String(p.estado) + '@' + String(p.updatedAt || '');
-    }).sort().join('|');
-    var ls = data.liveShare && data.liveShare.active
-      ? String(data.liveShare.idc) + '~' + String(data.liveShare.jaula) + '@' + String(data.liveShare.updatedAt)
-      : '';
-    var ll = data.liveShareLista && data.liveShareLista.active
-      ? 'L@' + String(data.liveShareLista.updatedAt)
-      : '';
-    return ped + '||' + ls + '||' + ll + '||' + String(data.updatedAt || '');
+  function snapshotSignature(snap) {
+    if (!snap) return '';
+    return Object.keys(STORES).map(function (mod) {
+      var d = snap[mod];
+      return mod + ':' + (d ? String(d.updatedAt || '') + '@' + String((d.registros && d.registros.length) || (d.bd && d.bd.registros && d.bd.registros.length) || 0) : '0');
+    }).join('|') + '||' + String(snap.updatedAt || '');
   }
 
-  function hasLiveContent(data) {
-    if (!data) return false;
-    if (data.liveShare && data.liveShare.active) return true;
-    if (data.liveShareLista && data.liveShareLista.active) return true;
-    return !!(data.pedidos && data.pedidos.length);
+  function hasAnyData(snap) {
+    if (!snap) return false;
+    return Object.keys(STORES).some(function (mod) {
+      return !!(snap[mod] && typeof snap[mod] === 'object');
+    });
   }
 
-  function notifyApplied(data, source) {
-    try {
-      global.dispatchEvent(new CustomEvent('despacho-updated', {
-        detail: { data: data, at: nowIso(), source: source || 'cloud' }
-      }));
-    } catch (e) { /* noop */ }
-    if (data && data.liveShare) {
-      try {
-        global.dispatchEvent(new CustomEvent('despacho-live-share', {
-          detail: { share: data.liveShare, at: nowIso(), source: source || 'cloud' }
-        }));
-      } catch (e) { /* noop */ }
-    }
-    if (data && data.liveShareLista) {
-      try {
-        global.dispatchEvent(new CustomEvent('despacho-live-lista', {
-          detail: { share: data.liveShareLista, at: nowIso(), source: source || 'cloud' }
-        }));
-      } catch (e) { /* noop */ }
-    }
-  }
-
-  function applyRemote(data, source) {
-    if (!global.localStorage || !data) return false;
-    var sig = dataSignature(data);
+  function applySnapshot(snap, source) {
+    if (!global.localStorage || !snap) return false;
+    var sig = snapshotSignature(snap);
     if (sig === lastAppliedSig) return false;
     applyingRemote = true;
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      Object.keys(STORES).forEach(function (mod) {
+        if (snap[mod] && typeof snap[mod] === 'object') {
+          localStorage.setItem(STORES[mod], JSON.stringify(snap[mod]));
+        }
+      });
     } finally {
       applyingRemote = false;
     }
     lastAppliedSig = sig;
-    notifyApplied(data, source);
+    Object.keys(STORES).forEach(function (mod) {
+      if (snap[mod]) {
+        try {
+          global.dispatchEvent(new CustomEvent('lan-sync', {
+            detail: { store: mod, lsKey: STORES[mod], source: source || 'cloud' }
+          }));
+        } catch (e) { /* noop */ }
+      }
+    });
+    try {
+      global.dispatchEvent(new CustomEvent('web-cloud-sync', {
+        detail: { snapshot: snap, at: nowIso(), source: source || 'cloud' }
+      }));
+    } catch (e) { /* noop */ }
     return true;
-  }
-
-  function probeServerBase(base) {
-    if (!base) return Promise.resolve(false);
-    return fetchJson(base + '/api/health').then(function (h) {
-      return !!(h && h.ok);
-    }).catch(function () { return false; });
   }
 
   function probeCurrentServer() {
@@ -276,12 +277,14 @@
       serverReachable = false;
       return Promise.resolve(false);
     }
-    return probeServerBase(base).then(function (alive) {
-      serverReachable = !!alive;
-      if (!alive && siteConfig && siteConfig.publicSyncBaseUrl) {
-        publicBase = '';
-      }
+    return fetchJson(base + '/api/health').then(function (h) {
+      serverReachable = !!(h && h.ok);
+      if (!serverReachable) publicBase = '';
       return serverReachable;
+    }).catch(function () {
+      serverReachable = false;
+      publicBase = '';
+      return false;
     });
   }
 
@@ -302,16 +305,16 @@
       firebaseDb = global.firebase.database();
       if (!firebaseBound) {
         firebaseBound = true;
-        firebaseDb.ref('despacho/snapshot').on('value', function (snap) {
+        firebaseDb.ref('platform/snapshot').on('value', function (snap) {
           var val = snap.val();
           if (!val) return;
-          var merged = mergeDespacho(getLocalData(), val);
-          applyRemote(merged, 'firebase');
+          var merged = mergeSnapshots(buildSnapshotFromLocal(), val);
+          applySnapshot(merged, 'firebase');
         });
       }
       return Promise.resolve(true);
     } catch (e) {
-      console.warn('[DespachoCloud] Firebase init error:', e);
+      console.warn('[WebCloud] Firebase error:', e);
       return Promise.resolve(false);
     }
   }
@@ -328,13 +331,14 @@
         lastJsonBinError = Date.now();
         if (!warnedJsonBin && res.status === 403) {
           warnedJsonBin = true;
-          console.warn('[DespachoCloud] JSONBin agotado — ejecute SETUP-WEB-SYNC.bat');
+          showSyncBanner('err', 'Sync web pausada (JSONBin agotado). Ejecute SETUP-WEB-SYNC.bat con una Master Key nueva.');
         }
         throw new Error('jsonbin ' + res.status);
       }
       return res.json();
     }).then(function (body) {
       lastJsonBinOk = Date.now();
+      hideSyncBannerIfOk();
       return body && body.record ? body.record : null;
     }).catch(function () {
       lastJsonBinError = Date.now();
@@ -344,14 +348,28 @@
 
   function pullFromServer() {
     if (!canUseServerApi() || !serverReachable) return Promise.resolve(null);
-    return fetchJson(apiUrl('/api/data/despacho')).then(function (res) {
-      return res && res.data ? res.data : null;
-    }).catch(function () { return null; });
+    return Promise.all(Object.keys(STORES).map(function (mod) {
+      return fetchJson(apiUrl('/api/data/' + mod)).then(function (res) {
+        return res && res.data ? { mod: mod, data: res.data } : null;
+      }).catch(function () { return null; });
+    })).then(function (rows) {
+      var snap = { version: 1, updatedAt: nowIso(), operaciones: null, productividad: null, facturas: null };
+      var maxT = 0;
+      rows.forEach(function (row) {
+        if (row && row.data) {
+          snap[row.mod] = row.data;
+          maxT = Math.max(maxT, moduleUpdatedAt(row.data));
+        }
+      });
+      if (!maxT) return null;
+      snap.updatedAt = new Date(maxT).toISOString();
+      return snap;
+    });
   }
 
   function pullFromCloudProxy() {
     if (!canUseServerApi() || !serverReachable) return Promise.resolve(null);
-    return fetchJson(apiUrl('/api/cloud/despacho')).then(function (res) {
+    return fetchJson(apiUrl('/api/cloud/platform')).then(function (res) {
       return res && res.data ? res.data : null;
     }).catch(function () { return null; });
   }
@@ -366,18 +384,18 @@
 
   function pullFromFirebaseOnce() {
     if (!firebaseDb || firebaseBound) return Promise.resolve(null);
-    return firebaseDb.ref('despacho/snapshot').once('value').then(function (snap) {
+    return firebaseDb.ref('platform/snapshot').once('value').then(function (snap) {
       return snap.val() || null;
     }).catch(function () { return null; });
   }
 
   function pullAll() {
-    if (pulling) return Promise.resolve(getLocalData());
+    if (pulling) return Promise.resolve(buildSnapshotFromLocal());
     pulling = true;
-    var localBefore = getLocalData();
-    return pullFromJsonBin().then(function (jsonBinData) {
+    var localBefore = buildSnapshotFromLocal();
+    return pullFromJsonBin().then(function (jsonBinSnap) {
       return Promise.all([
-        Promise.resolve(jsonBinData),
+        Promise.resolve(jsonBinSnap),
         pullFromServer(),
         pullFromCloudProxy(),
         pullFromStatic(),
@@ -385,15 +403,14 @@
       ]).then(function (parts) {
         var merged = localBefore;
         parts.forEach(function (part) {
-          if (part) merged = mergeDespacho(merged, part);
+          if (part) merged = mergeSnapshots(merged, part);
         });
-        if (merged) {
-          applyRemote(merged, parts[0] ? 'jsonbin' : 'merge');
+        if (merged && hasAnyData(merged)) {
+          applySnapshot(merged, parts[0] ? 'jsonbin' : 'merge');
           lastPullAt = Date.now();
-          updateSyncUi();
-          if (getJsonBinConfig() && jsonBinData == null && hasLiveContent(localBefore)) {
-            global.setTimeout(function () { pushLocal(1); }, 200);
-          }
+        }
+        if (getJsonBinConfig() && jsonBinSnap == null && hasAnyData(localBefore)) {
+          global.setTimeout(function () { pushLocal(1); }, 200);
         }
         return merged;
       });
@@ -402,20 +419,21 @@
     });
   }
 
-  function pushToJsonBin(data) {
+  function pushToJsonBin(snap) {
     var jb = getJsonBinConfig();
-    if (!jb || !data) return Promise.resolve(false);
+    if (!jb || !snap) return Promise.resolve(false);
     var headers = jsonBinAuthHeaders(jb);
     headers['Content-Type'] = 'application/json';
-    data = Object.assign({}, data, { module: 'despacho', updatedAt: nowIso() });
+    snap = Object.assign({}, snap, { updatedAt: nowIso() });
     return global.fetch('https://api.jsonbin.io/v3/b/' + jb.binId, {
       method: 'PUT',
       headers: headers,
-      body: JSON.stringify(data),
+      body: JSON.stringify(snap),
       mode: 'cors'
     }).then(function (res) {
       if (res.ok) {
         lastJsonBinOk = Date.now();
+        hideSyncBannerIfOk();
         return true;
       }
       lastJsonBinError = Date.now();
@@ -426,35 +444,39 @@
     });
   }
 
-  function pushToServer(data) {
+  function pushToServer(snap) {
     if (!canUseServerApi() || !serverReachable) return Promise.resolve(false);
-    return global.fetch(apiUrl('/api/data/despacho'), {
+    var tasks = Object.keys(STORES).map(function (mod) {
+      if (!snap[mod]) return Promise.resolve(true);
+      return global.fetch(apiUrl('/api/data/' + mod), {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data: snap[mod], source: 'client' })
+      }).then(function (res) { return res.ok; }).catch(function () { return false; });
+    });
+    return Promise.all(tasks).then(function (r) { return r.some(Boolean); });
+  }
+
+  function pushToCloudProxy(snap) {
+    if (!canUseServerApi() || !serverReachable) return Promise.resolve(false);
+    return global.fetch(apiUrl('/api/cloud/platform'), {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ data: data, source: 'client' })
+      body: JSON.stringify({ data: snap })
     }).then(function (res) { return res.ok; }).catch(function () { return false; });
   }
 
-  function pushToCloudProxy(data) {
-    if (!canUseServerApi() || !serverReachable) return Promise.resolve(false);
-    return global.fetch(apiUrl('/api/cloud/despacho'), {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ data: data })
-    }).then(function (res) { return res.ok; }).catch(function () { return false; });
-  }
-
-  function pushToFirebase(data) {
+  function pushToFirebase(snap) {
     if (!firebaseDb) return Promise.resolve(false);
-    return firebaseDb.ref('despacho/snapshot').set(data).then(function () {
+    return firebaseDb.ref('platform/snapshot').set(snap).then(function () {
       return true;
     }).catch(function () { return false; });
   }
 
   function pushLocal(retries) {
     if (pushing || applyingRemote) return Promise.resolve(false);
-    var local = getLocalData();
-    if (!local || !hasLiveContent(local)) return Promise.resolve(false);
+    var local = buildSnapshotFromLocal();
+    if (!local || !hasAnyData(local)) return Promise.resolve(false);
     if (!isCloudConfigured()) return Promise.resolve(false);
     pushing = true;
     retries = retries == null ? 2 : retries;
@@ -469,18 +491,9 @@
         var jsonBinOk = results[2];
         var ok = getJsonBinConfig() ? (jsonBinOk || results[0] || results[1] || results[3]) : results.some(Boolean);
         if (ok) {
-          lastPushOkAt = Date.now();
           if (broadcast) {
-            try { broadcast.postMessage({ type: 'despacho-sync', at: Date.now() }); } catch (e) { /* noop */ }
+            try { broadcast.postMessage({ type: 'platform-sync', at: Date.now() }); } catch (e) { /* noop */ }
           }
-          if (isLanHost()) {
-            global.fetch('/api/publish-despacho-live', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ data: payload })
-            }).catch(function () { /* noop */ });
-          }
-          updateSyncUi();
           return true;
         }
         if (n < retries) {
@@ -488,67 +501,71 @@
             global.setTimeout(function () { resolve(attempt(n + 1, payload)); }, 350);
           });
         }
-        updateSyncUi();
         return false;
       });
     }
 
     return pullFromJsonBin().then(function (remote) {
-      var payload = mergeDespacho(local, remote);
-      if (payload) {
-        applyingRemote = true;
-        try {
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-        } finally {
-          applyingRemote = false;
-        }
-        lastAppliedSig = dataSignature(payload);
-      }
+      var payload = mergeSnapshots(local, remote);
+      if (payload) lastAppliedSig = snapshotSignature(payload);
       return attempt(0, payload || local);
     }).finally(function () {
       pushing = false;
     });
   }
 
-  function syncStatusMessage() {
-    if (global.PlatformLanSync && global.PlatformLanSync.isEnabled && global.PlatformLanSync.isEnabled()) {
-      return { level: 'ok', text: 'LAN activo — sync instantáneo entre PCs en la misma red' };
+  function showSyncBanner(level, text) {
+    if (!global.document || !global.document.body) return;
+    var existing = global.document.getElementById('webCloudSyncBanner');
+    if (existing) {
+      existing.textContent = '';
+      existing.appendChild(global.document.createTextNode(text + ' '));
+      var btn = global.document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'web-cloud-sync-banner__btn';
+      btn.textContent = 'Cómo activar';
+      btn.addEventListener('click', function () {
+        if (global.PlatformToast) {
+          global.PlatformToast.warning('Ejecute SETUP-WEB-SYNC.bat en su PC, pegue una Master Key nueva de jsonbin.io, espere 2 min y Ctrl+F5 en todas las PCs.', 12000);
+        }
+      });
+      existing.appendChild(btn);
+      existing.hidden = false;
+      return;
     }
-    if (serverReachable && resolvePublicBase()) {
-      return { level: 'ok', text: 'Sync en vivo vía servidor · hace ' + (lastPullAt ? Math.round((Date.now() - lastPullAt) / 1000) + ' s' : '—') };
-    }
-    if (isLanHost() && serverReachable) {
-      return { level: 'ok', text: 'Servidor local activo — operador y validador sincronizados' };
-    }
-    if (getJsonBinConfig() && lastJsonBinError && (Date.now() - lastJsonBinError) < 30000 && !lastJsonBinOk) {
-      return {
-        level: 'err',
-        text: 'JSONBin agotado. Ejecute SETUP-WEB-SYNC.bat y abra la misma URL en TODAS las PCs'
-      };
-    }
-    if (isPublicHost() && lastPullAt) {
-      return { level: 'warn', text: 'Lectura desde GitHub · el operador debe usar servidor LAN para escribir' };
-    }
-    if (isCloudConfigured() && lastPullAt) {
-      return { level: 'ok', text: 'Sync automático · hace ' + Math.round((Date.now() - lastPullAt) / 1000) + ' s' };
-    }
-    return {
-      level: 'err',
-      text: 'Sin sync entre PCs. Ejecute SETUP-WEB-SYNC.bat (Master Key nueva de jsonbin.io)'
-    };
+    var bar = global.document.createElement('div');
+    bar.id = 'webCloudSyncBanner';
+    bar.className = 'web-cloud-sync-banner web-cloud-sync-banner--' + (level || 'warn');
+    bar.setAttribute('role', 'status');
+    bar.innerHTML = '<span>' + text + '</span> <button type="button" class="web-cloud-sync-banner__btn">Cómo activar</button>';
+    bar.querySelector('button').addEventListener('click', function () {
+      if (global.PlatformToast) {
+        global.PlatformToast.warning('Ejecute SETUP-WEB-SYNC.bat en su PC, pegue una Master Key nueva de jsonbin.io, espere 2 min y Ctrl+F5 en todas las PCs.', 12000);
+      }
+    });
+    global.document.body.appendChild(bar);
   }
 
-  function updateSyncUi() {
-    var status = syncStatusMessage();
-    try {
-      global.dispatchEvent(new CustomEvent('despacho-cloud-status', { detail: status }));
-    } catch (e) { /* noop */ }
-    var badge = global.document && global.document.querySelector('.desp-live-badge');
-    if (badge) {
-      badge.title = status.text;
-      badge.classList.toggle('desp-sync-err', status.level === 'err');
-      badge.classList.toggle('desp-sync-warn', status.level === 'warn');
-    }
+  function hideSyncBannerIfOk() {
+    if (!lastJsonBinOk) return;
+    var bar = global.document && global.document.getElementById('webCloudSyncBanner');
+    if (bar) bar.hidden = true;
+  }
+
+  function hookLocalStorage() {
+    if (!global.localStorage || global.localStorage.__webCloudHooked) return;
+    var proto = Storage.prototype;
+    var orig = proto.setItem;
+    proto.setItem = function (key, value) {
+      orig.call(this, key, value);
+      if (!applyingRemote && (key === STORES.operaciones || key === STORES.productividad || key === STORES.facturas)) {
+        clearTimeout(hookLocalStorage.pushTimer);
+        hookLocalStorage.pushTimer = global.setTimeout(function () {
+          pushLocal();
+        }, 150);
+      }
+    };
+    global.localStorage.__webCloudHooked = true;
   }
 
   function pollIntervalMs() {
@@ -571,27 +588,6 @@
     pollTimer = global.setTimeout(loop, pollIntervalMs());
   }
 
-  function hookLocalStorage() {
-    if (!global.localStorage || global.localStorage.__despachoCloudHooked) return;
-    var proto = Storage.prototype;
-    var orig = proto.setItem;
-    proto.setItem = function (key, value) {
-      orig.call(this, key, value);
-      if (key === STORAGE_KEY && !applyingRemote) {
-        clearTimeout(hookLocalStorage.pushTimer);
-        var delay = 120;
-        try {
-          var parsed = JSON.parse(value);
-          if (parsed && parsed.liveShare && parsed.liveShare.active) delay = 60;
-        } catch (e) { /* noop */ }
-        hookLocalStorage.pushTimer = global.setTimeout(function () {
-          pushLocal();
-        }, delay);
-      }
-    };
-    global.localStorage.__despachoCloudHooked = true;
-  }
-
   function init() {
     loadSiteConfig().then(function () {
       return probeCurrentServer().then(function () {
@@ -599,27 +595,17 @@
       });
     }).then(function () {
       hookLocalStorage();
-      var local = getLocalData();
-      if (local) lastAppliedSig = dataSignature(local);
-      if (!isCloudConfigured()) {
-        console.warn('[DespachoCloud] Sync limitada — configure LAN o JSONBin');
-        updateSyncUi();
-        return;
+      var local = buildSnapshotFromLocal();
+      if (local) lastAppliedSig = snapshotSignature(local);
+      if (getJsonBinConfig() && !lastJsonBinOk && lastJsonBinError) {
+        showSyncBanner('err', 'Sync web inactiva — ejecute SETUP-WEB-SYNC.bat (JSONBin agotado)');
       }
       return pullAll().then(function () {
-        var after = getLocalData();
-        if (after && !lastAppliedSig) lastAppliedSig = dataSignature(after);
-        if (local && hasLiveContent(local)) {
-          var remoteEmpty = !after || !hasLiveContent(after);
-          if (remoteEmpty || (local.updatedAt && after.updatedAt && local.updatedAt > after.updatedAt)) {
-            return pushLocal();
-          }
-        }
+        if (local && hasAnyData(local)) return pushLocal();
       });
     }).then(function () {
       if (!isCloudConfigured()) return;
       startPolling();
-      updateSyncUi();
       global.addEventListener('visibilitychange', function () {
         if (global.document.visibilityState === 'visible') {
           probeCurrentServer().then(function () { pullAll(); });
@@ -628,18 +614,18 @@
       global.addEventListener('focus', function () {
         probeCurrentServer().then(function () { pullAll(); });
       }, { passive: true });
-      global.addEventListener('lan-sync', function (ev) {
-        if (ev.detail && ev.detail.store === 'despacho') pullAll();
+      global.addEventListener('lan-sync', function () {
+        /* LAN ya sincroniza; re-pull suave por si hay nube */
+        if (!global.PlatformLanSync || !global.PlatformLanSync.isEnabled()) return;
       });
       global.addEventListener('lan-ready', function () {
-        updateSyncUi();
         pullAll();
       });
       if (broadcast) {
         broadcast.onmessage = function () { pullAll(); };
       }
       global.setInterval(function () {
-        probeCurrentServer().then(function () { updateSyncUi(); });
+        probeCurrentServer();
       }, 20000);
     });
   }
@@ -652,11 +638,10 @@
     }
   }
 
-  global.PlatformDespachoCloudSync = {
+  global.PlatformWebCloudSync = {
     pullAll: pullAll,
     pushLocal: pushLocal,
     isConfigured: isCloudConfigured,
-    getLastPullAt: function () { return lastPullAt; },
-    getStatus: syncStatusMessage
+    getLastPullAt: function () { return lastPullAt; }
   };
 })(typeof window !== 'undefined' ? window : this);

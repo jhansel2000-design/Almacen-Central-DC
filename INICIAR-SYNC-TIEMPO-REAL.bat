@@ -7,18 +7,20 @@ echo ============================================================
 echo   SINCRONIZACION EN TIEMPO REAL — TODOS LOS CELULARES
 echo ============================================================
 echo.
-echo  OPCION A (recomendada, funciona 24/7 sin PC encendido):
-echo    1. Doble clic en SETUP-AVERIAS-CLOUD.bat
-echo    2. Pegue Master Key de https://jsonbin.io (cuenta gratis)
-echo    3. Espere 2 min y recargue averias.html en los celulares
+echo  OPCION A (recomendada — sync WEB para todos):
+echo    1. Doble clic en SETUP-WEB-SYNC.bat
+echo    2. Pegue Master Key NUEVA de https://jsonbin.io (cuenta gratis)
+echo    3. Espere 2 min y Ctrl+F5 en TODAS las PCs
 echo.
 echo  OPCION B (PC servidor siempre encendido):
 echo    1. Esta ventana inicia el servidor LAN
 echo    2. Se abrira otra ventana con tunel publico (Cloudflare)
+echo    3. DESPACHO: use http://IP-DEL-PC:8080/despacho.html en TODAS las PCs
+echo       Pantalla TV: http://IP-DEL-PC:8080/despacho-pantalla.html
 echo.
 set /p ELEGIR=Pulse A para JSONBin, B para tunel, Enter para solo LAN: 
 if /i "%ELEGIR%"=="A" (
-  call "%~dp0SETUP-AVERIAS-CLOUD.bat"
+  call "%~dp0SETUP-WEB-SYNC.bat"
   exit /b 0
 )
 echo.
@@ -30,5 +32,8 @@ if /i "%ELEGIR%"=="B" (
   echo Tunel iniciado. Revise la otra ventana para la URL publica.
 )
 echo.
-echo Listo. En WiFi use: http://IP-DEL-PC:8080/averias.html
+echo Listo. En WiFi use:
+echo   Despacho:  http://IP-DEL-PC:8080/despacho.html
+echo   Pantalla:  http://IP-DEL-PC:8080/despacho-pantalla.html
+echo   Averias:   http://IP-DEL-PC:8080/averias.html
 pause

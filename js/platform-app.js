@@ -3425,6 +3425,9 @@
         refreshAccessRequestPanels();
       }
     });
+    document.addEventListener('web-cloud-sync', function () {
+      refreshPublishedDataFromStore();
+    });
   }
 
   function startAiHumanReminders() {

@@ -392,6 +392,16 @@
         if (!ev.detail || ev.detail.store === 'despacho') updateDespachoSyncLabel();
       });
 
+      var cloudWarnShown = false;
+      document.addEventListener('despacho-cloud-status', function (ev) {
+        if (!state.user || cloudWarnShown) return;
+        var d = ev.detail || {};
+        if (d.level === 'err') {
+          cloudWarnShown = true;
+          toast(d.text, 'warn');
+        }
+      });
+
       if (!tryRestoreSession()) {
         setAuthVisible(true);
       }

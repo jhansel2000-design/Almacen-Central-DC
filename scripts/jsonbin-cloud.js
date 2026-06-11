@@ -20,7 +20,18 @@ function jsonBinAuthHeaders(creds, jb) {
   return { 'X-Access-Key': key };
 }
 
+function getJsonBinCredentialsFor(rootDir, field) {
+  const cfg = readSiteConfig(rootDir);
+  const jb = cfg[field] || {};
+  if (jb.enabled && jb.binId && jb.accessKey) {
+    return { binId: jb.binId, accessKey: jb.accessKey, jb: jb, source: 'site-config' };
+  }
+  return null;
+}
+
 function getJsonBinCredentials(rootDir) {
+  const fromSite = getJsonBinCredentialsFor(rootDir, 'averiasJsonBin');
+  if (fromSite) return fromSite;
   const cfg = readSiteConfig(rootDir);
   const jb = cfg.averiasJsonBin || {};
   if (jb.enabled && jb.binId && jb.accessKey) {
@@ -89,11 +100,79 @@ function pushAveriasToJsonBin(rootDir, snap) {
   }, jsonBinAuthHeaders(creds, creds.jb));
   return httpJson('PUT', 'https://api.jsonbin.io/v3/b/' + creds.binId, headers, payload).then(function () {
     return true;
+  }).catch(function () {
+    return false;
+  });
+}
+
+function getDespachoJsonBinCredentials(rootDir) {
+  return getJsonBinCredentialsFor(rootDir, 'despachoJsonBin');
+}
+
+function pullDespachoFromJsonBin(rootDir) {
+  const creds = getDespachoJsonBinCredentials(rootDir);
+  if (!creds) return Promise.resolve(null);
+  const headers = jsonBinAuthHeaders(creds, creds.jb);
+  return httpJson('GET', 'https://api.jsonbin.io/v3/b/' + creds.binId + '/latest', headers).then(function (body) {
+    return body && body.record ? body.record : null;
+  }).catch(function () {
+    return null;
+  });
+}
+
+function pushDespachoToJsonBin(rootDir, data) {
+  const creds = getDespachoJsonBinCredentials(rootDir);
+  if (!creds) return Promise.resolve(false);
+  const payload = JSON.stringify(data || {});
+  const headers = Object.assign({
+    'Content-Type': 'application/json',
+    'Content-Length': Buffer.byteLength(payload)
+  }, jsonBinAuthHeaders(creds, creds.jb));
+  return httpJson('PUT', 'https://api.jsonbin.io/v3/b/' + creds.binId, headers, payload).then(function () {
+    return true;
+  }).catch(function () {
+    return false;
+  });
+}
+
+function getPlatformJsonBinCredentials(rootDir) {
+  return getJsonBinCredentialsFor(rootDir, 'platformJsonBin');
+}
+
+function pullPlatformFromJsonBin(rootDir) {
+  const creds = getPlatformJsonBinCredentials(rootDir);
+  if (!creds) return Promise.resolve(null);
+  const headers = jsonBinAuthHeaders(creds, creds.jb);
+  return httpJson('GET', 'https://api.jsonbin.io/v3/b/' + creds.binId + '/latest', headers).then(function (body) {
+    return body && body.record ? body.record : null;
+  }).catch(function () {
+    return null;
+  });
+}
+
+function pushPlatformToJsonBin(rootDir, data) {
+  const creds = getPlatformJsonBinCredentials(rootDir);
+  if (!creds) return Promise.resolve(false);
+  const payload = JSON.stringify(data || {});
+  const headers = Object.assign({
+    'Content-Type': 'application/json',
+    'Content-Length': Buffer.byteLength(payload)
+  }, jsonBinAuthHeaders(creds, creds.jb));
+  return httpJson('PUT', 'https://api.jsonbin.io/v3/b/' + creds.binId, headers, payload).then(function () {
+    return true;
+  }).catch(function () {
+    return false;
   });
 }
 
 module.exports = {
   getJsonBinCredentials,
+  getDespachoJsonBinCredentials,
+  getPlatformJsonBinCredentials,
   pullAveriasFromJsonBin,
-  pushAveriasToJsonBin
+  pushAveriasToJsonBin,
+  pullDespachoFromJsonBin,
+  pushDespachoToJsonBin,
+  pullPlatformFromJsonBin,
+  pushPlatformToJsonBin
 };

@@ -324,3 +324,29 @@ html[data-theme="light"] .empty-state-icon{
 html[data-theme="light"] .quick-stat{
   background:#f6f9fc;
 }
+
+.web-cloud-sync-banner{
+  position:fixed;
+  top:0;
+  left:0;
+  right:0;
+  z-index:99999;
+  padding:0.65rem 1rem;
+  font-size:0.85rem;
+  font-weight:600;
+  text-align:center;
+  background:linear-gradient(90deg,#7c2d12,#b45309);
+  color:#fff;
+  box-shadow:0 4px 20px rgba(0,0,0,0.35);
+}
+.web-cloud-sync-banner--err{ background:linear-gradient(90deg,#7f1d1d,#dc2626); }
+.web-cloud-sync-banner__btn{
+  margin-left:0.5rem;
+  padding:0.25rem 0.65rem;
+  border-radius:999px;
+  border:1px solid rgba(255,255,255,0.45);
+  background:rgba(255,255,255,0.12);
+  color:#fff;
+  font-size:0.78rem;
+  cursor:pointer;
+}
