@@ -178,10 +178,38 @@
       });
   }
 
+  function tryInitSdk() {
+    if (!global.firebase || !fbConfig || !fbConfig.apiKey) return null;
+    try {
+      var app;
+      try {
+        app = global.firebase.app();
+      } catch (e) {
+        app = global.firebase.initializeApp(fbConfig);
+      }
+      var rtdb = global.firebase.database(app);
+      sdkFailed = false;
+      restMode = false;
+      db = rtdb;
+      return rtdb;
+    } catch (err) {
+      console.warn('[FirebaseBridge] SDK init:', err && err.message ? err.message : err);
+      sdkFailed = true;
+      return null;
+    }
+  }
+
   function ensureReady() {
     if (readyPromise) return readyPromise;
     readyPromise = loadFirebaseConfig().then(function (fb) {
       if (!fb || !fb.enabled || !fb.databaseURL) return null;
+      var sdk = tryInitSdk();
+      if (sdk) {
+        connected = true;
+        restMode = false;
+        dispatchConnection();
+        return sdk;
+      }
       connected = true;
       restMode = true;
       dispatchConnection();
@@ -196,7 +224,9 @@
   global.PlatformFirebaseBridge = {
     ensureReady: ensureReady,
     getDb: function () {
-      return (fbConfig && fbConfig.enabled && fbConfig.databaseURL) ? makeDbAdapter() : null;
+      if (db) return db;
+      if (fbConfig && fbConfig.enabled && fbConfig.databaseURL) return makeDbAdapter();
+      return null;
     },
     isConnected: function () { return connected; },
     isRestMode: function () { return restMode; },
