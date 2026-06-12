@@ -36,6 +36,9 @@
   var lastAppliedContentSig = '';
   var lastBurstAt = 0;
   var initReady = null;
+  var pendingPushSnap = null;
+  var pendingPushTimer = null;
+  var pendingLocalPushTimer = null;
   var broadcast = typeof global.BroadcastChannel !== 'undefined'
     ? new global.BroadcastChannel('averias-dc-live')
     : null;
@@ -282,17 +285,52 @@
     }
   }
 
+  function normalizeSnapshot(snap) {
+    snap = snap || {};
+    return {
+      version: snap.version || 1,
+      localSeq: snap.localSeq || 0,
+      updatedAt: snap.updatedAt || new Date().toISOString(),
+      incidences: Array.isArray(snap.incidences) ? snap.incidences : [],
+      damages: Array.isArray(snap.damages) ? snap.damages : [],
+      securityIncidents: Array.isArray(snap.securityIncidents) ? snap.securityIncidents : [],
+      audits5s: Array.isArray(snap.audits5s) ? snap.audits5s : [],
+      equipmentInspections: Array.isArray(snap.equipmentInspections) ? snap.equipmentInspections : [],
+      equipmentRegistry: snap.equipmentRegistry && typeof snap.equipmentRegistry === 'object' ? snap.equipmentRegistry : {}
+    };
+  }
+
+  function schedulePushFromLocal() {
+    var local = getLocalSnapshot();
+    if (!local) return;
+    clearTimeout(pendingLocalPushTimer);
+    pendingLocalPushTimer = global.setTimeout(function () {
+      queuePushSnapshot(local, 1);
+    }, 150);
+  }
+
+  function queuePushSnapshot(snap, retries) {
+    pendingPushSnap = normalizeSnapshot(snap);
+    clearTimeout(pendingPushTimer);
+    pendingPushTimer = global.setTimeout(function () {
+      var payload = pendingPushSnap;
+      pendingPushSnap = null;
+      if (payload) pushSnapshotNow(payload, retries);
+    }, 80);
+  }
+
   function applySnapshotToLocal(snap, silent, source) {
     if (!snap || !global.localStorage) return false;
+    snap = normalizeSnapshot(snap);
     var current = getLocalSnapshot();
     if (current) {
+      current = normalizeSnapshot(current);
       var localSeq = current.localSeq || 0;
       var remoteSeq = snap.localSeq || 0;
       if (source === 'firebase' && localSeq > remoteSeq) {
-        global.setTimeout(function () { pushSnapshot(current, 1); }, 50);
-        return false;
-      }
-      if (source !== 'jsonbin') {
+        schedulePushFromLocal();
+        snap = mergeAveriasSnapshots(snap, current);
+      } else if (source !== 'jsonbin') {
         snap = mergeAveriasSnapshots(current, snap);
       } else {
         snap = mergeAveriasSnapshots(snap, current);
@@ -466,10 +504,9 @@
         if (!val) return;
         var local = getLocalSnapshot();
         if (local && (local.localSeq || 0) > (val.localSeq || 0)) {
-          global.setTimeout(function () { pushSnapshot(local, 1); }, 30);
-          return;
+          schedulePushFromLocal();
         }
-        var merged = mergeAveriasSnapshots(local || EMPTY, val);
+        var merged = mergeAveriasSnapshots(normalizeSnapshot(local || EMPTY), normalizeSnapshot(val));
         applySnapshotToLocal(merged, false, 'firebase');
       });
       return true;
@@ -633,11 +670,22 @@
   }
 
   function pushSnapshot(snap, retries) {
+    queuePushSnapshot(snap, retries);
+    return Promise.resolve({ ok: true, queued: true });
+  }
+
+  function pushSnapshotNow(snap, retries) {
     if (!snap) return Promise.resolve({ ok: false, reason: 'empty' });
+    snap = normalizeSnapshot(snap);
     if (pushing) {
-      return new Promise(function (resolve) {
-        global.setTimeout(function () { resolve(pushSnapshot(snap, retries)); }, firebaseDb ? 80 : 200);
-      });
+      pendingPushSnap = snap;
+      clearTimeout(pendingPushTimer);
+      pendingPushTimer = global.setTimeout(function () {
+        var payload = pendingPushSnap;
+        pendingPushSnap = null;
+        if (payload) pushSnapshotNow(payload, retries);
+      }, 120);
+      return Promise.resolve({ ok: true, queued: true });
     }
     pushing = true;
     retries = retries == null ? 3 : retries;

@@ -333,7 +333,17 @@
         }
 
         function buildSnapshot() {
+            var prevSeq = 0;
+            try {
+                var raw = localStorage.getItem(SNAPSHOT_KEY);
+                if (raw) {
+                    var prev = JSON.parse(raw);
+                    prevSeq = prev && prev.localSeq ? prev.localSeq : 0;
+                }
+            } catch (e) { /* noop */ }
             return {
+                version: 1,
+                localSeq: prevSeq,
                 updatedAt: new Date().toISOString(),
                 incidences: allIncidences,
                 damages: allDamages,
@@ -1572,16 +1582,16 @@
             allIncidences.push(incidence);
             auditAction('REPORTAR', { module: 'pallets', location: incidence.location, product: incidence.product });
             persistSnapshot({ force: true });
-
-            document.getElementById('reportLocation').value = '';
-            document.getElementById('reportProduct').value = '';
-            document.getElementById('reportObservation').value = '';
-            document.getElementById('reportSeverity').value = '';
-            document.querySelectorAll('.severity-btn').forEach(function (btn) { btn.classList.remove('selected'); });
             document.getElementById('reportError').classList.remove('show');
+            document.getElementById('reportSuccess').textContent = '✅ Reporte guardado';
             document.getElementById('reportSuccess').classList.add('show');
 
             setTimeout(function () {
+                document.getElementById('reportLocation').value = '';
+                document.getElementById('reportProduct').value = '';
+                document.getElementById('reportObservation').value = '';
+                document.getElementById('reportSeverity').value = '';
+                document.querySelectorAll('.severity-btn').forEach(function (btn) { btn.classList.remove('selected'); });
                 document.getElementById('reportSuccess').classList.remove('show');
                 showPalletsDashboard();
             }, 1500);
