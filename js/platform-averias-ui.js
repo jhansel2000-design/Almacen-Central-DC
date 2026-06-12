@@ -1534,15 +1534,27 @@
         // Report Handler
         function handleReport(e) {
             e.preventDefault();
-            const location = document.getElementById('reportLocation').value;
-            const product = document.getElementById('reportProduct').value;
-            const severity = document.getElementById('reportSeverity').value;
+            const location = (document.getElementById('reportLocation').value || '').trim();
+            const product = (document.getElementById('reportProduct').value || '').trim();
+            const severity = (document.getElementById('reportSeverity').value || selectedSeverity || '').trim();
             const observation = document.getElementById('reportObservation').value;
+            const submitBtn = document.querySelector('#palletsReport button[type="submit"]');
 
-            if (!severity) {
-                document.getElementById('reportError').textContent = '❌ Selecciona un tipo de avería';
+            if (!location || !product) {
+                document.getElementById('reportError').textContent = '❌ Complete ubicación y producto';
                 document.getElementById('reportError').classList.add('show');
                 return;
+            }
+
+            if (!severity) {
+                document.getElementById('reportError').textContent = '❌ Toque BAJO, MEDIO o ALTO antes de guardar';
+                document.getElementById('reportError').classList.add('show');
+                return;
+            }
+
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Guardando…';
             }
 
             if (editingRecord && editingRecord.module === 'pallets') {
@@ -1567,15 +1579,21 @@
                 }
             }
 
-            // Check for duplicate
-            const duplicate = allIncidences.find(inc => 
-                inc.location === location && 
-                inc.product === product && 
-                isPendingStatus(inc)
-            );
+            // Check for duplicate (ignore case / spaces)
+            const locKey = location.toUpperCase();
+            const prodKey = product.toUpperCase();
+            const duplicate = allIncidences.find(function (inc) {
+                return String(inc.location || '').trim().toUpperCase() === locKey &&
+                    String(inc.product || '').trim().toUpperCase() === prodKey &&
+                    isPendingStatus(inc);
+            });
 
             if (duplicate) {
-                document.getElementById('reportError').textContent = '❌ Ya existe una avería reportada para esta ubicación y producto';
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'GUARDAR INCIDENCIA';
+                }
+                document.getElementById('reportError').textContent = '❌ Ya hay una avería PENDIENTE en esa ubicación y producto';
                 document.getElementById('reportError').classList.add('show');
                 return;
             }
@@ -1597,8 +1615,14 @@
             if (avCore() && avCore().stampNewReport) avCore().stampNewReport(incidence);
 
             allIncidences.push(incidence);
+            updateStats();
+            renderPalletsReportedList();
             auditAction('REPORTAR', { module: 'pallets', location: incidence.location, product: incidence.product });
             persistSnapshot({ force: true, liveRecord: { module: 'pallets', record: incidence } }).then(function (result) {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'GUARDAR INCIDENCIA';
+                }
                 if (result && result.ok === false && !result.skipped) {
                     document.getElementById('reportError').textContent = '❌ No se pudo guardar. Revise espacio del navegador e intente de nuevo.';
                     document.getElementById('reportError').classList.add('show');
@@ -1627,11 +1651,14 @@
         function selectSeverity(severity) {
             playSelectFeedback();
             selectedSeverity = severity;
-            document.getElementById('reportSeverity').value = severity;
+            var hidden = document.getElementById('reportSeverity');
+            if (hidden) hidden.value = severity;
             document.querySelectorAll('.severity-btn').forEach(function (btn) {
                 btn.classList.remove('selected');
                 if (btn.classList.contains(String(severity).toLowerCase())) btn.classList.add('selected');
             });
+            var err = document.getElementById('reportError');
+            if (err) err.classList.remove('show');
 
             // Auto-fill observation based on severity
             const observations = {

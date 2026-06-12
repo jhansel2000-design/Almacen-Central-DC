@@ -224,22 +224,31 @@
     var pendingJob = liveRecord && liveRecord.module && liveRecord.record
       ? pushPendingRecord(liveRecord.module, liveRecord.record)
       : Promise.resolve({ ok: false, skipped: true });
+    var snapJob = pushToFirebase(snap);
     return pendingJob.then(function (pendingRes) {
-      return pushToFirebase(snap).then(function (snapOk) {
-        if (pendingRes.ok || snapOk) {
+      var cloudOk = !!pendingRes.ok;
+      snapJob.then(function (snapOk) {
+        if (snapOk) {
           noteLocalSave(snap);
           try {
             global.localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(snap));
           } catch (e) { /* noop */ }
           lastKnownRemoteSeq = snap.localSeq || 0;
-          global.setTimeout(function () { pullAll(); }, 800);
         }
+      }).catch(function () { /* noop */ });
+      if (cloudOk) {
+        lastKnownRemoteSeq = snap.localSeq || 0;
+        global.setTimeout(function () { pullAll(); }, 600);
+      }
+      return snapJob.then(function (snapOk) {
         return {
           ok: true,
-          cloud: !!(pendingRes.ok || snapOk),
-          pendingOk: !!pendingRes.ok,
+          cloud: cloudOk || !!snapOk,
+          pendingOk: cloudOk,
           snapOk: !!snapOk
         };
+      }).catch(function () {
+        return { ok: true, cloud: cloudOk, pendingOk: cloudOk, snapOk: false };
       });
     });
   }
@@ -289,8 +298,8 @@
       if (!b) return a;
       var aCor = isCor(a);
       var bCor = isCor(b);
-      if (aCor && !bCor) return a;
-      if (bCor && !aCor) return b;
+      if (!aCor && bCor) return a;
+      if (aCor && !bCor) return b;
       return recordTime(a) >= recordTime(b) ? a : b;
     }
 
