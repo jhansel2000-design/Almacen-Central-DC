@@ -39,6 +39,8 @@
   var pendingPushSnap = null;
   var pendingPushTimer = null;
   var pendingLocalPushTimer = null;
+  var lastLocalEditAt = 0;
+  var LOCAL_EDIT_GRACE_MS = 12000;
   var broadcast = typeof global.BroadcastChannel !== 'undefined'
     ? new global.BroadcastChannel('averias-dc-live')
     : null;
@@ -321,11 +323,37 @@
 
   function noteLocalSave(snap) {
     snap = normalizeSnapshot(snap);
+    lastLocalEditAt = Date.now();
     lastAppliedContentSig = contentSignature(snap);
     try {
       lastAppliedJson = JSON.stringify(snap);
       lastRemoteUpdatedAt = String(snap.updatedAt || '');
     } catch (e) { /* noop */ }
+  }
+
+  function inLocalEditGrace() {
+    return Date.now() - lastLocalEditAt < LOCAL_EDIT_GRACE_MS;
+  }
+
+  function prepareSnapshotForPush(snap) {
+    snap = pickBestPushSnapshot(snap);
+    if (!hasFirebaseConfig() || hasJsonBinConfig()) {
+      snap.localSeq = (snap.localSeq || 0) + 1;
+      snap.updatedAt = new Date().toISOString();
+      return Promise.resolve(normalizeSnapshot(snap));
+    }
+    return pullFromFirebaseOnce().then(function (remote) {
+      if (remote) {
+        snap = mergeAveriasSnapshots(normalizeSnapshot(remote), snap);
+      }
+      snap.localSeq = Math.max(snap.localSeq || 0, (remote && remote.localSeq) || 0) + 1;
+      snap.updatedAt = new Date().toISOString();
+      return normalizeSnapshot(snap);
+    }).catch(function () {
+      snap.localSeq = (snap.localSeq || 0) + 1;
+      snap.updatedAt = new Date().toISOString();
+      return normalizeSnapshot(snap);
+    });
   }
 
   function normalizeSnapshot(snap) {
@@ -369,6 +397,18 @@
   function applySnapshotToLocal(snap, silent, source) {
     if (!snap || !global.localStorage) return false;
     snap = normalizeSnapshot(snap);
+    if (inLocalEditGrace() && source !== 'push-ok') {
+      var live = getEffectiveLocalSnapshot();
+      if (live) {
+        live = normalizeSnapshot(live);
+        if ((live.localSeq || 0) >= (snap.localSeq || 0) &&
+            countSnapshotRecords(live) >= countSnapshotRecords(snap)) {
+          schedulePushFromLocal();
+          return false;
+        }
+        snap = mergeAveriasSnapshots(snap, live);
+      }
+    }
     var current = getEffectiveLocalSnapshot();
     if (current) {
       current = normalizeSnapshot(current);
@@ -719,26 +759,40 @@
     }).catch(function () { return false; });
   }
 
-  function pushSnapshot(snap, retries) {
+  function pushSnapshot(snap, retries, opts) {
+    opts = opts && typeof opts === 'object' ? opts : {};
+    if (opts.wait) {
+      if (pushing) {
+        return new Promise(function (resolve) {
+          var tries = 0;
+          (function poll() {
+            if (!pushing) {
+              pushSnapshotNow(snap, retries).then(resolve);
+              return;
+            }
+            tries += 1;
+            if (tries > 50) {
+              resolve({ ok: false, reason: 'push-busy' });
+              return;
+            }
+            global.setTimeout(poll, 120);
+          })();
+        });
+      }
+      clearTimeout(pendingPushTimer);
+      pendingPushSnap = null;
+      return pushSnapshotNow(snap, retries);
+    }
     queuePushSnapshot(snap, retries);
     return Promise.resolve({ ok: true, queued: true });
   }
 
   function pushSnapshotNow(snap, retries) {
     if (!snap) return Promise.resolve({ ok: false, reason: 'empty' });
-    snap = pickBestPushSnapshot(snap);
-    if (isEmptySnapshot(snap)) {
-      var localHas = getEffectiveLocalSnapshot();
-      if (localHas && !isEmptySnapshot(localHas)) {
-        snap = normalizeSnapshot(localHas);
-      }
-    }
-    if (isEmptySnapshot(snap)) {
-      return Promise.resolve({ ok: false, reason: 'empty-local' });
-    }
     if (pushing) {
-      if (!pendingPushSnap || isBetterSnapshot(snap, pendingPushSnap)) {
-        pendingPushSnap = snap;
+      var best = pickBestPushSnapshot(snap);
+      if (!pendingPushSnap || isBetterSnapshot(best, pendingPushSnap)) {
+        pendingPushSnap = best;
       }
       clearTimeout(pendingPushTimer);
       pendingPushTimer = global.setTimeout(function () {
@@ -746,23 +800,65 @@
         pendingPushSnap = null;
         if (payload) pushSnapshotNow(payload, retries);
       }, 120);
-      return Promise.resolve({ ok: true, queued: true });
+      return new Promise(function (resolve) {
+        global.setTimeout(function () {
+          resolve({ ok: true, queued: true });
+        }, 150);
+      });
     }
     pushing = true;
     retries = retries == null ? 3 : retries;
-    snap.updatedAt = new Date().toISOString();
 
-    function attempt(n) {
-      if (hasFirebaseConfig() && !hasJsonBinConfig()) {
-        return pushToFirebase(snap).then(function (ok) {
-          if (ok) {
-            noteLocalSave(snap);
-            try {
-              var current = getEffectiveLocalSnapshot();
-              if (!current || (current.localSeq || 0) <= (snap.localSeq || 0)) {
+    return prepareSnapshotForPush(snap).then(function (ready) {
+      snap = ready;
+      if (isEmptySnapshot(snap)) {
+        return { ok: false, reason: 'empty-local' };
+      }
+
+      function attempt(n) {
+        if (hasFirebaseConfig() && !hasJsonBinConfig()) {
+          return pushToFirebase(snap).then(function (ok) {
+            if (ok) {
+              noteLocalSave(snap);
+              try {
                 global.localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(snap));
-              }
-            } catch (e) { /* noop */ }
+                global.localStorage.setItem('averias_dc_incidences', JSON.stringify(snap.incidences || []));
+                global.localStorage.setItem('averias_dc_damages', JSON.stringify(snap.damages || []));
+                global.localStorage.setItem('averias_dc_securityIncidents', JSON.stringify(snap.securityIncidents || []));
+                global.localStorage.setItem('averias_dc_audits5s', JSON.stringify(snap.audits5s || []));
+                global.localStorage.setItem('averias_dc_equipmentInspections', JSON.stringify(snap.equipmentInspections || []));
+                global.localStorage.setItem('averias_dc_equipmentRegistry', JSON.stringify(snap.equipmentRegistry || {}));
+              } catch (e) { /* noop */ }
+              global.setTimeout(function () { pullAll(); }, 2500);
+              broadcastSyncHint();
+              notifyUpdated('push-ok');
+              global.dispatchEvent(new CustomEvent('averias-sync-push', { detail: { ok: true } }));
+              return { ok: true, cloud: true };
+            }
+            if (n < retries) {
+              return new Promise(function (resolve) {
+                global.setTimeout(function () { resolve(attempt(n + 1)); }, 200);
+              });
+            }
+            return { ok: false, reason: 'firebase-fail' };
+          });
+        }
+        return Promise.all([
+          pushToServer(snap),
+          pushToCloudProxy(snap),
+          pushToJsonBin(snap),
+          pushToFirebase(snap)
+        ]).then(function (results) {
+          var jsonBinOk = results[2];
+          var ok = hasJsonBinConfig() ? !!jsonBinOk : results.some(Boolean);
+          if (ok) {
+            if (isLanHost()) {
+              global.fetch('/api/publish-averias-live', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ data: snap })
+              }).catch(function () { /* noop */ });
+            }
             schedulePullBurst();
             broadcastSyncHint();
             notifyUpdated('push-ok');
@@ -771,59 +867,28 @@
           }
           if (n < retries) {
             return new Promise(function (resolve) {
-              global.setTimeout(function () { resolve(attempt(n + 1)); }, 120);
+              global.setTimeout(function () { resolve(attempt(n + 1)); }, hasFirebaseConfig() && !hasJsonBinConfig() ? 120 : 400);
             });
           }
-          return { ok: false, reason: 'firebase-fail' };
+          return { ok: false, reason: hasJsonBinConfig() ? 'jsonbin-fail' : 'no-cloud' };
         });
       }
-      return Promise.all([
-        pushToServer(snap),
-        pushToCloudProxy(snap),
-        pushToJsonBin(snap),
-        pushToFirebase(snap)
-      ]).then(function (results) {
-        var jsonBinOk = results[2];
-        var ok = hasJsonBinConfig() ? !!jsonBinOk : results.some(Boolean);
-        if (ok) {
-          if (isLanHost()) {
-            global.fetch('/api/publish-averias-live', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ data: snap })
-            }).catch(function () { /* noop */ });
+
+      if (hasJsonBinConfig() && isEmptySnapshot(snap)) {
+        return pullFromJsonBin().then(function (remote) {
+          if (remote && !isEmptySnapshot(remote)) {
+            console.warn('[AveriasCloud] Push vacío bloqueado — la nube tiene reportes');
+            applySnapshotToLocal(mergeAveriasSnapshots(remote, snap), false, 'jsonbin');
+            return { ok: false, skipped: 'empty-would-wipe-remote' };
           }
-          schedulePullBurst();
-          broadcastSyncHint();
-          notifyUpdated('push-ok');
-          global.dispatchEvent(new CustomEvent('averias-sync-push', { detail: { ok: true } }));
-          return { ok: true };
-        }
-        if (n < retries) {
-          return new Promise(function (resolve) {
-            global.setTimeout(function () { resolve(attempt(n + 1)); }, hasFirebaseConfig() && !hasJsonBinConfig() ? 120 : 400);
-          });
-        }
-        return { ok: false, reason: hasJsonBinConfig() ? 'jsonbin-fail' : 'no-cloud' };
-      });
-    }
+          return attempt(0);
+        }).catch(function () {
+          return attempt(0);
+        });
+      }
 
-    if (hasJsonBinConfig() && isEmptySnapshot(snap)) {
-      return pullFromJsonBin().then(function (remote) {
-        if (remote && !isEmptySnapshot(remote)) {
-          console.warn('[AveriasCloud] Push vacío bloqueado — la nube tiene reportes');
-          applySnapshotToLocal(mergeAveriasSnapshots(remote, snap), false, 'jsonbin');
-          return { ok: false, skipped: 'empty-would-wipe-remote' };
-        }
-        return attempt(0);
-      }).catch(function () {
-        return attempt(0);
-      }).finally(function () {
-        pushing = false;
-      });
-    }
-
-    return attempt(0).finally(function () {
+      return attempt(0);
+    }).finally(function () {
       pushing = false;
     });
   }

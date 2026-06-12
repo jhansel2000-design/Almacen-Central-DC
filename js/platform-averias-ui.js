@@ -466,6 +466,9 @@
                 snap.updatedAt = new Date().toISOString();
                 snap.localSeq = (snap.localSeq || 0) + 1;
                 localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(snap));
+                if (!localStorage.getItem(SNAPSHOT_KEY)) {
+                    return Promise.resolve({ ok: false, error: 'storage-blocked' });
+                }
                 lastUiSignature = contentSignature(snap);
                 if (global.PlatformAveriasCloudSync && global.PlatformAveriasCloudSync.noteLocalSave) {
                     global.PlatformAveriasCloudSync.noteLocalSave(snap);
@@ -478,7 +481,7 @@
                     return Promise.resolve({ ok: true, localOnly: true });
                 }
                 if (global.PlatformAveriasCloudSync && global.PlatformAveriasCloudSync.push) {
-                    return global.PlatformAveriasCloudSync.push(snap).then(function (result) {
+                    return global.PlatformAveriasCloudSync.push(snap, 3, { wait: true }).then(function (result) {
                         var cloud = global.PlatformAveriasCloudSync.isCloudConfigured &&
                             global.PlatformAveriasCloudSync.isCloudConfigured();
                         if (result && result.ok && !result.queued && global.PlatformAveriasCloudSync.schedulePullBurst) {
@@ -486,16 +489,16 @@
                         }
                         if (result && !result.ok && cloud) {
                             if (global.PlatformToast) {
-                                global.PlatformToast.warn('Reporte guardado en este equipo. Reintentando sync en la nube…', 5000);
+                                global.PlatformToast.warn('Guardado en este equipo. La nube no respondió — reintente sync.', 6000);
                             }
                         } else if (result && !result.ok && !cloud) {
                             if (global.PlatformToast) {
                                 global.PlatformToast.warn('Reporte guardado solo en este dispositivo', 4000);
                             }
-                        } else if (result && result.ok && cloud && global.PlatformToast) {
-                            global.PlatformToast.success('Reporte en vivo — visible en todos los dispositivos', 2200);
+                        } else if (result && result.ok && result.cloud && global.PlatformToast) {
+                            global.PlatformToast.success('Reporte en vivo — visible en todos los dispositivos', 2500);
                         }
-                        return result || { ok: true };
+                        return result && result.ok !== false ? { ok: true, cloud: !!(result && result.cloud) } : (result || { ok: true });
                     });
                 }
                 return Promise.resolve({ ok: true, localOnly: true });
@@ -619,6 +622,9 @@
             try {
                 applySnapshot(snap, true);
                 writeIndividualKeys();
+                var synced = buildSnapshot();
+                synced.updatedAt = new Date().toISOString();
+                localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(synced));
             } finally {
                 isLoadingRemoteSnapshot = false;
             }
@@ -1589,13 +1595,17 @@
             auditAction('REPORTAR', { module: 'pallets', location: incidence.location, product: incidence.product });
             persistSnapshot({ force: true }).then(function (result) {
                 if (result && result.ok === false && !result.skipped) {
-                    document.getElementById('reportError').textContent = '❌ No se pudo guardar el reporte. Intente de nuevo.';
+                    document.getElementById('reportError').textContent = '❌ No se pudo guardar. Revise espacio del navegador e intente de nuevo.';
                     document.getElementById('reportError').classList.add('show');
                     document.getElementById('reportSuccess').classList.remove('show');
                     return;
                 }
+                updateStats();
+                renderPalletsReportedList();
                 document.getElementById('reportError').classList.remove('show');
-                document.getElementById('reportSuccess').textContent = '✅ Reporte guardado';
+                document.getElementById('reportSuccess').textContent = result && result.cloud
+                    ? '✅ Reporte guardado y sincronizado'
+                    : '✅ Reporte guardado en este equipo';
                 document.getElementById('reportSuccess').classList.add('show');
                 setTimeout(function () {
                     document.getElementById('reportLocation').value = '';
