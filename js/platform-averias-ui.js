@@ -486,7 +486,7 @@
                             global.PlatformAveriasCloudSync.isCloudConfigured();
                         if (result && !result.cloud && cloud) {
                             if (global.PlatformToast) {
-                                global.PlatformToast.warn('Guardado local. Pulse el botón sync o recargue si no aparece en otros equipos.', 6000);
+                                global.PlatformToast.error('No se publicó en la nube. Ejecute CONFIGURAR-FIREBASE-REGLAS.bat y publique las reglas.', 8000);
                             }
                         } else if (result && result.cloud && global.PlatformToast) {
                             global.PlatformToast.success('Publicado — todos los usuarios lo ven en vivo', 2500);
@@ -631,18 +631,19 @@
             var changed = lastUiSignature !== sigBefore ||
                 countsAfter.total !== countsBefore.total ||
                 countsAfter.pending !== countsBefore.pending;
-            if (!changed) return false;
-            updateAllStats();
-            refreshCurrentView();
-            updateLiveChip(true);
-            if (!opts.silent && countsAfter.total > countsBefore.total && global.PlatformToast) {
+            if (opts.fromCloud || changed) {
+                updateAllStats();
+                refreshCurrentView();
+                updateLiveChip(true);
+            }
+            if (!opts.silent && countsAfter.pending > countsBefore.pending && global.PlatformToast) {
                 var now = Date.now();
                 if (now - lastNewReportToastAt > 2500) {
                     lastNewReportToastAt = now;
-                    global.PlatformToast.info('Nuevo reporte recibido — pantalla actualizada', 2800);
+                    global.PlatformToast.info('Nuevo reporte en vivo — pantalla actualizada', 2800);
                 }
             }
-            return true;
+            return opts.fromCloud || changed;
         }
 
         function getSnapshotSignature() {
@@ -1608,8 +1609,8 @@
                 renderPalletsReportedList();
                 document.getElementById('reportError').classList.remove('show');
                 document.getElementById('reportSuccess').textContent = result && result.cloud
-                    ? '✅ Reporte guardado y sincronizado'
-                    : '✅ Reporte guardado en este equipo';
+                    ? '✅ Publicado en vivo — todos lo ven'
+                    : '⚠️ Solo en este equipo — publique reglas Firebase';
                 document.getElementById('reportSuccess').classList.add('show');
                 setTimeout(function () {
                     document.getElementById('reportLocation').value = '';

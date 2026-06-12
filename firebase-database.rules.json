@@ -1,26 +1,16 @@
 {
   "rules": {
     "despacho": {
-      "snapshot": {
-        ".read": true,
-        ".write": true
-      }
+      ".read": true,
+      ".write": true
     },
     "platform": {
-      "snapshot": {
-        ".read": true,
-        ".write": true
-      }
+      ".read": true,
+      ".write": true
     },
     "averias": {
-      "snapshot": {
-        ".read": true,
-        ".write": true
-      },
-      "live": {
-        ".read": true,
-        ".write": true
-      }
+      ".read": true,
+      ".write": true
     }
   }
 }

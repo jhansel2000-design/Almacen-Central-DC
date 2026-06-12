@@ -175,12 +175,13 @@
     security: 'securityIncidents',
     audit: 'audits5s'
   };
+  var lastKnownRemoteSeq = 0;
 
-  function partialFromLive(live) {
-    if (!live || typeof live !== 'object') return null;
+  function partialFromPending(pending) {
+    if (!pending || typeof pending !== 'object') return null;
     var partial = normalizeSnapshot({});
     Object.keys(LIVE_MODULE_KEYS).forEach(function (mod) {
-      var bucket = live[mod];
+      var bucket = pending[mod];
       if (!bucket || typeof bucket !== 'object') return;
       var key = LIVE_MODULE_KEYS[mod];
       partial[key] = Object.keys(bucket).map(function (k) { return bucket[k]; }).filter(Boolean);
@@ -190,43 +191,54 @@
     return partial;
   }
 
-  function pullLiveRecords() {
+  function pullPendingRecords() {
     if (!hasFirebaseConfig() || !global.PlatformFirebaseBridge) return Promise.resolve(null);
-    return global.PlatformFirebaseBridge.pull('averias/live').then(function (live) {
-      return partialFromLive(live);
+    return global.PlatformFirebaseBridge.pull('averias/pending').then(function (pending) {
+      return partialFromPending(pending);
     }).catch(function () { return null; });
   }
 
-  function pushLiveRecord(module, record) {
+  function pushPendingRecord(module, record) {
     if (!hasFirebaseConfig() || !global.PlatformFirebaseBridge || !record || record.id == null) {
-      return Promise.resolve({ ok: false, reason: 'no-live' });
+      return Promise.resolve({ ok: false, reason: 'no-record' });
     }
     var payload;
     try { payload = JSON.parse(JSON.stringify(record)); } catch (e) { payload = record; }
     payload._syncAt = new Date().toISOString();
     payload._module = module;
-    var path = 'averias/live/' + module + '/' + String(record.id);
+    var path = 'averias/pending/' + module + '/' + String(record.id);
     return global.PlatformFirebaseBridge.ensureReady().then(function () {
       return global.PlatformFirebaseBridge.push(path, payload);
     }).then(function (ok) {
       return { ok: !!ok };
     }).catch(function () {
-      return { ok: false, reason: 'live-push-fail' };
+      return { ok: false, reason: 'pending-push-fail' };
     });
   }
 
   function publishChange(snap, liveRecord) {
-    var liveJob = liveRecord && liveRecord.module && liveRecord.record
-      ? pushLiveRecord(liveRecord.module, liveRecord.record)
-      : Promise.resolve({ ok: true, skipped: true });
-    return liveJob.then(function (liveRes) {
-      return pushSnapshot(snap, 3, { wait: true }).then(function (snapRes) {
-        var cloud = !!(liveRes && liveRes.ok) || !!(snapRes && snapRes.ok && snapRes.cloud);
+    snap = pickBestPushSnapshot(snap);
+    snap.localSeq = Math.max(snap.localSeq || 0, lastKnownRemoteSeq) + 1;
+    snap.updatedAt = new Date().toISOString();
+    snap = normalizeSnapshot(snap);
+    var pendingJob = liveRecord && liveRecord.module && liveRecord.record
+      ? pushPendingRecord(liveRecord.module, liveRecord.record)
+      : Promise.resolve({ ok: false, skipped: true });
+    return pendingJob.then(function (pendingRes) {
+      return pushToFirebase(snap).then(function (snapOk) {
+        if (pendingRes.ok || snapOk) {
+          noteLocalSave(snap);
+          try {
+            global.localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(snap));
+          } catch (e) { /* noop */ }
+          lastKnownRemoteSeq = snap.localSeq || 0;
+          global.setTimeout(function () { pullAll(); }, 800);
+        }
         return {
           ok: true,
-          cloud: cloud,
-          liveOk: !!(liveRes && liveRes.ok),
-          snapOk: !!(snapRes && snapRes.ok)
+          cloud: !!(pendingRes.ok || snapOk),
+          pendingOk: !!pendingRes.ok,
+          snapOk: !!snapOk
         };
       });
     });
@@ -474,7 +486,7 @@
   function applySnapshotToLocal(snap, silent, source) {
     if (!snap || !global.localStorage) return false;
     snap = normalizeSnapshot(snap);
-    if (inLocalEditGrace() && source !== 'push-ok' && source !== 'firebase-live') {
+    if (inLocalEditGrace() && source !== 'push-ok' && source !== 'firebase-pending') {
       var live = getEffectiveLocalSnapshot();
       if (live) {
         live = normalizeSnapshot(live);
@@ -504,9 +516,12 @@
       snap = mergeAveriasSnapshots(snap, current);
     }
     var contentSig = contentSignature(snap);
-    if (contentSig === lastAppliedContentSig) return false;
-    var json = JSON.stringify(snap);
     var remoteAt = String(snap.updatedAt || '');
+    var remoteSeq = snap.localSeq || 0;
+    var forceApply = (remoteAt && remoteAt !== lastRemoteUpdatedAt) ||
+      remoteSeq > lastKnownRemoteSeq;
+    if (!forceApply && contentSig === lastAppliedContentSig) return false;
+    var json = JSON.stringify(snap);
     try {
       global.localStorage.setItem(SNAPSHOT_KEY, json);
       global.localStorage.setItem('averias_dc_incidences', JSON.stringify(snap.incidences || []));
@@ -517,10 +532,12 @@
       global.localStorage.setItem('averias_dc_equipmentRegistry', JSON.stringify(snap.equipmentRegistry || {}));
       lastAppliedJson = json;
       lastRemoteUpdatedAt = remoteAt;
+      lastKnownRemoteSeq = Math.max(lastKnownRemoteSeq, remoteSeq);
       lastAppliedContentSig = contentSig;
       var uiRefreshed = false;
+      var fromCloud = source === 'firebase' || source === 'firebase-pending' || source === 'merge';
       if (global.PlatformAveriasUI && global.PlatformAveriasUI.applyRemoteSnapshot) {
-        uiRefreshed = global.PlatformAveriasUI.applyRemoteSnapshot(snap, { silent: !!silent });
+        uiRefreshed = global.PlatformAveriasUI.applyRemoteSnapshot(snap, { silent: !!silent, fromCloud: fromCloud });
       }
       if (!silent) {
         notifyUpdated('apply', { uiRefreshed: uiRefreshed, signature: contentSig });
@@ -657,13 +674,13 @@
     return Promise.resolve(null);
   }
 
-  function applyLiveFromFirebase(val) {
+  function applyPendingFromFirebase(val) {
     if (!val) return;
-    var partial = partialFromLive(val);
+    var partial = partialFromPending(val);
     if (!partial) return;
     var local = getEffectiveLocalSnapshot() || EMPTY;
     var merged = mergeAveriasSnapshots(normalizeSnapshot(local), partial);
-    applySnapshotToLocal(merged, false, 'firebase-live');
+    applySnapshotToLocal(merged, false, 'firebase-pending');
   }
 
   function initFirebase() {
@@ -686,8 +703,8 @@
       }
       if (!liveBound) {
         liveBound = true;
-        db.ref('averias/live').on('value', function (snap) {
-          applyLiveFromFirebase(snap.val());
+        db.ref('averias/pending').on('value', function (snap) {
+          applyPendingFromFirebase(snap.val());
         });
       }
       return true;
@@ -757,7 +774,7 @@
     pulling = true;
     var localBefore = getEffectiveLocalSnapshot();
     return pullFromJsonBin().then(function (jsonBinSnap) {
-      var tasks = [pullFromServer(), pullFromCloudProxy(), pullFromStatic(), pullFromFirebaseOnce(), pullLiveRecords()];
+      var tasks = [pullFromServer(), pullFromCloudProxy(), pullFromStatic(), pullFromFirebaseOnce(), pullPendingRecords()];
       return Promise.all(tasks).then(function (parts) {
         var merged = getLocalSnapshot() || EMPTY;
         if (jsonBinSnap) {
@@ -1232,10 +1249,10 @@
       if (remoteFirebase) {
         applySnapshotToLocal(mergeAveriasSnapshots(getEffectiveLocalSnapshot(), remoteFirebase), true, 'firebase');
       }
-      return pullLiveRecords();
-    }).then(function (livePartial) {
-      if (livePartial) {
-        applySnapshotToLocal(mergeAveriasSnapshots(getEffectiveLocalSnapshot(), livePartial), true, 'firebase-live');
+      return pullPendingRecords();
+    }).then(function (pendingPartial) {
+      if (pendingPartial) {
+        applySnapshotToLocal(mergeAveriasSnapshots(getEffectiveLocalSnapshot(), pendingPartial), true, 'firebase-pending');
       }
       return probeCurrentServer().then(function () {
         updateSyncUi();
@@ -1367,7 +1384,7 @@
     contentSignature: contentSignature,
     countSnapshotRecords: countSnapshotRecords,
     noteLocalSave: noteLocalSave,
-    pushLiveRecord: pushLiveRecord,
+    pushPendingRecord: pushPendingRecord,
     publishChange: publishChange,
     pull: pullAll,
     push: pushSnapshot,
