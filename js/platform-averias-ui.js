@@ -345,12 +345,12 @@
                 version: 1,
                 localSeq: prevSeq,
                 updatedAt: new Date().toISOString(),
-                incidences: allIncidences,
-                damages: allDamages,
-                securityIncidents: allSecurity,
-                audits5s: allAudits,
-                equipmentInspections: allEquipmentInspections,
-                equipmentRegistry: equipmentRegistry
+                incidences: allIncidences.slice(),
+                damages: allDamages.slice(),
+                securityIncidents: allSecurity.slice(),
+                audits5s: allAudits.slice(),
+                equipmentInspections: allEquipmentInspections.slice(),
+                equipmentRegistry: Object.assign({}, equipmentRegistry)
             };
         }
 
@@ -466,7 +466,14 @@
                 snap.updatedAt = new Date().toISOString();
                 snap.localSeq = (snap.localSeq || 0) + 1;
                 localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(snap));
+                lastUiSignature = contentSignature(snap);
+                if (global.PlatformAveriasCloudSync && global.PlatformAveriasCloudSync.noteLocalSave) {
+                    global.PlatformAveriasCloudSync.noteLocalSave(snap);
+                }
                 refreshUiAfterLocalChange();
+                try {
+                    global.dispatchEvent(new CustomEvent('averias-updated', { detail: { source: 'local-save' } }));
+                } catch (e) { /* noop */ }
                 if (options.localOnly || options.bootstrap) {
                     return Promise.resolve({ ok: true, localOnly: true });
                 }
@@ -474,7 +481,7 @@
                     return global.PlatformAveriasCloudSync.push(snap).then(function (result) {
                         var cloud = global.PlatformAveriasCloudSync.isCloudConfigured &&
                             global.PlatformAveriasCloudSync.isCloudConfigured();
-                        if (result && result.ok && global.PlatformAveriasCloudSync.schedulePullBurst) {
+                        if (result && result.ok && !result.queued && global.PlatformAveriasCloudSync.schedulePullBurst) {
                             global.PlatformAveriasCloudSync.schedulePullBurst();
                         }
                         if (result && !result.ok && cloud) {
@@ -659,12 +666,11 @@
 
         function reloadFromSyncDebounced(ev) {
             clearTimeout(reloadSyncTimer);
-            var immediate = ev && ev.detail && (ev.detail.source === 'apply' || ev.detail.uiRefreshed);
-            if (immediate) {
-                if (!(ev.detail && ev.detail.uiRefreshed)) reloadFromSync();
-                return;
+            if (ev && ev.detail) {
+                if (ev.detail.source === 'push-ok' || ev.detail.source === 'local-save') return;
+                if (ev.detail.source === 'apply') return;
             }
-            reloadSyncTimer = setTimeout(reloadFromSync, 60);
+            reloadSyncTimer = setTimeout(reloadFromSync, 120);
         }
 
         function refreshUiAfterLocalChange() {
@@ -806,7 +812,7 @@
                 if (ev.detail && ev.detail.store === 'averias') reloadFromSyncDebounced();
             });
             document.addEventListener('averias-updated', function (ev) {
-                if (ev.detail && ev.detail.source === 'push-ok') return;
+                if (ev.detail && (ev.detail.source === 'push-ok' || ev.detail.source === 'local-save')) return;
                 reloadFromSyncDebounced(ev);
             });
             document.addEventListener('averias-web-wiped', function () {
@@ -1581,20 +1587,26 @@
 
             allIncidences.push(incidence);
             auditAction('REPORTAR', { module: 'pallets', location: incidence.location, product: incidence.product });
-            persistSnapshot({ force: true });
-            document.getElementById('reportError').classList.remove('show');
-            document.getElementById('reportSuccess').textContent = '✅ Reporte guardado';
-            document.getElementById('reportSuccess').classList.add('show');
-
-            setTimeout(function () {
-                document.getElementById('reportLocation').value = '';
-                document.getElementById('reportProduct').value = '';
-                document.getElementById('reportObservation').value = '';
-                document.getElementById('reportSeverity').value = '';
-                document.querySelectorAll('.severity-btn').forEach(function (btn) { btn.classList.remove('selected'); });
-                document.getElementById('reportSuccess').classList.remove('show');
-                showPalletsDashboard();
-            }, 1500);
+            persistSnapshot({ force: true }).then(function (result) {
+                if (result && result.ok === false && !result.skipped) {
+                    document.getElementById('reportError').textContent = '❌ No se pudo guardar el reporte. Intente de nuevo.';
+                    document.getElementById('reportError').classList.add('show');
+                    document.getElementById('reportSuccess').classList.remove('show');
+                    return;
+                }
+                document.getElementById('reportError').classList.remove('show');
+                document.getElementById('reportSuccess').textContent = '✅ Reporte guardado';
+                document.getElementById('reportSuccess').classList.add('show');
+                setTimeout(function () {
+                    document.getElementById('reportLocation').value = '';
+                    document.getElementById('reportProduct').value = '';
+                    document.getElementById('reportObservation').value = '';
+                    document.getElementById('reportSeverity').value = '';
+                    document.querySelectorAll('.severity-btn').forEach(function (btn) { btn.classList.remove('selected'); });
+                    document.getElementById('reportSuccess').classList.remove('show');
+                    showPalletsDashboard();
+                }, 1500);
+            });
         }
 
         function selectSeverity(severity) {
@@ -2508,7 +2520,8 @@
     start: startApp,
     bindClickBridge: initAveriasClickBridge,
     applyRemoteSnapshot: applyRemoteSnapshot,
-    getSnapshotSignature: getSnapshotSignature
+    getSnapshotSignature: getSnapshotSignature,
+    getMemorySnapshot: buildSnapshot
   };
 
   global.navigateToModule = navigateToModule;

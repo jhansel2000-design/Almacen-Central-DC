@@ -285,6 +285,49 @@
     }
   }
 
+  function getMemorySnapshot() {
+    if (global.PlatformAveriasUI && global.PlatformAveriasUI.getMemorySnapshot) {
+      try {
+        return global.PlatformAveriasUI.getMemorySnapshot();
+      } catch (e) { /* noop */ }
+    }
+    return null;
+  }
+
+  function getEffectiveLocalSnapshot() {
+    var local = getLocalSnapshot();
+    var mem = getMemorySnapshot();
+    if (mem) {
+      return mergeAveriasSnapshots(local || EMPTY, mem);
+    }
+    return local;
+  }
+
+  function isBetterSnapshot(a, b) {
+    if (!b) return !!a;
+    if (!a) return false;
+    var seqA = a.localSeq || 0;
+    var seqB = b.localSeq || 0;
+    if (seqA !== seqB) return seqA > seqB;
+    return countSnapshotRecords(a) >= countSnapshotRecords(b);
+  }
+
+  function pickBestPushSnapshot(candidate) {
+    var best = normalizeSnapshot(candidate || EMPTY);
+    var local = getEffectiveLocalSnapshot();
+    if (local) best = mergeAveriasSnapshots(best, normalizeSnapshot(local));
+    return best;
+  }
+
+  function noteLocalSave(snap) {
+    snap = normalizeSnapshot(snap);
+    lastAppliedContentSig = contentSignature(snap);
+    try {
+      lastAppliedJson = JSON.stringify(snap);
+      lastRemoteUpdatedAt = String(snap.updatedAt || '');
+    } catch (e) { /* noop */ }
+  }
+
   function normalizeSnapshot(snap) {
     snap = snap || {};
     return {
@@ -301,8 +344,8 @@
   }
 
   function schedulePushFromLocal() {
-    var local = getLocalSnapshot();
-    if (!local) return;
+    var local = getEffectiveLocalSnapshot();
+    if (!local || isEmptySnapshot(local)) return;
     clearTimeout(pendingLocalPushTimer);
     pendingLocalPushTimer = global.setTimeout(function () {
       queuePushSnapshot(local, 1);
@@ -310,7 +353,11 @@
   }
 
   function queuePushSnapshot(snap, retries) {
-    pendingPushSnap = normalizeSnapshot(snap);
+    var best = pickBestPushSnapshot(snap);
+    if (pendingPushSnap && !isBetterSnapshot(best, pendingPushSnap)) {
+      return;
+    }
+    pendingPushSnap = normalizeSnapshot(best);
     clearTimeout(pendingPushTimer);
     pendingPushTimer = global.setTimeout(function () {
       var payload = pendingPushSnap;
@@ -322,19 +369,22 @@
   function applySnapshotToLocal(snap, silent, source) {
     if (!snap || !global.localStorage) return false;
     snap = normalizeSnapshot(snap);
-    var current = getLocalSnapshot();
+    var current = getEffectiveLocalSnapshot();
     if (current) {
       current = normalizeSnapshot(current);
       var localSeq = current.localSeq || 0;
       var remoteSeq = snap.localSeq || 0;
-      if (source === 'firebase' && localSeq > remoteSeq) {
-        schedulePushFromLocal();
+      if (localSeq > remoteSeq) {
+        if (source === 'firebase') schedulePushFromLocal();
         snap = mergeAveriasSnapshots(snap, current);
       } else if (source !== 'jsonbin') {
         snap = mergeAveriasSnapshots(current, snap);
       } else {
         snap = mergeAveriasSnapshots(snap, current);
       }
+    }
+    if (current && countSnapshotRecords(snap) < countSnapshotRecords(current)) {
+      snap = mergeAveriasSnapshots(snap, current);
     }
     var contentSig = contentSignature(snap);
     if (contentSig === lastAppliedContentSig) return false;
@@ -502,7 +552,7 @@
       db.ref('averias/snapshot').on('value', function (snap) {
         var val = snap.val();
         if (!val) return;
-        var local = getLocalSnapshot();
+        var local = getEffectiveLocalSnapshot();
         if (local && (local.localSeq || 0) > (val.localSeq || 0)) {
           schedulePushFromLocal();
         }
@@ -574,7 +624,7 @@
   function pullAll() {
     if (pulling) return Promise.resolve(getLocalSnapshot());
     pulling = true;
-    var localBefore = getLocalSnapshot();
+    var localBefore = getEffectiveLocalSnapshot();
     return pullFromJsonBin().then(function (jsonBinSnap) {
       var tasks = [pullFromServer(), pullFromCloudProxy(), pullFromStatic(), pullFromFirebaseOnce()];
       return Promise.all(tasks).then(function (parts) {
@@ -676,9 +726,20 @@
 
   function pushSnapshotNow(snap, retries) {
     if (!snap) return Promise.resolve({ ok: false, reason: 'empty' });
-    snap = normalizeSnapshot(snap);
+    snap = pickBestPushSnapshot(snap);
+    if (isEmptySnapshot(snap)) {
+      var localHas = getEffectiveLocalSnapshot();
+      if (localHas && !isEmptySnapshot(localHas)) {
+        snap = normalizeSnapshot(localHas);
+      }
+    }
+    if (isEmptySnapshot(snap)) {
+      return Promise.resolve({ ok: false, reason: 'empty-local' });
+    }
     if (pushing) {
-      pendingPushSnap = snap;
+      if (!pendingPushSnap || isBetterSnapshot(snap, pendingPushSnap)) {
+        pendingPushSnap = snap;
+      }
       clearTimeout(pendingPushTimer);
       pendingPushTimer = global.setTimeout(function () {
         var payload = pendingPushSnap;
@@ -695,9 +756,12 @@
       if (hasFirebaseConfig() && !hasJsonBinConfig()) {
         return pushToFirebase(snap).then(function (ok) {
           if (ok) {
-            lastAppliedContentSig = contentSignature(snap);
+            noteLocalSave(snap);
             try {
-              global.localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(snap));
+              var current = getEffectiveLocalSnapshot();
+              if (!current || (current.localSeq || 0) <= (snap.localSeq || 0)) {
+                global.localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(snap));
+              }
             } catch (e) { /* noop */ }
             schedulePullBurst();
             broadcastSyncHint();
@@ -1010,7 +1074,7 @@
       return pullFirebaseInitial();
     }).then(function (remoteFirebase) {
       if (remoteFirebase) {
-        applySnapshotToLocal(mergeAveriasSnapshots(getLocalSnapshot(), remoteFirebase), true, 'firebase');
+        applySnapshotToLocal(mergeAveriasSnapshots(getEffectiveLocalSnapshot(), remoteFirebase), true, 'firebase');
       }
       return probeCurrentServer().then(function () {
         updateSyncUi();
@@ -1141,6 +1205,7 @@
     mergeAveriasSnapshots: mergeAveriasSnapshots,
     contentSignature: contentSignature,
     countSnapshotRecords: countSnapshotRecords,
+    noteLocalSave: noteLocalSave,
     pull: pullAll,
     push: pushSnapshot,
     wipeAll: wipeAll,
