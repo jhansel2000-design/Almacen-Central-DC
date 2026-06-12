@@ -1,13 +1,13 @@
 ﻿{
   "version": 1,
-  "updatedAt": "2026-06-11T13:30:00.000Z",
+  "updatedAt": "2026-06-12T10:00:00.000Z",
   "publicSyncBaseUrl": "",
   "githubPagesDataUrl": "https://jhansel2000-design.github.io/Almacen-Central-DC/data/averias.json",
   "githubPagesDespachoDataUrl": "https://jhansel2000-design.github.io/Almacen-Central-DC/data/despacho.json",
   "githubPagesPlatformDataUrl": "https://jhansel2000-design.github.io/Almacen-Central-DC/data/platform.json",
   "pollSeconds": 1,
   "realtime": true,
-  "syncTargetMs": 800,
+  "syncTargetMs": 400,
   "firebase": {
     "enabled": true,
     "apiKey": "AIzaSyBzH_tp242QEdgBAIxarFkNwPYyf9VeY6g",
