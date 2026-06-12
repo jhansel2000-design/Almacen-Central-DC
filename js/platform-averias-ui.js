@@ -480,27 +480,21 @@
                 if (options.localOnly || options.bootstrap) {
                     return Promise.resolve({ ok: true, localOnly: true });
                 }
-                if (global.PlatformAveriasCloudSync && global.PlatformAveriasCloudSync.push) {
-                    return global.PlatformAveriasCloudSync.push(snap, 3, { wait: true }).then(function (result) {
+                if (global.PlatformAveriasCloudSync && global.PlatformAveriasCloudSync.publishChange) {
+                    return global.PlatformAveriasCloudSync.publishChange(snap, options.liveRecord || null).then(function (result) {
                         var cloud = global.PlatformAveriasCloudSync.isCloudConfigured &&
                             global.PlatformAveriasCloudSync.isCloudConfigured();
-                        if (result && result.ok && !result.queued && global.PlatformAveriasCloudSync.schedulePullBurst) {
-                            global.PlatformAveriasCloudSync.schedulePullBurst();
-                        }
-                        if (result && !result.ok && cloud) {
+                        if (result && !result.cloud && cloud) {
                             if (global.PlatformToast) {
-                                global.PlatformToast.warn('Guardado en este equipo. La nube no respondió — reintente sync.', 6000);
+                                global.PlatformToast.warn('Guardado local. Pulse el botón sync o recargue si no aparece en otros equipos.', 6000);
                             }
-                        } else if (result && !result.ok && !cloud) {
-                            if (global.PlatformToast) {
-                                global.PlatformToast.warn('Reporte guardado solo en este dispositivo', 4000);
-                            }
-                        } else if (result && result.ok && result.cloud && global.PlatformToast) {
-                            global.PlatformToast.success('Reporte en vivo — visible en todos los dispositivos', 2500);
+                        } else if (result && result.cloud && global.PlatformToast) {
+                            global.PlatformToast.success('Publicado — todos los usuarios lo ven en vivo', 2500);
                         }
-                        return result && result.ok !== false ? { ok: true, cloud: !!(result && result.cloud) } : (result || { ok: true });
+                        return { ok: true, cloud: !!(result && result.cloud) };
                     });
                 }
+                if (global.PlatformAveriasCloudSync && global.PlatformAveriasCloudSync.push) {
                 return Promise.resolve({ ok: true, localOnly: true });
             } catch (e) {
                 return Promise.resolve({ ok: false, error: e });
@@ -835,6 +829,11 @@
             document.addEventListener('averias-sync-push', function () {
                 if (global.PlatformAveriasCloudSync && global.PlatformAveriasCloudSync.schedulePullBurst) {
                     global.PlatformAveriasCloudSync.schedulePullBurst();
+                }
+            });
+            global.addEventListener('firebase-denied', function () {
+                if (global.PlatformToast) {
+                    global.PlatformToast.error('Firebase bloqueó el guardado. Ejecute CONFIGURAR-FIREBASE-REGLAS.bat en el PC.', 8000);
                 }
             });
             document.addEventListener('lan-ready', function () {
@@ -1381,11 +1380,12 @@
                 avCore().stampNewReport(lastD);
             }
             auditAction('REPORTAR', { module: 'damages', codigo: codigo, area: selectedDamageArea });
-            saveDamagesData();
-            updateDamagesStats();
-            alert('✅ Avería guardada correctamente');
-            document.getElementById('damageCodigo').value = '';
-            document.getElementById('damageCantidad').value = '';
+            persistSnapshot({ force: true, liveRecord: { module: 'damages', record: lastD } }).then(function () {
+                updateDamagesStats();
+                alert('✅ Avería guardada correctamente');
+                document.getElementById('damageCodigo').value = '';
+                document.getElementById('damageCantidad').value = '';
+            });
         }
 
         // --- Módulo Seguridad ---
@@ -1593,7 +1593,7 @@
 
             allIncidences.push(incidence);
             auditAction('REPORTAR', { module: 'pallets', location: incidence.location, product: incidence.product });
-            persistSnapshot({ force: true }).then(function (result) {
+            persistSnapshot({ force: true, liveRecord: { module: 'pallets', record: incidence } }).then(function (result) {
                 if (result && result.ok === false && !result.skipped) {
                     document.getElementById('reportError').textContent = '❌ No se pudo guardar. Revise espacio del navegador e intente de nuevo.';
                     document.getElementById('reportError').classList.add('show');
@@ -1623,8 +1623,10 @@
             playSelectFeedback();
             selectedSeverity = severity;
             document.getElementById('reportSeverity').value = severity;
-            document.querySelectorAll('.severity-btn').forEach(btn => btn.classList.remove('selected'));
-            event.target.classList.add('selected');
+            document.querySelectorAll('.severity-btn').forEach(function (btn) {
+                btn.classList.remove('selected');
+                if (btn.classList.contains(String(severity).toLowerCase())) btn.classList.add('selected');
+            });
 
             // Auto-fill observation based on severity
             const observations = {
@@ -1958,7 +1960,7 @@
                     finalizeWorkRecord(inc);
                     label = inc.location + ' / ' + inc.product;
                     correctionLockUntil = Date.now() + 30000;
-                    persistSnapshot({ force: true }).then(function () {
+                    persistSnapshot({ force: true, liveRecord: { module: 'pallets', record: inc } }).then(function () {
                         filterIncidences();
                         renderReportedWorkLists();
                     });
@@ -1970,7 +1972,7 @@
                     finalizeWorkRecord(dmg);
                     label = dmg.codigo + ' / ' + dmg.area;
                     correctionLockUntil = Date.now() + 30000;
-                    persistSnapshot({ force: true }).then(function () {
+                    persistSnapshot({ force: true, liveRecord: { module: 'damages', record: dmg } }).then(function () {
                         filterDamagesPending();
                         renderReportedWorkLists();
                     });
@@ -1982,7 +1984,7 @@
                     finalizeWorkRecord(sec);
                     label = sec.area;
                     correctionLockUntil = Date.now() + 30000;
-                    persistSnapshot({ force: true }).then(function () {
+                    persistSnapshot({ force: true, liveRecord: { module: 'security', record: sec } }).then(function () {
                         filterSecurityPending();
                         renderReportedWorkLists();
                     });
@@ -1994,7 +1996,7 @@
                     finalizeWorkRecord(aud);
                     label = 'Pasillo ' + aud.pasillo;
                     correctionLockUntil = Date.now() + 30000;
-                    persistSnapshot({ force: true }).then(function () {
+                    persistSnapshot({ force: true, liveRecord: { module: 'audit', record: aud } }).then(function () {
                         filterAuditPending();
                         renderReportedWorkLists();
                     });

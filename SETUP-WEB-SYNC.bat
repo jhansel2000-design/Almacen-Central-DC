@@ -21,10 +21,8 @@ echo    3. Ctrl+F5 en telefono Y PC
 echo    4. Misma URL en todos:
 echo       https://jhansel2000-design.github.io/Almacen-Central-DC/
 echo.
-echo  Reglas RTDB (IMPORTANTE si no conecta):
-echo    1. Firebase Console - Realtime Database - Reglas
-echo    2. Copie el contenido de firebase-database.rules.json
-echo    3. Publique las reglas
+echo  Reglas RTDB (OBLIGATORIO — sin esto no guarda en celular):
+echo    Ejecute CONFIGURAR-FIREBASE-REGLAS.bat y publique las reglas
 echo.
 echo  Opcional LAN sin internet: INICIAR-SYNC-TIEMPO-REAL.bat
 echo.

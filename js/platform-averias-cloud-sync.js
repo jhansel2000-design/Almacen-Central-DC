@@ -28,6 +28,7 @@
   var lastAppliedJson = '';
   var firebaseDb = null;
   var firebaseBound = false;
+  var liveBound = false;
   var staticPollCounter = 0;
   var CLOUD_OVERRIDE_KEY = 'averias_cloud_jsonbin_override';
   var serverReachable = false;
@@ -159,10 +160,86 @@
   }
 
   function pollIntervalMs() {
-    if (firebaseDb && firebaseBound && hasFirebaseConfig()) return 10000;
+    if (hasFirebaseConfig()) {
+      var ms = siteConfig && siteConfig.syncTargetMs ? parseInt(siteConfig.syncTargetMs, 10) : 400;
+      return Math.max(400, ms || 400);
+    }
     var sec = (siteConfig && siteConfig.pollSeconds) || 1;
     if (siteConfig && siteConfig.realtime === false) sec = 8;
     return Math.max(1, sec) * 1000;
+  }
+
+  var LIVE_MODULE_KEYS = {
+    pallets: 'incidences',
+    damages: 'damages',
+    security: 'securityIncidents',
+    audit: 'audits5s'
+  };
+
+  function partialFromLive(live) {
+    if (!live || typeof live !== 'object') return null;
+    var partial = normalizeSnapshot({});
+    Object.keys(LIVE_MODULE_KEYS).forEach(function (mod) {
+      var bucket = live[mod];
+      if (!bucket || typeof bucket !== 'object') return;
+      var key = LIVE_MODULE_KEYS[mod];
+      partial[key] = Object.keys(bucket).map(function (k) { return bucket[k]; }).filter(Boolean);
+    });
+    if (!countSnapshotRecords(partial)) return null;
+    partial.updatedAt = new Date().toISOString();
+    return partial;
+  }
+
+  function pullLiveRecords() {
+    if (!hasFirebaseConfig() || !global.PlatformFirebaseBridge) return Promise.resolve(null);
+    return global.PlatformFirebaseBridge.pull('averias/live').then(function (live) {
+      return partialFromLive(live);
+    }).catch(function () { return null; });
+  }
+
+  function pushLiveRecord(module, record) {
+    if (!hasFirebaseConfig() || !global.PlatformFirebaseBridge || !record || record.id == null) {
+      return Promise.resolve({ ok: false, reason: 'no-live' });
+    }
+    var payload;
+    try { payload = JSON.parse(JSON.stringify(record)); } catch (e) { payload = record; }
+    payload._syncAt = new Date().toISOString();
+    payload._module = module;
+    var path = 'averias/live/' + module + '/' + String(record.id);
+    return global.PlatformFirebaseBridge.ensureReady().then(function () {
+      return global.PlatformFirebaseBridge.push(path, payload);
+    }).then(function (ok) {
+      return { ok: !!ok };
+    }).catch(function () {
+      return { ok: false, reason: 'live-push-fail' };
+    });
+  }
+
+  function publishChange(snap, liveRecord) {
+    var liveJob = liveRecord && liveRecord.module && liveRecord.record
+      ? pushLiveRecord(liveRecord.module, liveRecord.record)
+      : Promise.resolve({ ok: true, skipped: true });
+    return liveJob.then(function (liveRes) {
+      return pushSnapshot(snap, 3, { wait: true }).then(function (snapRes) {
+        var cloud = !!(liveRes && liveRes.ok) || !!(snapRes && snapRes.ok && snapRes.cloud);
+        return {
+          ok: true,
+          cloud: cloud,
+          liveOk: !!(liveRes && liveRes.ok),
+          snapOk: !!(snapRes && snapRes.ok)
+        };
+      });
+    });
+  }
+
+  function pullFromFirebaseOnceTimed(ms) {
+    ms = ms || 3000;
+    return Promise.race([
+      pullFromFirebaseOnce(),
+      new Promise(function (resolve) {
+        global.setTimeout(function () { resolve(null); }, ms);
+      })
+    ]);
   }
 
   function countSnapshotRecords(snap) {
@@ -342,7 +419,7 @@
       snap.updatedAt = new Date().toISOString();
       return Promise.resolve(normalizeSnapshot(snap));
     }
-    return pullFromFirebaseOnce().then(function (remote) {
+    return pullFromFirebaseOnceTimed(3000).then(function (remote) {
       if (remote) {
         snap = mergeAveriasSnapshots(normalizeSnapshot(remote), snap);
       }
@@ -397,7 +474,7 @@
   function applySnapshotToLocal(snap, silent, source) {
     if (!snap || !global.localStorage) return false;
     snap = normalizeSnapshot(snap);
-    if (inLocalEditGrace() && source !== 'push-ok') {
+    if (inLocalEditGrace() && source !== 'push-ok' && source !== 'firebase-live') {
       var live = getEffectiveLocalSnapshot();
       if (live) {
         live = normalizeSnapshot(live);
@@ -580,25 +657,39 @@
     return Promise.resolve(null);
   }
 
+  function applyLiveFromFirebase(val) {
+    if (!val) return;
+    var partial = partialFromLive(val);
+    if (!partial) return;
+    var local = getEffectiveLocalSnapshot() || EMPTY;
+    var merged = mergeAveriasSnapshots(normalizeSnapshot(local), partial);
+    applySnapshotToLocal(merged, false, 'firebase-live');
+  }
+
   function initFirebase() {
     if (!hasFirebaseConfig() || !global.PlatformFirebaseBridge) return Promise.resolve(false);
     return global.PlatformFirebaseBridge.ensureReady().then(function (db) {
-      if (!db || firebaseBound) {
-        if (db) firebaseDb = db;
-        return !!db;
-      }
+      if (!db) return false;
       firebaseDb = db;
-      firebaseBound = true;
-      db.ref('averias/snapshot').on('value', function (snap) {
-        var val = snap.val();
-        if (!val) return;
-        var local = getEffectiveLocalSnapshot();
-        if (local && (local.localSeq || 0) > (val.localSeq || 0)) {
-          schedulePushFromLocal();
-        }
-        var merged = mergeAveriasSnapshots(normalizeSnapshot(local || EMPTY), normalizeSnapshot(val));
-        applySnapshotToLocal(merged, false, 'firebase');
-      });
+      if (!firebaseBound) {
+        firebaseBound = true;
+        db.ref('averias/snapshot').on('value', function (snap) {
+          var val = snap.val();
+          if (!val) return;
+          var local = getEffectiveLocalSnapshot();
+          if (local && (local.localSeq || 0) > (val.localSeq || 0)) {
+            schedulePushFromLocal();
+          }
+          var merged = mergeAveriasSnapshots(normalizeSnapshot(local || EMPTY), normalizeSnapshot(val));
+          applySnapshotToLocal(merged, false, 'firebase');
+        });
+      }
+      if (!liveBound) {
+        liveBound = true;
+        db.ref('averias/live').on('value', function (snap) {
+          applyLiveFromFirebase(snap.val());
+        });
+      }
       return true;
     }).catch(function () { return false; });
   }
@@ -666,7 +757,7 @@
     pulling = true;
     var localBefore = getEffectiveLocalSnapshot();
     return pullFromJsonBin().then(function (jsonBinSnap) {
-      var tasks = [pullFromServer(), pullFromCloudProxy(), pullFromStatic(), pullFromFirebaseOnce()];
+      var tasks = [pullFromServer(), pullFromCloudProxy(), pullFromStatic(), pullFromFirebaseOnce(), pullLiveRecords()];
       return Promise.all(tasks).then(function (parts) {
         var merged = getLocalSnapshot() || EMPTY;
         if (jsonBinSnap) {
@@ -1141,6 +1232,11 @@
       if (remoteFirebase) {
         applySnapshotToLocal(mergeAveriasSnapshots(getEffectiveLocalSnapshot(), remoteFirebase), true, 'firebase');
       }
+      return pullLiveRecords();
+    }).then(function (livePartial) {
+      if (livePartial) {
+        applySnapshotToLocal(mergeAveriasSnapshots(getEffectiveLocalSnapshot(), livePartial), true, 'firebase-live');
+      }
       return probeCurrentServer().then(function () {
         updateSyncUi();
         return tryPromoteLocalCloudConfig();
@@ -1271,6 +1367,8 @@
     contentSignature: contentSignature,
     countSnapshotRecords: countSnapshotRecords,
     noteLocalSave: noteLocalSave,
+    pushLiveRecord: pushLiveRecord,
+    publishChange: publishChange,
     pull: pullAll,
     push: pushSnapshot,
     wipeAll: wipeAll,

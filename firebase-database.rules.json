@@ -16,6 +16,10 @@
       "snapshot": {
         ".read": true,
         ".write": true
+      },
+      "live": {
+        ".read": true,
+        ".write": true
       }
     }
   }

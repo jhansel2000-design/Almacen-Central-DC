@@ -51,9 +51,24 @@
     return base + '/' + clean + '.json';
   }
 
+  function fetchWithTimeout(url, opts, ms) {
+    ms = ms || 8000;
+    var ctrl = typeof global.AbortController !== 'undefined' ? new global.AbortController() : null;
+    var timer;
+    var p = global.fetch(url, Object.assign({}, opts || {}, ctrl ? { signal: ctrl.signal } : {}));
+    if (ctrl) {
+      timer = global.setTimeout(function () {
+        try { ctrl.abort(); } catch (e) { /* noop */ }
+      }, ms);
+    }
+    return p.finally(function () {
+      if (timer) global.clearTimeout(timer);
+    });
+  }
+
   function restPush(path, data) {
     if (!fbConfig || !fbConfig.databaseURL) return Promise.resolve(false);
-    return global.fetch(restUrl(path), {
+    return fetchWithTimeout(restUrl(path), {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(sanitize(data)),
@@ -68,6 +83,13 @@
       }
       return res.text().then(function (txt) {
         console.warn('[FirebaseBridge] REST push', res.status, path, txt);
+        if (txt && txt.indexOf('Permission denied') >= 0) {
+          try {
+            global.dispatchEvent(new CustomEvent('firebase-denied', {
+              detail: { path: path, hint: 'Publique firebase-database.rules.json en Firebase Console' }
+            }));
+          } catch (e) { /* noop */ }
+        }
         return false;
       });
     }).catch(function (err) {
@@ -78,7 +100,7 @@
 
   function restPull(path) {
     if (!fbConfig || !fbConfig.databaseURL) return Promise.resolve(null);
-    return global.fetch(restUrl(path) + '?t=' + Date.now(), {
+    return fetchWithTimeout(restUrl(path) + '?t=' + Date.now(), {
       cache: 'no-store',
       mode: 'cors'
     }).then(function (res) {
