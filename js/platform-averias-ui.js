@@ -495,6 +495,10 @@
                     });
                 }
                 if (global.PlatformAveriasCloudSync && global.PlatformAveriasCloudSync.push) {
+                    return global.PlatformAveriasCloudSync.push(snap, 3, { wait: true }).then(function (result) {
+                        return { ok: !!(result && result.ok), cloud: !!(result && result.cloud) };
+                    });
+                }
                 return Promise.resolve({ ok: true, localOnly: true });
             } catch (e) {
                 return Promise.resolve({ ok: false, error: e });
