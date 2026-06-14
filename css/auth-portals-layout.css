@@ -69,6 +69,89 @@ body.auth-locked:has(.auth-layout--hub.auth-layout--portals-only) .auth-video-sc
   margin-bottom: 0.95rem;
 }
 
+/* Logo JC centrado arriba del título */
+.auth-hero-head--center {
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.auth-hero-logo-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.15rem;
+}
+
+.auth-layout--hub.auth-layout--portals-only .auth-hero-head--center .jc-logo-img--hero {
+  width: clamp(3.5rem, 8vw, 4.5rem);
+  height: clamp(3.5rem, 8vw, 4.5rem);
+}
+
+.auth-hero-head-text--center {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.auth-layout--hub.auth-layout--portals-only .auth-hero-head--center .auth-welcome-line,
+.auth-layout--hub.auth-layout--portals-only .auth-hero-head--center .auth-brand-tag--inline {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Iconos con foto según función del portal (hub) */
+.auth-layout--hub.auth-layout--portals-only .auth-portal-icon--photo {
+  font-size: 0;
+  overflow: hidden;
+  background-size: cover;
+  background-position: center;
+  border-radius: 12px;
+  width: 3.15rem;
+  height: 3.15rem;
+}
+
+.auth-layout--hub.auth-layout--portals-only .auth-portal-icon--despacho {
+  background:
+    linear-gradient(135deg, rgba(0, 0, 0, 0.32), rgba(255, 152, 0, 0.28)),
+    url('../assets/img/login-dispatch-poster.jpg') center 46% / cover no-repeat;
+  border-color: rgba(255, 183, 77, 0.38);
+}
+
+.auth-layout--hub.auth-layout--portals-only .auth-portal-icon--ops {
+  background:
+    linear-gradient(135deg, rgba(0, 0, 0, 0.32), rgba(46, 125, 50, 0.28)),
+    url('../assets/img/login-averias-poster.jpg') center 40% / cover no-repeat;
+  border-color: rgba(129, 199, 132, 0.38);
+}
+
+.auth-layout--hub.auth-layout--portals-only .auth-portal-icon--inventario {
+  background:
+    linear-gradient(135deg, rgba(0, 0, 0, 0.28), rgba(197, 165, 114, 0.22)),
+    url('../assets/img/login-inventario-poster.svg') center 50% / cover no-repeat;
+  border-color: rgba(197, 165, 114, 0.38);
+}
+
+.auth-layout--hub.auth-layout--portals-only .auth-portal-card--despacho .auth-portal-icon--photo {
+  box-shadow: 0 4px 16px rgba(255, 152, 0, 0.15);
+}
+
+.auth-layout--hub.auth-layout--portals-only .auth-portal-card--averias .auth-portal-icon--photo {
+  box-shadow: 0 4px 16px rgba(76, 175, 80, 0.12);
+}
+
+.auth-layout--hub.auth-layout--portals-only .auth-portal-card--inventario .auth-portal-icon--photo {
+  box-shadow: 0 4px 16px rgba(197, 165, 114, 0.14);
+}
+
+@media (max-width: 900px) {
+  .auth-layout--hub.auth-layout--portals-only .auth-hero-head--center .jc-logo-img--hero {
+    width: 3.25rem;
+    height: 3.25rem;
+  }
+}
+
 .auth-layout--hub.auth-layout--portals-only .auth-hero-head--hub .auth-brand-title {
   font-size: clamp(1.5rem, 2.8vw, 1.95rem);
 }

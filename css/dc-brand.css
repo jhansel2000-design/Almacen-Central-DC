@@ -20,6 +20,11 @@ img.jc-logo-img {
   height: clamp(2.85rem, 5.2vw, 3.45rem);
 }
 
+.auth-hero-logo-wrap .jc-logo-img--hero {
+  width: clamp(3.5rem, 8vw, 4.5rem);
+  height: clamp(3.5rem, 8vw, 4.5rem);
+}
+
 .jc-logo-img--sidebar,
 .brand-logo .jc-logo-img {
   width: 42px;
@@ -81,7 +86,7 @@ body.executive-ui .brand-logo::after {
 }
 
 @media (max-width: 520px) {
-  .jc-logo-img--hero {
+  .jc-logo-img--hero:not(.auth-hero-logo-wrap .jc-logo-img--hero) {
     width: 2.85rem;
     height: 2.85rem;
   }
