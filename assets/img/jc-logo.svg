@@ -16,7 +16,7 @@
   <!-- Anillo rojo interior -->
   <circle cx="256" cy="256" r="198" fill="url(#jcRed)"/>
   <!-- Letras JC -->
-  <text x="256" y="292" text-anchor="middle"
+  <text x="256" y="256" text-anchor="middle" dominant-baseline="central"
     font-family="'Arial Black', 'Impact', 'Haettenschweiler', 'Franklin Gothic Heavy', sans-serif"
-    font-weight="900" font-size="168" fill="#FFFFFF" letter-spacing="-6">JC</text>
+    font-weight="900" font-size="168" fill="#FFFFFF" letter-spacing="-4">JC</text>
 </svg>

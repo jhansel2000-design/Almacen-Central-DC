@@ -65,7 +65,7 @@ function Write-JcBadgeLogo {
   $sf = New-Object System.Drawing.StringFormat
   $sf.Alignment = [System.Drawing.StringAlignment]::Center
   $sf.LineAlignment = [System.Drawing.StringAlignment]::Center
-  $rect = New-Object System.Drawing.RectangleF 0, ($cy - $Size * 0.06), $Size, ($Size * 0.62)
+  $rect = New-Object System.Drawing.RectangleF 0, 0, $Size, $Size
   $g.DrawString('JC', $font, $brush, $rect, $sf)
 
   $dir = Split-Path $OutPath -Parent
