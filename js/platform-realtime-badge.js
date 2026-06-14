@@ -1,5 +1,5 @@
 /**
- * Indicador global LIVE — visible en toda la web cuando Firebase sync está activa
+ * Indicador global EN VIVO — Supabase (primario) o Firebase (respaldo)
  */
 (function (global) {
   'use strict';
@@ -18,15 +18,28 @@
     return badge;
   }
 
+  function isLive() {
+    if (global.PlatformSupabase && global.PlatformSupabase.isEnabled && global.PlatformSupabase.isConnected()) {
+      return true;
+    }
+    return !!(global.PlatformFirebaseBridge && global.PlatformFirebaseBridge.isEnabled &&
+      global.PlatformFirebaseBridge.isConnected && global.PlatformFirebaseBridge.isConnected());
+  }
+
   function update() {
     var el = ensureBadge();
     if (!el) return;
-    var on = global.PlatformFirebaseBridge && global.PlatformFirebaseBridge.isEnabled &&
-      global.PlatformFirebaseBridge.isConnected && global.PlatformFirebaseBridge.isConnected();
+    var on = isLive();
     el.hidden = !on;
+    var viaSupabase = global.PlatformSupabase && global.PlatformSupabase.isConnected && global.PlatformSupabase.isConnected();
     el.title = on
-      ? 'Sync en tiempo real activa — todos los dispositivos ven los mismos datos'
+      ? (viaSupabase
+        ? 'Supabase en vivo — todos los portales comparten los mismos datos'
+        : 'Sync en tiempo real activa')
       : '';
+    if (viaSupabase) {
+      el.style.background = 'rgba(56, 142, 60, 0.92)';
+    }
   }
 
   function injectStyles() {
@@ -49,7 +62,11 @@
     injectStyles();
     update();
     global.addEventListener('firebase-connection', update);
+    global.addEventListener('supabase-connection', update);
     global.setInterval(update, 3000);
+    if (global.PlatformSupabase && global.PlatformSupabase.init) {
+      global.PlatformSupabase.init().then(update);
+    }
     if (global.PlatformFirebaseBridge && global.PlatformFirebaseBridge.ensureReady) {
       global.PlatformFirebaseBridge.ensureReady().then(update);
     }

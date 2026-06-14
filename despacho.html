@@ -9,11 +9,11 @@
   <meta name="theme-color" content="#e8eef5" media="(prefers-color-scheme: light)">
   <meta name="referrer" content="strict-origin-when-cross-origin">
   <meta http-equiv="X-Content-Type-Options" content="nosniff">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://challenges.cloudflare.com https://www.gstatic.com; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' http://localhost:* http://127.0.0.1:* http://192.168.0.0/16 http://10.0.0.0/8 https://api.jsonbin.io https://*.firebaseio.com wss://*.firebaseio.com https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com https://*.trycloudflare.com https://jhansel2000-design.github.io https://challenges.cloudflare.com; img-src 'self' data: https://challenges.cloudflare.com; media-src 'self'; frame-src https://challenges.cloudflare.com; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://challenges.cloudflare.com https://www.gstatic.com; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' http://localhost:* http://127.0.0.1:* http://192.168.0.0/16 http://10.0.0.0/8 https://api.jsonbin.io https://*.firebaseio.com wss://*.firebaseio.com https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com https://*.supabase.co wss://*.supabase.co https://*.trycloudflare.com https://jhansel2000-design.github.io https://challenges.cloudflare.com; img-src 'self' data: https://challenges.cloudflare.com; media-src 'self'; frame-src https://challenges.cloudflare.com; object-src 'none'; base-uri 'self'; form-action 'self'">
   <title>Despacho — Almacén Central DC</title>
   <script src="js/relay-bootstrap.js?v=2"></script>
   <link rel="preload" href="assets/img/login-dispatch-poster.jpg" as="image">
-  <link rel="icon" type="image/png" href="assets/img/dc-logo-64.png?v=5">
+  <link rel="icon" type="image/svg+xml" href="assets/img/jc-logo.svg?v=1">
   <link rel="stylesheet" href="css/platform.css?v=31">
   <link rel="stylesheet" href="css/platform-enhance.css">
   <link rel="stylesheet" href="css/platform-gestures.css?v=16">
@@ -22,7 +22,7 @@
   <link rel="stylesheet" href="css/auth-cinematic.css?v=18">
   <link rel="stylesheet" href="css/auth-security.css?v=3">
   <link rel="stylesheet" href="css/auth-portals-layout.css?v=1">
-  <link rel="stylesheet" href="css/dc-brand.css?v=4">
+  <link rel="stylesheet" href="css/dc-brand.css?v=6">
   <link rel="stylesheet" href="css/theme-light.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -39,7 +39,7 @@
       <aside class="auth-hero desp-auth-hero">
         <div class="auth-hero-panel desp-auth-hero-panel">
           <header class="auth-hero-head">
-            <img class="auth-hero-logo-img" src="assets/img/dc-logo.png?v=5" alt="" width="52" height="52" aria-hidden="true">
+            <span class="jc-logo jc-logo--hero auth-hero-logo-img" aria-hidden="true">JC</span>
             <div class="auth-hero-head-text">
               <p class="auth-welcome-line">Portal independiente</p>
               <h1 class="desp-auth-brand-title">Despacho · Almacén Central DC</h1>
@@ -111,6 +111,7 @@
       <nav class="auth-hub-links" aria-label="Otros portales">
         <a href="index.html" class="auth-hub-link auth-hub-link--wms">Control de Mando DC</a>
         <a href="averias.html" class="auth-hub-link auth-hub-link--ops">Operaciones de piso</a>
+        <a href="inventario.html" class="auth-hub-link">Inventario RF</a>
       </nav>
       </div>
     </div>
@@ -145,16 +146,19 @@
   <script src="js/platform-admin.js?v=12"></script>
   <script src="js/platform-web-users.js?v=11"></script>
   <script src="js/platform-despacho-store.js?v=36"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/platform-supabase.js?v=2"></script>
+  <script src="js/platform-supabase-bridge.js?v=1"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
   <script src="js/platform-firebase-bridge.js?v=5"></script>
-  <script src="js/platform-realtime-badge.js?v=1"></script>
-  <script src="js/platform-despacho-cloud-sync.js?v=7"></script>
+  <script src="js/platform-realtime-badge.js?v=2"></script>
+  <script src="js/platform-despacho-cloud-sync.js?v=8"></script>
   <script src="js/platform-lan-sync.js?v=13"></script>
   <script src="js/vendor/JsBarcode.all.min.js"></script>
   <script src="js/platform-despacho-barcode.js?v=6"></script>
   <script src="js/platform-despacho-display.js?v=1"></script>
-  <script src="js/platform-despacho-present.js?v=29"></script>
+  <script src="js/platform-despacho-present.js?v=30"></script>
   <script src="js/platform-despacho-present-lista.js?v=12"></script>
   <script src="js/platform-despacho-voice.js?v=3"></script>
   <script src="js/platform-despacho-ui.js?v=40"></script>

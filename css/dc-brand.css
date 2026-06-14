@@ -1,39 +1,79 @@
-/* Logo corporativo DC — PNG fondo transparente */
-.auth-hero-logo-img,
-.brand-logo img,
-.auth-portal-icon--logo img,
-.desp-present-brand-logo {
+/* Logo corporativo JC — monograma Jansel Castro */
+
+.jc-logo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
-  object-fit: contain;
-  display: block;
-  background: transparent !important;
-  border: none !important;
-  outline: none !important;
-  box-shadow: none !important;
+  font-family: 'Plus Jakarta Sans', 'DM Sans', 'Segoe UI', system-ui, sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  color: #C5A572;
+  background: linear-gradient(145deg, #243447 0%, #1E2D3D 45%, #15202B 100%);
+  border: 1px solid rgba(197, 165, 114, 0.35);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  user-select: none;
 }
 
-.auth-hero-logo-img {
-  width: 3.25rem;
-  height: 3.25rem;
+.jc-logo--hero,
+.auth-hero-logo-img.jc-logo,
+.jc-logo.jc-logo--hero {
+  width: clamp(2.75rem, 5vw, 3.35rem);
+  height: clamp(2.75rem, 5vw, 3.35rem);
+  border-radius: 12px;
+  font-size: clamp(1rem, 2.5vw, 1.15rem);
+}
+
+.jc-logo--sidebar,
+.brand-logo .jc-logo {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  font-size: 0.95rem;
+}
+
+.jc-logo--portal,
+.auth-portal-icon--logo .jc-logo {
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  font-size: 0.82rem;
+}
+
+.jc-logo--present,
+.desp-present-brand-logo.jc-logo {
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  font-size: 1.2rem;
+}
+
+/* Compatibilidad: ocultar PNG antiguo si queda en el DOM */
+.brand-logo img[src*="dc-logo"],
+.auth-hero-logo-img[src*="dc-logo"],
+.auth-portal-icon--logo img[src*="dc-logo"] {
+  display: none !important;
+}
+
+.auth-hero-logo-img,
+.brand-logo,
+.auth-portal-icon--logo,
+.desp-present-brand-logo {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
 }
 
 .brand-logo {
   width: 42px;
   height: 42px;
-  flex-shrink: 0;
   padding: 0;
   overflow: visible;
-  background: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.brand-logo img {
-  width: 100%;
-  height: 100%;
 }
 
 body.executive-ui .brand-logo {
@@ -46,14 +86,10 @@ body.executive-ui .brand-logo::after {
   display: none !important;
 }
 
-.auth-hero-head .auth-hero-logo-img {
-  width: clamp(2.75rem, 5vw, 3.35rem);
-  height: clamp(2.75rem, 5vw, 3.35rem);
-}
-
 @media (max-width: 520px) {
-  .auth-hero-logo-img {
+  .jc-logo--hero {
     width: 2.75rem;
     height: 2.75rem;
+    font-size: 0.95rem;
   }
 }

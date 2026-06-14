@@ -88,9 +88,33 @@
   }
 
   function hasFirebaseConfig() {
+    if (global.PlatformSupabaseBridge && global.PlatformSupabaseBridge.isPrimary && global.PlatformSupabaseBridge.isPrimary()) {
+      return false;
+    }
     if (global.PlatformFirebaseBridge && global.PlatformFirebaseBridge.isEnabled()) return true;
     var fb = siteConfig && siteConfig.firebase;
     return !!(fb && fb.enabled && fb.databaseURL);
+  }
+
+  function hasSupabaseConfig() {
+    return !!(global.PlatformSupabaseBridge && global.PlatformSupabaseBridge.isEnabled());
+  }
+
+  function pullFromSupabase() {
+    if (!hasSupabaseConfig()) return Promise.resolve(null);
+    return global.PlatformSupabaseBridge.pull('despacho');
+  }
+
+  function pushToSupabase(data) {
+    if (!hasSupabaseConfig()) return Promise.resolve(false);
+    return global.PlatformSupabaseBridge.push('despacho', data);
+  }
+
+  function initSupabase() {
+    if (!hasSupabaseConfig() || !global.PlatformSupabaseBridge.subscribe) return;
+    global.PlatformSupabaseBridge.subscribe('despacho', function (remote) {
+      if (remote) applyRemote(remote, 'supabase');
+    });
   }
 
   function firebaseLive() {
@@ -155,6 +179,7 @@
 
   function isCloudConfigured() {
     return !!(
+      hasSupabaseConfig() ||
       getJsonBinConfig() ||
       hasFirebaseConfig() ||
       (resolvePublicBase() && serverReachable) ||
@@ -390,6 +415,7 @@
     return pullFromJsonBin().then(function (jsonBinData) {
       return Promise.all([
         Promise.resolve(jsonBinData),
+        pullFromSupabase(),
         pullFromServer(),
         pullFromCloudProxy(),
         pullFromStatic(),
@@ -457,6 +483,7 @@
   }
 
   function pushToFirebase(data) {
+    if (hasSupabaseConfig() && global.PlatformSupabaseBridge.isPrimary()) return Promise.resolve(false);
     if (!global.PlatformFirebaseBridge || !global.PlatformFirebaseBridge.ensureReady) {
       return Promise.resolve(false);
     }
@@ -491,6 +518,23 @@
     function runPush() {
       pushing = true;
       retries = retries == null ? 3 : retries;
+
+      if (hasSupabaseConfig() && global.PlatformSupabaseBridge.isPrimary()) {
+        var sbPayload = Object.assign({}, local, { module: 'despacho', updatedAt: nowIso() });
+        return pushToSupabase(sbPayload).then(function (ok) {
+          if (ok) {
+            lastPushOkAt = Date.now();
+            if (broadcast) {
+              try { broadcast.postMessage({ type: 'despacho-sync', at: Date.now() }); } catch (e) { /* noop */ }
+            }
+            updateSyncUi();
+            return true;
+          }
+          return pushLocalFallback(retries);
+        }).finally(function () {
+          pushing = false;
+        });
+      }
 
       if (hasFirebaseConfig()) {
         var fastPayload = Object.assign({}, local, { module: 'despacho', updatedAt: nowIso() });
@@ -673,6 +717,7 @@
         return initFirebase();
       });
     }).then(function () {
+      initSupabase();
       return pullFirebaseInitial();
     }).then(function (remoteFirebase) {
       hookLocalStorage();

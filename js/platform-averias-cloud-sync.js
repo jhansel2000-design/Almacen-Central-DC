@@ -41,7 +41,8 @@
   var pendingPushTimer = null;
   var pendingLocalPushTimer = null;
   var lastLocalEditAt = 0;
-  var LOCAL_EDIT_GRACE_MS = 12000;
+  var LOCAL_EDIT_GRACE_MS = 30000;
+  var lastPushStatus = { at: 0, pendingOk: false, snapOk: false, err: '' };
   var broadcast = typeof global.BroadcastChannel !== 'undefined'
     ? new global.BroadcastChannel('averias-dc-live')
     : null;
@@ -114,9 +115,33 @@
   }
 
   function hasFirebaseConfig() {
+    if (global.PlatformSupabaseBridge && global.PlatformSupabaseBridge.isPrimary && global.PlatformSupabaseBridge.isPrimary()) {
+      return false;
+    }
     if (global.PlatformFirebaseBridge && global.PlatformFirebaseBridge.isEnabled()) return true;
     var fb = siteConfig && siteConfig.firebase;
     return !!(fb && fb.enabled && fb.databaseURL);
+  }
+
+  function hasSupabaseConfig() {
+    return !!(global.PlatformSupabaseBridge && global.PlatformSupabaseBridge.isEnabled());
+  }
+
+  function pullFromSupabase() {
+    if (!hasSupabaseConfig()) return Promise.resolve(null);
+    return global.PlatformSupabaseBridge.pull('averias');
+  }
+
+  function pushToSupabase(snap) {
+    if (!hasSupabaseConfig()) return Promise.resolve(false);
+    return global.PlatformSupabaseBridge.push('averias', snap);
+  }
+
+  function initSupabase() {
+    if (!hasSupabaseConfig() || !global.PlatformSupabaseBridge.subscribe) return;
+    global.PlatformSupabaseBridge.subscribe('averias', function (remote) {
+      if (remote) applySnapshotToLocal(remote, true, 'supabase');
+    });
   }
 
   function pullFromCloudProxy() {
@@ -783,7 +808,7 @@
     pulling = true;
     var localBefore = getEffectiveLocalSnapshot();
     return pullFromJsonBin().then(function (jsonBinSnap) {
-      var tasks = [pullFromServer(), pullFromCloudProxy(), pullFromStatic(), pullFromFirebaseOnce(), pullPendingRecords()];
+      var tasks = [pullFromSupabase(), pullFromServer(), pullFromCloudProxy(), pullFromStatic(), pullFromFirebaseOnce(), pullPendingRecords()];
       return Promise.all(tasks).then(function (parts) {
         var merged = getLocalSnapshot() || EMPTY;
         if (jsonBinSnap) {
@@ -866,6 +891,7 @@
   }
 
   function pushToFirebase(snap) {
+    if (hasSupabaseConfig() && global.PlatformSupabaseBridge.isPrimary()) return Promise.resolve(false);
     if (!global.PlatformFirebaseBridge) return Promise.resolve(false);
     var payload;
     try { payload = JSON.parse(JSON.stringify(snap || {})); } catch (e) { payload = snap; }
@@ -933,6 +959,26 @@
       }
 
       function attempt(n) {
+        if (hasSupabaseConfig() && global.PlatformSupabaseBridge.isPrimary()) {
+          return pushToSupabase(snap).then(function (ok) {
+            if (ok) {
+              noteLocalSave(snap);
+              try {
+                global.localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(snap));
+              } catch (e) { /* noop */ }
+              broadcastSyncHint();
+              notifyUpdated('push-ok');
+              global.dispatchEvent(new CustomEvent('averias-sync-push', { detail: { ok: true } }));
+              return { ok: true, cloud: true };
+            }
+            if (n < retries) {
+              return new Promise(function (resolve) {
+                global.setTimeout(function () { resolve(attempt(n + 1)); }, 120);
+              });
+            }
+            return { ok: false, reason: 'supabase-push-failed' };
+          });
+        }
         if (hasFirebaseConfig() && !hasJsonBinConfig()) {
           return pushToFirebase(snap).then(function (ok) {
             if (ok) {
@@ -964,6 +1010,7 @@
           pushToServer(snap),
           pushToCloudProxy(snap),
           pushToJsonBin(snap),
+          pushToSupabase(snap),
           pushToFirebase(snap)
         ]).then(function (results) {
           var jsonBinOk = results[2];
@@ -1062,6 +1109,7 @@
 
   function isCloudConfigured() {
     return !!(
+      hasSupabaseConfig() ||
       hasJsonBinConfig() ||
       hasFirebaseConfig() ||
       (resolvePublicBase() && serverReachable) ||
@@ -1253,6 +1301,7 @@
     initReady = loadSiteConfig().then(function () {
       return initFirebase();
     }).then(function () {
+      initSupabase();
       return pullFirebaseInitial();
     }).then(function (remoteFirebase) {
       if (remoteFirebase) {

@@ -37,6 +37,13 @@
     "accessKey": "",
     "keyType": "master"
   },
+  "supabase": {
+    "enabled": false,
+    "primary": true,
+    "url": "",
+    "anonKey": "",
+    "help": "Supabase conecta TODA la web (WMS, averías, despacho, inventario). Ejecutar supabase/schema.sql y pegar URL + anon key."
+  },
   "help": "Sync Firebase en vivo (<1s). Todos ven lo mismo en GitHub Pages. Ctrl+F5 tras cambios.",
   "security": {
     "turnstileSiteKey": "0x4AAAAAADhftTLJSQ0WxVnuiLp9UNRpOMc",

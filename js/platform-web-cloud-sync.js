@@ -105,9 +105,33 @@
   }
 
   function hasFirebaseConfig() {
+    if (global.PlatformSupabaseBridge && global.PlatformSupabaseBridge.isPrimary && global.PlatformSupabaseBridge.isPrimary()) {
+      return false;
+    }
     if (global.PlatformFirebaseBridge && global.PlatformFirebaseBridge.isEnabled()) return true;
     var fb = siteConfig && siteConfig.firebase;
     return !!(fb && fb.enabled && fb.databaseURL);
+  }
+
+  function hasSupabaseConfig() {
+    return !!(global.PlatformSupabaseBridge && global.PlatformSupabaseBridge.isEnabled());
+  }
+
+  function pullFromSupabase() {
+    if (!hasSupabaseConfig()) return Promise.resolve(null);
+    return global.PlatformSupabaseBridge.pull('platform');
+  }
+
+  function pushToSupabase(snap) {
+    if (!hasSupabaseConfig()) return Promise.resolve(false);
+    return global.PlatformSupabaseBridge.push('platform', snap);
+  }
+
+  function initSupabase() {
+    if (!hasSupabaseConfig() || !global.PlatformSupabaseBridge.subscribe) return;
+    global.PlatformSupabaseBridge.subscribe('platform', function (remote) {
+      if (remote) applySnapshot(remote, 'supabase');
+    });
   }
 
   function firebaseLive() {
@@ -163,6 +187,7 @@
 
   function isCloudConfigured() {
     return !!(
+      hasSupabaseConfig() ||
       getJsonBinConfig() ||
       hasFirebaseConfig() ||
       (resolvePublicBase() && serverReachable) ||
@@ -396,6 +421,7 @@
     return pullFromJsonBin().then(function (jsonBinSnap) {
       return Promise.all([
         Promise.resolve(jsonBinSnap),
+        pullFromSupabase(),
         pullFromServer(),
         pullFromCloudProxy(),
         pullFromStatic(),
@@ -467,6 +493,7 @@
   }
 
   function pushToFirebase(snap) {
+    if (hasSupabaseConfig() && global.PlatformSupabaseBridge.isPrimary()) return Promise.resolve(false);
     if (!global.PlatformFirebaseBridge) return Promise.resolve(false);
     var payload;
     try { payload = JSON.parse(JSON.stringify(snap || {})); } catch (e) { payload = snap; }
@@ -487,6 +514,18 @@
       pushing = true;
       retries = retries == null ? 2 : retries;
 
+      if (hasSupabaseConfig() && global.PlatformSupabaseBridge.isPrimary()) {
+        local.updatedAt = nowIso();
+        return pushToSupabase(local).then(function (ok) {
+          if (ok && broadcast) {
+            try { broadcast.postMessage({ type: 'platform-sync', at: Date.now() }); } catch (e) { /* noop */ }
+          }
+          return ok;
+        }).finally(function () {
+          pushing = false;
+        });
+      }
+
       if (hasFirebaseConfig() && !getJsonBinConfig()) {
         local.updatedAt = nowIso();
         return pushToFirebase(local).then(function (ok) {
@@ -504,10 +543,11 @@
           pushToServer(payload),
           pushToCloudProxy(payload),
           pushToJsonBin(payload),
+          pushToSupabase(payload),
           pushToFirebase(payload)
         ]).then(function (results) {
           var jsonBinOk = results[2];
-          var ok = getJsonBinConfig() ? (jsonBinOk || results[0] || results[1] || results[3]) : results.some(Boolean);
+          var ok = getJsonBinConfig() ? (jsonBinOk || results[0] || results[1] || results[3] || results[4]) : results.some(Boolean);
           if (ok) {
             if (broadcast) {
               try { broadcast.postMessage({ type: 'platform-sync', at: Date.now() }); } catch (e) { /* noop */ }
@@ -621,6 +661,7 @@
         return initFirebase();
       });
     }).then(function () {
+      initSupabase();
       return pullFirebaseInitial();
     }).then(function (remoteFirebase) {
       hookLocalStorage();

@@ -8,10 +8,11 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' http://localhost:* http://127.0.0.1:* http://192.168.0.0/16 http://10.0.0.0/8 https://api.jsonbin.io https://*.firebaseio.com wss://*.firebaseio.com https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com https://*.trycloudflare.com https://jhansel2000-design.github.io; img-src 'self' data:; media-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://www.gstatic.com; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' http://localhost:* http://127.0.0.1:* http://192.168.0.0/16 http://10.0.0.0/8 https://api.jsonbin.io https://*.firebaseio.com wss://*.firebaseio.com https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com https://*.supabase.co wss://*.supabase.co https://*.trycloudflare.com https://jhansel2000-design.github.io; img-src 'self' data:; media-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'">
   <title>Pantalla Despacho — Almacén Central DC</title>
   <script src="js/relay-bootstrap.js?v=2"></script>
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23ff9800'/%3E%3Ctext x='16' y='22' text-anchor='middle' font-size='14' font-weight='800' fill='%23041018' font-family='system-ui'%3ET%3C/text%3E%3C/svg%3E">
+  <link rel="icon" type="image/svg+xml" href="assets/img/jc-logo.svg?v=1">
+  <link rel="stylesheet" href="css/dc-brand.css?v=6">
   <link rel="stylesheet" href="css/despacho-dashboard.css?v=36">
   <link rel="stylesheet" href="css/despacho-display.css?v=23">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -32,16 +33,19 @@
 
   <script src="js/panel-core.js"></script>
   <script src="js/platform-despacho-store.js?v=36"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/platform-supabase.js?v=2"></script>
+  <script src="js/platform-supabase-bridge.js?v=1"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
   <script src="js/platform-firebase-bridge.js?v=5"></script>
-  <script src="js/platform-realtime-badge.js?v=1"></script>
-  <script src="js/platform-despacho-cloud-sync.js?v=7"></script>
+  <script src="js/platform-realtime-badge.js?v=2"></script>
+  <script src="js/platform-despacho-cloud-sync.js?v=8"></script>
   <script src="js/platform-lan-sync.js?v=13"></script>
   <script src="js/vendor/JsBarcode.all.min.js"></script>
   <script src="js/platform-despacho-barcode.js?v=8"></script>
   <script src="js/platform-despacho-display.js?v=1"></script>
-  <script src="js/platform-despacho-present.js?v=29"></script>
+  <script src="js/platform-despacho-present.js?v=30"></script>
   <script src="js/platform-despacho-present-lista.js?v=12"></script>
   <script src="js/platform-despacho-display-app.js?v=2"></script>
 </body>
