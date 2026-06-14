@@ -1,58 +1,43 @@
-/* Logo corporativo JC — monograma Jansel Castro */
+/* Logo JC — estilo emblema circular (como logo DC original) */
 
 .jc-logo-img,
 img.jc-logo-img {
   display: block;
   flex-shrink: 0;
   object-fit: contain;
+  border-radius: 50%;
   background: transparent !important;
   border: none !important;
-  box-shadow: none !important;
+  box-shadow:
+    0 8px 22px rgba(198, 40, 40, 0.42),
+    0 2px 8px rgba(0, 0, 0, 0.28);
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
 }
 
 .jc-logo-img--hero,
 .auth-hero-logo-img.jc-logo-img {
-  width: clamp(2.75rem, 5vw, 3.35rem);
-  height: clamp(2.75rem, 5vw, 3.35rem);
-  border-radius: 12px;
+  width: clamp(2.85rem, 5.2vw, 3.45rem);
+  height: clamp(2.85rem, 5.2vw, 3.45rem);
 }
 
 .jc-logo-img--sidebar,
 .brand-logo .jc-logo-img {
   width: 42px;
   height: 42px;
-  border-radius: 10px;
 }
 
 .jc-logo-img--portal,
 .auth-portal-icon--logo .jc-logo-img {
   width: 100%;
   height: 100%;
-  border-radius: 9px;
+  max-width: 2.65rem;
+  max-height: 2.65rem;
 }
 
 .jc-logo-img--present,
 .desp-present-brand-logo.jc-logo-img {
   width: 56px;
   height: 56px;
-  border-radius: 12px;
-}
-
-/* Texto fallback (legacy) */
-.jc-logo {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  font-family: 'Plus Jakarta Sans', 'DM Sans', 'Segoe UI', system-ui, sans-serif;
-  font-weight: 800;
-  letter-spacing: -0.04em;
-  line-height: 1;
-  color: #C5A572;
-  background: linear-gradient(145deg, #243447 0%, #1E2D3D 45%, #15202B 100%);
-  border: 1px solid rgba(197, 165, 114, 0.35);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
-  user-select: none;
 }
 
 .auth-hero-logo-img,
@@ -91,11 +76,13 @@ body.executive-ui .brand-logo::after {
   height: 2.65rem !important;
   padding: 0 !important;
   font-size: inherit !important;
+  background: transparent !important;
+  border: none !important;
 }
 
 @media (max-width: 520px) {
   .jc-logo-img--hero {
-    width: 2.75rem;
-    height: 2.75rem;
+    width: 2.85rem;
+    height: 2.85rem;
   }
 }
