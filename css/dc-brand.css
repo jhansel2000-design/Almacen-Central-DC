@@ -1,5 +1,44 @@
 /* Logo corporativo JC — monograma Jansel Castro */
 
+.jc-logo-img,
+img.jc-logo-img {
+  display: block;
+  flex-shrink: 0;
+  object-fit: contain;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.jc-logo-img--hero,
+.auth-hero-logo-img.jc-logo-img {
+  width: clamp(2.75rem, 5vw, 3.35rem);
+  height: clamp(2.75rem, 5vw, 3.35rem);
+  border-radius: 12px;
+}
+
+.jc-logo-img--sidebar,
+.brand-logo .jc-logo-img {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+}
+
+.jc-logo-img--portal,
+.auth-portal-icon--logo .jc-logo-img {
+  width: 100%;
+  height: 100%;
+  border-radius: 9px;
+}
+
+.jc-logo-img--present,
+.desp-present-brand-logo.jc-logo-img {
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+}
+
+/* Texto fallback (legacy) */
 .jc-logo {
   display: inline-flex;
   align-items: center;
@@ -16,46 +55,6 @@
   user-select: none;
 }
 
-.jc-logo--hero,
-.auth-hero-logo-img.jc-logo,
-.jc-logo.jc-logo--hero {
-  width: clamp(2.75rem, 5vw, 3.35rem);
-  height: clamp(2.75rem, 5vw, 3.35rem);
-  border-radius: 12px;
-  font-size: clamp(1rem, 2.5vw, 1.15rem);
-}
-
-.jc-logo--sidebar,
-.brand-logo .jc-logo {
-  width: 42px;
-  height: 42px;
-  border-radius: 10px;
-  font-size: 0.95rem;
-}
-
-.jc-logo--portal,
-.auth-portal-icon--logo .jc-logo {
-  width: 36px;
-  height: 36px;
-  border-radius: 9px;
-  font-size: 0.82rem;
-}
-
-.jc-logo--present,
-.desp-present-brand-logo.jc-logo {
-  width: 56px;
-  height: 56px;
-  border-radius: 12px;
-  font-size: 1.2rem;
-}
-
-/* Compatibilidad: ocultar PNG antiguo si queda en el DOM */
-.brand-logo img[src*="dc-logo"],
-.auth-hero-logo-img[src*="dc-logo"],
-.auth-portal-icon--logo img[src*="dc-logo"] {
-  display: none !important;
-}
-
 .auth-hero-logo-img,
 .brand-logo,
 .auth-portal-icon--logo,
@@ -67,15 +66,16 @@
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
+  overflow: visible;
 }
 
 .brand-logo {
   width: 42px;
   height: 42px;
   padding: 0;
-  overflow: visible;
 }
 
+.brand-logo.jc-brand-wrap,
 body.executive-ui .brand-logo {
   background: transparent !important;
   box-shadow: none !important;
@@ -86,10 +86,16 @@ body.executive-ui .brand-logo::after {
   display: none !important;
 }
 
+.auth-portal-icon--logo {
+  width: 2.65rem !important;
+  height: 2.65rem !important;
+  padding: 0 !important;
+  font-size: inherit !important;
+}
+
 @media (max-width: 520px) {
-  .jc-logo--hero {
+  .jc-logo-img--hero {
     width: 2.75rem;
     height: 2.75rem;
-    font-size: 0.95rem;
   }
 }
