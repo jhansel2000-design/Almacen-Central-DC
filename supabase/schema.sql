@@ -96,8 +96,11 @@ create policy "inv_article_pairs_anon_all" on public.inv_article_pairs for all u
 drop policy if exists "inv_entries_anon_all" on public.inv_entries;
 create policy "inv_entries_anon_all" on public.inv_entries for all using (true) with check (true);
 
--- Realtime (activar en Dashboard → Database → Replication si hace falta)
-alter publication supabase_realtime add table public.inv_entries;
+-- Realtime (ignorar si ya estaba activo)
+do $$ begin
+  alter publication supabase_realtime add table public.inv_entries;
+exception when duplicate_object then null;
+end $$;
 
 -- Snapshots JSON de TODA la web (WMS, averías, despacho)
 create table if not exists public.web_snapshots (
@@ -117,4 +120,7 @@ alter table public.web_snapshots enable row level security;
 drop policy if exists "web_snapshots_anon_all" on public.web_snapshots;
 create policy "web_snapshots_anon_all" on public.web_snapshots for all using (true) with check (true);
 
-alter publication supabase_realtime add table public.web_snapshots;
+do $$ begin
+  alter publication supabase_realtime add table public.web_snapshots;
+exception when duplicate_object then null;
+end $$;
