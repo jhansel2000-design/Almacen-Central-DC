@@ -117,6 +117,34 @@
     return !!(global.PlatformSupabaseBridge && global.PlatformSupabaseBridge.isEnabled());
   }
 
+  function isSupabasePrimary() {
+    return !!(hasSupabaseConfig() && global.PlatformSupabaseBridge.isPrimary && global.PlatformSupabaseBridge.isPrimary());
+  }
+
+  function prepareSnapshotForPush(snap) {
+    if (!isSupabasePrimary()) return Promise.resolve(snap);
+    return pullFromSupabase().then(function (remote) {
+      var merged = mergeSnapshots(snap, remote);
+      merged.updatedAt = nowIso();
+      return merged;
+    }).catch(function () {
+      snap.updatedAt = nowIso();
+      return snap;
+    });
+  }
+
+  function promotePlatformToCloudIfNeeded() {
+    if (!isSupabasePrimary()) return Promise.resolve();
+    var local = buildSnapshotFromLocal();
+    if (!local || !hasAnyData(local)) return Promise.resolve();
+    return pullFromSupabase().then(function (remote) {
+      var merged = mergeSnapshots(local, remote);
+      if (!remote || !hasAnyData(remote) || snapshotSignature(merged) !== snapshotSignature(remote)) {
+        return pushToSupabase(merged);
+      }
+    });
+  }
+
   function pullFromSupabase() {
     if (!hasSupabaseConfig()) return Promise.resolve(null);
     return global.PlatformSupabaseBridge.pull('platform');
@@ -331,6 +359,7 @@
       firebaseDb = db;
       firebaseBound = true;
       db.ref('platform/snapshot').on('value', function (snap) {
+        if (isSupabasePrimary()) return;
         var val = snap.val();
         if (!val) return;
         var merged = mergeSnapshots(buildSnapshotFromLocal(), val);
@@ -427,14 +456,48 @@
         pullFromStatic(),
         pullFirebaseInitial()
       ]).then(function (parts) {
-        var merged = localBefore;
-        parts.forEach(function (part) {
+        var sbSnap = parts[1];
+        var merged;
+        var applySource = 'merge';
+
+        if (isSupabasePrimary() && sbSnap) {
+          merged = mergeSnapshots(buildSnapshotFromLocal(), sbSnap);
+          applySource = 'supabase';
+        } else {
+          merged = localBefore;
+        }
+
+        if (jsonBinSnap && !isSupabasePrimary()) {
+          merged = mergeSnapshots(merged, jsonBinSnap);
+          applySource = 'jsonbin';
+        }
+
+        parts.slice(2).forEach(function (part) {
           if (part) merged = mergeSnapshots(merged, part);
         });
-        if (merged && hasAnyData(merged)) {
-          applySnapshot(merged, parts[0] ? 'jsonbin' : 'merge');
-          lastPullAt = Date.now();
+
+        if (jsonBinSnap && !isSupabasePrimary()) {
+          merged = mergeSnapshots(merged, jsonBinSnap);
         }
+
+        if (!isSupabasePrimary() && localBefore && hasAnyData(localBefore) &&
+            snapshotSignature(mergeSnapshots(localBefore, merged)) !== snapshotSignature(merged)) {
+          merged = mergeSnapshots(merged, localBefore);
+        }
+
+        if (merged && hasAnyData(merged)) {
+          applySnapshot(merged, applySource);
+          lastPullAt = Date.now();
+
+          if (isSupabasePrimary() && localBefore && hasAnyData(localBefore)) {
+            var upload = mergeSnapshots(sbSnap, localBefore);
+            if (!sbSnap || !hasAnyData(sbSnap) ||
+                snapshotSignature(upload) !== snapshotSignature(sbSnap || {})) {
+              global.setTimeout(function () { pushLocal(2); }, 250);
+            }
+          }
+        }
+
         if (getJsonBinConfig() && jsonBinSnap == null && hasAnyData(localBefore)) {
           global.setTimeout(function () { pushLocal(1); }, 200);
         }
@@ -515,12 +578,13 @@
       retries = retries == null ? 2 : retries;
 
       if (hasSupabaseConfig() && global.PlatformSupabaseBridge.isPrimary()) {
-        local.updatedAt = nowIso();
-        return pushToSupabase(local).then(function (ok) {
-          if (ok && broadcast) {
-            try { broadcast.postMessage({ type: 'platform-sync', at: Date.now() }); } catch (e) { /* noop */ }
-          }
-          return ok;
+        return prepareSnapshotForPush(local).then(function (payload) {
+          return pushToSupabase(payload).then(function (ok) {
+            if (ok && broadcast) {
+              try { broadcast.postMessage({ type: 'platform-sync', at: Date.now() }); } catch (e) { /* noop */ }
+            }
+            return ok;
+          });
         }).finally(function () {
           pushing = false;
         });
@@ -671,9 +735,7 @@
       }
       if (local) lastAppliedSig = snapshotSignature(buildSnapshotFromLocal() || local);
       return pullAll().then(function () {
-        if (local && hasAnyData(local) && !remoteFirebase) {
-          return pushLocal();
-        }
+        return promotePlatformToCloudIfNeeded();
       });
     }).then(function () {
       if (!isCloudConfigured()) return;
@@ -681,6 +743,10 @@
       global.addEventListener('firebase-connection', function () {
         if (hasFirebaseConfig()) hideSyncBannerIfOk();
       });
+      global.addEventListener('pageshow', function (ev) {
+        if (!ev.persisted) return;
+        pullAll();
+      }, { passive: true });
       global.addEventListener('visibilitychange', function () {
         if (global.document.visibilityState === 'visible') {
           probeCurrentServer().then(function () { pullAll(); });

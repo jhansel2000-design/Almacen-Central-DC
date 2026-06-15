@@ -100,6 +100,34 @@
     return !!(global.PlatformSupabaseBridge && global.PlatformSupabaseBridge.isEnabled());
   }
 
+  function isSupabasePrimary() {
+    return !!(hasSupabaseConfig() && global.PlatformSupabaseBridge.isPrimary && global.PlatformSupabaseBridge.isPrimary());
+  }
+
+  function prepareDataForPush(data) {
+    if (!isSupabasePrimary()) return Promise.resolve(data);
+    return pullFromSupabase().then(function (remote) {
+      var merged = mergeDespacho(data, remote);
+      merged.updatedAt = nowIso();
+      return merged;
+    }).catch(function () {
+      data.updatedAt = nowIso();
+      return data;
+    });
+  }
+
+  function promoteDespachoToCloudIfNeeded() {
+    if (!isSupabasePrimary()) return Promise.resolve();
+    var local = getLocalData();
+    if (!local || !hasLiveContent(local)) return Promise.resolve();
+    return pullFromSupabase().then(function (remote) {
+      var merged = mergeDespacho(local, remote);
+      if (!remote || !hasLiveContent(remote) || dataSignature(merged) !== dataSignature(remote)) {
+        return pushToSupabase(merged);
+      }
+    });
+  }
+
   function pullFromSupabase() {
     if (!hasSupabaseConfig()) return Promise.resolve(null);
     return global.PlatformSupabaseBridge.pull('despacho');
@@ -338,6 +366,7 @@
       if (firebaseBound) return true;
       firebaseBound = true;
       db.ref('despacho/snapshot').on('value', function (snap) {
+        if (isSupabasePrimary()) return;
         var val = snap.val();
         if (!val) return;
         var merged = mergeDespacho(getLocalData(), val);
@@ -421,14 +450,47 @@
         pullFromStatic(),
         pullFirebaseInitial()
       ]).then(function (parts) {
-        var merged = localBefore;
-        parts.forEach(function (part) {
+        var sbData = parts[1];
+        var merged;
+        var applySource = 'merge';
+
+        if (isSupabasePrimary() && sbData) {
+          merged = mergeDespacho(getLocalData(), sbData);
+          applySource = 'supabase';
+        } else {
+          merged = localBefore;
+        }
+
+        if (jsonBinData && !isSupabasePrimary()) {
+          merged = mergeDespacho(merged, jsonBinData);
+          applySource = 'jsonbin';
+        }
+
+        parts.slice(2).forEach(function (part) {
           if (part) merged = mergeDespacho(merged, part);
         });
+
+        if (jsonBinData && !isSupabasePrimary()) {
+          merged = mergeDespacho(merged, jsonBinData);
+        }
+
+        if (!isSupabasePrimary() && localBefore && hasLiveContent(localBefore)) {
+          var withLocal = mergeDespacho(localBefore, merged);
+          if (dataSignature(withLocal) !== dataSignature(merged)) merged = withLocal;
+        }
+
         if (merged) {
-          applyRemote(merged, parts[0] ? 'jsonbin' : 'merge');
+          applyRemote(merged, applySource);
           lastPullAt = Date.now();
           updateSyncUi();
+
+          if (isSupabasePrimary() && localBefore && hasLiveContent(localBefore)) {
+            var upload = mergeDespacho(sbData, localBefore);
+            if (!sbData || !hasLiveContent(sbData) || dataSignature(upload) !== dataSignature(sbData || {})) {
+              global.setTimeout(function () { pushLocal(2); }, 250);
+            }
+          }
+
           if (getJsonBinConfig() && jsonBinData == null && hasLiveContent(localBefore)) {
             global.setTimeout(function () { pushLocal(1); }, 200);
           }
@@ -520,17 +582,18 @@
       retries = retries == null ? 3 : retries;
 
       if (hasSupabaseConfig() && global.PlatformSupabaseBridge.isPrimary()) {
-        var sbPayload = Object.assign({}, local, { module: 'despacho', updatedAt: nowIso() });
-        return pushToSupabase(sbPayload).then(function (ok) {
-          if (ok) {
-            lastPushOkAt = Date.now();
-            if (broadcast) {
-              try { broadcast.postMessage({ type: 'despacho-sync', at: Date.now() }); } catch (e) { /* noop */ }
+        return prepareDataForPush(Object.assign({}, local, { module: 'despacho' })).then(function (sbPayload) {
+          return pushToSupabase(sbPayload).then(function (ok) {
+            if (ok) {
+              lastPushOkAt = Date.now();
+              if (broadcast) {
+                try { broadcast.postMessage({ type: 'despacho-sync', at: Date.now() }); } catch (e) { /* noop */ }
+              }
+              updateSyncUi();
+              return true;
             }
-            updateSyncUi();
-            return true;
-          }
-          return pushLocalFallback(retries);
+            return pushLocalFallback(retries);
+          });
         }).finally(function () {
           pushing = false;
         });
@@ -732,18 +795,16 @@
         return;
       }
       return pullAll().then(function () {
-        var after = getLocalData();
-        if (local && hasLiveContent(local) && !remoteFirebase) {
-          var remoteEmpty = !after || !hasLiveContent(after);
-          if (remoteEmpty || (local.updatedAt && after.updatedAt && local.updatedAt > after.updatedAt)) {
-            return pushLocal();
-          }
-        }
+        return promoteDespachoToCloudIfNeeded();
       });
     }).then(function () {
       if (!isCloudConfigured()) return;
       startPolling();
       updateSyncUi();
+      global.addEventListener('pageshow', function (ev) {
+        if (!ev.persisted) return;
+        pullAll();
+      }, { passive: true });
       global.addEventListener('visibilitychange', function () {
         if (global.document.visibilityState === 'visible') {
           probeCurrentServer().then(function () { pullAll(); });

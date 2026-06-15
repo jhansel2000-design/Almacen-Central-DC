@@ -127,6 +127,14 @@
     return !!(global.PlatformSupabaseBridge && global.PlatformSupabaseBridge.isEnabled());
   }
 
+  function isSupabasePrimary() {
+    return !!(hasSupabaseConfig() && global.PlatformSupabaseBridge.isPrimary && global.PlatformSupabaseBridge.isPrimary());
+  }
+
+  function isCloudAuthoritativeSource(source) {
+    return source === 'supabase' || source === 'supabase-realtime' || source === 'push-ok';
+  }
+
   function pullFromSupabase() {
     if (!hasSupabaseConfig()) return Promise.resolve(null);
     return global.PlatformSupabaseBridge.pull('averias');
@@ -140,7 +148,7 @@
   function initSupabase() {
     if (!hasSupabaseConfig() || !global.PlatformSupabaseBridge.subscribe) return;
     global.PlatformSupabaseBridge.subscribe('averias', function (remote) {
-      if (remote) applySnapshotToLocal(remote, true, 'supabase');
+      if (remote) applySnapshotToLocal(remote, false, 'supabase-realtime');
     });
   }
 
@@ -248,18 +256,20 @@
     snap = normalizeSnapshot(snap);
 
     if (hasSupabaseConfig() && global.PlatformSupabaseBridge.isPrimary()) {
-      return pushToSupabase(snap).then(function (ok) {
-        if (ok) {
-          noteLocalSave(snap);
-          try {
-            global.localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(snap));
-          } catch (e) { /* noop */ }
-          lastKnownRemoteSeq = snap.localSeq || 0;
-          broadcastSyncHint();
-          notifyUpdated('push-ok');
-          global.dispatchEvent(new CustomEvent('averias-sync-push', { detail: { ok: true } }));
-        }
-        return { ok: true, cloud: !!ok, pendingOk: false, snapOk: !!ok };
+      return prepareSnapshotForPush(snap).then(function (ready) {
+        return pushToSupabase(ready).then(function (ok) {
+          if (ok) {
+            noteLocalSave(ready);
+            try {
+              global.localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(ready));
+            } catch (e) { /* noop */ }
+            lastKnownRemoteSeq = ready.localSeq || 0;
+            broadcastSyncHint();
+            notifyUpdated('push-ok');
+            global.dispatchEvent(new CustomEvent('averias-sync-push', { detail: { ok: true } }));
+          }
+          return { ok: true, cloud: !!ok, pendingOk: false, snapOk: !!ok };
+        });
       });
     }
 
@@ -477,6 +487,18 @@
 
   function prepareSnapshotForPush(snap) {
     snap = pickBestPushSnapshot(snap);
+    if (hasSupabaseConfig() && global.PlatformSupabaseBridge.isPrimary()) {
+      return pullFromSupabase().then(function (remote) {
+        if (remote) snap = mergeAveriasSnapshots(remote, snap);
+        snap.localSeq = Math.max(snap.localSeq || 0, (remote && remote.localSeq) || 0, lastKnownRemoteSeq) + 1;
+        snap.updatedAt = new Date().toISOString();
+        return normalizeSnapshot(snap);
+      }).catch(function () {
+        snap.localSeq = Math.max(snap.localSeq || 0, lastKnownRemoteSeq) + 1;
+        snap.updatedAt = new Date().toISOString();
+        return normalizeSnapshot(snap);
+      });
+    }
     if (!hasFirebaseConfig() || hasJsonBinConfig()) {
       snap.localSeq = (snap.localSeq || 0) + 1;
       snap.updatedAt = new Date().toISOString();
@@ -537,7 +559,7 @@
   function applySnapshotToLocal(snap, silent, source) {
     if (!snap || !global.localStorage) return false;
     snap = normalizeSnapshot(snap);
-    if (inLocalEditGrace() && source !== 'push-ok' && source !== 'firebase-pending') {
+    if (inLocalEditGrace() && !isCloudAuthoritativeSource(source) && source !== 'firebase-pending') {
       var live = getEffectiveLocalSnapshot();
       if (live) {
         live = normalizeSnapshot(live);
@@ -554,7 +576,9 @@
       current = normalizeSnapshot(current);
       var localSeq = current.localSeq || 0;
       var remoteSeq = snap.localSeq || 0;
-      if (localSeq > remoteSeq) {
+      if (isCloudAuthoritativeSource(source)) {
+        snap = mergeAveriasSnapshots(snap, current);
+      } else if (localSeq > remoteSeq) {
         if (source === 'firebase') schedulePushFromLocal();
         snap = mergeAveriasSnapshots(snap, current);
       } else if (source !== 'jsonbin') {
@@ -563,7 +587,7 @@
         snap = mergeAveriasSnapshots(snap, current);
       }
     }
-    if (current && countSnapshotRecords(snap) < countSnapshotRecords(current)) {
+    if (!isCloudAuthoritativeSource(source) && current && countSnapshotRecords(snap) < countSnapshotRecords(current)) {
       snap = mergeAveriasSnapshots(snap, current);
     }
     var contentSig = contentSignature(snap);
@@ -586,7 +610,8 @@
       lastKnownRemoteSeq = Math.max(lastKnownRemoteSeq, remoteSeq);
       lastAppliedContentSig = contentSig;
       var uiRefreshed = false;
-      var fromCloud = source === 'firebase' || source === 'firebase-pending' || source === 'merge';
+      var fromCloud = source === 'firebase' || source === 'firebase-pending' || source === 'merge' ||
+        source === 'supabase' || source === 'supabase-realtime';
       if (global.PlatformAveriasUI && global.PlatformAveriasUI.applyRemoteSnapshot) {
         uiRefreshed = global.PlatformAveriasUI.applyRemoteSnapshot(snap, { silent: !!silent, fromCloud: fromCloud });
       }
@@ -820,44 +845,84 @@
     }).catch(function () { return null; });
   }
 
+  function promoteLocalToCloudIfNeeded() {
+    if (!isSupabasePrimary()) return Promise.resolve();
+    var local = getEffectiveLocalSnapshot();
+    if (!local || isEmptySnapshot(local)) return Promise.resolve();
+    return pullFromSupabase().then(function (remote) {
+      var merged = remote ? mergeAveriasSnapshots(remote, local) : local;
+      var remoteCount = remote ? countSnapshotRecords(remote) : 0;
+      var mergedCount = countSnapshotRecords(merged);
+      if (!remote || isEmptySnapshot(remote) || mergedCount > remoteCount ||
+          String(merged.updatedAt || '') !== String(remote.updatedAt || '')) {
+        return pushSnapshot(merged, 2, { wait: true });
+      }
+    });
+  }
+
   function pullAll() {
     if (pulling) return Promise.resolve(getLocalSnapshot());
     pulling = true;
     var localBefore = getEffectiveLocalSnapshot();
     return pullFromJsonBin().then(function (jsonBinSnap) {
-      var tasks = [pullFromSupabase(), pullFromServer(), pullFromCloudProxy(), pullFromStatic(), pullFromFirebaseOnce(), pullPendingRecords()];
-      return Promise.all(tasks).then(function (parts) {
-        var merged = getLocalSnapshot() || EMPTY;
-        if (jsonBinSnap) {
-          merged = mergeAveriasSnapshots(merged, jsonBinSnap);
-        }
-        parts.forEach(function (part) {
-          if (part) merged = mergeAveriasSnapshots(merged, part);
-        });
-        if (jsonBinSnap) {
-          merged = mergeAveriasSnapshots(merged, jsonBinSnap);
-        }
-        if (merged) {
-          var prevContentSig = contentSignature(getLocalSnapshot() || EMPTY);
-          if (localBefore && countSnapshotRecords(localBefore) > countSnapshotRecords(merged)) {
+      return pullFromSupabase().then(function (sbSnap) {
+        var tasks = [Promise.resolve(sbSnap), pullFromServer(), pullFromCloudProxy(), pullFromStatic(), pullFromFirebaseOnce(), pullPendingRecords()];
+        return Promise.all(tasks).then(function (parts) {
+          sbSnap = parts[0];
+          var merged;
+          var applySource = 'merge';
+
+          if (isSupabasePrimary() && sbSnap) {
+            merged = mergeAveriasSnapshots(sbSnap, getLocalSnapshot() || EMPTY);
+            applySource = 'supabase';
+          } else {
+            merged = getLocalSnapshot() || EMPTY;
+          }
+
+          if (jsonBinSnap) {
+            merged = mergeAveriasSnapshots(merged, jsonBinSnap);
+            if (!isSupabasePrimary()) applySource = 'jsonbin';
+          }
+
+          parts.slice(1).forEach(function (part) {
+            if (part) merged = mergeAveriasSnapshots(merged, part);
+          });
+
+          if (jsonBinSnap && !isSupabasePrimary()) {
+            merged = mergeAveriasSnapshots(merged, jsonBinSnap);
+          }
+
+          if (!isSupabasePrimary() && localBefore && countSnapshotRecords(localBefore) > countSnapshotRecords(merged)) {
             merged = mergeAveriasSnapshots(merged, localBefore);
           }
-          var applied = applySnapshotToLocal(merged, false, jsonBinSnap ? 'jsonbin' : 'merge');
-          if (applied && contentSignature(merged) !== prevContentSig) {
-            schedulePullBurst();
-          }
-          lastPullAt = Date.now();
-          updateSyncStatusUi();
-          if (hasJsonBinConfig()) {
-            var remoteEmpty = !jsonBinSnap || isEmptySnapshot(jsonBinSnap);
-            var localHas = localBefore && !isEmptySnapshot(localBefore);
-            if (remoteEmpty && localHas) {
-              var upload = mergeAveriasSnapshots(localBefore, merged);
-              global.setTimeout(function () { pushSnapshot(upload, 2); }, 150);
+
+          if (merged) {
+            var prevContentSig = contentSignature(getLocalSnapshot() || EMPTY);
+            var applied = applySnapshotToLocal(merged, false, applySource);
+            if (applied && contentSignature(merged) !== prevContentSig) {
+              schedulePullBurst();
+            }
+            lastPullAt = Date.now();
+            updateSyncStatusUi();
+
+            if (isSupabasePrimary() && sbSnap && localBefore &&
+                countSnapshotRecords(mergeAveriasSnapshots(sbSnap, localBefore)) > countSnapshotRecords(sbSnap)) {
+              global.setTimeout(function () {
+                pushSnapshot(mergeAveriasSnapshots(sbSnap, localBefore), 2);
+              }, 250);
+            }
+
+            if (hasJsonBinConfig()) {
+              var remoteEmpty = !jsonBinSnap || isEmptySnapshot(jsonBinSnap);
+              var localHas = localBefore && !isEmptySnapshot(localBefore);
+              if (remoteEmpty && localHas) {
+                var upload = mergeAveriasSnapshots(localBefore, merged);
+                global.setTimeout(function () { pushSnapshot(upload, 2); }, 150);
+              }
             }
           }
-        }
-        return merged;
+          return merged;
+        });
       });
     }).finally(function () {
       pulling = false;
@@ -1342,9 +1407,15 @@
       }
       return pullAll();
     }).then(function () {
+      return promoteLocalToCloudIfNeeded();
+    }).then(function () {
       startPolling();
       startSSE();
       startSiteConfigRefresh();
+      global.addEventListener('pageshow', function (ev) {
+        if (!ev.persisted) return;
+        pullAll();
+      }, { passive: true });
       global.addEventListener('visibilitychange', function () {
         if (document.visibilityState === 'visible') {
           pullAll();
