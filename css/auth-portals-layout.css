@@ -129,7 +129,7 @@ body.auth-locked:has(.auth-layout--hub.auth-layout--portals-only) .auth-video-sc
 .auth-layout--hub.auth-layout--portals-only .auth-portal-icon--inventario {
   background:
     linear-gradient(135deg, rgba(0, 0, 0, 0.28), rgba(197, 165, 114, 0.22)),
-    url('../assets/img/login-inventario-poster.svg') center 50% / cover no-repeat;
+    url('../assets/img/login-inventario-poster.jpg') center 50% / cover no-repeat;
   border-color: rgba(197, 165, 114, 0.38);
 }
 

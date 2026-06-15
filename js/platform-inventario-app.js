@@ -254,7 +254,7 @@
     if (state.step === 5) saveEntry();
     else if (state.step === 3) { state.fields.mat = ''; advanceStep(); toast('Matrícula omitida'); }
     else if (state.step === 4) { state.fields.exp = ''; advanceStep(); toast('Vencimiento omitido'); }
-    else toast('Escanee con el lector Zebra');
+    else toast('Escanee con el lector RF');
   }
 
   function processScan(code) {

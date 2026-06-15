@@ -10,35 +10,37 @@
   <meta http-equiv="X-Content-Type-Options" content="nosniff">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://challenges.cloudflare.com; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' http://localhost:* http://127.0.0.1:* http://192.168.0.0/16 http://10.0.0.0/8 https://*.supabase.co wss://*.supabase.co https://challenges.cloudflare.com; img-src 'self' data:; media-src 'self'; frame-src https://challenges.cloudflare.com; object-src 'none'; base-uri 'self'; form-action 'self'">
   <title>Inventario RF — Almacén Central DC</title>
+  <link rel="preload" href="assets/img/login-inventario-poster.jpg" as="image">
   <script src="js/relay-bootstrap.js?v=1"></script>
   <link rel="icon" type="image/png" href="assets/img/jc-logo-64.png?v=4">
   <link rel="stylesheet" href="css/platform.css?v=32">
+  <link rel="stylesheet" href="css/inventario-auth.css?v=1">
   <link rel="stylesheet" href="css/auth-cinematic.css?v=18">
-  <link rel="stylesheet" href="css/auth-portals-layout.css?v=10">
+  <link rel="stylesheet" href="css/auth-portals-layout.css?v=11">
   <link rel="stylesheet" href="css/dc-brand.css?v=9">
-  <link rel="stylesheet" href="css/inventario-portal.css?v=2">
+  <link rel="stylesheet" href="css/inventario-portal.css?v=3">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700&display=swap" rel="stylesheet">
 </head>
-<body class="auth-locked">
+<body class="auth-locked executive-ui">
   <noscript><p class="noscript-msg">Activa JavaScript para usar Inventario RF.</p></noscript>
 
   <div class="auth-overlay inv-auth-overlay" id="invAuthOverlay" role="dialog" aria-labelledby="invAuthTitle">
-    <div class="auth-video-wrap" aria-hidden="true">
-      <div class="auth-video-scrim"></div>
+    <div class="auth-video-wrap inv-auth-bg-wrap" aria-hidden="true">
+      <div class="auth-video-scrim inv-auth-scrim"></div>
     </div>
     <div class="auth-layout">
-      <aside class="auth-hero">
+      <aside class="auth-hero inv-auth-hero">
         <div class="auth-hero-panel">
           <header class="auth-hero-head">
             <img class="jc-logo-img jc-logo-img--hero auth-hero-logo-img" src="assets/img/jc-logo.png?v=4" alt="JC" width="52" height="52">
             <div class="auth-hero-head-text">
               <p class="auth-welcome-line">Portal independiente</p>
-              <h1 class="auth-brand-title">Inventario RF · DC</h1>
+              <h1 class="inv-auth-brand-title">Inventario RF · DC</h1>
             </div>
           </header>
-          <p class="inv-auth-overlay auth-hero-desc">Misma app de conteo de la terminal Zebra (pickup, rack, piso), ahora en el navegador con datos en <strong>Supabase</strong> en tiempo real.</p>
+          <p class="inv-auth-overlay auth-hero-desc">Conteo de inventario en almacén (pickup, rack, piso), en el navegador con datos en <strong>Supabase</strong> en tiempo real.</p>
           <div class="inv-auth-steps" aria-label="Módulos">
             <span class="inv-auth-step">Pickup</span>
             <span class="inv-auth-step">Rack</span>
@@ -46,12 +48,12 @@
             <span class="inv-auth-step">Registros</span>
             <span class="inv-auth-step">CSV</span>
           </div>
-          <a href="index.html" class="av-auth-back" style="margin-top:1rem;display:inline-block">← Volver al centro de mando WMS</a>
+          <a href="index.html" class="inv-auth-back">← Volver al centro de mando WMS</a>
         </div>
       </aside>
       <div class="auth-stack">
-        <div class="auth-glass-card">
-          <div class="inv-phone" style="max-width:100%;box-shadow:none;border-radius:12px">
+        <div class="auth-glass-card inv-auth-glass">
+          <div class="inv-phone">
             <div class="inv-header">
               <div class="inv-header-top">
                 <div class="inv-brand">Almacén Central</div>
@@ -85,7 +87,7 @@
                   <h3 style="margin:0 0 12px;color:#37474F">Acceso</h3>
                   <div id="invPanelCount">
                     <input class="inv-field" id="invCode" type="number" placeholder="Código de usuario" inputmode="numeric">
-                    <p style="font-size:12px;color:#A68B4B;font-weight:600;margin:8px 0 0">Escanee su código con el lector Zebra</p>
+                    <p style="font-size:12px;color:#A68B4B;font-weight:600;margin:8px 0 0">Escanee su código con el lector RF</p>
                   </div>
                   <div id="invPanelAdmin" hidden>
                     <input class="inv-field" id="invAdmUser" value="admin">
@@ -278,6 +280,6 @@
   <script src="js/platform-supabase-bridge.js?v=1"></script>
   <script src="js/platform-inventario-core.js?v=1"></script>
   <script src="js/platform-inventario-sync.js?v=2"></script>
-  <script src="js/platform-inventario-app.js?v=2"></script>
+  <script src="js/platform-inventario-app.js?v=3"></script>
 </body>
 </html>
