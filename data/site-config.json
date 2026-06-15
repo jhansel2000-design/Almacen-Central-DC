@@ -1,6 +1,6 @@
 ﻿{
   "version": 1,
-  "updatedAt": "2026-06-12T22:00:00.000Z",
+  "updatedAt": "2026-06-15T19:40:00.000Z",
   "publicSyncBaseUrl": "",
   "githubPagesDataUrl": "https://jhansel2000-design.github.io/Almacen-Central-DC/data/averias.json",
   "githubPagesDespachoDataUrl": "https://jhansel2000-design.github.io/Almacen-Central-DC/data/despacho.json",
@@ -38,13 +38,13 @@
     "keyType": "master"
   },
   "supabase": {
-    "enabled": false,
+    "enabled": true,
     "primary": true,
-    "url": "",
-    "anonKey": "",
-    "help": "Supabase conecta TODA la web (WMS, averías, despacho, inventario). Ejecutar supabase/schema.sql y pegar URL + anon key."
+    "url": "https://pjbzbwckcbhmkeidsqjz.supabase.co",
+    "anonKey": "sb_publishable_TvhOzL5kopTNty1xbNLZ6w_uKnMKJaC",
+    "help": "Supabase conecta TODA la web (WMS, averías, despacho, inventario)."
   },
-  "help": "Sync Firebase en vivo (<1s). Todos ven lo mismo en GitHub Pages. Ctrl+F5 tras cambios.",
+  "help": "Sync Supabase en vivo. Todos ven lo mismo en GitHub Pages. Ctrl+F5 tras cambios.",
   "security": {
     "turnstileSiteKey": "0x4AAAAAADhftTLJSQ0WxVnuiLp9UNRpOMc",
     "humanVerifyMinMs": 1200,
