@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="mobile-web-app-capable" content="yes">
-  <meta name="description" content="Portal Inventario RF — Conteo pickup, rack y piso con Supabase.">
+  <meta name="description" content="Portal Inventario RF — Conteo pickup, rack y piso en tiempo real.">
   <meta name="theme-color" content="#15202B">
   <meta name="referrer" content="strict-origin-when-cross-origin">
   <meta http-equiv="X-Content-Type-Options" content="nosniff">
@@ -40,7 +40,7 @@
               <h1 class="inv-auth-brand-title">Inventario RF · DC</h1>
             </div>
           </header>
-          <p class="inv-auth-overlay auth-hero-desc">Conteo de inventario en almacén (pickup, rack, piso), en el navegador con datos en <strong>Supabase</strong> en tiempo real.</p>
+          <p class="inv-auth-overlay auth-hero-desc">Conteo de inventario en almacén (pickup, rack, piso), en el navegador con datos <strong>en tiempo real</strong>.</p>
           <div class="inv-auth-steps" aria-label="Módulos">
             <span class="inv-auth-step">Pickup</span>
             <span class="inv-auth-step">Rack</span>
@@ -71,7 +71,7 @@
                   <div class="inv-role admin" id="invRoleAdmin" role="button" tabindex="0">
                     <span class="badge">ADMIN</span>
                     <h3 style="margin:8px 0 4px;font-size:15px">Administrador</h3>
-                    <p style="margin:0;font-size:11px;opacity:.9">Registros y Supabase</p>
+                    <p style="margin:0;font-size:11px;opacity:.9">Registros y sincronización</p>
                   </div>
                   <div class="inv-role count" id="invRoleCount" role="button" tabindex="0">
                     <span class="badge">CONTEO</span>
@@ -109,7 +109,7 @@
   </div>
 
   <div class="inv-app-shell is-hidden" id="invApp" hidden>
-    <span class="inv-cloud-badge" id="invCloudBadge">○ Supabase</span>
+    <span class="inv-cloud-badge" id="invCloudBadge">○ Sin conexión</span>
 
     <!-- Modo conteo -->
     <div class="inv-phone" id="invViewMode" hidden>
@@ -241,11 +241,11 @@
         <div class="inv-sync-status ok" id="invSyncStatus">Conectando…</div>
       </div>
       <div class="inv-body" style="padding:0">
-        <div class="inv-admin-row" data-inv-nav="records"><span style="font-size:20px">📋</span><div><strong>Ver registros</strong><span>Lista en tiempo real desde Supabase</span></div></div>
+        <div class="inv-admin-row" data-inv-nav="records"><span style="font-size:20px">📋</span><div><strong>Ver registros</strong><span>Lista en tiempo real en la nube</span></div></div>
         <div class="inv-admin-row" data-inv-action="export"><span style="font-size:20px">📁</span><div><strong>Exportar CSV</strong><span>OneDrive / Excel</span></div></div>
-        <div class="inv-admin-row" id="invBtnTestSb"><span style="font-size:20px">🔗</span><div><strong>Probar Supabase</strong><span>Verificar conexión en vivo</span></div></div>
-        <div class="inv-admin-row" id="invBtnSetupSb"><span style="font-size:20px">⚙️</span><div><strong>Configurar Supabase</strong><span>URL y anon key (local)</span></div></div>
-        <div class="inv-admin-row" data-inv-action="delete-all"><span style="font-size:20px">🗑️</span><div><strong>Borrar registros</strong><span>Elimina todos en Supabase</span></div></div>
+        <div class="inv-admin-row" id="invBtnTestSb"><span style="font-size:20px">🔗</span><div><strong>Probar conexión</strong><span>Verificar enlace en vivo</span></div></div>
+        <div class="inv-admin-row" id="invBtnSetupSb"><span style="font-size:20px">⚙️</span><div><strong>Configurar sincronización</strong><span>URL y clave (solo este equipo)</span></div></div>
+        <div class="inv-admin-row" data-inv-action="delete-all"><span style="font-size:20px">🗑️</span><div><strong>Borrar registros</strong><span>Elimina todos en la nube</span></div></div>
         <div class="inv-admin-row" data-inv-nav="count"><span style="font-size:20px">📦</span><div><strong>Ir a conteo</strong><span>Modo contador</span></div></div>
       </div>
       <nav class="inv-nav">
@@ -258,7 +258,7 @@
     <div class="inv-phone" id="invViewRecords" hidden>
       <div class="inv-header">
         <h1 style="margin:0;font-size:18px">Todos los registros</h1>
-        <p class="inv-instr">Sincronizado con Supabase</p>
+        <p class="inv-instr">Sincronizado en la nube</p>
       </div>
       <div class="inv-body" style="padding-top:8px">
         <button type="button" class="inv-btn inv-btn-primary" data-inv-action="export">📁 Exportar CSV</button>
@@ -280,6 +280,6 @@
   <script src="js/platform-supabase-bridge.js?v=1"></script>
   <script src="js/platform-inventario-core.js?v=1"></script>
   <script src="js/platform-inventario-sync.js?v=3"></script>
-  <script src="js/platform-inventario-app.js?v=4"></script>
+  <script src="js/platform-inventario-app.js?v=5"></script>
 </body>
 </html>

@@ -42,9 +42,9 @@
     "primary": true,
     "url": "https://pjbzbwckcbhmkeidsqjz.supabase.co",
     "anonKey": "sb_publishable_TvhOzL5kopTNty1xbNLZ6w_uKnMKJaC",
-    "help": "Supabase conecta TODA la web (WMS, averías, despacho, inventario)."
+    "help": "Sincronización en la nube para WMS, averías, despacho e inventario."
   },
-  "help": "Sync Supabase en vivo. Todos ven lo mismo en GitHub Pages. Ctrl+F5 tras cambios.",
+  "help": "Sync en vivo. Todos ven lo mismo en GitHub Pages. Ctrl+F5 tras cambios.",
   "security": {
     "turnstileSiteKey": "0x4AAAAAADhftTLJSQ0WxVnuiLp9UNRpOMc",
     "humanVerifyMinMs": 1200,

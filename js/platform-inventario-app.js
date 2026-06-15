@@ -60,7 +60,7 @@
     var el = $('invCloudBadge');
     if (!el) return;
     var online = SYNC && SYNC.isOnline && SYNC.isOnline();
-    el.textContent = online ? '● SUPABASE' : '○ Sin conexión';
+    el.textContent = online ? '● EN VIVO' : '○ Sin conexión';
     el.className = 'inv-cloud-badge' + (online ? ' inv-cloud-badge--live' : '');
   }
 
@@ -142,7 +142,7 @@
       else setView('mode');
       toast('Bienvenido, ' + user.displayName, 'ok');
     }).catch(function () {
-      toast('Error al validar acceso. Revise la conexión a Supabase.', 'err');
+      toast('Error al validar acceso. Revise la conexión en vivo.', 'err');
     });
   }
 
@@ -356,7 +356,7 @@
       countNumber: state.countRound
     }).then(function (res) {
       if (!res.ok) { toast('Error al guardar', 'err'); return; }
-      var msg = res.offline ? 'Guardado local (sin Supabase)' : 'Guardado en Supabase';
+      var msg = res.offline ? 'Guardado local (sin conexión)' : 'Guardado en la nube';
       toast(msg + ' · ' + f.qty + ' ' + unit, 'ok');
       f.prod = '';
       f.mat = '';
@@ -368,7 +368,7 @@
       applyCountStep();
       renderAdminStats();
     }).catch(function () {
-      toast('Error al guardar en Supabase', 'err');
+      toast('Error al guardar en la nube', 'err');
     });
   }
 
@@ -387,7 +387,7 @@
       }
       var st = $('invSyncStatus');
       if (st) {
-        st.textContent = SYNC.isOnline() ? 'Conectado a Supabase' : 'Modo local — configure Supabase';
+        st.textContent = SYNC.isOnline() ? 'Conectado en vivo' : 'Modo local — configure sincronización';
         st.className = 'inv-sync-status' + (SYNC.isOnline() ? ' ok' : ' warn');
       }
     });
@@ -440,7 +440,7 @@
   }
 
   function confirmDeleteAll() {
-    if (!global.confirm('¿Eliminar TODOS los registros de Supabase?')) return;
+    if (!global.confirm('¿Eliminar TODOS los registros de la nube?')) return;
     SYNC.deleteAllEntries().then(function () {
       toast('Registros eliminados', 'ok');
       renderRecords();
@@ -451,7 +451,7 @@
   function testSupabase() {
     if (!SB) return;
     SB.testConnection().then(function (ok) {
-      toast(ok ? 'Supabase conectado' : 'No se pudo conectar a Supabase', ok ? 'ok' : 'err');
+      toast(ok ? 'Conexión en vivo activa' : 'No se pudo conectar al servidor', ok ? 'ok' : 'err');
       updateCloudBadge();
     });
   }
@@ -459,9 +459,9 @@
   function showSupabaseSetup() {
     var cfg = SB && SB.getConfig && SB.getConfig();
     var sb = cfg && cfg.supabase;
-    var url = global.prompt('URL de Supabase (https://xxx.supabase.co)', (sb && sb.url) || '');
+    var url = global.prompt('URL del servidor (https://xxx...)', (sb && sb.url) || '');
     if (url == null) return;
-    var key = global.prompt('Anon Key (public)', (sb && sb.anonKey) || '');
+    var key = global.prompt('Clave pública de acceso', (sb && sb.anonKey) || '');
     if (key == null) return;
     SB.saveOverride(url, key);
     toast('Recargue la página (Ctrl+F5)', 'ok');

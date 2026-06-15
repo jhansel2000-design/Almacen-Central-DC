@@ -34,7 +34,7 @@
     var viaSupabase = global.PlatformSupabase && global.PlatformSupabase.isConnected && global.PlatformSupabase.isConnected();
     el.title = on
       ? (viaSupabase
-        ? 'Supabase en vivo — todos los portales comparten los mismos datos'
+        ? 'Conexión en vivo — todos los portales comparten los mismos datos'
         : 'Sync en tiempo real activa')
       : '';
     if (viaSupabase) {
