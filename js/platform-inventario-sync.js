@@ -6,6 +6,12 @@
 
   var CACHE_USERS = 'inv_dc_users_cache';
   var CACHE_ENTRIES = 'inv_dc_entries_cache';
+  var DEFAULT_USERS = [
+    { employeeId: '51192', displayName: 'Jansel Castro', role: 'COUNT', active: true, adminPin: '' },
+    { employeeId: '51963', displayName: 'Luis José Rodríguez Ruíz', role: 'COUNT', active: true, adminPin: '' },
+    { employeeId: '12345', displayName: 'María López', role: 'COUNT', active: true, adminPin: '' },
+    { employeeId: 'admin', displayName: 'Administrador', role: 'ADMIN', active: true, adminPin: '1234' }
+  ];
   var CORE = null;
   var realtimeChannel = null;
   var listeners = [];
@@ -80,10 +86,19 @@
     };
   }
 
+  function normEmployeeId(id) {
+    return String(id == null ? '' : id).trim();
+  }
+
+  function defaultUsers() {
+    return DEFAULT_USERS.slice();
+  }
+
   function fetchUsers() {
     var client = sb();
     if (!client) {
-      return Promise.resolve(readCache(CACHE_USERS, []));
+      var cached = readCache(CACHE_USERS, null);
+      return Promise.resolve(cached && cached.length ? cached : defaultUsers());
     }
     return client.from('inv_users')
       .select('employee_id, display_name, role, active, admin_pin')
@@ -95,23 +110,27 @@
         return list;
       })
       .catch(function () {
-        return readCache(CACHE_USERS, []);
+        var cached = readCache(CACHE_USERS, null);
+        return cached && cached.length ? cached : defaultUsers();
       });
   }
 
   function verifyLogin(role, code, pin) {
     return fetchUsers().then(function (users) {
+      if (!users || !users.length) return null;
       if (role === 'admin') {
+        var adminCode = normEmployeeId(code).toLowerCase();
         var admin = users.find(function (u) {
-          return u.role === 'ADMIN' && String(u.employeeId).toLowerCase() === String(code || '').trim().toLowerCase();
+          return u.role === 'ADMIN' && normEmployeeId(u.employeeId).toLowerCase() === adminCode;
         });
         if (!admin) return null;
         if (String(admin.adminPin || '') !== String(pin || '')) return null;
         return admin;
       }
-      var id = String(code || '').trim();
+      var id = normEmployeeId(code);
+      if (!id) return null;
       var counter = users.find(function (u) {
-        return u.role === 'COUNT' && u.employeeId === id && u.active;
+        return u.role === 'COUNT' && normEmployeeId(u.employeeId) === id && u.active;
       });
       return counter || null;
     });

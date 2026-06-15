@@ -121,7 +121,15 @@
     }
     SYNC.verifyLogin(state.role, code, pin).then(function (user) {
       if (!user) {
-        toast(state.role === 'admin' ? 'Usuario o PIN incorrecto' : 'Código no autorizado', 'err');
+        var offline = SYNC && SYNC.isOnline && !SYNC.isOnline();
+        toast(
+          state.role === 'admin'
+            ? 'Usuario o PIN incorrecto'
+            : (offline
+              ? 'Código no autorizado (modo local). Pruebe 51192, 51963 o 12345'
+              : 'Código no autorizado'),
+          'err'
+        );
         return;
       }
       state.user = user;
@@ -133,6 +141,8 @@
       if (user.role === 'ADMIN') setView('admin');
       else setView('mode');
       toast('Bienvenido, ' + user.displayName, 'ok');
+    }).catch(function () {
+      toast('Error al validar acceso. Revise la conexión a Supabase.', 'err');
     });
   }
 
@@ -510,6 +520,19 @@
     $('invBtnContinue') && $('invBtnContinue').addEventListener('click', goLoginStep2);
     $('invBtnBackProfile') && $('invBtnBackProfile').addEventListener('click', goLoginStep1);
     $('invBtnEnter') && $('invBtnEnter').addEventListener('click', doLogin);
+    function bindLoginEnter(id) {
+      var el = $(id);
+      if (!el) return;
+      el.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          doLogin();
+        }
+      });
+    }
+    bindLoginEnter('invCode');
+    bindLoginEnter('invAdmUser');
+    bindLoginEnter('invAdmPin');
     function bindAll(sel, fn) {
       document.querySelectorAll(sel).forEach(function (el) {
         el.addEventListener('click', fn);
