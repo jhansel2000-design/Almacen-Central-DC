@@ -592,7 +592,7 @@
       btn.textContent = 'Cómo activar';
       btn.addEventListener('click', function () {
         if (global.PlatformToast) {
-          global.PlatformToast.info('Sync en vivo vía Firebase — misma URL en todos los dispositivos. Ctrl+F5 si no ve cambios.', 10000);
+          global.PlatformToast.info('Sync en vivo — misma URL en todos los dispositivos. Ctrl+F5 si no ve cambios.', 10000);
         }
       });
       existing.appendChild(btn);
@@ -606,7 +606,7 @@
     bar.innerHTML = '<span>' + text + '</span> <button type="button" class="web-cloud-sync-banner__btn">Cómo activar</button>';
     bar.querySelector('button').addEventListener('click', function () {
       if (global.PlatformToast) {
-        global.PlatformToast.info('Sync en vivo vía Firebase — misma URL en todos los dispositivos. Ctrl+F5 si no ve cambios.', 10000);
+        global.PlatformToast.info('Sync en vivo — misma URL en todos los dispositivos. Ctrl+F5 si no ve cambios.', 10000);
       }
     });
     global.document.body.appendChild(bar);
@@ -628,7 +628,7 @@
         clearTimeout(hookLocalStorage.pushTimer);
         hookLocalStorage.pushTimer = global.setTimeout(function () {
           pushLocal();
-        }, hasFirebaseConfig() ? 20 : 150);
+        }, (hasSupabaseConfig() && global.PlatformSupabaseBridge.isPrimary()) || hasFirebaseConfig() ? 20 : 150);
       }
     };
     global.localStorage.__webCloudHooked = true;

@@ -486,7 +486,7 @@
                             global.PlatformAveriasCloudSync.isCloudConfigured();
                         if (result && !result.cloud && cloud) {
                             if (global.PlatformToast) {
-                                global.PlatformToast.error('No se publicó en la nube. Ejecute CONFIGURAR-FIREBASE-REGLAS.bat y publique las reglas.', 8000);
+                                global.PlatformToast.error('No se publicó en la nube. Compruebe conexión y recargue (Ctrl+F5).', 8000);
                             }
                         } else if (result && result.cloud && global.PlatformToast) {
                             global.PlatformToast.success('Publicado — todos los usuarios lo ven en vivo', 2500);

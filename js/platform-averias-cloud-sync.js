@@ -246,6 +246,23 @@
     snap.localSeq = Math.max(snap.localSeq || 0, lastKnownRemoteSeq) + 1;
     snap.updatedAt = new Date().toISOString();
     snap = normalizeSnapshot(snap);
+
+    if (hasSupabaseConfig() && global.PlatformSupabaseBridge.isPrimary()) {
+      return pushToSupabase(snap).then(function (ok) {
+        if (ok) {
+          noteLocalSave(snap);
+          try {
+            global.localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(snap));
+          } catch (e) { /* noop */ }
+          lastKnownRemoteSeq = snap.localSeq || 0;
+          broadcastSyncHint();
+          notifyUpdated('push-ok');
+          global.dispatchEvent(new CustomEvent('averias-sync-push', { detail: { ok: true } }));
+        }
+        return { ok: true, cloud: !!ok, pendingOk: false, snapOk: !!ok };
+      });
+    }
+
     var pendingJob = liveRecord && liveRecord.module && liveRecord.record
       ? pushPendingRecord(liveRecord.module, liveRecord.record)
       : Promise.resolve({ ok: false, skipped: true });
@@ -1197,8 +1214,8 @@
     if (btn) {
       var online = isCloudConfigured();
       btn.title = online
-        ? 'En vivo (Firebase) — actualiza solo (~' + ((siteConfig && siteConfig.pollSeconds) || 1) + 's). No necesita JSONBin.'
-        : 'Pulse para sincronizar — en GitHub Pages Firebase ya está activo';
+        ? 'En vivo — todos los dispositivos comparten datos (~' + ((siteConfig && siteConfig.pollSeconds) || 1) + 's)'
+        : 'Pulse para sincronizar con la nube';
       btn.classList.toggle('cloud-active', online);
     }
     var banner = global.document.getElementById('avSyncBanner');
