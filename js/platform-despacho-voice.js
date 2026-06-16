@@ -1,6 +1,6 @@
 /**
  * Alertas de voz — nuevo IDC en seguimiento validador
- * Frase natural, sin repetir etiquetas (IDC, jaula, cliente).
+ * No lee el código IDC; anuncia cliente y jaula.
  */
 (function (global) {
   'use strict';
@@ -25,34 +25,15 @@
     return !val || val === '—' || val === '-' || /^sin\s+(cliente|nombre)/i.test(val);
   }
 
-  /** Códigos alfanuméricos: separar para que no los lea como número grande. */
-  function formatCodeForSpeech(code) {
-    code = String(code || '').trim();
-    if (!code) return '';
-    if (/^[A-Za-z0-9][A-Za-z0-9\-\/\.\s]*$/.test(code)) {
-      return code
-        .replace(/[\-\/\.]/g, ' ')
-        .replace(/\s+/g, ' ')
-        .split('')
-        .filter(function (c) { return /\S/.test(c); })
-        .join(' ');
-    }
-    return code.replace(/\s+/g, ' ').trim();
-  }
-
-  function joinNatural(parts) {
-    if (!parts.length) return '';
-    if (parts.length === 1) return parts[0];
-    if (parts.length === 2) return parts[0] + ' y ' + parts[1];
-    return parts.slice(0, -1).join(', ') + ' y ' + parts[parts.length - 1];
+  function formatJaulaForSpeech(jaula) {
+    jaula = String(jaula || '').trim();
+    if (!jaula) return '';
+    return jaula.replace(/\s+/g, ' ').trim();
   }
 
   function buildNuevoIdcMessage(pedido) {
     if (!pedido) return '';
 
-    var idc = stripLeadingLabel(pedido.idc, [
-      'idc', 'i d c', 'i.d.c', 'pedido', 'código', 'codigo', 'code', 'id pedido', 'id del pedido'
-    ]);
     var jaula = stripLeadingLabel(pedido.jaula, [
       'jaula', 'pasillo', 'referencia', 'ref', 'rack', 'ubicación', 'ubicacion'
     ]);
@@ -60,18 +41,13 @@
       'cliente', 'clienta', 'nombre del cliente', 'nombre cliente', 'nombre'
     ]);
 
-    idc = formatCodeForSpeech(idc);
-    jaula = formatCodeForSpeech(jaula);
+    jaula = formatJaulaForSpeech(jaula);
 
-    var details = [];
-    if (idc) details.push('código ' + idc);
-    if (jaula) details.push('jaula ' + jaula);
-    if (!isEmptyCliente(cliente)) details.push('cliente ' + cliente);
+    var parts = ['Nuevo IDC activo'];
+    if (!isEmptyCliente(cliente)) parts.push('cliente ' + cliente);
+    if (jaula) parts.push('jaula ' + jaula);
 
-    if (!details.length) return '';
-
-    var body = joinNatural(details);
-    return 'Nuevo pedido en validador, ' + body + '.';
+    return parts.join(', ') + '.';
   }
 
   function speak(message, opts) {
