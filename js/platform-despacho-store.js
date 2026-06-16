@@ -397,6 +397,22 @@
     return { ok: true, data: data, pedido: pedido };
   }
 
+  function pedidoTimestamp(p) {
+    return Date.parse(p && (p.createdAt || p.updatedAt)) || 0;
+  }
+
+  /** Validador: más antiguos primero (arriba). Preparador u otros: jaula + IDC. */
+  function sortPedidosValidador(pedidos) {
+    return (pedidos || []).slice().sort(function (a, b) {
+      var ta = pedidoTimestamp(a);
+      var tb = pedidoTimestamp(b);
+      if (ta !== tb) return ta - tb;
+      var ja = String(a.jaula || '').localeCompare(String(b.jaula || ''), 'es', { numeric: true });
+      if (ja !== 0) return ja;
+      return String(a.idc || '').localeCompare(String(b.idc || ''), 'es', { numeric: true });
+    });
+  }
+
   function filterPedidos(pedidos, opts) {
     opts = opts || {};
     var list = (pedidos || []).slice();
@@ -438,6 +454,9 @@
           p.visibleValidador !== false &&
           VALIDADOR_ESTADOS.indexOf(p.estado) >= 0;
       });
+    }
+    if (opts.soloValidador || opts.visiblesValidador) {
+      return sortPedidosValidador(list);
     }
     list.sort(function (a, b) {
       return (b.updatedAt || '').localeCompare(a.updatedAt || '');
@@ -692,7 +711,7 @@
   }
 
   function getPedidosVisiblesValidador(pedidos) {
-    return getPedidosActivos((pedidos || []).filter(function (p) {
+    return sortPedidosValidador((pedidos || []).filter(function (p) {
       return p.seguimientoValidador === true &&
         p.visibleValidador !== false &&
         VALIDADOR_ESTADOS.indexOf(p.estado) >= 0;
