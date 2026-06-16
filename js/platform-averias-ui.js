@@ -311,13 +311,23 @@
         };
 
         const despachoAuditCheckItems = [
-            { key: 'cantidadesOk', label: '1. ¿Las cantidades físicas coinciden con la factura?' },
-            { key: 'fechaCortaOk', label: '2. ¿El producto tiene fecha corta?' },
-            { key: 'averiadosPolvoOk', label: '3. ¿Hay productos averiados o con exceso de polvo?' },
-            { key: 'cargaIdentificadaOk', label: '4. ¿Está identificada la carga?' },
-            { key: 'paletasOk', label: '5. ¿Las paletas están en buen estado?' },
-            { key: 'checklistValidadorOk', label: '6. ¿El checklist de carga fue completado por el validador?' }
+            { key: 'cantidadesOk', label: '1. ¿Las cantidades físicas coinciden con la factura?', expected: true },
+            { key: 'fechaCortaOk', label: '2. ¿El producto tiene fecha corta?', expected: false },
+            { key: 'averiadosPolvoOk', label: '3. ¿Hay productos averiados o con exceso de polvo?', expected: false },
+            { key: 'cargaIdentificadaOk', label: '4. ¿Está identificada la carga?', expected: true },
+            { key: 'paletasOk', label: '5. ¿Las paletas están en buen estado?', expected: true },
+            { key: 'checklistValidadorOk', label: '6. ¿El checklist de carga fue completado por el validador?', expected: true }
         ];
+
+        function despachoAuditExpectedAnswer(item) {
+            return item && item.expected === false ? false : true;
+        }
+
+        function despachoAuditIsIncidence(a, item) {
+            var val = a[item.key];
+            if (val !== true && val !== false) return false;
+            return val !== despachoAuditExpectedAnswer(item);
+        }
 
         const equipmentCheckItems = [
             { key: 'bateriaOk', label: 'Nivel de batería', critical: false },
@@ -1508,7 +1518,13 @@
 
         function getDespachoAuditWizardSteps() {
             var qSteps = despachoAuditCheckItems.map(function (item) {
-                return { type: 'question', key: item.key, label: item.label, hint: 'Responda Sí o No' };
+                var expectYes = despachoAuditExpectedAnswer(item) === true;
+                return {
+                    type: 'question',
+                    key: item.key,
+                    label: item.label,
+                    hint: expectYes ? 'Respuesta correcta: Sí' : 'Respuesta correcta: No'
+                };
             });
             return despachoAuditFieldSteps.concat(qSteps);
         }
@@ -1675,11 +1691,11 @@
         }
 
         function despachoAuditOkCount(a) {
-            return despachoAuditCheckItems.filter(function (i) { return a[i.key] === true; }).length;
+            return despachoAuditCheckItems.filter(function (i) { return !despachoAuditIsIncidence(a, i) && (a[i.key] === true || a[i.key] === false); }).length;
         }
 
         function despachoAuditFailCount(a) {
-            return despachoAuditCheckItems.filter(function (i) { return a[i.key] === false; }).length;
+            return despachoAuditCheckItems.filter(function (i) { return despachoAuditIsIncidence(a, i); }).length;
         }
 
         function despachoAuditHasIssues(a) {
