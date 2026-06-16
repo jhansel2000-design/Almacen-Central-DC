@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="JC">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="AC">
   <defs>
     <radialGradient id="jcRed" cx="38%" cy="32%" r="72%">
       <stop offset="0%" stop-color="#EF5350"/>
@@ -15,8 +15,8 @@
   <circle cx="256" cy="256" r="214" fill="none" stroke="#FFFFFF" stroke-width="20"/>
   <!-- Anillo rojo interior -->
   <circle cx="256" cy="256" r="198" fill="url(#jcRed)"/>
-  <!-- Letras JC -->
+  <!-- Letras AC -->
   <text x="256" y="256" text-anchor="middle" dominant-baseline="central"
     font-family="'Arial Black', 'Impact', 'Haettenschweiler', 'Franklin Gothic Heavy', sans-serif"
-    font-weight="900" font-size="168" fill="#FFFFFF" letter-spacing="-4">JC</text>
+    font-weight="900" font-size="168" fill="#FFFFFF" letter-spacing="-2">AC</text>
 </svg>

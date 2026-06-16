@@ -1,4 +1,4 @@
-# Genera logo JC estilo emblema circular (como dc-logo-source.png)
+# Genera logo AC estilo emblema circular (como dc-logo-source.png)
 Add-Type -AssemblyName System.Drawing
 
 function Get-JcRed {
@@ -58,7 +58,7 @@ function Write-JcBadgeLogo {
   $grad2.CenterPoint = New-Object System.Drawing.PointF ($cx - $innerR * 0.1), ($cy - $innerR * 0.15)
   $g.FillEllipse($grad2, $innerRect)
 
-  # Texto JC
+  # Texto AC
   $fontSize = $Size * 0.33
   $font = New-Object System.Drawing.Font('Arial Black', $fontSize, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
   $brush = New-Object System.Drawing.SolidBrush ([System.Drawing.Color]::White)
@@ -66,7 +66,7 @@ function Write-JcBadgeLogo {
   $sf.Alignment = [System.Drawing.StringAlignment]::Center
   $sf.LineAlignment = [System.Drawing.StringAlignment]::Center
   $rect = New-Object System.Drawing.RectangleF 0, 0, $Size, $Size
-  $g.DrawString('JC', $font, $brush, $rect, $sf)
+  $g.DrawString('AC', $font, $brush, $rect, $sf)
 
   $dir = Split-Path $OutPath -Parent
   if (-not (Test-Path $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
@@ -81,7 +81,7 @@ $base = Join-Path $PSScriptRoot '..\assets\img'
 Write-JcBadgeLogo -Size 512 -OutPath (Join-Path $base 'dc-logo.png')
 Write-JcBadgeLogo -Size 128 -OutPath (Join-Path $base 'dc-logo-128.png')
 Write-JcBadgeLogo -Size 64 -OutPath (Join-Path $base 'dc-logo-64.png')
-# Alias explícito JC
+# Alias explícito AC (archivos jc-logo* por compatibilidad de rutas)
 Write-JcBadgeLogo -Size 512 -OutPath (Join-Path $base 'jc-logo.png')
 Write-JcBadgeLogo -Size 128 -OutPath (Join-Path $base 'jc-logo-128.png')
 Write-JcBadgeLogo -Size 64 -OutPath (Join-Path $base 'jc-logo-64.png')

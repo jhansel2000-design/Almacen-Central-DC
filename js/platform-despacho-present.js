@@ -42,7 +42,7 @@
   }
 
   function brandMarkup() {
-    return '<img class="jc-logo-img jc-logo-img--present desp-present-brand-logo" src="assets/img/jc-logo.png?v=4" alt="JC" width="56" height="56" decoding="async">' +
+    return '<img class="jc-logo-img jc-logo-img--present desp-present-brand-logo" src="assets/img/jc-logo.png?v=5" alt="AC" width="56" height="56" decoding="async">' +
       '<div class="desp-present-brand-copy">' +
       '<span class="desp-present-brand-name">Almacén Central</span>' +
       '<span class="desp-present-brand-sub">Despacho · DC</span>' +
