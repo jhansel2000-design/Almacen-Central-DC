@@ -82,6 +82,35 @@
         codeEl.textContent = 'Código ' + u.employeeId;
       }
     }
+    applyRoleNav();
+  }
+
+  function applyRoleNav() {
+    var isAdmin = !!(state.user && state.user.role === 'ADMIN');
+    document.querySelectorAll('[data-inv-nav="admin"]').forEach(function (btn) {
+      btn.hidden = !isAdmin;
+    });
+  }
+
+  function initRfViewport() {
+    var root = document.documentElement;
+    var ua = navigator.userAgent || '';
+    var w = global.innerWidth || 480;
+    var m = global.matchMedia;
+    var scanner = /Zebra|Honeywell|Intermec|Symbol|DataWedge|TC[0-9]{2}|CK[0-9]{2}|EDA[0-9]{2}|Dolphin|Nautiz|Memor/i.test(ua);
+    var touch = m && (m('(pointer: coarse)').matches || m('(hover: none)').matches);
+    if (scanner || w <= 720 || touch || root.classList.contains('inv-rf-viewport')) {
+      root.classList.add('inv-rf-viewport');
+      document.body.classList.add('inv-rf-device');
+    }
+    function setVh() {
+      root.style.setProperty('--inv-vh', (global.innerHeight * 0.01) + 'px');
+    }
+    setVh();
+    global.addEventListener('resize', setVh);
+    global.addEventListener('orientationchange', function () {
+      global.setTimeout(setVh, 120);
+    });
   }
 
   /* ── Login ── */
@@ -611,6 +640,7 @@
       document.body.innerHTML += '<p class="noscript-msg">Error al cargar Inventario RF.</p>';
       return;
     }
+    initRfViewport();
     bindEvents();
     SYNC.onChange(function (kind) {
       if (kind === 'sync' || kind === 'entry' || kind === 'clear') {

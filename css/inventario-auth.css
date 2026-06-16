@@ -146,25 +146,44 @@ body.auth-locked .inv-auth-overlay .inv-auth-scrim {
 
 @media (max-width: 900px) {
   body.auth-locked .inv-auth-overlay {
-    align-items: flex-start;
-    justify-content: flex-start;
+    align-items: stretch;
+    justify-content: stretch;
     padding:
-      max(0.85rem, env(safe-area-inset-top, 0px))
-      max(0.85rem, env(safe-area-inset-right, 0px))
-      max(0.85rem, env(safe-area-inset-bottom, 0px))
-      max(0.85rem, env(safe-area-inset-left, 0px));
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
+      env(safe-area-inset-top, 0px)
+      env(safe-area-inset-right, 0px)
+      env(safe-area-inset-bottom, 0px)
+      env(safe-area-inset-left, 0px);
+    overflow: hidden;
   }
 
   .inv-auth-overlay .auth-layout {
     grid-template-columns: 1fr;
-    max-width: min(100%, 440px);
+    max-width: none;
     width: 100%;
-    padding: 0.5rem 0 1rem;
+    height: 100%;
+    min-height: 0;
+    padding: 0;
   }
 
   .inv-auth-hero {
     display: none;
+  }
+
+  .inv-auth-overlay .auth-stack {
+    min-height: 0;
+    height: 100%;
+  }
+
+  .inv-auth-glass {
+    border-radius: 0;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .inv-auth-glass .inv-phone {
+    flex: 1;
+    min-height: 0;
   }
 }
