@@ -231,7 +231,7 @@
 
                         <div id="palletsReport" class="sub-panel hidden">
                             <button class="btn btn-small" onclick="showPalletsDashboard()" style="margin-bottom:16px;">← Volver</button>
-                            <form onsubmit="handleReport(event)" novalidate>
+                            <form id="palletsReportForm" action="#" method="post" novalidate>
                                 <div class="form-field">
                                     <label>Ubicación (Rack-Nivel-Posición)</label>
                                     <input type="text" id="reportLocation" placeholder="Ej: R01-N02-P03" required oninput="lookupProductDescription()">
@@ -613,7 +613,7 @@
   <script src="js/platform-registry-cloud-sync.js?v=2"></script>
   <script src="js/platform-web-users.js?v=18"></script>
   <script src="js/platform-toast.js"></script>
-  <script src="js/platform-averias-ui.js?v=43"></script>
+  <script src="js/platform-averias-ui.js?v=44"></script>
   <script src="js/platform-averias-app.js?v=6"></script>
 </body>
 </html>

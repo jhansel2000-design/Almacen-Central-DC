@@ -122,10 +122,26 @@
     });
   }
 
+  function initAveriasFormHandlers() {
+    if (global.__avFormHandlersBound) return;
+    global.__avFormHandlersBound = true;
+    var app = document.getElementById('avApp');
+    if (!app) return;
+    app.addEventListener('submit', function (ev) {
+      var form = ev.target;
+      if (!form || form.tagName !== 'FORM') return;
+      if (form.id === 'palletsReportForm' || (form.closest && form.closest('#palletsReport'))) {
+        ev.preventDefault();
+        if (typeof handleReport === 'function') handleReport(ev);
+      }
+    }, true);
+  }
+
   function initAveriasClickBridge() {
     var app = document.getElementById('avApp');
     if (!app) return;
     initAveriasDelegatedActions();
+    initAveriasFormHandlers();
     bindInlineClickHandlers(app);
     bindInlineClickHandlers(document.getElementById('cloudSetupModal'));
     if (global.__avClickBridgeObs) return;
@@ -160,11 +176,15 @@
 
     function finishBoot() {
       loadData({ bootstrap: true });
-      refreshCurrentView();
+      if (!_averiasBootDone) {
+        _averiasBootDone = true;
+        restoreNavStateOrWelcome();
+      } else {
+        refreshCurrentView();
+      }
       if (typeof closeDrawer === 'function') closeDrawer();
       initFitScreen();
       initCorrectionModal();
-      showWelcome();
     }
 
     var cloud = global.PlatformAveriasCloudSync;
@@ -215,6 +235,45 @@
         let allEquipmentInspections = [];
         let equipmentRegistry = {};
         let currentModule = 'home';
+        var NAV_STATE_KEY = 'averias_dc_nav_v1';
+        var _averiasBootDone = false;
+
+        function readNavState() {
+            try {
+                var raw = sessionStorage.getItem(NAV_STATE_KEY);
+                return raw ? JSON.parse(raw) : null;
+            } catch (e) { return null; }
+        }
+
+        function writeNavState() {
+            try {
+                var view = 'dashboard';
+                if (currentModule === 'pallets') {
+                    var reportEl = document.getElementById('palletsReport');
+                    var correctEl = document.getElementById('palletsCorrect');
+                    if (reportEl && !reportEl.classList.contains('hidden')) view = 'report';
+                    else if (correctEl && !correctEl.classList.contains('hidden')) view = 'correct';
+                }
+                sessionStorage.setItem(NAV_STATE_KEY, JSON.stringify({
+                    module: currentModule,
+                    view: view,
+                    at: Date.now()
+                }));
+            } catch (e) { /* noop */ }
+        }
+
+        function restoreNavStateOrWelcome() {
+            var state = readNavState();
+            if (!state || !state.module || state.module === 'home') {
+                showWelcome();
+                return;
+            }
+            navigateToModule(state.module);
+            if (state.module === 'pallets') {
+                if (state.view === 'report') handleReportButton();
+                else if (state.view === 'correct') handleCorrectButton();
+            }
+        }
         let selectedDamageArea = null;
         let securityClass = 'No urgente';
         let selectedTurno = 'A';
@@ -1240,6 +1299,7 @@
             else if (module === 'audit') showAuditDashboard();
             else if (module === 'equipment') showEquipmentDashboard();
             closeDrawer();
+            writeNavState();
         }
 
         function showPalletsDashboard() {
@@ -1248,6 +1308,7 @@
             document.getElementById('palletsReport').classList.add('hidden');
             document.getElementById('palletsCorrect').classList.add('hidden');
             updateStats();
+            writeNavState();
         }
 
         function handleReportButton() {
@@ -1258,6 +1319,7 @@
             document.getElementById('palletsReport').classList.remove('hidden');
             document.getElementById('reportSuccess').classList.remove('show');
             document.getElementById('reportError').classList.remove('show');
+            writeNavState();
         }
 
         function handleCorrectButton() {
@@ -1265,6 +1327,7 @@
             document.getElementById('palletsDashboard').classList.add('hidden');
             document.getElementById('palletsCorrect').classList.remove('hidden');
             filterIncidences();
+            writeNavState();
         }
 
         function showDamagesDashboard() {
@@ -1774,6 +1837,7 @@
                     document.getElementById('reportSuccess').classList.add('show');
                     updateStats();
                     renderPalletsReportedList();
+                    writeNavState();
                 });
                 return;
             }
