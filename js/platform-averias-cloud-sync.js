@@ -165,8 +165,13 @@
   function initSupabase() {
     if (!hasSupabaseConfig() || !global.PlatformSupabaseBridge.subscribe) return;
     global.PlatformSupabaseBridge.subscribe('averias', function (remote) {
-      if (!remote || shouldBlockStaleRemote(remote)) {
-        if (remote) schedulePushFromLocal();
+      if (!remote) return;
+      if (inLocalEditGrace() || pushing) {
+        schedulePushFromLocal();
+        return;
+      }
+      if (shouldBlockStaleRemote(remote)) {
+        schedulePushFromLocal();
         return;
       }
       applySnapshotToLocal(remote, false, 'supabase-realtime');
@@ -215,7 +220,7 @@
 
   function pollIntervalMs() {
     if (isSupabasePrimary()) {
-      return 250;
+      return 8000;
     }
     if (hasFirebaseConfig()) {
       var ms = siteConfig && siteConfig.syncTargetMs ? parseInt(siteConfig.syncTargetMs, 10) : 400;
@@ -957,6 +962,10 @@
   function pullAll() {
     if (pulling) return Promise.resolve(getLocalSnapshot());
     if (pushing) return Promise.resolve(getEffectiveLocalSnapshot());
+    if (inLocalEditGrace()) {
+      schedulePushFromLocal();
+      return Promise.resolve(getEffectiveLocalSnapshot());
+    }
     pulling = true;
     var localBefore = getEffectiveLocalSnapshot();
     return pullFromJsonBin().then(function (jsonBinSnap) {
@@ -1029,6 +1038,7 @@
   }
 
   function schedulePullBurst() {
+    if (inLocalEditGrace() || pushing) return;
     var now = Date.now();
     if (now - lastBurstAt < 1200) return;
     lastBurstAt = now;
@@ -1650,6 +1660,7 @@
     countSnapshotRecords: countSnapshotRecords,
     beginLocalEdit: beginLocalEdit,
     shouldBlockStaleRemote: shouldBlockStaleRemote,
+    inLocalEditGrace: inLocalEditGrace,
     noteLocalSave: noteLocalSave,
     pushPendingRecord: pushPendingRecord,
     publishChange: publishChange,

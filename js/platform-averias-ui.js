@@ -469,8 +469,10 @@
                     global.PlatformAveriasCloudSync.beginLocalEdit(snap);
                 }
                 snap.updatedAt = new Date().toISOString();
-                snap.localSeq = (snap.localSeq || 0) + 1;
-                memoryLocalSeq = snap.localSeq;
+                if (!options.seqAlreadyBumped) {
+                    snap.localSeq = (snap.localSeq || 0) + 1;
+                    memoryLocalSeq = snap.localSeq;
+                }
                 localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(snap));
                 if (!localStorage.getItem(SNAPSHOT_KEY)) {
                     return Promise.resolve({ ok: false, error: 'storage-blocked' });
@@ -620,6 +622,16 @@
         function applyRemoteSnapshot(snap, opts) {
             opts = opts || {};
             if (!snap) return false;
+            if (global.PlatformAveriasCloudSync) {
+                if (global.PlatformAveriasCloudSync.inLocalEditGrace &&
+                    global.PlatformAveriasCloudSync.inLocalEditGrace()) {
+                    return false;
+                }
+                if (global.PlatformAveriasCloudSync.shouldBlockStaleRemote &&
+                    global.PlatformAveriasCloudSync.shouldBlockStaleRemote(snap)) {
+                    return false;
+                }
+            }
             var sigBefore = lastUiSignature || contentSignature(buildSnapshot());
             var countsBefore = countReports(buildSnapshot());
             isLoadingRemoteSnapshot = true;
@@ -639,7 +651,10 @@
                 countsAfter.pending !== countsBefore.pending;
             if (opts.fromCloud || changed) {
                 updateAllStats();
-                refreshCurrentView();
+                var onReportForm = currentModule === 'pallets' &&
+                    document.getElementById('palletsReport') &&
+                    !document.getElementById('palletsReport').classList.contains('hidden');
+                if (!onReportForm) refreshCurrentView();
                 updateLiveChip(true);
             }
             if (opts.fromCloud && countsAfter.pending < countsBefore.pending && global.PlatformToast) {
@@ -855,9 +870,7 @@
                 }
             });
             document.addEventListener('averias-sync-push', function () {
-                if (global.PlatformAveriasCloudSync && global.PlatformAveriasCloudSync.schedulePullBurst) {
-                    global.PlatformAveriasCloudSync.schedulePullBurst();
-                }
+                /* El push ya subió datos; no hacer pull burst que pisa reportes locales */
             });
             global.addEventListener('firebase-denied', function () {
                 if (global.PlatformToast) {
@@ -1642,14 +1655,26 @@
             if (avCore() && avCore().stampNewReport) avCore().stampNewReport(incidence);
 
             allIncidences.push(incidence);
+            ensureRecordStatuses();
+            writeIndividualKeys();
+            var preSnap = buildSnapshot();
+            preSnap.updatedAt = new Date().toISOString();
+            preSnap.localSeq = (preSnap.localSeq || 0) + 1;
+            memoryLocalSeq = preSnap.localSeq;
+            try {
+                localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(preSnap));
+            } catch (e) { /* noop */ }
             if (global.PlatformAveriasCloudSync && global.PlatformAveriasCloudSync.beginLocalEdit) {
-                global.PlatformAveriasCloudSync.beginLocalEdit(buildSnapshot());
+                global.PlatformAveriasCloudSync.beginLocalEdit(preSnap);
+            }
+            if (global.PlatformAveriasCloudSync && global.PlatformAveriasCloudSync.noteLocalSave) {
+                global.PlatformAveriasCloudSync.noteLocalSave(preSnap);
             }
             memoryLocalSeq = Math.max(memoryLocalSeq, (buildSnapshot().localSeq || 0));
             updateStats();
             renderPalletsReportedList();
             auditAction('REPORTAR', { module: 'pallets', location: incidence.location, product: incidence.product });
-            persistSnapshot({ force: true, liveRecord: { module: 'pallets', record: incidence } }).then(function (result) {
+            persistSnapshot({ force: true, seqAlreadyBumped: true, liveRecord: { module: 'pallets', record: incidence } }).then(function (result) {
                 if (submitBtn) {
                     submitBtn.disabled = false;
                     submitBtn.textContent = 'GUARDAR INCIDENCIA';
