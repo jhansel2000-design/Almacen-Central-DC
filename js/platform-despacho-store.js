@@ -421,9 +421,19 @@
     return Date.parse(p && p.updatedAt) || 0;
   }
 
-  /** Validador: más antiguos primero (arriba). Preparador u otros: jaula + IDC. */
+  /** Cargado siempre debajo de pendiente/validado; dentro de cada grupo, más antiguos arriba. */
+  function validadorEstadoSortRank(estado) {
+    if (estado === 'listo_despacho') return 1;
+    if (estado === 'pendiente_carga' || estado === 'en_validacion') return 0;
+    return 2;
+  }
+
+  /** Validador: pendiente/validado arriba (viejos primero); cargado abajo (viejos primero entre cargados). */
   function sortPedidosValidador(pedidos) {
     return (pedidos || []).slice().sort(function (a, b) {
+      var ra = validadorEstadoSortRank(a.estado);
+      var rb = validadorEstadoSortRank(b.estado);
+      if (ra !== rb) return ra - rb;
       var ta = pedidoTimestamp(a);
       var tb = pedidoTimestamp(b);
       if (ta !== tb) return ta - tb;
