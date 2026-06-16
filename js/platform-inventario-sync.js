@@ -10,7 +10,7 @@
     { employeeId: '51192', displayName: 'Jansel Castro', role: 'COUNT', active: true, adminPin: '' },
     { employeeId: '51963', displayName: 'Luis José Rodríguez Ruíz', role: 'COUNT', active: true, adminPin: '' },
     { employeeId: '12345', displayName: 'María López', role: 'COUNT', active: true, adminPin: '' },
-    { employeeId: 'admin', displayName: 'Administrador', role: 'ADMIN', active: true, adminPin: '1234' }
+    { employeeId: 'admin', displayName: 'Administrador', role: 'ADMIN', active: true, adminPin: 'Central@' }
   ];
   var CORE = null;
   var realtimeUnsub = null;

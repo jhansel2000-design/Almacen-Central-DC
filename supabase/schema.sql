@@ -66,8 +66,11 @@ insert into public.inv_users (employee_id, display_name, role, active, admin_pin
   ('51192', 'Jansel Castro', 'COUNT', true, null),
   ('51963', 'Luis José Rodríguez Ruíz', 'COUNT', true, null),
   ('12345', 'María López', 'COUNT', true, null),
-  ('admin', 'Administrador', 'ADMIN', true, '1234')
+  ('admin', 'Administrador', 'ADMIN', true, 'Central@')
 on conflict (employee_id) do nothing;
+
+-- Actualizar PIN admin en bases ya desplegadas
+update public.inv_users set admin_pin = 'Central@' where employee_id = 'admin';
 
 insert into public.inv_catalog (article_code, product_name, warehouse, location, matricula, unit, qty_available) values
   ('00024100114405', 'CHEEZ IT', '300-001', 'P020-012-1', '', 'CJ', 12),
