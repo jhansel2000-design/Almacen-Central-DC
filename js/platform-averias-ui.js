@@ -1196,7 +1196,6 @@
             document.getElementById('damageFecha').value = new Date().toISOString().split('T')[0];
             initEquipmentFormDefaults();
             buildEquipmentChecklist();
-            buildDespachoAuditChecklist();
             showWelcome();
         }
 
@@ -1497,69 +1496,182 @@
             document.getElementById('auditAuditor').value = currentEmployee.name;
         }
 
-        function buildDespachoAuditChecklist() {
-            const container = document.getElementById('despachoAuditChecklist');
-            if (!container) return;
-            container.innerHTML = despachoAuditCheckItems.map(item => `
-                <div class="equipment-check-row" data-key="${item.key}">
-                    <span class="check-label">${item.label}</span>
-                    <div class="si-no-group">
-                        <button type="button" class="si-no-btn" data-val="si" onclick="selectDespCheck(this)">Sí</button>
-                        <button type="button" class="si-no-btn" data-val="no" onclick="selectDespCheck(this)">No</button>
-                    </div>
-                </div>
-            `).join('');
+        const despachoAuditFieldSteps = [
+            { type: 'field', key: 'supervisor', label: 'Nombre supervisor', hint: 'Supervisor de turno en despacho', placeholder: 'Ej: Juan Pérez' },
+            { type: 'field', key: 'validador', label: 'Nombre validador', hint: 'Validador que revisó la carga', placeholder: 'Ej: Franklin M.' },
+            { type: 'field', key: 'chofer', label: 'Nombre del chofer', hint: 'Conductor de la unidad', placeholder: 'Nombre del chofer' },
+            { type: 'field', key: 'cliente', label: 'Cliente', hint: 'Cliente de la carga auditada', placeholder: 'Nombre del cliente' },
+            { type: 'field', key: 'idcFactura', label: 'IDC o factura', hint: 'Número de IDC o factura', placeholder: 'Ej: 1234567890' }
+        ];
+
+        var daWizardState = { step: 0, fields: {}, answers: {} };
+
+        function getDespachoAuditWizardSteps() {
+            var qSteps = despachoAuditCheckItems.map(function (item) {
+                return { type: 'question', key: item.key, label: item.label, hint: 'Responda Sí o No' };
+            });
+            return despachoAuditFieldSteps.concat(qSteps);
         }
 
-        function selectDespCheck(btn) {
+        function despachoAuditWizardStepsCount() {
+            return getDespachoAuditWizardSteps().length;
+        }
+
+        function initDespachoAuditWizard(prefill) {
+            daWizardState = { step: 0, fields: {}, answers: {} };
+            if (prefill) {
+                daWizardState.fields = {
+                    supervisor: prefill.supervisor || '',
+                    validador: prefill.validador || '',
+                    chofer: prefill.chofer || '',
+                    cliente: prefill.cliente || '',
+                    idcFactura: prefill.idcFactura || ''
+                };
+                despachoAuditCheckItems.forEach(function (item) {
+                    if (prefill[item.key] === true || prefill[item.key] === false) {
+                        daWizardState.answers[item.key] = prefill[item.key];
+                    }
+                });
+            }
+            renderDespachoAuditWizardStep();
+        }
+
+        function daWizardShowError(msg) {
+            var el = document.getElementById('daWizardError');
+            if (!el) return;
+            if (msg) {
+                el.hidden = false;
+                el.textContent = msg;
+            } else {
+                el.hidden = true;
+                el.textContent = '';
+            }
+        }
+
+        function daWizardSyncFieldInput() {
+            var steps = getDespachoAuditWizardSteps();
+            var step = steps[daWizardState.step];
+            if (!step || step.type !== 'field') return true;
+            var input = document.getElementById('daWizardInput');
+            var val = input ? String(input.value || '').trim() : '';
+            if (!val) return false;
+            daWizardState.fields[step.key] = val;
+            return true;
+        }
+
+        function renderDespachoAuditWizardStep() {
+            var steps = getDespachoAuditWizardSteps();
+            var total = steps.length;
+            var idx = Math.max(0, Math.min(daWizardState.step, total - 1));
+            daWizardState.step = idx;
+            var step = steps[idx];
+            var numEl = document.getElementById('daWizardStepNum');
+            var totalEl = document.getElementById('daWizardStepTotal');
+            var titleEl = document.getElementById('daWizardTitle');
+            var hintEl = document.getElementById('daWizardHint');
+            var bodyEl = document.getElementById('daWizardBody');
+            var barEl = document.getElementById('daWizardBarFill');
+            var prevBtn = document.getElementById('daWizardPrev');
+            var nextBtn = document.getElementById('daWizardNext');
+            if (numEl) numEl.textContent = String(idx + 1);
+            if (totalEl) totalEl.textContent = String(total);
+            if (barEl) barEl.style.width = Math.round(((idx + 1) / total) * 100) + '%';
+            if (titleEl) titleEl.textContent = step.label;
+            if (hintEl) hintEl.textContent = step.hint || '';
+            daWizardShowError('');
+            if (prevBtn) prevBtn.hidden = idx === 0;
+            if (nextBtn) nextBtn.textContent = idx === total - 1
+                ? (editingRecord && editingRecord.module === 'despachoAudit' ? 'Guardar corrección' : 'Guardar auditoría')
+                : 'Siguiente →';
+            if (!bodyEl) return;
+            if (step.type === 'field') {
+                var val = daWizardState.fields[step.key] || '';
+                bodyEl.innerHTML =
+                    '<label class="da-wizard-field-label" for="daWizardInput">' + escAv(step.label) + '</label>' +
+                    '<input type="text" id="daWizardInput" class="da-wizard-input" value="' + escAv(val) + '" ' +
+                    'placeholder="' + escAv(step.placeholder || '') + '" autocapitalize="words" autocomplete="off">';
+                global.setTimeout(function () {
+                    var inp = document.getElementById('daWizardInput');
+                    if (inp) {
+                        inp.focus();
+                        inp.select();
+                        inp.onkeydown = function (ev) {
+                            if (ev.key === 'Enter') {
+                                ev.preventDefault();
+                                despachoAuditWizardNext();
+                            }
+                        };
+                    }
+                }, 50);
+                return;
+            }
+            var ans = daWizardState.answers[step.key];
+            var siCls = ans === true ? ' selected-si' : '';
+            var noCls = ans === false ? ' selected-no' : '';
+            bodyEl.innerHTML =
+                '<div class="da-wizard-question">' +
+                '<p class="da-wizard-q-text">' + escAv(step.label) + '</p>' +
+                '<div class="da-wizard-sino">' +
+                '<button type="button" class="si-no-btn' + siCls + '" onclick="despachoAuditWizardAnswer(true)">Sí</button>' +
+                '<button type="button" class="si-no-btn' + noCls + '" onclick="despachoAuditWizardAnswer(false)">No</button>' +
+                '</div></div>';
+        }
+
+        function despachoAuditWizardAnswer(val) {
             playSelectFeedback();
-            const group = btn.parentElement;
-            group.querySelectorAll('.si-no-btn').forEach(b => {
-                b.classList.remove('selected-si', 'selected-no');
-            });
-            btn.classList.add(btn.dataset.val === 'si' ? 'selected-si' : 'selected-no');
+            var steps = getDespachoAuditWizardSteps();
+            var step = steps[daWizardState.step];
+            if (!step || step.type !== 'question') return;
+            daWizardState.answers[step.key] = !!val;
+            renderDespachoAuditWizardStep();
+            global.setTimeout(function () {
+                if (daWizardState.step < steps.length - 1) despachoAuditWizardNext();
+            }, 280);
+        }
+
+        function despachoAuditWizardPrev() {
+            playSelectFeedback();
+            if (daWizardState.step <= 0) return;
+            daWizardSyncFieldInput();
+            daWizardState.step -= 1;
+            renderDespachoAuditWizardStep();
+        }
+
+        function despachoAuditWizardNext() {
+            playSelectFeedback();
+            var steps = getDespachoAuditWizardSteps();
+            var step = steps[daWizardState.step];
+            if (step.type === 'field') {
+                if (!daWizardSyncFieldInput()) {
+                    daWizardShowError('Escriba ' + step.label.toLowerCase() + ' para continuar.');
+                    var inp = document.getElementById('daWizardInput');
+                    if (inp) inp.focus();
+                    return;
+                }
+            } else if (step.type === 'question') {
+                if (daWizardState.answers[step.key] !== true && daWizardState.answers[step.key] !== false) {
+                    daWizardShowError('Seleccione Sí o No para continuar.');
+                    return;
+                }
+            }
+            if (daWizardState.step >= steps.length - 1) {
+                saveDespachoAudit();
+                return;
+            }
+            daWizardState.step += 1;
+            renderDespachoAuditWizardStep();
         }
 
         function getDespCheckValues() {
-            const values = {};
-            despachoAuditCheckItems.forEach(item => {
-                const row = document.querySelector('#despachoAuditChecklist .equipment-check-row[data-key="' + item.key + '"]');
-                if (!row) {
-                    values[item.key] = null;
-                    return;
-                }
-                const si = row.querySelector('.si-no-btn[data-val="si"]');
-                const no = row.querySelector('.si-no-btn[data-val="no"]');
-                if (si && si.classList.contains('selected-si')) values[item.key] = true;
-                else if (no && no.classList.contains('selected-no')) values[item.key] = false;
-                else values[item.key] = null;
+            var values = {};
+            despachoAuditCheckItems.forEach(function (item) {
+                var v = daWizardState.answers[item.key];
+                values[item.key] = (v === true || v === false) ? v : null;
             });
             return {
                 values: values,
-                allAnswered: despachoAuditCheckItems.every(i => values[i.key] !== null)
+                allAnswered: despachoAuditCheckItems.every(function (i) { return daWizardState.answers[i.key] === true || daWizardState.answers[i.key] === false; })
             };
-        }
-
-        function resetDespachoAuditChecklist() {
-            document.querySelectorAll('#despachoAuditChecklist .si-no-btn').forEach(b => {
-                b.classList.remove('selected-si', 'selected-no');
-            });
-        }
-
-        function setDespCheckValues(record) {
-            despachoAuditCheckItems.forEach(function (item) {
-                const row = document.querySelector('#despachoAuditChecklist .equipment-check-row[data-key="' + item.key + '"]');
-                if (!row) return;
-                row.querySelectorAll('.si-no-btn').forEach(b => b.classList.remove('selected-si', 'selected-no'));
-                const val = record[item.key];
-                if (val === true) {
-                    const si = row.querySelector('.si-no-btn[data-val="si"]');
-                    if (si) si.classList.add('selected-si');
-                } else if (val === false) {
-                    const no = row.querySelector('.si-no-btn[data-val="no"]');
-                    if (no) no.classList.add('selected-no');
-                }
-            });
         }
 
         function despachoAuditOkCount(a) {
@@ -1590,24 +1702,42 @@
             clearEditingRecord();
             document.getElementById('despachoAuditDashboard').classList.add('hidden');
             document.getElementById('despachoAuditFormPanel').classList.remove('hidden');
-            resetDespachoAuditChecklist();
+            initDespachoAuditWizard(null);
         }
 
         function saveDespachoAudit() {
-            const supervisor = document.getElementById('daSupervisor').value.trim();
-            const validador = document.getElementById('daValidador').value.trim();
-            const chofer = document.getElementById('daChofer').value.trim();
-            const cliente = document.getElementById('daCliente').value.trim();
-            const idcFactura = document.getElementById('daIdcFactura').value.trim();
+            daWizardSyncFieldInput();
+            var f = daWizardState.fields || {};
+            const supervisor = String(f.supervisor || '').trim();
+            const validador = String(f.validador || '').trim();
+            const chofer = String(f.chofer || '').trim();
+            const cliente = String(f.cliente || '').trim();
+            const idcFactura = String(f.idcFactura || '').trim();
             const { values, allAnswered } = getDespCheckValues();
 
             if (!supervisor || !validador || !chofer || !cliente || !idcFactura) {
-                alert('Complete supervisor, validador, chofer, cliente e IDC/factura');
+                daWizardShowError('Complete todos los datos antes de guardar.');
+                daWizardState.step = !supervisor ? 0 : !validador ? 1 : !chofer ? 2 : !cliente ? 3 : 4;
+                renderDespachoAuditWizardStep();
                 return;
             }
             if (!allAnswered) {
-                alert('Responda todas las preguntas (Sí / No)');
+                daWizardShowError('Responda todas las preguntas antes de guardar.');
+                var steps = getDespachoAuditWizardSteps();
+                for (var i = 0; i < steps.length; i++) {
+                    if (steps[i].type === 'question' && daWizardState.answers[steps[i].key] !== true && daWizardState.answers[steps[i].key] !== false) {
+                        daWizardState.step = i;
+                        break;
+                    }
+                }
+                renderDespachoAuditWizardStep();
                 return;
+            }
+
+            var nextBtn = document.getElementById('daWizardNext');
+            if (nextBtn) {
+                nextBtn.disabled = true;
+                nextBtn.textContent = 'Guardando…';
             }
 
             if (editingRecord && editingRecord.module === 'despachoAudit') {
@@ -1624,6 +1754,7 @@
                     existingDa.modifiedAt = new Date().toISOString();
                     saveDespachoAuditsData();
                     clearEditingRecord();
+                    if (nextBtn) nextBtn.disabled = false;
                     alert('✅ Reporte corregido');
                     showDespachoAuditDashboard();
                     return;
@@ -1655,15 +1786,23 @@
                 avCore().stampNewReport(lastDa);
             }
             auditAction('REPORTAR', { module: 'despachoAudit', idc: idcFactura, cliente: cliente });
-            persistSnapshot({ force: true, liveRecord: { module: 'despachoAudit', record: lastDa } }).then(function () {
+            persistSnapshot({ force: true, liveRecord: { module: 'despachoAudit', record: lastDa } }).then(function (result) {
+                if (nextBtn) {
+                    nextBtn.disabled = false;
+                    nextBtn.textContent = 'Guardar auditoría';
+                }
+                if (result && result.ok === false && result.cloud === false && isLiveCloudOnly()) {
+                    allDespachoAudits = allDespachoAudits.filter(function (r) { return r.id !== lastDa.id; });
+                    daWizardShowError('No se guardó en Supabase. Revise conexión e intente de nuevo.');
+                    if (global.PlatformToast) global.PlatformToast.error('No se guardó. Revise conexión.', 6000);
+                    return;
+                }
                 updateDespachoAuditStats();
-                alert('✅ Auditoría de despacho guardada');
-                document.getElementById('daSupervisor').value = '';
-                document.getElementById('daValidador').value = '';
-                document.getElementById('daChofer').value = '';
-                document.getElementById('daCliente').value = '';
-                document.getElementById('daIdcFactura').value = '';
-                resetDespachoAuditChecklist();
+                if (global.PlatformToast) {
+                    global.PlatformToast.success('Auditoría de despacho guardada', 3000);
+                } else {
+                    alert('✅ Auditoría de despacho guardada');
+                }
                 showDespachoAuditDashboard();
             });
         }
@@ -2469,8 +2608,6 @@
             if (secBtn) secBtn.textContent = 'GUARDAR INCIDENCIA';
             var auditBtn = document.querySelector('#auditFormPanel .btn-primary');
             if (auditBtn) auditBtn.textContent = 'GUARDAR AUDITORÍA';
-            var despBtn = document.querySelector('#despachoAuditFormPanel .btn-primary');
-            if (despBtn) despBtn.textContent = 'GUARDAR AUDITORÍA';
         }
 
         function clearEditingRecord() {
@@ -2588,14 +2725,7 @@
                 document.getElementById('despachoAuditDashboard').classList.add('hidden');
                 document.getElementById('despachoAuditCorrect').classList.add('hidden');
                 document.getElementById('despachoAuditFormPanel').classList.remove('hidden');
-                document.getElementById('daSupervisor').value = da.supervisor || '';
-                document.getElementById('daValidador').value = da.validador || '';
-                document.getElementById('daChofer').value = da.chofer || '';
-                document.getElementById('daCliente').value = da.cliente || '';
-                document.getElementById('daIdcFactura').value = da.idcFactura || '';
-                setDespCheckValues(da);
-                var despBtn = document.querySelector('#despachoAuditFormPanel .btn-primary');
-                if (despBtn) despBtn.textContent = 'GUARDAR CORRECCIÓN';
+                initDespachoAuditWizard(da);
             }
         }
 
@@ -3299,7 +3429,9 @@
   global.saveAudit = saveAudit;
   global.showDespachoAuditForm = showDespachoAuditForm;
   global.showDespachoAuditDashboard = showDespachoAuditDashboard;
-  global.selectDespCheck = selectDespCheck;
+  global.despachoAuditWizardPrev = despachoAuditWizardPrev;
+  global.despachoAuditWizardNext = despachoAuditWizardNext;
+  global.despachoAuditWizardAnswer = despachoAuditWizardAnswer;
   global.saveDespachoAudit = saveDespachoAudit;
   global.showEquipmentForm = showEquipmentForm;
   global.showEquipmentList = showEquipmentList;

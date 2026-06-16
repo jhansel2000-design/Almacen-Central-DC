@@ -22,7 +22,7 @@
   <link rel="stylesheet" href="css/auth-security.css?v=3">
   <link rel="stylesheet" href="css/auth-portals-layout.css?v=10">
   <link rel="stylesheet" href="css/dc-brand.css?v=11">
-  <link rel="stylesheet" href="css/averias-portal.css?v=4">
+  <link rel="stylesheet" href="css/averias-portal.css?v=5">
   <link rel="stylesheet" href="css/averias-responsive.css?v=13">
   <link rel="stylesheet" href="css/theme-light.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -504,15 +504,22 @@
                             </section>
                         </div>
                         <div id="despachoAuditFormPanel" class="sub-panel hidden">
-                            <button class="btn btn-small" onclick="showDespachoAuditDashboard()" style="margin-bottom:16px;">← Volver al dashboard</button>
-                            <div class="form-field"><label>Nombre supervisor</label><input type="text" id="daSupervisor" placeholder="Supervisor de turno"></div>
-                            <div class="form-field"><label>Nombre validador</label><input type="text" id="daValidador" placeholder="Validador asignado"></div>
-                            <div class="form-field"><label>Nombre del chofer</label><input type="text" id="daChofer" placeholder="Chofer de la carga"></div>
-                            <div class="form-field"><label>Cliente</label><input type="text" id="daCliente" placeholder="Nombre del cliente"></div>
-                            <div class="form-field"><label>IDC o factura</label><input type="text" id="daIdcFactura" placeholder="Número IDC o factura" autocapitalize="off"></div>
-                            <p style="font-weight:700;margin:16px 0 8px;">Preguntas <span style="color:#8B949E;font-size:12px;">Sí / No</span></p>
-                            <div id="despachoAuditChecklist"></div>
-                            <button class="btn btn-primary" style="margin-top:16px;" onclick="saveDespachoAudit()">GUARDAR AUDITORÍA</button>
+                            <button class="btn btn-small" onclick="showDespachoAuditDashboard()" style="margin-bottom:16px;">← Cancelar</button>
+                            <div class="da-wizard" id="daWizard">
+                                <div class="da-wizard-head">
+                                    <span class="da-wizard-eyebrow">Nueva auditoría · paso a paso</span>
+                                    <div class="da-wizard-progress">Paso <strong id="daWizardStepNum">1</strong> de <strong id="daWizardStepTotal">11</strong></div>
+                                    <div class="da-wizard-bar" aria-hidden="true"><span id="daWizardBarFill"></span></div>
+                                </div>
+                                <h3 class="da-wizard-title" id="daWizardTitle">—</h3>
+                                <p class="da-wizard-hint" id="daWizardHint"></p>
+                                <div class="da-wizard-body" id="daWizardBody"></div>
+                                <p class="da-wizard-error" id="daWizardError" hidden role="alert"></p>
+                                <div class="da-wizard-actions">
+                                    <button type="button" class="btn btn-ghost" id="daWizardPrev" onclick="despachoAuditWizardPrev()">← Anterior</button>
+                                    <button type="button" class="btn btn-primary" id="daWizardNext" onclick="despachoAuditWizardNext()">Siguiente →</button>
+                                </div>
+                            </div>
                         </div>
                         <div id="despachoAuditCorrect" class="sub-panel hidden">
                             <button class="btn btn-small" onclick="showDespachoAuditDashboard()" style="margin-bottom:16px;">← Volver</button>
@@ -681,7 +688,7 @@
   <script src="js/platform-registry-cloud-sync.js?v=2"></script>
   <script src="js/platform-web-users.js?v=18"></script>
   <script src="js/platform-toast.js"></script>
-  <script src="js/platform-averias-ui.js?v=46"></script>
+  <script src="js/platform-averias-ui.js?v=47"></script>
   <script src="js/platform-averias-app.js?v=6"></script>
 </body>
 </html>
