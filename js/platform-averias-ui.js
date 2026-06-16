@@ -619,9 +619,21 @@
             };
         }
 
+        function applySnapshotToMemory(snap) {
+            if (!snap) return false;
+            applySnapshot(snap, false);
+            writeIndividualKeys();
+            lastUiSignature = contentSignature(buildSnapshot());
+            return true;
+        }
+
         function applyRemoteSnapshot(snap, opts) {
             opts = opts || {};
             if (!snap) return false;
+            if (global.PlatformAveriasCloudSync &&
+                global.PlatformAveriasCloudSync.mergeAveriasSnapshots) {
+                snap = global.PlatformAveriasCloudSync.mergeAveriasSnapshots(buildSnapshot(), snap);
+            }
             if (global.PlatformAveriasCloudSync) {
                 if (global.PlatformAveriasCloudSync.isPushing && global.PlatformAveriasCloudSync.isPushing()) {
                     return false;
@@ -1683,6 +1695,10 @@
             renderPalletsReportedList();
             auditAction('REPORTAR', { module: 'pallets', location: incidence.location, product: incidence.product });
             persistSnapshot({ force: true, seqAlreadyBumped: true, liveRecord: { module: 'pallets', record: incidence } }).then(function (result) {
+                if (!findById(allIncidences, incidence.id)) {
+                    allIncidences.push(incidence);
+                    writeIndividualKeys();
+                }
                 if (submitBtn) {
                     submitBtn.disabled = false;
                     submitBtn.textContent = 'GUARDAR INCIDENCIA';
@@ -2640,6 +2656,7 @@
     start: startApp,
     bindClickBridge: initAveriasClickBridge,
     applyRemoteSnapshot: applyRemoteSnapshot,
+    applySnapshotToMemory: applySnapshotToMemory,
     getSnapshotSignature: getSnapshotSignature,
     getMemorySnapshot: buildSnapshot
   };

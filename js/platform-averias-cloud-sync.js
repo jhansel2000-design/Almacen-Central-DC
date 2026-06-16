@@ -296,6 +296,9 @@
             try {
               global.localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(ready));
             } catch (e) { /* noop */ }
+            if (global.PlatformAveriasUI && global.PlatformAveriasUI.applySnapshotToMemory) {
+              global.PlatformAveriasUI.applySnapshotToMemory(ready);
+            }
             lastKnownRemoteSeq = ready.localSeq || 0;
             broadcastSyncHint();
             notifyUpdated('push-ok');
@@ -370,6 +373,34 @@
       (snap[key] || []).forEach(function (r) { if (isCor(r)) n += 1; });
     });
     return n;
+  }
+
+  function listPendingKeys(snap) {
+    snap = normalizeSnapshot(snap || EMPTY);
+    var Core = global.PlatformAveriasCore;
+    function isPend(r) {
+      if (Core && Core.isPendingStatus) return Core.isPendingStatus(r);
+      return String(r && r.status || 'PENDIENTE').toUpperCase() !== 'CORREGIDO';
+    }
+    var keys = [];
+    (snap.incidences || []).forEach(function (r) { if (isPend(r)) keys.push('pallets:' + r.id); });
+    (snap.damages || []).forEach(function (r) { if (isPend(r)) keys.push('damages:' + r.id); });
+    (snap.securityIncidents || []).forEach(function (r) { if (isPend(r)) keys.push('security:' + r.id); });
+    (snap.audits5s || []).forEach(function (r) { if (isPend(r)) keys.push('audit:' + r.id); });
+    (snap.equipmentInspections || []).forEach(function (r) { if (isPend(r)) keys.push('equipment:' + r.id); });
+    return keys;
+  }
+
+  function hasLocalPendingNotInRemote(live, remote) {
+    live = normalizeSnapshot(live);
+    remote = normalizeSnapshot(remote);
+    var remoteKeys = {};
+    listPendingKeys(remote).forEach(function (k) { remoteKeys[k] = true; });
+    var missing = false;
+    listPendingKeys(live).forEach(function (k) {
+      if (!remoteKeys[k]) missing = true;
+    });
+    return missing;
   }
 
   function isEmptySnapshot(snap) {
@@ -551,6 +582,7 @@
     if (!live) return false;
     live = normalizeSnapshot(live);
     snap = normalizeSnapshot(snap);
+    if (hasLocalPendingNotInRemote(live, snap)) return true;
     var remoteSeq = snap.localSeq || 0;
     var liveSeq = live.localSeq || 0;
     if (remoteSeq > liveSeq) return false;
@@ -578,6 +610,11 @@
   function prepareSnapshotForPush(snap) {
     snap = pickBestPushSnapshot(snap);
     if (hasSupabaseConfig() && global.PlatformSupabaseBridge.isPrimary()) {
+      if (inLocalEditGrace()) {
+        snap.localSeq = Math.max(snap.localSeq || 0, lastKnownRemoteSeq) + 1;
+        snap.updatedAt = new Date().toISOString();
+        return Promise.resolve(normalizeSnapshot(snap));
+      }
       return pullFromSupabase().then(function (remote) {
         if (remote) snap = mergeAveriasSnapshots(snap, remote);
         snap.localSeq = Math.max(snap.localSeq || 0, (remote && remote.localSeq) || 0, lastKnownRemoteSeq) + 1;
@@ -648,26 +685,18 @@
 
   function applySnapshotToLocal(snap, silent, source) {
     if (!snap || !global.localStorage) return false;
-    if (pushing) return false;
+    if (pushing || inLocalEditGrace()) {
+      schedulePushFromLocal();
+      return false;
+    }
     snap = normalizeSnapshot(snap);
     var liveNow = getEffectiveLocalSnapshot();
     if (liveNow) {
       liveNow = normalizeSnapshot(liveNow);
+      snap = mergeAveriasSnapshots(liveNow, snap);
       if (shouldBlockStaleRemote(snap)) {
-        snap = mergeAveriasSnapshots(liveNow, snap);
         schedulePushFromLocal();
-      } else if (inLocalEditGrace()) {
-        snap = mergeAveriasSnapshots(liveNow, snap);
-      }
-    }
-    if (inLocalEditGrace()) {
-      var live = getEffectiveLocalSnapshot();
-      if (live) {
-        live = normalizeSnapshot(live);
-        snap = mergeAveriasSnapshots(live, snap);
-        if (isLocalSnapshotAhead(live, snap)) {
-          schedulePushFromLocal();
-        }
+        return false;
       }
     }
     var current = getEffectiveLocalSnapshot();
@@ -969,6 +998,10 @@
   function pullAll() {
     if (pulling) return Promise.resolve(getLocalSnapshot());
     if (pushing) return Promise.resolve(getEffectiveLocalSnapshot());
+    if (inLocalEditGrace()) {
+      schedulePushFromLocal();
+      return Promise.resolve(getEffectiveLocalSnapshot());
+    }
     pulling = true;
     var localBefore = getEffectiveLocalSnapshot();
     return pullFromJsonBin().then(function (jsonBinSnap) {
