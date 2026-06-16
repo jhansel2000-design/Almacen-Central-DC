@@ -414,8 +414,11 @@
     return { ok: true, data: data, pedido: pedido };
   }
 
+  /** Orden validador: fecha/hora de registro (no reordenar al cambiar estado). */
   function pedidoTimestamp(p) {
-    return Date.parse(p && (p.createdAt || p.updatedAt)) || 0;
+    var t = Date.parse(p && p.createdAt);
+    if (t) return t;
+    return Date.parse(p && p.updatedAt) || 0;
   }
 
   /** Validador: más antiguos primero (arriba). Preparador u otros: jaula + IDC. */

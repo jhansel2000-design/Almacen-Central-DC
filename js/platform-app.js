@@ -1148,6 +1148,7 @@
   function syncTvUnifiedPresentation() {
     var tv = !!(state.config && state.config.tvMode);
     document.body.classList.toggle('tv-unified-active', tv);
+    if (global.PlatformWakeLock) global.PlatformWakeLock.setHeld('wms-tv', tv);
 
     if (global.PlatformOpsDashboard) global.PlatformOpsDashboard.syncTvMode(false);
     document.body.classList.remove('ops-tv-active', 'facturas-tv-active');

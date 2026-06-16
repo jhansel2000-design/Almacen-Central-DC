@@ -74,6 +74,8 @@
     bindPresents();
     refreshWaiting();
 
+    if (global.PlatformWakeLock) global.PlatformWakeLock.acquire('desp-display');
+
     global.addEventListener('despacho-updated', onUpdate);
     global.addEventListener('despacho-live-share', onUpdate);
     global.addEventListener('despacho-live-lista', onUpdate);

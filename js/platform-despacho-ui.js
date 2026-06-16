@@ -73,6 +73,14 @@
     }
   }
 
+  function syncDespWakeLock(data) {
+    var WL = global.PlatformWakeLock;
+    if (!WL || !DS) return;
+    data = data || DS.load();
+    WL.setHeld('desp-lista-share', DS.isLiveShareListaActive(data));
+    WL.setHeld('desp-barcode-share', DS.isLiveShareActive());
+  }
+
   function applyRemoteSyncRefresh(host, fresh, screen, opts) {
     var formSnap = screen === 'barcode' ? captureShareForm(host)
       : (screen === 'registro' ? capturePrepForm(host) : null);
@@ -983,6 +991,8 @@
       updateShareListaUi(host, data);
     }
 
+    syncDespWakeLock(data);
+
     unbindSync = DS.bindSync(function (fresh) {
       if (!host.isConnected) return;
       handleVoiceAlerts(fresh, lastOpts && lastOpts.despachoArea);
@@ -1272,6 +1282,10 @@
     if (unbindSync) {
       unbindSync();
       unbindSync = null;
+    }
+    if (global.PlatformWakeLock) {
+      global.PlatformWakeLock.release('desp-lista-share');
+      global.PlatformWakeLock.release('desp-barcode-share');
     }
   }
 
