@@ -152,6 +152,11 @@
   }
 
   function boot() {
+    if (document.documentElement.classList.contains('ix-mobile-block')) {
+      var block = $('ixMobileBlock');
+      if (block) block.hidden = false;
+      return;
+    }
     if (!SYNC || !CONC || !DESK) {
       document.body.innerHTML += '<p class="noscript-msg">Error al cargar el portal de exactitud.</p>';
       return;

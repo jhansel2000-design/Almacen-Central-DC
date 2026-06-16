@@ -36,11 +36,59 @@
 
   function metaText() {
     if (!desk.meta || !desk.meta.fileName) {
-      return 'Cargue el Excel «Inventario disponible» exportado de Dynamics (ej. Inventario disponible_*.xlsx). Columna clave: Física disponible · solo CJ · almacén 300.';
+      return 'Exporte «Inventario disponible» de Dynamics · se guarda en este navegador hasta reemplazarlo';
     }
-    return (desk.meta.formatLabel || 'Excel') + ' · ' + desk.meta.fileName +
-      ' · ' + (desk.meta.count || 0) + ' líneas · ' +
-      fmtDate(desk.meta.importedAt);
+    return (desk.meta.formatLabel || 'Excel') + ' · ' + desk.meta.count + ' líneas CJ · importado ' +
+      fmtDate(desk.meta.importedAt) + ' · guardado hasta cambiar';
+  }
+
+  function renderExcelCard() {
+    var card = $('invDeskExcelCard');
+    var nameEl = $('invDeskExcelName');
+    var metaEl = $('invDeskExcelMeta');
+    var btnLoad = $('invBtnLoadSistema');
+    var btnReplace = $('invBtnReplaceSistema');
+    var hasFile = !!(desk.meta && desk.meta.fileName && desk.sistemaRows.length);
+    if (card) card.classList.toggle('is-loaded', hasFile);
+    if (nameEl) {
+      nameEl.textContent = hasFile
+        ? desk.meta.fileName
+        : 'Sin inventario de sistema cargado';
+    }
+    if (metaEl) metaEl.textContent = metaText();
+    if (btnLoad) btnLoad.textContent = hasFile ? 'Ver / recargar' : 'Cargar Excel';
+    if (btnReplace) btnReplace.hidden = !hasFile;
+  }
+
+  function renderAccVisual() {
+    var s = desk.stats;
+    var pct = s.total ? s.accuracy : 0;
+    var ring = $('invDeskAccRing');
+    var ringVal = $('invDeskAccRingVal');
+    var bar = $('invDeskAccBar');
+    if (ring) ring.style.setProperty('--acc-pct', String(pct));
+    if (ringVal) ringVal.textContent = s.total ? (s.accuracy + '%') : '—';
+    if (bar) bar.style.width = (s.total ? s.accuracy : 0) + '%';
+  }
+
+  function renderTabHint() {
+    var el = $('invDeskTabHint');
+    if (!el) return;
+    if (desk.tab === 'vivo') {
+      el.textContent = 'Ubicaciones que van contando en piso ahora mismo (último registro por ubicación · CJ).';
+    } else if (desk.tab === 'sistema') {
+      el.textContent = hasSistema()
+        ? 'Inventario exportado de Dynamics guardado localmente (' + desk.sistemaRows.length + ' líneas).'
+        : 'Cargue el Excel «Inventario disponible» — quedará guardado hasta que lo reemplace.';
+    } else if (desk.workspace === 'auditoria') {
+      el.textContent = 'Solo ubicaciones REVISAR · compare con el Excel de sistema y el conteo en vivo.';
+    } else {
+      el.textContent = 'Cuadre automático: Ok = coincide en CJ · Revisar = diferencia, sin conteo o extra.';
+    }
+  }
+
+  function hasSistema() {
+    return !!(desk.sistemaRows && desk.sistemaRows.length);
   }
 
   function renderKpis() {
@@ -49,7 +97,10 @@
     if ($('invDeskKpiRev')) $('invDeskKpiRev').textContent = String(s.revisar);
     if ($('invDeskKpiTotal')) $('invDeskKpiTotal').textContent = String(s.total);
     if ($('invDeskKpiAcc')) $('invDeskKpiAcc').textContent = s.total ? (s.accuracy + '%') : '—';
-    if ($('invDeskMeta')) $('invDeskMeta').textContent = metaText();
+    if ($('invDeskKpiLive')) $('invDeskKpiLive').textContent = String((desk.liveRows || []).length);
+    renderExcelCard();
+    renderAccVisual();
+    renderTabHint();
     var live = $('invDeskLive');
     if (live) {
       live.textContent = SYNC && SYNC.isOnline && SYNC.isOnline() ? '● Conteo en vivo' : '○ Sin enlace en vivo';
@@ -132,12 +183,15 @@
     });
     var title = $('invDeskTitle');
     var sub = $('invDeskSub');
+    var logo = $('invDeskLogo');
     if (desk.workspace === 'auditoria') {
       if (title) title.textContent = 'Auditoría de conteo';
-      if (sub) sub.textContent = 'Ubicaciones marcadas REVISAR · conteo en tiempo real';
+      if (sub) sub.textContent = 'Ubicaciones REVISAR · supervisión en tiempo real';
+      if (logo) logo.src = 'assets/img/icon-auditoria.svg?v=1';
     } else {
       if (title) title.textContent = 'Conciliación · Exactitud';
-      if (sub) sub.textContent = 'Sistema (Inventario disponible) vs conteo en vivo — unidad CJ';
+      if (sub) sub.textContent = 'Dashboard de exactitud · sistema vs conteo CJ';
+      if (logo) logo.src = 'assets/img/icon-exactitud.svg?v=1';
     }
     renderTable();
   }
@@ -177,7 +231,7 @@
         desk.sistemaRows = parsed.rows || [];
         desk.meta = parsed.meta || {};
         CONC.saveSistemaCache(desk.sistemaRows, desk.meta);
-        toastFn('Importado: ' + desk.sistemaRows.length + ' líneas (CJ)', 'ok');
+        toastFn('Guardado: ' + desk.sistemaRows.length + ' líneas (CJ) · permanece hasta reemplazar', 'ok');
         refreshDesk();
       } catch (e) {
         toastFn('No se pudo leer el Excel', 'err');
@@ -216,8 +270,10 @@
     });
     var fileInput = $('invSistemaFile');
     var btnLoad = $('invBtnLoadSistema');
+    var btnReplace = $('invBtnReplaceSistema');
     if (btnLoad && fileInput) {
       btnLoad.addEventListener('click', function () { fileInput.click(); });
+      if (btnReplace) btnReplace.addEventListener('click', function () { fileInput.click(); });
       fileInput.addEventListener('change', function () {
         if (fileInput.files && fileInput.files[0]) loadSistemaFile(fileInput.files[0]);
         fileInput.value = '';

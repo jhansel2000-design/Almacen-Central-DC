@@ -33,7 +33,7 @@
   <link rel="stylesheet" href="css/auth-cinematic.css?v=18">
   <link rel="stylesheet" href="css/auth-portals-layout.css?v=11">
   <link rel="stylesheet" href="css/dc-brand.css?v=11">
-  <link rel="stylesheet" href="css/inventario-portal.css?v=10">
+  <link rel="stylesheet" href="css/inventario-portal.css?v=11">
   <link rel="stylesheet" href="css/inventario-responsive.css?v=4">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -64,10 +64,24 @@
             <span class="inv-auth-step">Registros</span>
             <span class="inv-auth-step">CSV</span>
           </div>
-          <p class="inv-auth-desk-label">Escritorio web · cuadre en otra ventana</p>
-          <div class="inv-auth-steps inv-auth-steps--desk" aria-label="Acceso cuadre y auditoría">
-            <a class="inv-auth-step inv-auth-step--link inv-auth-step--conc" href="inventario-exactitud.html">Conciliación · Exactitud</a>
-            <a class="inv-auth-step inv-auth-step--link inv-auth-step--audit" href="inventario-exactitud.html?ws=auditoria">Auditoría</a>
+          <p class="inv-auth-desk-label inv-auth-desk-only">Escritorio web · supervisión en PC</p>
+          <div class="inv-auth-desk-access inv-auth-desk-only" aria-label="Acceso cuadre y auditoría">
+            <a class="inv-desk-card inv-desk-card--conc" href="inventario-exactitud.html">
+              <img class="inv-desk-card-icon" src="assets/img/icon-exactitud.svg?v=1" alt="" width="48" height="48">
+              <span class="inv-desk-card-body">
+                <strong>Conciliación · Exactitud</strong>
+                <span>Dashboard CJ · cuadre Ok / Revisar · Excel guardado</span>
+              </span>
+              <span class="inv-desk-card-arrow" aria-hidden="true">→</span>
+            </a>
+            <a class="inv-desk-card inv-desk-card--audit" href="inventario-exactitud.html?ws=auditoria">
+              <img class="inv-desk-card-icon" src="assets/img/icon-auditoria.svg?v=1" alt="" width="48" height="48">
+              <span class="inv-desk-card-body">
+                <strong>Auditoría de conteo</strong>
+                <span>Revisar ubicaciones · hoja en vivo</span>
+              </span>
+              <span class="inv-desk-card-arrow" aria-hidden="true">→</span>
+            </a>
           </div>
           <a href="index.html" class="inv-auth-back">← Volver al centro de mando WMS</a>
         </div>
