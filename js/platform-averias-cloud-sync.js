@@ -138,7 +138,13 @@
 
   function applyCloudSnapshotToUi(snap, silent, fromCloud) {
     if (!snap) return false;
+    if (isReportingLocked()) return false;
     snap = normalizeSnapshot(snap);
+    if (fromCloud) {
+      var remoteSeq = snap.localSeq || 0;
+      if (remoteSeq < lastKnownRemoteSeq) return false;
+      if (shouldBlockStaleRemote(snap)) return false;
+    }
     lastKnownRemoteSeq = Math.max(lastKnownRemoteSeq, snap.localSeq || 0);
     lastAppliedContentSig = contentSignature(snap);
     lastRemoteUpdatedAt = String(snap.updatedAt || '');
@@ -186,8 +192,8 @@
   function initSupabase() {
     if (!hasSupabaseConfig() || !global.PlatformSupabaseBridge.subscribe) return;
     global.PlatformSupabaseBridge.subscribe('averias', function (remote) {
-      if (!remote || pushing) return;
-      applyCloudSnapshotToUi(remote, false, true);
+      if (!remote || pushing || isReportingLocked()) return;
+      applyCloudSnapshotToUi(remote, true, true);
     });
   }
 
@@ -251,6 +257,15 @@
     audit: 'audits5s'
   };
   var lastKnownRemoteSeq = 0;
+  var reportingLockUntil = 0;
+
+  function setReportingLock(ms) {
+    reportingLockUntil = Date.now() + (ms || 25000);
+  }
+
+  function isReportingLocked() {
+    return Date.now() < reportingLockUntil;
+  }
 
   function partialFromPending(pending) {
     if (!pending || typeof pending !== 'object') return null;
@@ -288,6 +303,48 @@
       return { ok: !!ok };
     }).catch(function () {
       return { ok: false, reason: 'pending-push-fail' };
+    });
+  }
+
+  function publishReportLive(module, record) {
+    if (!record || record.id == null || !isLiveCloudOnly()) {
+      return Promise.resolve({ ok: false, cloud: false });
+    }
+    var arrKey = LIVE_MODULE_KEYS[module];
+    if (!arrKey) return Promise.resolve({ ok: false, cloud: false });
+
+    setReportingLock(25000);
+    pushing = true;
+
+    return pullFromSupabaseRetry().then(function (remote) {
+      var snap = remote ? normalizeSnapshot(remote) : normalizeSnapshot({});
+      var list = Array.isArray(snap[arrKey]) ? snap[arrKey].slice() : [];
+      var recordKey = String(record.id);
+      if (!list.some(function (r) { return r && String(r.id) === recordKey; })) {
+        list.push(record);
+      }
+      snap[arrKey] = list;
+      snap.localSeq = Math.max(snap.localSeq || 0, lastKnownRemoteSeq, (remote && remote.localSeq) || 0) + 1;
+      snap.updatedAt = new Date().toISOString();
+      return pushToSupabase(snap).then(function (ok) {
+        if (ok) {
+          reportingLockUntil = 0;
+          applyCloudSnapshotToUi(snap, true, false);
+          noteLocalSave(snap);
+          lastKnownRemoteSeq = snap.localSeq || 0;
+          setReportingLock(8000);
+          broadcastSyncHint();
+          notifyUpdated('push-ok');
+        } else {
+          reportingLockUntil = 0;
+        }
+        return { ok: !!ok, cloud: !!ok };
+      });
+    }).catch(function () {
+      reportingLockUntil = 0;
+      return { ok: false, cloud: false };
+    }).finally(function () {
+      pushing = false;
     });
   }
 
@@ -1009,11 +1066,11 @@
 
   function pullAll() {
     if (pulling) return Promise.resolve(getEffectiveLocalSnapshot());
-    if (pushing) return Promise.resolve(getEffectiveLocalSnapshot());
+    if (pushing || isReportingLocked()) return Promise.resolve(getEffectiveLocalSnapshot());
     if (isLiveCloudOnly()) {
       pulling = true;
       return pullFromSupabaseRetry().then(function (sbSnap) {
-        if (sbSnap) applyCloudSnapshotToUi(sbSnap, false, true);
+        if (sbSnap) applyCloudSnapshotToUi(sbSnap, true, true);
         lastPullAt = Date.now();
         updateSyncStatusUi();
         return sbSnap;
@@ -1721,7 +1778,10 @@
     shouldBlockStaleRemote: shouldBlockStaleRemote,
     inLocalEditGrace: inLocalEditGrace,
     isLiveCloudOnly: isLiveCloudOnly,
+    isReportingLocked: isReportingLocked,
+    setReportingLock: setReportingLock,
     isPushing: function () { return pushing; },
+    publishReportLive: publishReportLive,
     noteLocalSave: noteLocalSave,
     pushPendingRecord: pushPendingRecord,
     publishChange: publishChange,

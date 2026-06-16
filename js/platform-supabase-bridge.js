@@ -34,8 +34,9 @@
 
   function pollFallbackMs() {
     var cfg = global.PlatformSupabase && global.PlatformSupabase.getConfig && global.PlatformSupabase.getConfig();
+    if (cfg && cfg.supabase && cfg.supabase.primary !== false) return 8000;
     var ms = cfg && cfg.syncTargetMs;
-    if (typeof ms === 'number' && ms > 0) return ms;
+    if (typeof ms === 'number' && ms > 0) return Math.max(ms, 2000);
     var sec = cfg && cfg.pollSeconds;
     if (typeof sec === 'number' && sec > 0) return sec * 1000;
     return 5000;

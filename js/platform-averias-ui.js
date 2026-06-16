@@ -664,17 +664,30 @@
             };
         }
 
+        function isOnReportForm() {
+            return currentModule === 'pallets' &&
+                document.getElementById('palletsReport') &&
+                !document.getElementById('palletsReport').classList.contains('hidden');
+        }
+
         function applySnapshotToMemory(snap) {
             if (!snap) return false;
             applySnapshot(snap, false);
-            writeIndividualKeys();
+            if (!isLiveCloudOnly()) writeIndividualKeys();
             lastUiSignature = contentSignature(buildSnapshot());
+            if (!isOnReportForm()) updateAllStats();
             return true;
         }
 
         function applyRemoteSnapshot(snap, opts) {
             opts = opts || {};
             if (!snap) return false;
+            if (global.PlatformAveriasCloudSync) {
+                if (global.PlatformAveriasCloudSync.isReportingLocked &&
+                    global.PlatformAveriasCloudSync.isReportingLocked()) {
+                    return false;
+                }
+            }
             if (global.PlatformAveriasCloudSync &&
                 global.PlatformAveriasCloudSync.mergeAveriasSnapshots) {
                 snap = global.PlatformAveriasCloudSync.mergeAveriasSnapshots(buildSnapshot(), snap);
@@ -777,7 +790,10 @@
 
         function reloadFromSyncDebounced(ev) {
             clearTimeout(reloadSyncTimer);
+            if (isOnReportForm()) return;
             if (global.PlatformAveriasCloudSync) {
+                if (global.PlatformAveriasCloudSync.isReportingLocked &&
+                    global.PlatformAveriasCloudSync.isReportingLocked()) return;
                 if (global.PlatformAveriasCloudSync.isPushing && global.PlatformAveriasCloudSync.isPushing()) return;
                 if (global.PlatformAveriasCloudSync.inLocalEditGrace &&
                     global.PlatformAveriasCloudSync.inLocalEditGrace()) return;
@@ -928,7 +944,8 @@
                 if (ev.detail && ev.detail.store === 'averias') reloadFromSyncDebounced();
             });
             document.addEventListener('averias-updated', function (ev) {
-                if (ev.detail && (ev.detail.source === 'push-ok' || ev.detail.source === 'local-save')) return;
+                if (ev.detail && (ev.detail.source === 'push-ok' || ev.detail.source === 'local-save' ||
+                    ev.detail.source === 'apply')) return;
                 reloadFromSyncDebounced(ev);
             });
             document.addEventListener('averias-web-wiped', function () {
@@ -957,9 +974,16 @@
             });
             global.addEventListener('visibilitychange', function () {
                 if (document.visibilityState === 'visible') {
+                    if (isOnReportForm()) return;
+                    if (global.PlatformAveriasCloudSync) {
+                        if (global.PlatformAveriasCloudSync.isReportingLocked &&
+                            global.PlatformAveriasCloudSync.isReportingLocked()) return;
+                        if (global.PlatformAveriasCloudSync.isPushing &&
+                            global.PlatformAveriasCloudSync.isPushing()) return;
+                    }
                     if (global.PlatformAveriasCloudSync && global.PlatformAveriasCloudSync.pull) {
                         global.PlatformAveriasCloudSync.pull().then(function () {
-                            reloadFromSync();
+                            if (!isOnReportForm()) reloadFromSync();
                         });
                     } else if (global.PlatformLanSync && global.PlatformLanSync.isEnabled()) {
                         global.PlatformLanSync.forcePull().then(function () { reloadFromSyncDebounced(); });
@@ -1727,6 +1751,33 @@
             };
             if (avCore() && avCore().stampNewReport) avCore().stampNewReport(incidence);
 
+            if (isLiveCloudOnly() && global.PlatformAveriasCloudSync &&
+                global.PlatformAveriasCloudSync.publishReportLive) {
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.textContent = 'Guardando en Supabase…';
+                }
+                auditAction('REPORTAR', { module: 'pallets', location: incidence.location, product: incidence.product });
+                global.PlatformAveriasCloudSync.publishReportLive('pallets', incidence).then(function (result) {
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = 'GUARDAR INCIDENCIA';
+                    }
+                    if (!result || !result.cloud) {
+                        document.getElementById('reportError').textContent = '❌ No se guardó en Supabase. Revise conexión e intente de nuevo.';
+                        document.getElementById('reportError').classList.add('show');
+                        document.getElementById('reportSuccess').classList.remove('show');
+                        return;
+                    }
+                    document.getElementById('reportError').classList.remove('show');
+                    document.getElementById('reportSuccess').textContent = '✅ Guardado en Supabase — todos lo ven en vivo';
+                    document.getElementById('reportSuccess').classList.add('show');
+                    updateStats();
+                    renderPalletsReportedList();
+                });
+                return;
+            }
+
             allIncidences.push(incidence);
             ensureRecordStatuses();
             if (!isLiveCloudOnly()) {
@@ -1777,9 +1828,6 @@
                     ? '✅ Guardado en Supabase — todos lo ven en vivo'
                     : '❌ No se guardó. Revise conexión e intente de nuevo.';
                 document.getElementById('reportSuccess').classList.add('show');
-                setTimeout(function () {
-                    showPalletsDashboard();
-                }, 1200);
             });
         }
 
@@ -2720,6 +2768,7 @@
     bindClickBridge: initAveriasClickBridge,
     applyRemoteSnapshot: applyRemoteSnapshot,
     applySnapshotToMemory: applySnapshotToMemory,
+    isOnReportForm: isOnReportForm,
     getSnapshotSignature: getSnapshotSignature,
     getMemorySnapshot: buildSnapshot
   };
