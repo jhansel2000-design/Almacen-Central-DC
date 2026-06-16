@@ -678,3 +678,84 @@ body.executive-ui .inv-field {
   color: var(--inv-text-strong);
   -webkit-text-fill-color: var(--inv-text-strong);
 }
+
+/* ── Legibilidad móvil / RF (prioridad sobre tema global) ── */
+html.inv-rf-viewport {
+  --inv-fs-xs: 15px;
+  --inv-fs-sm: 16px;
+  --inv-fs-base: 18px;
+  --inv-fs-md: 20px;
+  --inv-fs-lg: 22px;
+  --inv-fs-xl: 24px;
+  --inv-fs-display: 36px;
+  --inv-text: #15202B;
+  --inv-text-strong: #0A121C;
+  --inv-text-secondary: #263238;
+  --inv-text-muted: #455A64;
+  --inv-text-hint: #546E7A;
+}
+
+html.inv-rf-viewport body,
+html.inv-rf-viewport .inv-app-shell,
+html.inv-rf-viewport .inv-auth-overlay .inv-phone,
+html.inv-rf-viewport .inv-auth-glass,
+html.inv-rf-viewport .inv-auth-glass .inv-body,
+html.inv-rf-viewport .inv-phone,
+html.inv-rf-viewport .inv-body,
+html.inv-rf-viewport .inv-login-card,
+html.inv-rf-viewport .inv-mode,
+html.inv-rf-viewport .inv-card,
+html.inv-rf-viewport .inv-admin-row,
+html.inv-rf-viewport .inv-record-item,
+html.inv-rf-viewport .inv-excel {
+  color: var(--inv-text);
+}
+
+html.inv-rf-viewport .inv-login-title,
+html.inv-rf-viewport .inv-login-card h3,
+html.inv-rf-viewport .inv-mode h3,
+html.inv-rf-viewport .inv-card h2,
+html.inv-rf-viewport .inv-prod-name,
+html.inv-rf-viewport .inv-admin-row strong,
+html.inv-rf-viewport .inv-record-loc {
+  color: var(--inv-text-strong);
+}
+
+html.inv-rf-viewport .inv-login-sub,
+html.inv-rf-viewport .inv-mode p,
+html.inv-rf-viewport .inv-card .desc,
+html.inv-rf-viewport .inv-admin-row span,
+html.inv-rf-viewport .inv-record-meta,
+html.inv-rf-viewport .inv-excel .dim {
+  color: var(--inv-text-hint);
+}
+
+html.inv-rf-viewport .inv-field,
+html.inv-rf-viewport .inv-field[readonly] {
+  color: var(--inv-text-strong);
+  -webkit-text-fill-color: var(--inv-text-strong);
+  background: #fff;
+}
+
+html.inv-rf-viewport .inv-header,
+html.inv-rf-viewport .inv-header .inv-step-title,
+html.inv-rf-viewport .inv-header .inv-header-name,
+html.inv-rf-viewport .inv-header .inv-view-subtitle,
+html.inv-rf-viewport .inv-header .inv-records-title,
+html.inv-rf-viewport .inv-header .inv-instr {
+  color: var(--inv-text-on-dark);
+}
+
+html.inv-rf-viewport .inv-header .inv-header-code,
+html.inv-rf-viewport .inv-header .inv-mode-badge {
+  color: var(--inv-text-on-dark-soft);
+}
+
+html.inv-rf-viewport .inv-nav button {
+  color: #fff;
+  font-size: var(--inv-fs-sm);
+}
+
+html.inv-rf-viewport .inv-btn-primary {
+  color: #fff;
+}

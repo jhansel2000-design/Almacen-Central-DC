@@ -146,6 +146,22 @@ body.auth-locked .inv-auth-overlay .inv-auth-scrim {
   background: var(--corp-canvas, #F4F6F9);
 }
 
+.inv-auth-glass .inv-login-title,
+.inv-auth-glass .inv-login-sub,
+.inv-auth-glass .inv-login-card,
+.inv-auth-glass .inv-login-card h3,
+.inv-auth-glass .inv-login-hint {
+  color: var(--inv-text, #15202B);
+}
+
+.inv-auth-glass .inv-login-sub {
+  color: var(--inv-text-hint, #546E7A);
+}
+
+.inv-auth-glass .inv-login-hint {
+  color: var(--corp-gold-dark, #A68B4B);
+}
+
 .inv-auth-overlay .auth-hub-link {
   min-height: 44px;
   font-size: 14px;

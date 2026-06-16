@@ -83,14 +83,15 @@ body.inv-dash-view {
 }
 
 /* ── Controles táctiles (lectores y teléfonos) ── */
+html.inv-rf-viewport,
 .inv-rf-device {
-  --inv-fs-xs: 14px;
-  --inv-fs-sm: 15px;
-  --inv-fs-base: 17px;
-  --inv-fs-md: 19px;
-  --inv-fs-lg: 21px;
-  --inv-fs-xl: 23px;
-  --inv-fs-display: 32px;
+  --inv-fs-xs: 15px;
+  --inv-fs-sm: 16px;
+  --inv-fs-base: 18px;
+  --inv-fs-md: 20px;
+  --inv-fs-lg: 22px;
+  --inv-fs-xl: 24px;
+  --inv-fs-display: 36px;
 }
 
 .inv-rf-device .inv-field,
@@ -182,6 +183,47 @@ body.inv-dash-view {
 html.inv-rf-viewport body.auth-locked {
   overflow: hidden;
   height: 100dvh;
+  background: var(--corp-canvas, #F4F6F9);
+  color: var(--inv-text, #15202B);
+}
+
+/* Login móvil: panel sólido tipo APK (sin vidrio sobre video) */
+html.inv-rf-viewport .inv-auth-overlay .inv-auth-bg-wrap {
+  display: none;
+}
+
+html.inv-rf-viewport .inv-auth-overlay {
+  background: var(--corp-canvas, #F4F6F9);
+}
+
+html.inv-rf-viewport .inv-auth-glass {
+  background: var(--corp-canvas, #F4F6F9) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
+html.inv-rf-viewport .inv-auth-glass .inv-phone,
+html.inv-rf-viewport .inv-auth-glass .inv-body {
+  background: var(--corp-canvas, #F4F6F9);
+}
+
+html.inv-rf-viewport .inv-auth-overlay .auth-hub-links {
+  flex-shrink: 0;
+  padding: 8px 12px max(10px, env(safe-area-inset-bottom, 0px));
+  gap: 6px;
+  background: #fff;
+  border-top: 1px solid var(--corp-border, #E2E8F0);
+}
+
+html.inv-rf-viewport .inv-auth-overlay .auth-hub-link {
+  min-height: 48px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #1E293B;
+  background: #F8FAFC;
+  border-color: #CBD5E1;
 }
 
 html.inv-rf-viewport .inv-auth-overlay {
@@ -223,8 +265,6 @@ html.inv-rf-viewport .inv-auth-glass {
   display: flex;
   flex-direction: column;
   border-radius: 0;
-  border: none;
-  background: rgba(8, 14, 22, 0.72);
 }
 
 html.inv-rf-viewport .inv-auth-glass .inv-phone {
@@ -240,16 +280,25 @@ html.inv-rf-viewport .inv-auth-glass .inv-body {
   -webkit-overflow-scrolling: touch;
 }
 
-html.inv-rf-viewport .inv-auth-overlay .auth-hub-links {
-  flex-shrink: 0;
-  padding: 8px 12px max(10px, env(safe-area-inset-bottom, 0px));
-  gap: 6px;
+html.inv-rf-viewport .inv-app-shell > .inv-phone,
+html.inv-rf-viewport .inv-app-shell .inv-body {
+  background: var(--corp-canvas, #F4F6F9);
 }
 
-html.inv-rf-viewport .inv-auth-overlay .auth-hub-link {
-  min-height: 48px;
-  font-size: 15px;
-  font-weight: 700;
+html.inv-rf-viewport .inv-swipe-hint,
+html.inv-rf-viewport .inv-swipe-track {
+  color: var(--inv-text-secondary, #263238);
+}
+
+html.inv-rf-viewport .inv-cloud-badge {
+  font-size: 14px;
+  font-weight: 800;
+  background: rgba(21, 32, 43, 0.88);
+  color: #ECEFF1;
+}
+
+html.inv-rf-viewport .inv-cloud-badge--live {
+  color: #A5D6A7;
 }
 
 /* Toast sobre nav inferior */

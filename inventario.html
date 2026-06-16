@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es" data-theme="dark">
+<html lang="es" data-theme="light">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -15,6 +15,7 @@
     var touch = m && (m('(pointer: coarse)').matches || m('(hover: none)').matches);
     if (scanner || w <= 720 || touch) {
       document.documentElement.classList.add('inv-rf-viewport');
+      document.body.classList.add('inv-rf-device');
     }
   })();
   </script>
@@ -28,12 +29,12 @@
   <script src="js/relay-bootstrap.js?v=1"></script>
   <link rel="icon" type="image/png" href="assets/img/jc-logo-64.png?v=5">
   <link rel="stylesheet" href="css/platform.css?v=32">
-  <link rel="stylesheet" href="css/inventario-auth.css?v=3">
+  <link rel="stylesheet" href="css/inventario-auth.css?v=4">
   <link rel="stylesheet" href="css/auth-cinematic.css?v=18">
   <link rel="stylesheet" href="css/auth-portals-layout.css?v=11">
   <link rel="stylesheet" href="css/dc-brand.css?v=11">
-  <link rel="stylesheet" href="css/inventario-portal.css?v=5">
-  <link rel="stylesheet" href="css/inventario-responsive.css?v=2">
+  <link rel="stylesheet" href="css/inventario-portal.css?v=6">
+  <link rel="stylesheet" href="css/inventario-responsive.css?v=3">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700&display=swap" rel="stylesheet">
