@@ -13,7 +13,7 @@
     { employeeId: 'admin', displayName: 'Administrador', role: 'ADMIN', active: true, adminPin: '1234' }
   ];
   var CORE = null;
-  var realtimeChannel = null;
+  var realtimeUnsub = null;
   var listeners = [];
 
   function core() {
@@ -242,15 +242,28 @@
   }
 
   function bindRealtime() {
-    var client = sb();
-    if (!client || realtimeChannel) return;
-    realtimeChannel = client.channel('inv_entries_live')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'inv_entries' }, function () {
+    if (realtimeUnsub || !global.PlatformSupabaseRealtime) return;
+    var refreshTimer = null;
+    function scheduleRefresh() {
+      clearTimeout(refreshTimer);
+      refreshTimer = global.setTimeout(function () {
         fetchEntries().then(function (list) {
           notify('sync', list);
         });
-      })
-      .subscribe();
+      }, 120);
+    }
+    realtimeUnsub = global.PlatformSupabaseRealtime.subscribeTable({
+      table: 'inv_entries',
+      events: ['INSERT', 'UPDATE', 'DELETE'],
+      pollFallbackMs: 8000,
+      pausePollOnRealtime: true,
+      onEvent: function (ev) {
+        if (ev.eventType === 'INSERT' && ev.new) {
+          notify('entry', mapEntry(ev.new));
+        }
+        scheduleRefresh();
+      }
+    });
   }
 
   function init() {

@@ -1,12 +1,12 @@
 /**
  * Puente Supabase — sync central de TODA la web (WMS, averías, despacho, inventario)
+ * Realtime: postgres_changes vía PlatformSupabaseRealtime + REST fallback
  */
 (function (global) {
   'use strict';
 
   var TABLE = 'web_snapshots';
-  var channels = {};
-  var pollTimers = {};
+  var snapshotUnsubs = {};
   var lastPullAt = {};
 
   function sb() {
@@ -32,6 +32,20 @@
     return { url: String(sb.url).replace(/\/+$/, ''), key: sb.anonKey };
   }
 
+  function pollFallbackMs() {
+    var cfg = global.PlatformSupabase && global.PlatformSupabase.getConfig && global.PlatformSupabase.getConfig();
+    var ms = cfg && cfg.syncTargetMs;
+    if (typeof ms === 'number' && ms > 0) return ms;
+    var sec = cfg && cfg.pollSeconds;
+    if (typeof sec === 'number' && sec > 0) return sec * 1000;
+    return 5000;
+  }
+
+  function realtimeEnabled() {
+    var cfg = global.PlatformSupabase && global.PlatformSupabase.getConfig && global.PlatformSupabase.getConfig();
+    return !cfg || cfg.realtime !== false;
+  }
+
   function sanitize(data) {
     try { return JSON.parse(JSON.stringify(data || {})); } catch (e) { return data || {}; }
   }
@@ -53,7 +67,7 @@
     var rc = restConfig();
     if (!rc || !moduleKey) return Promise.resolve(null);
     return global.fetch(
-      rc.url + '/rest/v1/' + TABLE + '?module=eq.' + encodeURIComponent(moduleKey) + '&select=data',
+      rc.url + '/rest/v1/' + TABLE + '?module=eq.' + encodeURIComponent(moduleKey) + '&select=data,updated_at',
       {
         headers: {
           apikey: rc.key,
@@ -65,7 +79,8 @@
     ).then(function (res) {
       if (!res.ok) return null;
       return res.json().then(function (rows) {
-        var data = rows && rows[0] && rows[0].data ? rows[0].data : null;
+        var row = rows && rows[0];
+        var data = row && row.data ? row.data : null;
         if (data) {
           markConnected(true);
           lastPullAt[moduleKey] = Date.now();
@@ -78,10 +93,11 @@
   function pushViaRest(moduleKey, data) {
     var rc = restConfig();
     if (!rc || !moduleKey || !data) return Promise.resolve(false);
+    var updatedAt = new Date().toISOString();
     var row = {
       module: moduleKey,
       data: sanitize(data),
-      updated_at: new Date().toISOString()
+      updated_at: updatedAt
     };
     return global.fetch(rc.url + '/rest/v1/' + TABLE, {
       method: 'POST',
@@ -95,7 +111,12 @@
       mode: 'cors'
     }).then(function (res) {
       var ok = res.ok;
-      if (ok) markConnected(true);
+      if (ok) {
+        markConnected(true);
+        if (global.PlatformSupabaseRealtime && global.PlatformSupabaseRealtime.markLocalPush) {
+          global.PlatformSupabaseRealtime.markLocalPush(moduleKey, updatedAt);
+        }
+      }
       return ok;
     }).catch(function () { return false; });
   }
@@ -120,64 +141,86 @@
 
   function push(moduleKey, data) {
     if (!moduleKey || !data) return Promise.resolve(false);
+    var updatedAt = new Date().toISOString();
     return ensureReady().then(function (client) {
       if (!client) return pushViaRest(moduleKey, data);
       var row = {
         module: moduleKey,
         data: sanitize(data),
-        updated_at: new Date().toISOString()
+        updated_at: updatedAt
       };
       return client.from(TABLE)
         .upsert(row, { onConflict: 'module' })
         .then(function (res) {
           if (res.error) return pushViaRest(moduleKey, data);
           markConnected(true);
+          if (global.PlatformSupabaseRealtime && global.PlatformSupabaseRealtime.markLocalPush) {
+            global.PlatformSupabaseRealtime.markLocalPush(moduleKey, updatedAt);
+          }
           return true;
         })
         .catch(function () { return pushViaRest(moduleKey, data); });
     }).catch(function () { return pushViaRest(moduleKey, data); });
   }
 
-  function startPollFallback(moduleKey, callback) {
-    if (pollTimers[moduleKey]) global.clearInterval(pollTimers[moduleKey]);
-    pull(moduleKey).then(function (data) {
-      if (data && typeof callback === 'function') callback(data);
-    });
-    pollTimers[moduleKey] = global.setInterval(function () {
-      if (global.document && global.document.visibilityState === 'hidden') return;
-      pull(moduleKey).then(function (data) {
-        if (data && typeof callback === 'function') callback(data);
-      });
-    }, 250);
-  }
-
+  /**
+   * Suscripción en tiempo real a un módulo (web_snapshots).
+   * INSERT / UPDATE / DELETE → callback con data JSON actualizada.
+   * Devuelve unsubscribe() síncrona.
+   */
   function subscribe(moduleKey, callback) {
     if (!moduleKey || typeof callback !== 'function') return function () {};
-    startPollFallback(moduleKey, callback);
-    return ensureReady().then(function (client) {
-      if (!client) return function () {};
-      if (channels[moduleKey]) {
-        try { client.removeChannel(channels[moduleKey]); } catch (e) { /* noop */ }
-      }
-      channels[moduleKey] = client.channel('web_snap_' + moduleKey)
-        .on('postgres_changes', {
-          event: '*',
-          schema: 'public',
-          table: TABLE,
-          filter: 'module=eq.' + moduleKey
-        }, function () {
-          pull(moduleKey).then(function (data) {
-            if (data) callback(data);
-          });
-        })
-        .subscribe();
-      return function () {
-        try {
-          if (channels[moduleKey]) client.removeChannel(channels[moduleKey]);
-          delete channels[moduleKey];
-        } catch (e) { /* noop */ }
+
+    if (snapshotUnsubs[moduleKey]) {
+      try { snapshotUnsubs[moduleKey](); } catch (e) { /* noop */ }
+      delete snapshotUnsubs[moduleKey];
+    }
+
+    if (!realtimeEnabled() || !global.PlatformSupabaseRealtime) {
+      var pollOnly = global.setInterval(function () {
+        if (global.document && global.document.visibilityState === 'hidden') return;
+        pull(moduleKey).then(function (data) {
+          if (data) callback(data);
+        });
+      }, pollFallbackMs());
+      snapshotUnsubs[moduleKey] = function () {
+        global.clearInterval(pollOnly);
+        delete snapshotUnsubs[moduleKey];
       };
-    }).catch(function () { return function () {}; });
+      pull(moduleKey).then(function (data) {
+        if (data) callback(data);
+      });
+      return snapshotUnsubs[moduleKey];
+    }
+
+    var unsub = global.PlatformSupabaseRealtime.subscribeSnapshot(moduleKey, function (data) {
+      if (data) callback(data);
+    }, {
+      pollFallbackMs: pollFallbackMs(),
+      pausePollOnRealtime: true
+    });
+
+    snapshotUnsubs[moduleKey] = function () {
+      try { unsub(); } catch (e) { /* noop */ }
+      delete snapshotUnsubs[moduleKey];
+    };
+
+    return snapshotUnsubs[moduleKey];
+  }
+
+  function unsubscribe(moduleKey) {
+    if (snapshotUnsubs[moduleKey]) {
+      snapshotUnsubs[moduleKey]();
+    }
+  }
+
+  function unsubscribeAll() {
+    Object.keys(snapshotUnsubs).forEach(function (key) {
+      snapshotUnsubs[key]();
+    });
+    if (global.PlatformSupabaseRealtime && global.PlatformSupabaseRealtime.unsubscribeAll) {
+      global.PlatformSupabaseRealtime.unsubscribeAll();
+    }
   }
 
   global.PlatformSupabaseBridge = {
@@ -188,6 +231,8 @@
     pull: pull,
     push: push,
     subscribe: subscribe,
+    unsubscribe: unsubscribe,
+    unsubscribeAll: unsubscribeAll,
     getLastPullAt: function (moduleKey) { return lastPullAt[moduleKey] || 0; }
   };
 })(typeof window !== 'undefined' ? window : this);
