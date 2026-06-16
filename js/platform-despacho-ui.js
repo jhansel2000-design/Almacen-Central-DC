@@ -11,6 +11,7 @@
   var DS = null;
   var unbindSync = null;
   var lastOpts = null;
+  var pendingSyncFresh = null;
   var displayWindows = { barcode: null, lista: null };
   var knownValidatorIds = Object.create(null);
   var voiceAlertsReady = false;
@@ -51,6 +52,73 @@
     if (/^referencia$/i.test(val)) return true;
     if (/^escriba(\s|$)/i.test(val)) return true;
     return false;
+  }
+
+  function isTypingInDespForm(host) {
+    var ae = global.document && global.document.activeElement;
+    if (!ae || !host || !host.contains(ae)) return false;
+    var tag = ae.tagName;
+    return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
+  }
+
+  function captureFocusSnap(host) {
+    var ae = global.document && global.document.activeElement;
+    if (!ae || !host || !host.contains(ae) || !ae.id) return null;
+    return { id: ae.id, start: ae.selectionStart, end: ae.selectionEnd };
+  }
+
+  function restoreFocusSnap(host, snap) {
+    if (!snap || !snap.id) return;
+    var el = global.document.getElementById(snap.id);
+    if (!el || !host.contains(el)) return;
+    el.focus();
+    if (typeof snap.start === 'number' && el.setSelectionRange) {
+      try {
+        el.setSelectionRange(snap.start, snap.end != null ? snap.end : snap.start);
+      } catch (e) { /* noop */ }
+    }
+  }
+
+  function applyRemoteSyncRefresh(host, fresh, screen, opts) {
+    var formSnap = screen === 'barcode' ? captureShareForm(host)
+      : (screen === 'registro' ? capturePrepForm(host) : null);
+    var focusSnap = captureFocusSnap(host);
+    var searchEl = host.querySelector('#despSearch');
+    var filtEl = host.querySelector('#despFilterEstado');
+    render(host, fresh, Object.assign({}, lastOpts || opts, {
+      screen: screen,
+      filterQ: searchEl ? searchEl.value : ((opts && opts.filterQ) || ''),
+      filterEstado: filtEl ? filtEl.value : ((opts && opts.filterEstado) || '')
+    }));
+    if (screen === 'barcode') {
+      restoreShareForm(host, formSnap);
+      applyRemoteLiveShareToForm(host, fresh);
+    } else if (screen === 'registro') {
+      restorePrepForm(host, formSnap);
+    }
+    restoreFocusSnap(host, focusSnap);
+    if (screen === 'barcode') updateShareScreenUi(host, fresh);
+    if (screen === 'validador') updateShareListaUi(host, fresh);
+  }
+
+  function flushPendingSync(host, screen, opts) {
+    if (!pendingSyncFresh || !host.isConnected) return;
+    var fresh = pendingSyncFresh;
+    pendingSyncFresh = null;
+    applyRemoteSyncRefresh(host, fresh, screen, opts);
+  }
+
+  function bindTypingSafeSync(host, screen, opts) {
+    host.querySelectorAll('input, textarea, select').forEach(function (el) {
+      if (el.__despTypingSafeBound) return;
+      el.__despTypingSafeBound = true;
+      el.addEventListener('blur', function () {
+        global.setTimeout(function () {
+          if (isTypingInDespForm(host)) return;
+          flushPendingSync(host, screen, opts);
+        }, 0);
+      });
+    });
   }
 
   function pasilloValueFromField(input) {
@@ -533,9 +601,9 @@
     var idc = host.querySelector('#despIdc');
     var jaula = host.querySelector('#despJaula');
     var cliente = host.querySelector('#despCliente');
-    if (idc) idc.value = snap.idc || '';
-    if (cliente) cliente.value = snap.cliente || '';
-    if (jaula) {
+    if (idc && global.document.activeElement !== idc) idc.value = snap.idc || '';
+    if (cliente && global.document.activeElement !== cliente) cliente.value = snap.cliente || '';
+    if (jaula && global.document.activeElement !== jaula) {
       jaula.value = snap.jaula || '';
     }
     if (snap.estado) {
@@ -881,24 +949,17 @@
     unbindSync = DS.bindSync(function (fresh) {
       if (!host.isConnected) return;
       handleVoiceAlerts(fresh, lastOpts && lastOpts.despachoArea);
-      var formSnap = screen === 'barcode' ? captureShareForm(host) : (screen === 'registro' ? capturePrepForm(host) : null);
-      var searchEl = host.querySelector('#despSearch');
-      var filtEl = host.querySelector('#despFilterEstado');
-      render(host, fresh, Object.assign({}, lastOpts, {
-        screen: screen,
-        filterQ: searchEl ? searchEl.value : (opts.filterQ || ''),
-        filterEstado: filtEl ? filtEl.value : (opts.filterEstado || '')
-      }));
-      if (screen === 'barcode') {
-        restoreShareForm(host, formSnap);
-        applyRemoteLiveShareToForm(host, fresh);
-      } else if (screen === 'registro') restorePrepForm(host, formSnap);
-      if (screen === 'barcode') updateShareScreenUi(host, fresh);
-      if (screen === 'validador') updateShareListaUi(host, fresh);
+      if (isTypingInDespForm(host)) {
+        pendingSyncFresh = fresh;
+        return;
+      }
+      applyRemoteSyncRefresh(host, fresh, screen, opts);
     });
   }
 
   function bindEvents(host, data, opts, userName) {
+    bindTypingSafeSync(host, normalizeScreen(opts.screen || 'registro'), opts);
+
     function onShareJaulaCleared() {
       var idcEl = host.querySelector('#despShareIdc');
       updateBarcodePanel(host,
@@ -937,13 +998,13 @@
       if (prepIdcInput) {
         prepIdcInput.addEventListener('input', function () {
           clearTimeout(prepLiveTimer);
-          prepLiveTimer = setTimeout(pushPrepLiveShare, 30);
+          prepLiveTimer = setTimeout(pushPrepLiveShare, 600);
         });
       }
       if (prepJaulaInput) {
         prepJaulaInput.addEventListener('input', function () {
           clearTimeout(prepLiveTimer);
-          prepLiveTimer = setTimeout(pushPrepLiveShare, 30);
+          prepLiveTimer = setTimeout(pushPrepLiveShare, 600);
         });
       }
 
@@ -1097,10 +1158,12 @@
     var searchEl = host.querySelector('#despSearch');
     var filtEl = host.querySelector('#despFilterEstado');
     function applyFilters() {
+      var focusSnap = captureFocusSnap(host);
       render(host, DS.load(), Object.assign({}, opts, {
         filterQ: searchEl ? searchEl.value : '',
         filterEstado: filtEl ? filtEl.value : ''
       }));
+      restoreFocusSnap(host, focusSnap);
     }
     if (searchEl) {
       var debounce;
