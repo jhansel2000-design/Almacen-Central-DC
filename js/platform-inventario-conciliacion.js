@@ -7,7 +7,6 @@
 
   var CACHE_SISTEMA = 'inv_dc_sistema_rows_v1';
   var CACHE_META = 'inv_dc_sistema_meta_v1';
-  var CACHE_CONTADO = 'inv_dc_contado_manual_v1';
 
   function cellStr(v) {
     if (v == null) return '';
@@ -239,133 +238,6 @@
     }
   }
 
-  function loadContadoCache() {
-    try {
-      var raw = global.localStorage.getItem(CACHE_CONTADO);
-      return raw ? JSON.parse(raw) : [];
-    } catch (e) {
-      return [];
-    }
-  }
-
-  function saveContadoCache(rows) {
-    try {
-      global.localStorage.setItem(CACHE_CONTADO, JSON.stringify(rows || []));
-      return { ok: true };
-    } catch (e) {
-      return { ok: false, error: e && e.message ? e.message : 'No se pudo guardar contado' };
-    }
-  }
-
-  function clearContadoCache() {
-    try {
-      global.localStorage.removeItem(CACHE_CONTADO);
-      return { ok: true };
-    } catch (e) {
-      return { ok: false, error: e && e.message ? e.message : 'No se pudo borrar contado' };
-    }
-  }
-
-  function parsePasteText(text, opts) {
-    opts = opts || {};
-    var lines = String(text || '').split(/\r?\n/).map(function (l) { return l.replace(/\r$/, ''); });
-    while (lines.length && !String(lines[lines.length - 1]).trim()) lines.pop();
-    if (!lines.length) return { rows: [], headers: [] };
-    var sep = lines[0].indexOf('\t') >= 0 ? '\t' : (lines[0].indexOf(';') >= 0 ? ';' : '\t');
-    var aoa = lines.map(function (line) { return line.split(sep); });
-    var headerIdx = 0;
-    for (var hi = 0; hi < Math.min(5, aoa.length); hi++) {
-      if (isDynamicsDisponible(aoa[hi])) { headerIdx = hi; break; }
-      var line = (aoa[hi] || []).join(' ').toLowerCase();
-      if (/ubic|codigo|fisica disponible|location|articulo|matric/.test(line)) { headerIdx = hi; break; }
-    }
-    var cols = detectColumns(aoa[headerIdx]);
-    var rows = [];
-    for (var r = headerIdx + 1; r < aoa.length; r++) {
-      var row = rowFromArray(cols, aoa[r], { strictWarehouse: opts.strictWarehouse !== false });
-      if (row && row.location) rows.push(row);
-    }
-    if (!rows.length && headerIdx === 0) {
-      cols = detectColumns([]);
-      for (var i = 0; i < aoa.length; i++) {
-        row = rowFromArray(cols, aoa[i], { strictWarehouse: false });
-        if (row && row.location) rows.push(row);
-      }
-    }
-    return {
-      rows: rows,
-      headers: (aoa[headerIdx] || []).map(cellStr).filter(Boolean),
-      format: cols.format || 'generic'
-    };
-  }
-
-  function contadoRowsToMap(rows) {
-    var map = {};
-    (rows || []).forEach(function (r) {
-      var loc = r.location || r.ubicacion || '';
-      var code = r.barcode || r.codigo || '';
-      if (!normLoc(loc) || !normCode(code)) return;
-      var qty = parseQty(r.qtyContada != null ? r.qtyContada : r.qtyCj);
-      if (qty === 0 && r.qtyContada !== 0 && r.qtyCj !== 0) return;
-      var key = rowKey(loc, code, r.matricula || '');
-      map[key] = {
-        location: loc,
-        barcode: code,
-        product: r.product || '',
-        matricula: r.matricula || '',
-        pack: r.pack || 'CJ',
-        qtyCj: qty,
-        userId: r.userId || r.usuario || '',
-        scannedAt: r.scannedAt || r.fecha || new Date().toISOString(),
-        source: 'manual'
-      };
-    });
-    return map;
-  }
-
-  function mergeCountMaps(scanMap, manualMap) {
-    var merged = {};
-    Object.keys(scanMap || {}).forEach(function (k) { merged[k] = scanMap[k]; });
-    Object.keys(manualMap || {}).forEach(function (k) { merged[k] = manualMap[k]; });
-    return merged;
-  }
-
-  function buildConciliationFromSources(sistemaRows, scanMap, manualRows) {
-    var manualMap = contadoRowsToMap(manualRows);
-    return buildConciliation(sistemaRows, mergeCountMaps(scanMap || {}, manualMap));
-  }
-
-  function exportWorkbookXlsx(sistemaRows, cuadreRows, contadoRows, fileName) {
-    if (!global.XLSX) return false;
-    var wb = global.XLSX.utils.book_new();
-    var inv = [['Ubicación', 'Código', 'Producto', 'Matrícula', 'Empaque', 'Sistema (CJ)']];
-    (sistemaRows || []).forEach(function (r) {
-      inv.push([r.location, r.barcode, r.product, r.matricula, r.pack || 'CJ', r.qtyCj]);
-    });
-    global.XLSX.utils.book_append_sheet(wb, global.XLSX.utils.aoa_to_sheet(inv), 'Inventario');
-    var cuadre = [['Ubicación', 'Código', 'Producto', 'Matrícula', 'Empaque', 'Sistema (CJ)', 'Contado (CJ)', 'Estado', 'Usuario', 'Fecha conteo']];
-    (cuadreRows || []).forEach(function (r) {
-      cuadre.push([
-        r.location, r.barcode, r.product, r.matricula, r.pack,
-        r.qtySistema == null ? '' : r.qtySistema,
-        r.qtyContada == null ? '' : r.qtyContada,
-        r.status, r.userId || '', r.scannedAt || ''
-      ]);
-    });
-    global.XLSX.utils.book_append_sheet(wb, global.XLSX.utils.aoa_to_sheet(cuadre), 'Cuadre general');
-    var cont = [['Ubicación', 'Código', 'Matrícula', 'Contado (CJ)', 'Usuario', 'Notas']];
-    (contadoRows || []).forEach(function (r) {
-      cont.push([
-        r.location || '', r.barcode || '', r.matricula || '',
-        r.qtyContada != null ? r.qtyContada : (r.qtyCj != null ? r.qtyCj : ''),
-        r.userId || '', r.notas || r.notes || ''
-      ]);
-    });
-    global.XLSX.utils.book_append_sheet(wb, global.XLSX.utils.aoa_to_sheet(cont), 'Contado');
-    global.XLSX.writeFile(wb, fileName || 'inventario-dc-3-hojas.xlsx');
-    return true;
-  }
-
   /** Agrupa conteos APK/web — solo cajas (CJ), último registro por ubicación+código */
   function aggregateScans(entries) {
     var map = {};
@@ -518,14 +390,6 @@
     loadSistemaCache: loadSistemaCache,
     saveSistemaCache: saveSistemaCache,
     clearSistemaCache: clearSistemaCache,
-    loadContadoCache: loadContadoCache,
-    saveContadoCache: saveContadoCache,
-    clearContadoCache: clearContadoCache,
-    parsePasteText: parsePasteText,
-    contadoRowsToMap: contadoRowsToMap,
-    mergeCountMaps: mergeCountMaps,
-    buildConciliationFromSources: buildConciliationFromSources,
-    exportWorkbookXlsx: exportWorkbookXlsx,
     aggregateScans: aggregateScans,
     scansToLiveRows: scansToLiveRows,
     buildConciliation: buildConciliation,

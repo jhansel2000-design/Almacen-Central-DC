@@ -60,11 +60,13 @@
     fileHistory: [],
     generalLayout: [
       { id: 'ops', enabled: true, order: 0 },
-      { id: 'fac', enabled: true, order: 1 }
+      { id: 'fac', enabled: true, order: 1 },
+      { id: 'desp', enabled: true, order: 2 }
     ],
     tvLayout: [
       { id: 'ops', enabled: true, order: 0 },
-      { id: 'fac', enabled: true, order: 1 }
+      { id: 'fac', enabled: true, order: 1 },
+      { id: 'desp', enabled: true, order: 2 }
     ],
     networkRelay: {
       enabled: false,

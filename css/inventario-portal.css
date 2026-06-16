@@ -749,11 +749,6 @@ a.inv-admin-link {
   background: linear-gradient(135deg, rgba(74, 20, 140, 0.45), rgba(0, 0, 0, 0.25));
 }
 
-.inv-desk-card--hoja {
-  border-color: rgba(197, 165, 114, 0.45);
-  background: linear-gradient(135deg, rgba(96, 72, 32, 0.5), rgba(0, 0, 0, 0.25));
-}
-
 /* Escritorio cuadre: oculto en móvil / lector RF (solo APK) */
 html.inv-rf-viewport .inv-auth-desk-only,
 html.inv-rf-viewport a.inv-admin-link {
