@@ -1,6 +1,7 @@
 /* Conciliación · Exactitud — hoja web vinculada a APK (Supabase en vivo) */
 
-.inv-app-shell--desk:not(.is-hidden) {
+.inv-app-shell--desk:not(.is-hidden),
+.ix-app-shell:not(.is-hidden) {
   position: fixed;
   inset: 0;
   z-index: 50;
@@ -14,7 +15,8 @@
   background: #eef1f5;
 }
 
-.inv-app-shell--desk > .inv-desk {
+.inv-app-shell--desk > .inv-desk,
+.ix-app-shell > .inv-desk {
   flex: 1;
   min-height: 0;
   display: flex;
@@ -295,6 +297,114 @@
   color: rgba(255,255,255,.88);
   line-height: 1.4;
 }
+
+a.inv-module-link {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+}
+
+.inv-hub-card .inv-phone {
+  background: transparent;
+  box-shadow: none;
+}
+
+/* Portal exactitud — login escritorio (ventana separada) */
+body.ix-auth-locked { overflow: hidden; background: #eef1f5; }
+
+.ix-auth-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: linear-gradient(145deg, #243447 0%, #15202b 100%);
+}
+
+.ix-auth-overlay[hidden] { display: none !important; }
+
+.ix-auth-panel {
+  width: min(420px, 100%);
+  background: #fff;
+  border-radius: 16px;
+  padding: 28px 24px;
+  box-shadow: 0 24px 48px rgba(0,0,0,.35);
+  text-align: center;
+}
+
+.ix-auth-back {
+  display: inline-block;
+  margin-bottom: 16px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #546e7a;
+  text-decoration: none;
+}
+
+.ix-auth-title {
+  margin: 12px 0 6px;
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #15202b;
+}
+
+.ix-auth-sub {
+  margin: 0 0 20px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #546e7a;
+  line-height: 1.45;
+}
+
+.ix-auth-form {
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ix-auth-form label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #37474f;
+  margin-top: 4px;
+}
+
+.ix-field {
+  width: 100%;
+  padding: 12px 14px;
+  border: 2px solid #cfd8dc;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.ix-auth-form .inv-desk-btn {
+  margin-top: 12px;
+  width: 100%;
+  justify-content: center;
+}
+
+.inv-toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 200;
+  background: #15202b;
+  color: #fff;
+  padding: 12px 20px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 14px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.inv-toast.show { opacity: 1; }
 
 @media (max-width: 720px) {
   .inv-desk-kpis { grid-template-columns: repeat(2, 1fr); }

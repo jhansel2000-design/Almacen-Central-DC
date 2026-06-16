@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="Área Inventario DC — Conteo RF, conciliación y auditoría (portales web separados).">
+  <meta name="theme-color" content="#15202B">
+  <meta http-equiv="X-Content-Type-Options" content="nosniff">
+  <title>Inventario DC — Área de trabajo</title>
+  <link rel="icon" type="image/png" href="assets/img/jc-logo-64.png?v=5">
+  <link rel="stylesheet" href="css/platform.css?v=32">
+  <link rel="stylesheet" href="css/inventario-auth.css?v=5">
+  <link rel="stylesheet" href="css/auth-cinematic.css?v=18">
+  <link rel="stylesheet" href="css/auth-portals-layout.css?v=11">
+  <link rel="stylesheet" href="css/dc-brand.css?v=11">
+  <link rel="stylesheet" href="css/inventario-conciliacion.css?v=2">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="auth-locked executive-ui">
+  <div class="auth-overlay inv-auth-overlay" role="dialog" aria-labelledby="invHubTitle">
+    <div class="auth-video-wrap inv-auth-bg-wrap" aria-hidden="true">
+      <div class="auth-video-scrim inv-auth-scrim"></div>
+    </div>
+    <div class="auth-layout">
+      <aside class="auth-hero inv-auth-hero">
+        <div class="auth-hero-panel">
+          <header class="auth-hero-head">
+            <img class="jc-logo-img jc-logo-img--hero auth-hero-logo-img" src="assets/img/jc-logo.png?v=5" alt="AC" width="52" height="52">
+            <div class="auth-hero-head-text">
+              <p class="auth-welcome-line">Portal independiente</p>
+              <h1 class="inv-auth-brand-title" id="invHubTitle">Inventario · DC</h1>
+            </div>
+          </header>
+          <p class="auth-hero-desc inv-auth-hero-desc">Tres ventanas web: la <strong>APK</strong> sigue en el lector; aquí elige dónde trabajar en PC.</p>
+          <div class="inv-auth-steps" aria-label="Módulos">
+            <span class="inv-auth-step">Inventario RF</span>
+            <span class="inv-auth-step">Exactitud</span>
+            <span class="inv-auth-step">Auditoría</span>
+          </div>
+          <a href="index.html" class="inv-auth-back">← Volver al centro de mando WMS</a>
+        </div>
+      </aside>
+      <div class="auth-stack">
+        <div class="auth-glass-card inv-auth-glass inv-hub-card">
+          <div class="inv-phone">
+            <div class="inv-header">
+              <div class="inv-header-top">
+                <div class="inv-brand">Almacén Central</div>
+              </div>
+            </div>
+            <div class="inv-body">
+              <h2 class="inv-login-title">Seleccione el módulo</h2>
+              <p class="inv-login-sub">Cada opción abre otra ventana web. La APK no se modifica.</p>
+              <div class="inv-module-pick">
+                <a class="inv-module inv-module--inv inv-module-link" href="inventario.html">
+                  <span class="inv-module-tag">Inventario RF</span>
+                  <h3 class="inv-module-title">Conteo en piso</h3>
+                  <p class="inv-module-desc">Portal tipo APK para contadores (pickup, rack, piso)</p>
+                </a>
+                <a class="inv-module inv-module--conc inv-module-link" href="inventario-exactitud.html">
+                  <span class="inv-module-tag">Exactitud</span>
+                  <h3 class="inv-module-title">Conciliación · Exactitud</h3>
+                  <p class="inv-module-desc">Cargue «Inventario disponible» y cuadre CJ vs conteo en vivo</p>
+                </a>
+                <a class="inv-module inv-module--audit inv-module-link" href="inventario-exactitud.html?ws=auditoria">
+                  <span class="inv-module-tag">Auditoría</span>
+                  <h3 class="inv-module-title">Auditoría de conteo</h3>
+                  <p class="inv-module-desc">Solo ubicaciones REVISAR al comparar con sistema</p>
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+        <nav class="auth-hub-links" aria-label="Otros portales">
+          <a href="index.html" class="auth-hub-link auth-hub-link--wms">Control de Mando DC</a>
+          <a href="despacho.html" class="auth-hub-link auth-hub-link--desp">Portal de despacho</a>
+          <a href="averias.html" class="auth-hub-link auth-hub-link--ops">Operaciones de piso</a>
+        </nav>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

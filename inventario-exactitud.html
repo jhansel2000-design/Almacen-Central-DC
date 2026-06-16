@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Conciliación · Exactitud — Inventario sistema vs conteo en vivo (CJ).">
+  <meta name="theme-color" content="#15202B">
+  <meta http-equiv="X-Content-Type-Options" content="nosniff">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://cdn.sheetjs.com; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' http://localhost:* http://127.0.0.1:* http://192.168.0.0/16 http://10.0.0.0/8 https://*.supabase.co wss://*.supabase.co; img-src 'self' data:; media-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <title>Conciliación · Exactitud — Almacén Central DC</title>
+  <link rel="icon" type="image/png" href="assets/img/jc-logo-64.png?v=5">
+  <script src="js/relay-bootstrap.js?v=1"></script>
+  <link rel="stylesheet" href="css/platform.css?v=32">
+  <link rel="stylesheet" href="css/dc-brand.css?v=11">
+  <link rel="stylesheet" href="css/inventario-conciliacion.css?v=2">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="ix-auth-locked">
+  <noscript><p class="noscript-msg">Activa JavaScript para usar Conciliación · Exactitud.</p></noscript>
+
+  <div class="ix-auth-overlay" id="ixAuthOverlay">
+    <div class="ix-auth-panel">
+      <a href="inventario-hub.html" class="ix-auth-back">← Cambiar módulo</a>
+      <img class="jc-logo-img" src="assets/img/jc-logo.png?v=5" alt="AC" width="48" height="48">
+      <h1 class="ix-auth-title" id="ixAuthTitle">Conciliación · Exactitud</h1>
+      <p class="ix-auth-sub" id="ixAuthSub">Escritorio web · lee conteos del lector en vivo (Supabase). La APK no cambia.</p>
+      <div class="ix-auth-form">
+        <label for="ixAdmUser">Usuario admin</label>
+        <input class="ix-field" id="ixAdmUser" type="text" value="admin" autocomplete="username">
+        <label for="ixAdmPin">PIN</label>
+        <input class="ix-field" id="ixAdmPin" type="password" placeholder="PIN administrador" autocomplete="current-password">
+        <button type="button" class="inv-desk-btn" id="ixBtnEnter">Entrar al cuadre</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="ix-app-shell is-hidden" id="ixApp" hidden>
+    <div class="inv-desk" id="invViewConciliacion">
+      <header class="inv-desk-header">
+        <div class="inv-desk-header-top">
+          <div>
+            <h1 class="inv-desk-title" id="invDeskTitle">Conciliación · Exactitud</h1>
+            <p class="inv-desk-sub" id="invDeskSub">Sistema vs conteo en vivo — unidad CJ</p>
+          </div>
+          <span class="inv-desk-live" id="invDeskLive">○ Sin enlace</span>
+        </div>
+        <div class="inv-desk-kpis">
+          <div class="inv-desk-kpi inv-desk-kpi--ok"><label>Ok</label><b id="invDeskKpiOk">0</b></div>
+          <div class="inv-desk-kpi inv-desk-kpi--warn"><label>Revisar</label><b id="invDeskKpiRev">0</b></div>
+          <div class="inv-desk-kpi"><label>Total</label><b id="invDeskKpiTotal">0</b></div>
+          <div class="inv-desk-kpi inv-desk-kpi--acc"><label>Exactitud</label><b id="invDeskKpiAcc">—</b></div>
+        </div>
+      </header>
+      <div class="inv-desk-toolbar">
+        <div class="inv-desk-tabs">
+          <button type="button" class="inv-desk-tab active" data-desk-tab="cuadre">Cuadre Ok / Revisar</button>
+          <button type="button" class="inv-desk-tab" data-desk-tab="vivo">En vivo · conteo</button>
+          <button type="button" class="inv-desk-tab" data-desk-tab="sistema">Inventario sistema</button>
+        </div>
+        <input type="file" id="invSistemaFile" accept=".xlsx,.xls" hidden>
+        <button type="button" class="inv-desk-btn" id="invBtnLoadSistema">Cargar Inventario disponible</button>
+        <button type="button" class="inv-desk-btn inv-desk-btn--ghost" id="invBtnRefreshDesk">Actualizar</button>
+        <button type="button" class="inv-desk-btn inv-desk-btn--ghost" id="invBtnExportCuadre">Exportar cuadre</button>
+        <a href="inventario-hub.html" class="inv-desk-btn inv-desk-btn--ghost">Otro módulo</a>
+        <p class="inv-desk-meta" id="invDeskMeta">Cargue «Inventario disponible» exportado de Dynamics (Física disponible · CJ · almacén 300).</p>
+      </div>
+      <div class="inv-desk-body">
+        <table class="inv-sheet">
+          <thead>
+            <tr>
+              <th>Ubicación</th><th>Código</th><th>Producto</th><th>Matrícula</th><th>Empaque</th>
+              <th>Sistema CJ</th><th>Contado CJ</th><th>Estado</th><th>Usuario</th><th>Fecha</th>
+            </tr>
+          </thead>
+          <tbody id="invDeskTbody"></tbody>
+        </table>
+      </div>
+      <nav class="inv-desk-nav">
+        <button type="button" class="inv-desk-btn inv-desk-btn--ghost ix-btn-logout">Salir</button>
+      </nav>
+    </div>
+  </div>
+
+  <div class="inv-toast" id="ixToast" role="status" aria-live="polite"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/platform-toast.js"></script>
+  <script src="js/platform-supabase.js?v=4"></script>
+  <script src="js/platform-supabase-realtime.js?v=1"></script>
+  <script src="js/platform-supabase-bridge.js?v=4"></script>
+  <script defer src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js" crossorigin="anonymous"></script>
+  <script src="js/platform-inventario-core.js?v=1"></script>
+  <script src="js/platform-inventario-sync.js?v=6"></script>
+  <script src="js/platform-inventario-conciliacion.js?v=2"></script>
+  <script src="js/platform-inventario-desk.js?v=3"></script>
+  <script src="js/platform-inventario-exactitud-app.js?v=1"></script>
+</body>
+</html>

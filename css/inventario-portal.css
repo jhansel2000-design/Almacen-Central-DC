@@ -631,6 +631,17 @@ body.inv-dash-view {
   color: var(--corp-gold, #C5A572);
 }
 
+.auth-portal-card--exactitud {
+  border-color: rgba(46, 125, 50, 0.35);
+}
+.auth-portal-card--exactitud:hover {
+  border-color: rgba(46, 125, 50, 0.55);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5), 0 0 24px rgba(46, 125, 50, 0.12);
+}
+.auth-portal-card--exactitud .auth-portal-cta {
+  color: #2e7d32;
+}
+
 .inv-auth-overlay .auth-hero-desc {
   font-size: 14px;
   line-height: 1.55;

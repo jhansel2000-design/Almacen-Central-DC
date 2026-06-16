@@ -52,7 +52,7 @@
     if ($('invDeskMeta')) $('invDeskMeta').textContent = metaText();
     var live = $('invDeskLive');
     if (live) {
-      live.textContent = SYNC && SYNC.isOnline && SYNC.isOnline() ? '● APK en vivo' : '○ Sin enlace en vivo';
+      live.textContent = SYNC && SYNC.isOnline && SYNC.isOnline() ? '● Conteo en vivo' : '○ Sin enlace en vivo';
       live.classList.toggle('is-on', !!(SYNC && SYNC.isOnline && SYNC.isOnline()));
     }
   }
@@ -134,10 +134,10 @@
     var sub = $('invDeskSub');
     if (desk.workspace === 'auditoria') {
       if (title) title.textContent = 'Auditoría de conteo';
-      if (sub) sub.textContent = 'Ubicaciones marcadas REVISAR · datos APK en tiempo real';
+      if (sub) sub.textContent = 'Ubicaciones marcadas REVISAR · conteo en tiempo real';
     } else {
       if (title) title.textContent = 'Conciliación · Exactitud';
-      if (sub) sub.textContent = 'Sistema (Inventario disponible) vs conteo APK — unidad CJ';
+      if (sub) sub.textContent = 'Sistema (Inventario disponible) vs conteo en vivo — unidad CJ';
     }
     renderTable();
   }
@@ -241,20 +241,22 @@
     desk.meta = cached.meta || {};
   }
 
+  function deskShell() {
+    return $('ixApp') || $('invApp');
+  }
+
   function showDesk(workspace) {
     setWorkspace(workspace);
-    var shell = $('invApp');
+    var shell = deskShell();
     if (shell) shell.classList.add('inv-app-shell--desk');
     var concEl = $('invViewConciliacion');
     if (concEl) concEl.hidden = false;
-    var audEl = $('invViewAuditoria');
-    if (audEl) audEl.hidden = true;
     desk.tab = workspace === 'auditoria' ? 'cuadre' : desk.tab;
     refreshDesk();
   }
 
   function hideDeskLayout() {
-    var shell = $('invApp');
+    var shell = deskShell();
     if (shell) shell.classList.remove('inv-app-shell--desk');
     var concEl = $('invViewConciliacion');
     if (concEl) concEl.hidden = true;
