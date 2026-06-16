@@ -122,27 +122,43 @@
   function attachFacAlmacenCompliance(snapFac, facData, facturasMetas, tipoCambio) {
     var FX = global.PlatformExcelFacturas;
     if (!FX || !snapFac || !facData) return;
-    var regs = Array.isArray(facData.registros) ? facData.registros : [];
-    if (!regs.length) return;
-    var agg = FX.buildAggregates(regs);
     var tc = FX.resolveTipoCambio(tipoCambio);
-    var view = FX.enrichAggregatesForDisplay(agg, tc);
-    var porAlm = view.porAlmacen || [];
+    var porRaw = [];
+    if (facData.aggregates && facData.aggregates.porAlmacen && facData.aggregates.porAlmacen.length) {
+      porRaw = facData.aggregates.porAlmacen;
+    } else {
+      var regs = Array.isArray(facData.registros) ? facData.registros : [];
+      if (!regs.length) return;
+      porRaw = FX.buildAggregates(regs).porAlmacen || [];
+    }
+    if (!porRaw.length) return;
     var compliance = [];
     try {
-      compliance = FX.buildMetasCompliance(porAlm, facturasMetas || {}, tc);
+      compliance = FX.buildMetasCompliance(porRaw, facturasMetas || {}, tc);
     } catch (eMeta) {
       compliance = [];
     }
-    snapFac.porAlmacen = porAlm;
+    var view = FX.enrichAggregatesForDisplay(
+      facData.aggregates || { porAlmacen: porRaw, totales: {} },
+      tc
+    );
+    snapFac.porAlmacen = view.porAlmacen || porRaw;
     snapFac.compliance = compliance;
   }
 
   function facComplianceStatusSection(block) {
     if (!block || !block.hasData) return '';
-    return '<div class="tv-slide-status tv-slide-status--fac">' +
+    return '<aside class="tv-fac-split-status tv-slide-status tv-slide-status--fac" aria-label="Estatus almacén">' +
       '<h3 class="tv-foot-title">Estatus almacén · real vs meta</h3>' +
-      facComplianceStatusHtml(block.compliance) + '</div>';
+      facComplianceStatusHtml(block.compliance) + '</aside>';
+  }
+
+  function facWrapChartWithStatus(chartBlock, slideId, block) {
+    if (slideId !== 'fac' || !facShowsAlmacenStatus(block)) return chartBlock;
+    return '<div class="tv-fac-split">' +
+      '<div class="tv-fac-split-chart">' + chartBlock + '</div>' +
+      facComplianceStatusSection(block) +
+      '</div>';
   }
 
   function facShowsAlmacenStatus(block) {
@@ -274,6 +290,12 @@
       '<div class="tv-desp-table-wrap">' + despLiveTableHtml(block) + '</div></div>';
   }
 
+  function facDataHasContent(data) {
+    if (!data) return false;
+    if (data.registros && data.registros.length) return true;
+    return !!(data.aggregates && data.aggregates.porAlmacen && data.aggregates.porAlmacen.length);
+  }
+
   function collectSnapshot(opsData, facData, tipoCambio, facturasMetas, config) {
     config = config || (global.PlatformStore && global.PlatformStore.getConfig && global.PlatformStore.getConfig()) || {};
     var siteTitle = (global.PlatformSite && global.PlatformSite.product) || 'Almacén Central DC';
@@ -330,16 +352,18 @@
       }
     }
 
-    var facRegs = facData && Array.isArray(facData.registros) ? facData.registros : [];
-    var facOk = FX && facData && facRegs.length > 0 &&
-      (FX.isFacturasData(facData) || facData.format === 'facturas' || facData.module === 'facturas');
+    var facOk = FX && facDataAll && facDataHasContent(facDataAll) &&
+      (FX.isFacturasData(facDataAll) || facDataAll.format === 'facturas' || facDataAll.module === 'facturas');
 
     if (facOk) {
       try {
+        var tcAll = FX.resolveTipoCambio(tipoCambio);
+        attachFacAlmacenCompliance(snap.fac, facDataAll, facturasMetas, tcAll);
+
         var CC = global.PlatformCommandCenter;
         if (CC && SF) {
           var ccModel = CC.buildModel({
-            facturas: facData,
+            facturas: facDataAll,
             operaciones: null,
             tipoCambio: tipoCambio,
             config: config
@@ -371,7 +395,7 @@
               { label: 'Acumulado', value: fmtMontoRd(fm.acumulada != null ? fm.acumulada : fm.total) },
               { label: 'Tipo de cambio', value: 'TC ' + fm.tipoCambio }
             ];
-            attachFacAlmacenCompliance(snap.fac, facDataAll || facData, facturasMetas, fm.tipoCambio);
+            attachFacAlmacenCompliance(snap.fac, facDataAll, facturasMetas, fm.tipoCambio);
             return appendDespToSnapshot(snap);
           }
         }
@@ -379,22 +403,23 @@
         snap.fac.hasData = true;
         snap.fac.useAlmacenLayout = true;
         snap.fac.useExecutiveLayout = true;
-        var tc = FX.resolveTipoCambio(tipoCambio);
+        snap.fac.centralLayout = false;
+        var tc = tcAll;
         snap.fac.tipoCambio = tc;
-        var facKpis = FX.buildKpis(facData, tc);
+        var facKpis = FX.buildKpis(facDataAll, tc);
         snap.fac.execKpis = [
           { label: 'Ventas totales', value: FX.formatMoney(facKpis.ventasPesos, 'DOP'), variant: 'dop' },
           { label: 'Órdenes de venta', value: String(facKpis.ordenes), variant: 'orders' },
           { label: 'Facturas', value: String(facKpis.facturas), variant: 'inv' },
           { label: 'Almacenes', value: String(facKpis.almacenes), variant: 'wh' }
         ];
-        var agg = facData.aggregates && facData.aggregates.porAlmacen
-          ? facData.aggregates
-          : FX.buildAggregates(facRegs);
+        var agg = facDataAll.aggregates && facDataAll.aggregates.porAlmacen
+          ? facDataAll.aggregates
+          : FX.buildAggregates(facDataAll.registros || []);
         var view = FX.enrichAggregatesForDisplay(agg, tc);
         var porAlm = view.porAlmacen || [];
         snap.fac.porAlmacen = porAlm;
-        attachFacAlmacenCompliance(snap.fac, facDataAll || facData, facturasMetas, tc);
+        attachFacAlmacenCompliance(snap.fac, facDataAll, facturasMetas, tc);
         var compliance = snap.fac.compliance || [];
         var compByAlm = {};
         compliance.forEach(function (c) {
@@ -648,10 +673,13 @@
         ? despSlideChartBlock(block, meta)
         : '<h3 class="tv-chart-title">' + esc(chartTitle) + '</h3>' +
           '<div class="tv-chart-box"><canvas id="' + chartCanvasId(slideId) + '"></canvas></div>');
-    var facStatusSection = slideId === 'fac' ? facComplianceStatusSection(block) : '';
+    var facSplit = slideId === 'fac' && facShowsAlmacenStatus(block);
+    if (facSplit) {
+      chartBlock = facWrapChartWithStatus(chartBlock, slideId, block);
+    }
     var footSection = '';
     if (slideId === 'fac') {
-      if (!facStatusSection && !facExec) {
+      if (!facSplit && !facExec) {
         footSection = '<div class="tv-slide-foot">' +
           '<h3 class="tv-foot-title">' + esc(footTitle) + '</h3>' + slideFootBody(slideId, block, meta) +
           '</div>';
@@ -668,7 +696,7 @@
     var slideClass = '';
     if (slideId === 'fac') {
       slideClass = ' tv-slide--fac' + facExtra;
-      if (facShowsAlmacenStatus(block)) slideClass += ' tv-slide--fac-status';
+      if (facSplit) slideClass += ' tv-slide--fac-split tv-slide--fac-status';
     } else if (slideId === 'desp') slideClass = ' tv-slide--desp';
     return '<section class="tv-slide' + slideClass + '" data-slide="' + slideId + '">' +
       '<header class="tv-slide-head">' +
@@ -677,7 +705,6 @@
       '<div class="tv-slide-grid' + (slideId === 'desp' ? ' tv-slide-grid--desp' : '') + '">' +
       '<div class="tv-slide-kpis">' + kpiBlock + '</div>' +
       '<div class="tv-slide-chart">' + chartBlock + '</div>' +
-      facStatusSection +
       footSection +
       '</div></section>';
   }
@@ -766,19 +793,20 @@
         slideEl.classList.toggle('tv-slide--central', !!block.centralLayout);
         slideEl.classList.toggle('tv-slide--fac-exec', facUsesExecutiveLayout(block));
         slideEl.classList.toggle('tv-slide--fac-status', facShowsAlmacenStatus(block));
+        slideEl.classList.toggle('tv-slide--fac-split', !!slideEl.querySelector('.tv-fac-split'));
       }
       var kpiHost = slideEl.querySelector('.tv-slide-kpis');
       if (kpiHost) {
         kpiHost.innerHTML = facKpiBlock(slideId, block, meta.emptyKpi);
         ok = true;
       }
-      var statusHost = slideEl.querySelector('.tv-slide-status--fac');
+      var statusHost = slideEl.querySelector('.tv-fac-split-status, .tv-slide-status--fac');
       if (statusHost) {
         statusHost.innerHTML = '<h3 class="tv-foot-title">Estatus almacén · real vs meta</h3>' +
           facComplianceStatusHtml(block.compliance);
         ok = true;
       } else {
-        var footHost = slideEl.querySelector('.tv-slide-foot--fac-status, .tv-slide-foot');
+        var footHost = slideEl.querySelector('.tv-slide-foot');
         if (footHost) {
           footHost.innerHTML = slideFootInner(slideId, block, meta);
         }

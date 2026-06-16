@@ -453,13 +453,46 @@ body.tv-mode.tv-unified-active #module-general {
 }
 
 .tv-slide--fac.tv-slide--central .tv-slide-grid,
-.tv-slide--fac.tv-slide--fac-exec .tv-slide-grid {
+.tv-slide--fac.tv-slide--fac-exec .tv-slide-grid,
+.tv-slide--fac.tv-slide--fac-split .tv-slide-grid {
   grid-template-rows: auto minmax(0, 1fr);
 }
 
-.tv-slide--fac.tv-slide--central.tv-slide--fac-status .tv-slide-grid,
-.tv-slide--fac.tv-slide--fac-exec.tv-slide--fac-status .tv-slide-grid,
-.tv-slide--fac.tv-slide--fac-status .tv-slide-grid {
+.tv-fac-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(280px, 0.85fr);
+  gap: clamp(0.45rem, 0.85vw, 0.75rem);
+  height: 100%;
+  min-height: 0;
+  width: 100%;
+}
+
+.tv-fac-split-chart {
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.tv-fac-split-chart .tv-fac-exec,
+.tv-fac-split-chart .fac-panel,
+.tv-fac-split-chart .tv-chart-box {
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+}
+
+.tv-fac-split-status {
+  min-width: 260px;
+  min-height: 0;
+  max-height: none;
+  flex-shrink: 0;
+}
+
+.tv-slide--fac.tv-slide--central.tv-slide--fac-status:not(.tv-slide--fac-split) .tv-slide-grid,
+.tv-slide--fac.tv-slide--fac-exec.tv-slide--fac-status:not(.tv-slide--fac-split) .tv-slide-grid,
+.tv-slide--fac.tv-slide--fac-status:not(.tv-slide--fac-split) .tv-slide-grid {
   grid-template-rows: auto minmax(0, 1fr) minmax(150px, 0.44fr);
 }
 
@@ -677,13 +710,25 @@ body.tv-mode.tv-unified-active #module-general {
   }
 }
 
+@media (max-width: 1100px) {
+  .tv-fac-split {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(0, 1fr) minmax(180px, auto);
+  }
+  .tv-fac-split-status {
+    min-width: 0;
+    min-height: 180px;
+  }
+}
+
 .tv-kpi-warn .tv-kpi-val { color: #fbbf24; }
 .tv-kpi-warn .tv-kpi-icon { color: #fbbf24; background: rgba(245, 158, 11, 0.12); border-color: rgba(251, 191, 36, 0.3); }
 
 .tv-slide--fac .tv-slide-kpis,
 .tv-slide--fac .tv-slide-chart,
 .tv-slide--fac .tv-slide-foot,
-.tv-slide--fac .tv-slide-status {
+.tv-slide--fac .tv-slide-status,
+.tv-slide--fac .tv-fac-split-status {
   border-color: rgba(52, 211, 153, 0.12);
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.32), inset 0 1px 0 rgba(52, 211, 153, 0.08);
 }
