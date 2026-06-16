@@ -533,11 +533,15 @@
     return SYNC.fetchEntries().then(function (entries) {
       var scanMap = CONC.aggregateScans(entries);
       desk.liveRows = CONC.scansToLiveRows(scanMap);
-      desk.concRows = CONC.buildConciliation(desk.sistemaRows, scanMap);
+      desk.concRows = CONC.buildConciliationFromSources(
+        desk.sistemaRows, scanMap, CONC.loadContadoCache()
+      );
       desk.stats = CONC.dashboardStats(desk.concRows);
       renderDesk();
     }).catch(function () {
-      desk.concRows = CONC.buildConciliation(desk.sistemaRows, {});
+      desk.concRows = CONC.buildConciliationFromSources(
+        desk.sistemaRows, {}, CONC.loadContadoCache()
+      );
       desk.stats = CONC.dashboardStats(desk.concRows);
       renderDesk();
     });
