@@ -31,11 +31,20 @@
     return cellStr(h).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   }
 
+  function isCjUnit(v) {
+    var unit = cellStr(v).toUpperCase();
+    if (!unit) return true;
+    if (unit === 'CJ' || unit.indexOf('CJ') >= 0) return true;
+    if (/^CAJA|^BOX|^CS|^CASE/.test(unit)) return true;
+    if (unit === 'UND' || unit.indexOf('UNID') >= 0) return false;
+    return true;
+  }
+
   function isDynamicsDisponible(headerRow) {
     var parts = (headerRow || []).map(normHeader);
     var hasCode = parts.some(function (t) { return t.indexOf('codigo de articulo') >= 0; });
     var hasLoc = parts.some(function (t) { return t === 'ubicacion'; });
-    var hasQty = parts.some(function (t) { return t === 'fisica disponible'; });
+    var hasQty = parts.some(function (t) { return t === 'fisica disponible' || t === 'inventario fisico'; });
     return hasCode && hasLoc && hasQty;
   }
 
@@ -54,7 +63,7 @@
         else if (t === 'ubicacion') dmap.loc = i;
         else if (t.indexOf('matricula') >= 0 && dmap.matricula < 0) dmap.matricula = i;
         else if (t === 'unidad de inventario') dmap.unit = i;
-        else if (t === 'fisica disponible' && dmap.qty < 0) dmap.qty = i;
+        else if ((t === 'fisica disponible' || t === 'inventario fisico') && dmap.qty < 0) dmap.qty = i;
       });
       return dmap;
     }
@@ -92,17 +101,16 @@
     return t.indexOf('300') >= 0 || t.indexOf('CENTRAL') >= 0;
   }
 
-  function rowFromArray(cols, arr) {
+  function rowFromArray(cols, arr, opts) {
+    opts = opts || {};
+    var strictWarehouse = opts.strictWarehouse !== false;
     if (!arr || !arr.length) return null;
     if (cols.format === 'dynamics_disponible') {
       var loc = cellStr(arr[cols.loc]);
       var barcode = cellStr(arr[cols.barcode]);
       if (!loc || !barcode) return null;
-      if (cols.warehouse >= 0 && !isWarehouseCentral(arr[cols.warehouse])) return null;
-      if (cols.unit >= 0) {
-        var unit = cellStr(arr[cols.unit]).toUpperCase();
-        if (unit && unit !== 'CJ') return null;
-      }
+      if (strictWarehouse && cols.warehouse >= 0 && !isWarehouseCentral(arr[cols.warehouse])) return null;
+      if (cols.unit >= 0 && !isCjUnit(arr[cols.unit])) return null;
       var qty = parseQty(cols.qty >= 0 ? arr[cols.qty] : 0);
       return {
         location: loc,
@@ -133,36 +141,55 @@
     };
   }
 
+  function parseSheet(aoa, sheetName, fileName, opts) {
+    opts = opts || {};
+    if (!aoa.length) return { rows: [], score: 0, sheet: sheetName, format: 'generic', headerIdx: 0, headers: [] };
+    var headerIdx = 0;
+    for (var hi = 0; hi < Math.min(25, aoa.length); hi++) {
+      if (isDynamicsDisponible(aoa[hi])) { headerIdx = hi; break; }
+      var line = (aoa[hi] || []).join(' ').toLowerCase();
+      if (/ubic|codigo|fisica disponible|location|articulo/.test(line)) { headerIdx = hi; break; }
+    }
+    var cols = detectColumns(aoa[headerIdx]);
+    var rows = [];
+    for (var r = headerIdx + 1; r < aoa.length; r++) {
+      var row = rowFromArray(cols, aoa[r], opts);
+      if (row && row.location) rows.push(row);
+    }
+    return {
+      rows: rows,
+      score: rows.length,
+      sheet: sheetName,
+      format: cols.format || 'generic',
+      headerIdx: headerIdx,
+      headers: (aoa[headerIdx] || []).map(cellStr).filter(Boolean)
+    };
+  }
+
   function parseWorkbook(wb, fileName) {
-    if (!wb || !wb.SheetNames || !wb.SheetNames.length) return { rows: [], meta: {} };
-    var best = { rows: [], score: 0 };
+    if (!wb || !wb.SheetNames || !wb.SheetNames.length) {
+      return { rows: [], meta: { fileName: fileName || '', count: 0, error: 'Archivo vacío' } };
+    }
+    var best = { rows: [], score: 0, sheet: '', format: 'generic', headers: [] };
     wb.SheetNames.forEach(function (sn) {
       var ws = wb.Sheets[sn];
       if (!ws || !global.XLSX) return;
-      var aoa = global.XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
-      if (!aoa.length) return;
-      var headerIdx = 0;
-      for (var hi = 0; hi < Math.min(20, aoa.length); hi++) {
-        if (isDynamicsDisponible(aoa[hi])) { headerIdx = hi; break; }
-        var line = (aoa[hi] || []).join(' ').toLowerCase();
-        if (/ubic|codigo|fisica disponible|location/.test(line)) { headerIdx = hi; break; }
-      }
-      var cols = detectColumns(aoa[headerIdx]);
-      var rows = [];
-      for (var r = headerIdx + 1; r < aoa.length; r++) {
-        var row = rowFromArray(cols, aoa[r]);
-        if (row && row.location) rows.push(row);
-      }
-      var score = rows.length;
-      if (score > best.score) {
-        best = {
-          rows: rows,
-          score: score,
-          sheet: sn,
-          format: cols.format || 'generic'
-        };
-      }
+      var aoa = global.XLSX.utils.sheet_to_json(ws, { header: 1, defval: '', raw: false });
+      var parsed = parseSheet(aoa, sn, fileName, { strictWarehouse: true });
+      if (parsed.score > best.score) best = parsed;
     });
+    if (best.score === 0) {
+      wb.SheetNames.forEach(function (sn) {
+        var ws = wb.Sheets[sn];
+        if (!ws || !global.XLSX) return;
+        var aoa = global.XLSX.utils.sheet_to_json(ws, { header: 1, defval: '', raw: false });
+        var parsed = parseSheet(aoa, sn, fileName, { strictWarehouse: false });
+        if (parsed.score > best.score) {
+          parsed.format = (parsed.format === 'dynamics_disponible' ? 'dynamics_disponible_relajado' : parsed.format);
+          best = parsed;
+        }
+      });
+    }
     return {
       rows: best.rows,
       meta: {
@@ -171,9 +198,12 @@
         format: best.format || 'generic',
         formatLabel: best.format === 'dynamics_disponible'
           ? 'Inventario disponible (Dynamics · Física disponible CJ)'
-          : 'Excel genérico',
+          : (best.format === 'dynamics_disponible_relajado'
+            ? 'Inventario disponible (Dynamics · todos almacenes CJ)'
+            : 'Excel genérico'),
         importedAt: new Date().toISOString(),
-        count: best.rows.length
+        count: best.rows.length,
+        headers: best.headers || []
       }
     };
   }
@@ -192,7 +222,10 @@
     try {
       global.localStorage.setItem(CACHE_SISTEMA, JSON.stringify(rows || []));
       global.localStorage.setItem(CACHE_META, JSON.stringify(meta || {}));
-    } catch (e) { /* noop */ }
+      return { ok: true };
+    } catch (e) {
+      return { ok: false, error: e && e.message ? e.message : 'No se pudo guardar' };
+    }
   }
 
   /** Agrupa conteos APK/web — solo cajas (CJ), último registro por ubicación+código */

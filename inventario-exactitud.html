@@ -20,7 +20,7 @@
   <script src="js/relay-bootstrap.js?v=1"></script>
   <link rel="stylesheet" href="css/platform.css?v=32">
   <link rel="stylesheet" href="css/dc-brand.css?v=11">
-  <link rel="stylesheet" href="css/inventario-conciliacion.css?v=5">
+  <link rel="stylesheet" href="css/inventario-conciliacion.css?v=6">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700&display=swap" rel="stylesheet">
@@ -88,6 +88,7 @@
           <strong id="invDeskExcelName">Sin inventario de sistema cargado</strong>
           <span id="invDeskExcelMeta">Exporte «Inventario disponible» de Dynamics · se guarda hasta reemplazarlo</span>
         </div>
+        <span class="inv-desk-excel-badge" id="invDeskExcelBadge">Sin archivo</span>
         <input type="file" id="invSistemaFile" accept=".xlsx,.xls" hidden>
         <button type="button" class="inv-desk-btn" id="invBtnLoadSistema">Cargar Excel</button>
         <button type="button" class="inv-desk-btn inv-desk-btn--ghost" id="invBtnReplaceSistema" hidden>Reemplazar</button>
@@ -143,11 +144,11 @@
   <script src="js/platform-supabase.js?v=4"></script>
   <script src="js/platform-supabase-realtime.js?v=1"></script>
   <script src="js/platform-supabase-bridge.js?v=4"></script>
-  <script defer src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js" crossorigin="anonymous"></script>
   <script src="js/platform-inventario-core.js?v=1"></script>
   <script src="js/platform-inventario-sync.js?v=6"></script>
-  <script src="js/platform-inventario-conciliacion.js?v=4"></script>
-  <script src="js/platform-inventario-desk.js?v=5"></script>
-  <script src="js/platform-inventario-exactitud-app.js?v=4"></script>
+  <script src="js/platform-inventario-conciliacion.js?v=5"></script>
+  <script src="js/platform-inventario-desk.js?v=6"></script>
+  <script src="js/platform-inventario-exactitud-app.js?v=5"></script>
 </body>
 </html>

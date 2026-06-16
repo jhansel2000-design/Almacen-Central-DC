@@ -35,10 +35,15 @@
   }
 
   function metaText() {
+    if (desk.excelLoading) return 'Importando archivo…';
+    if (desk.meta && desk.meta.loadError) {
+      return (desk.meta.loadHint || 'Revise que sea «Inventario disponible» con columna Física disponible (CJ)');
+    }
     if (!desk.meta || !desk.meta.fileName) {
       return 'Exporte «Inventario disponible» de Dynamics · se guarda en este navegador hasta reemplazarlo';
     }
-    return (desk.meta.formatLabel || 'Excel') + ' · ' + desk.meta.count + ' líneas CJ · importado ' +
+    return (desk.meta.formatLabel || 'Excel') + ' · hoja «' + (desk.meta.sheet || '—') + '» · ' +
+      desk.sistemaRows.length.toLocaleString('es-DO') + ' líneas CJ · importado ' +
       fmtDate(desk.meta.importedAt) + ' · guardado hasta cambiar';
   }
 
@@ -46,18 +51,101 @@
     var card = $('invDeskExcelCard');
     var nameEl = $('invDeskExcelName');
     var metaEl = $('invDeskExcelMeta');
+    var badge = $('invDeskExcelBadge');
     var btnLoad = $('invBtnLoadSistema');
     var btnReplace = $('invBtnReplaceSistema');
     var hasFile = !!(desk.meta && desk.meta.fileName && desk.sistemaRows.length);
-    if (card) card.classList.toggle('is-loaded', hasFile);
-    if (nameEl) {
-      nameEl.textContent = hasFile
-        ? desk.meta.fileName
-        : 'Sin inventario de sistema cargado';
+    var loading = desk.excelLoading;
+    if (card) {
+      card.classList.toggle('is-loaded', hasFile && !loading);
+      card.classList.toggle('is-loading', !!loading);
+      card.classList.toggle('is-error', !!(desk.meta && desk.meta.loadError && !loading));
     }
-    if (metaEl) metaEl.textContent = metaText();
-    if (btnLoad) btnLoad.textContent = hasFile ? 'Ver / recargar' : 'Cargar Excel';
-    if (btnReplace) btnReplace.hidden = !hasFile;
+    if (nameEl) {
+      if (loading) nameEl.textContent = 'Leyendo Excel…';
+      else if (hasFile) nameEl.textContent = desk.meta.fileName;
+      else if (desk.meta && desk.meta.loadError) nameEl.textContent = 'No se pudo cargar el archivo';
+      else nameEl.textContent = 'Sin inventario de sistema cargado';
+    }
+    if (metaEl) {
+      if (loading) metaEl.textContent = 'Importando «Inventario disponible» — espere un momento';
+      else metaEl.textContent = metaText();
+    }
+    if (badge) {
+      if (loading) {
+        badge.textContent = 'Cargando…';
+        badge.className = 'inv-desk-excel-badge inv-desk-excel-badge--load';
+      } else if (hasFile) {
+        badge.textContent = '✓ ' + desk.sistemaRows.length.toLocaleString('es-DO') + ' líneas guardadas';
+        badge.className = 'inv-desk-excel-badge inv-desk-excel-badge--ok';
+      } else if (desk.meta && desk.meta.loadError) {
+        badge.textContent = 'Error';
+        badge.className = 'inv-desk-excel-badge inv-desk-excel-badge--err';
+      } else {
+        badge.textContent = 'Sin archivo';
+        badge.className = 'inv-desk-excel-badge';
+      }
+    }
+    if (btnLoad) {
+      btnLoad.disabled = !!loading;
+      btnLoad.textContent = loading ? 'Importando…' : (hasFile ? 'Cargar otro' : 'Cargar Excel');
+    }
+    if (btnReplace) {
+      btnReplace.hidden = !hasFile || !!loading;
+      btnReplace.disabled = !!loading;
+    }
+  }
+
+  function setExcelLoading(on) {
+    desk.excelLoading = !!on;
+    renderExcelCard();
+  }
+
+  function ensureXlsx() {
+    return new Promise(function (resolve, reject) {
+      if (global.XLSX) { resolve(global.XLSX); return; }
+      var tries = 0;
+      var timer = global.setInterval(function () {
+        tries++;
+        if (global.XLSX) {
+          global.clearInterval(timer);
+          resolve(global.XLSX);
+        } else if (tries > 80) {
+          global.clearInterval(timer);
+          reject(new Error('SheetJS no cargó'));
+        }
+      }, 100);
+    });
+  }
+
+  function applyParsedExcel(parsed, fileName) {
+    desk.sistemaRows = parsed.rows || [];
+    desk.meta = parsed.meta || {};
+    desk.meta.fileName = desk.meta.fileName || fileName || '';
+    desk.meta.count = desk.sistemaRows.length;
+    if (desk.sistemaRows.length === 0) {
+      desk.meta.loadError = true;
+      var hdr = (desk.meta.headers || []).slice(0, 6).join(' · ');
+      desk.meta.loadHint = hdr
+        ? ('Columnas detectadas: ' + hdr)
+        : 'Use export «Inventario disponible» de Dynamics (Física disponible · CJ)';
+    } else {
+      desk.meta.loadError = false;
+      desk.meta.loadHint = '';
+    }
+    var saved = CONC.saveSistemaCache(desk.sistemaRows, desk.meta);
+    if (!saved.ok) {
+      toastFn('Importado en memoria (' + desk.sistemaRows.length + ' líneas) pero no se guardó: ' + saved.error, 'err');
+    }
+    desk.tab = 'sistema';
+    desk.concRows = CONC.buildConciliation(desk.sistemaRows, CONC.aggregateScans([]));
+    desk.stats = CONC.dashboardStats(desk.concRows);
+    renderDesk();
+    if (desk.sistemaRows.length === 0) {
+      toastFn('0 líneas CJ encontradas. ' + (desk.meta.loadHint || 'Revise columnas del Excel.'), 'err');
+    } else {
+      toastFn('✓ ' + desk.sistemaRows.length.toLocaleString('es-DO') + ' líneas · guardado' + (saved.ok ? ' en navegador' : ' (solo sesión)'), 'ok');
+    }
   }
 
   function renderAccVisual() {
@@ -204,6 +292,10 @@
       desk.concRows = CONC.buildConciliation(desk.sistemaRows, scanMap);
       desk.stats = CONC.dashboardStats(desk.concRows);
       renderDesk();
+    }).catch(function () {
+      desk.concRows = CONC.buildConciliation(desk.sistemaRows, {});
+      desk.stats = CONC.dashboardStats(desk.concRows);
+      renderDesk();
     });
   }
 
@@ -219,25 +311,32 @@
 
   function loadSistemaFile(file) {
     if (!file || !CONC) return;
-    if (!global.XLSX) {
-      toastFn('SheetJS no cargó. Revise conexión e intente de nuevo.', 'err');
-      return;
-    }
-    var reader = new FileReader();
-    reader.onload = function () {
-      try {
-        var wb = global.XLSX.read(reader.result, { type: 'array' });
-        var parsed = CONC.parseWorkbook(wb, file.name);
-        desk.sistemaRows = parsed.rows || [];
-        desk.meta = parsed.meta || {};
-        CONC.saveSistemaCache(desk.sistemaRows, desk.meta);
-        toastFn('Guardado: ' + desk.sistemaRows.length + ' líneas (CJ) · permanece hasta reemplazar', 'ok');
-        refreshDesk();
-      } catch (e) {
-        toastFn('No se pudo leer el Excel', 'err');
-      }
-    };
-    reader.readAsArrayBuffer(file);
+    setExcelLoading(true);
+    ensureXlsx().then(function () {
+      var reader = new FileReader();
+      reader.onerror = function () {
+        setExcelLoading(false);
+        toastFn('No se pudo leer el archivo', 'err');
+      };
+      reader.onload = function () {
+        try {
+          var wb = global.XLSX.read(reader.result, { type: 'array', cellDates: false });
+          var parsed = CONC.parseWorkbook(wb, file.name);
+          setExcelLoading(false);
+          applyParsedExcel(parsed, file.name);
+          refreshDesk();
+        } catch (e) {
+          setExcelLoading(false);
+          desk.meta = { fileName: file.name, loadError: true, loadHint: String(e.message || 'Formato no válido') };
+          renderExcelCard();
+          toastFn('No se pudo leer el Excel: ' + (e.message || 'error'), 'err');
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    }).catch(function () {
+      setExcelLoading(false);
+      toastFn('Biblioteca Excel aún no cargó. Espere 2 segundos e intente de nuevo.', 'err');
+    });
   }
 
   function exportCuadre() {
@@ -295,6 +394,9 @@
     var cached = CONC.loadSistemaCache();
     desk.sistemaRows = cached.rows || [];
     desk.meta = cached.meta || {};
+    if (desk.sistemaRows.length && desk.meta.fileName) {
+      desk.meta.count = desk.sistemaRows.length;
+    }
   }
 
   function deskShell() {
