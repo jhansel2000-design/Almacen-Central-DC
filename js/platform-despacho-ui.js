@@ -39,12 +39,6 @@
     });
   }
 
-  function announceNuevoIdcPedido(pedido) {
-    if (!pedido || !global.PlatformDespachoVoice) return;
-    global.PlatformDespachoVoice.announceNuevoIdc(pedido);
-    knownValidatorIds[pedido.id] = true;
-  }
-
   function isAutofillJunk(val) {
     val = String(val || '').trim();
     if (!val) return false;
@@ -1017,7 +1011,6 @@
             toast(res.error, 'warn');
             return;
           }
-          if (!res.updated) announceNuevoIdcPedido(res.pedido);
           toast(res.updated ? 'IDC actualizado — en seguimiento validador' : 'IDC registrado — en seguimiento validador', 'success');
           DS.publishLiveShare(vals.idc, vals.jaula, vals.estado, userName);
           var snap = capturePrepForm(host);
