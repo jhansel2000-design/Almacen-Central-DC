@@ -688,5 +688,8 @@
         forceSyncPrimaryCredentials();
       }
     });
+    global.addEventListener('registry-sync', function () {
+      forceSyncPrimaryCredentials();
+    });
   }
 })(typeof window !== 'undefined' ? window : this);

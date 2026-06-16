@@ -92,6 +92,20 @@
     });
   }
 
+  function isCloudPrimary() {
+    return !!(global.PlatformRegistryCloudSync && global.PlatformRegistryCloudSync.isCloudPrimary &&
+      global.PlatformRegistryCloudSync.isCloudPrimary());
+  }
+
+  function syncFromCloud() {
+    if (!global.PlatformRegistryCloudSync || !global.PlatformRegistryCloudSync.whenReady) {
+      return Promise.resolve({ ok: false, reason: 'no-registry-sync' });
+    }
+    return global.PlatformRegistryCloudSync.whenReady().then(function () {
+      return { ok: true, source: 'registry' };
+    });
+  }
+
   function importFromWeb() {
     if (!global.PlatformAdmin || !global.PlatformAdmin.importWebUsers) {
       return Promise.resolve({ ok: false, reason: 'no-admin' });
@@ -106,11 +120,25 @@
 
   function ready() {
     if (!readyPromise) {
-      readyPromise = importFromWeb().then(function (result) {
-        return result;
+      readyPromise = syncFromCloud().then(function (cloud) {
+        if (cloud && cloud.ok) return cloud;
+        if (isCloudPrimary()) return cloud || { ok: false, reason: 'cloud-empty' };
+        return importFromWeb();
       });
     }
     return readyPromise;
+  }
+
+  function refresh() {
+    if (isCloudPrimary() && global.PlatformRegistryCloudSync && global.PlatformRegistryCloudSync.pullAll) {
+      return global.PlatformRegistryCloudSync.pullAll().then(function () {
+        return { ok: true, source: 'registry' };
+      });
+    }
+    return syncFromCloud().then(function (cloud) {
+      if (cloud && cloud.ok) return cloud;
+      return importFromWeb();
+    });
   }
 
   function publishToDisk() {
@@ -118,7 +146,26 @@
   }
 
   function publishLive() {
-    return postPublishEndpoint('/api/publish-web-users-live', getStaffUsersPayload());
+    var cloudPush = (global.PlatformRegistryCloudSync && global.PlatformRegistryCloudSync.pushLocal)
+      ? global.PlatformRegistryCloudSync.pushLocal()
+      : Promise.resolve(false);
+    return cloudPush.then(function (cloudOk) {
+      return postPublishEndpoint('/api/publish-web-users-live', getStaffUsersPayload()).then(function (body) {
+        if (body && body.ok) body.cloud = !!cloudOk;
+        return body;
+      }).catch(function (err) {
+        if (cloudOk) {
+          return {
+            ok: true,
+            live: true,
+            cloud: true,
+            pushed: true,
+            message: 'Usuarios sincronizados en la nube (todos los dispositivos).'
+          };
+        }
+        throw err;
+      });
+    });
   }
 
   function downloadWebUsersExport() {
@@ -139,7 +186,7 @@
   global.PlatformWebUsers = {
     isPublicWeb: isPublicWeb,
     ready: ready,
-    refresh: importFromWeb,
+    refresh: refresh,
     publishToDisk: publishToDisk,
     publishLive: publishLive,
     downloadWebUsersExport: downloadWebUsersExport,
