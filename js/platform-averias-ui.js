@@ -325,7 +325,7 @@
 
         var FIT_KEY = 'averias_dc_fit_screen';
         var SNAPSHOT_KEY = 'averias_dc_snapshot';
-        var isLoadingRemoteSnapshot = false;
+        var memoryLocalSeq = 0;
 
         function datesHtml(record) {
             var C = avCore();
@@ -333,12 +333,12 @@
         }
 
         function buildSnapshot() {
-            var prevSeq = 0;
+            var prevSeq = memoryLocalSeq;
             try {
                 var raw = localStorage.getItem(SNAPSHOT_KEY);
                 if (raw) {
                     var prev = JSON.parse(raw);
-                    prevSeq = prev && prev.localSeq ? prev.localSeq : 0;
+                    prevSeq = Math.max(prevSeq, prev && prev.localSeq ? prev.localSeq : 0);
                 }
             } catch (e) { /* noop */ }
             return {
@@ -356,20 +356,21 @@
 
         function applySnapshot(snap, preferIncoming) {
             if (!snap || typeof snap !== 'object') return false;
-            var trustCloud = preferIncoming === 'cloud';
-            if (!trustCloud && global.PlatformAveriasCloudSync && global.PlatformAveriasCloudSync.mergeAveriasSnapshots) {
+            if (global.PlatformAveriasCloudSync && global.PlatformAveriasCloudSync.mergeAveriasSnapshots) {
                 if (preferIncoming) {
                     snap = global.PlatformAveriasCloudSync.mergeAveriasSnapshots(snap, buildSnapshot());
                 } else {
                     snap = global.PlatformAveriasCloudSync.mergeAveriasSnapshots(buildSnapshot(), snap);
                 }
             }
-            allIncidences = Array.isArray(snap.incidences) ? snap.incidences : [];
-            allDamages = Array.isArray(snap.damages) ? snap.damages : [];
-            allSecurity = Array.isArray(snap.securityIncidents) ? snap.securityIncidents : [];
-            allAudits = Array.isArray(snap.audits5s) ? snap.audits5s : [];
-            allEquipmentInspections = Array.isArray(snap.equipmentInspections) ? snap.equipmentInspections : [];
-            equipmentRegistry = snap.equipmentRegistry && typeof snap.equipmentRegistry === 'object' ? snap.equipmentRegistry : {};
+            allIncidences = Array.isArray(snap.incidences) ? snap.incidences.slice() : [];
+            allDamages = Array.isArray(snap.damages) ? snap.damages.slice() : [];
+            allSecurity = Array.isArray(snap.securityIncidents) ? snap.securityIncidents.slice() : [];
+            allAudits = Array.isArray(snap.audits5s) ? snap.audits5s.slice() : [];
+            allEquipmentInspections = Array.isArray(snap.equipmentInspections) ? snap.equipmentInspections.slice() : [];
+            equipmentRegistry = snap.equipmentRegistry && typeof snap.equipmentRegistry === 'object'
+                ? Object.assign({}, snap.equipmentRegistry) : {};
+            memoryLocalSeq = Math.max(memoryLocalSeq, snap.localSeq || 0);
             ensureRecordStatuses();
             return true;
         }
@@ -466,6 +467,7 @@
                 var snap = buildSnapshot();
                 snap.updatedAt = new Date().toISOString();
                 snap.localSeq = (snap.localSeq || 0) + 1;
+                memoryLocalSeq = snap.localSeq;
                 localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(snap));
                 if (!localStorage.getItem(SNAPSHOT_KEY)) {
                     return Promise.resolve({ ok: false, error: 'storage-blocked' });
@@ -619,7 +621,7 @@
             var countsBefore = countReports(buildSnapshot());
             isLoadingRemoteSnapshot = true;
             try {
-                applySnapshot(snap, opts.fromCloud ? 'cloud' : true);
+                applySnapshot(snap, true);
                 writeIndividualKeys();
                 var synced = buildSnapshot();
                 synced.updatedAt = new Date().toISOString();
@@ -1457,13 +1459,14 @@
                 avCore().stampNewReport(lastS);
             }
             auditAction('REPORTAR', { module: 'security', area: area });
-            saveSecurityData();
-            updateSecurityStats();
-            alert('✅ Incidencia de seguridad guardada');
-            document.getElementById('securityDetalle').value = '';
-            document.getElementById('securityArea').value = '';
-            hasPhoto = false;
-            document.getElementById('photoStatus').textContent = '';
+            persistSnapshot({ force: true, liveRecord: { module: 'security', record: lastS } }).then(function () {
+                updateSecurityStats();
+                alert('✅ Incidencia de seguridad guardada');
+                document.getElementById('securityDetalle').value = '';
+                document.getElementById('securityArea').value = '';
+                hasPhoto = false;
+                document.getElementById('photoStatus').textContent = '';
+            });
         }
 
         // --- Módulo Auditoría 5S ---
@@ -1532,13 +1535,14 @@
                 avCore().stampNewReport(lastA);
             }
             auditAction('REPORTAR', { module: 'audit', pasillo: pasillo });
-            saveAuditsData();
-            updateAuditStats();
-            alert('✅ Auditoría 5S guardada');
-            document.getElementById('auditPasillo').value = '';
-            document.getElementById('auditResponsable').value = '';
-            document.querySelectorAll('.toggle-switch').forEach(t => { t.classList.remove('on'); });
-            document.querySelectorAll('.checklist-item').forEach(r => { r.classList.remove('ok','bad'); r.classList.add('bad'); });
+            persistSnapshot({ force: true, liveRecord: { module: 'audit', record: lastA } }).then(function () {
+                updateAuditStats();
+                alert('✅ Auditoría 5S guardada');
+                document.getElementById('auditPasillo').value = '';
+                document.getElementById('auditResponsable').value = '';
+                document.querySelectorAll('.toggle-switch').forEach(t => { t.classList.remove('on'); });
+                document.querySelectorAll('.checklist-item').forEach(r => { r.classList.remove('ok','bad'); r.classList.add('bad'); });
+            });
         }
 
         // Report Handler
@@ -1625,6 +1629,7 @@
             if (avCore() && avCore().stampNewReport) avCore().stampNewReport(incidence);
 
             allIncidences.push(incidence);
+            memoryLocalSeq = Math.max(memoryLocalSeq, (buildSnapshot().localSeq || 0));
             updateStats();
             renderPalletsReportedList();
             auditAction('REPORTAR', { module: 'pallets', location: incidence.location, product: incidence.product });

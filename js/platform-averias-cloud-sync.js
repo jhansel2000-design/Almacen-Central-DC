@@ -290,6 +290,8 @@
             broadcastSyncHint();
             notifyUpdated('push-ok');
             global.dispatchEvent(new CustomEvent('averias-sync-push', { detail: { ok: true } }));
+          } else {
+            schedulePushFromLocal();
           }
           return { ok: true, cloud: !!ok, pendingOk: false, snapOk: !!ok };
         });
@@ -496,6 +498,16 @@
     return best;
   }
 
+  function isLocalSnapshotAhead(local, remote) {
+    if (!local) return false;
+    if (!remote) return true;
+    var lSeq = local.localSeq || 0;
+    var rSeq = remote.localSeq || 0;
+    if (lSeq > rSeq) return true;
+    if (lSeq < rSeq) return false;
+    return countSnapshotRecords(local) > countSnapshotRecords(remote);
+  }
+
   function noteLocalSave(snap) {
     snap = normalizeSnapshot(snap);
     lastLocalEditAt = Date.now();
@@ -514,11 +526,7 @@
     snap = pickBestPushSnapshot(snap);
     if (hasSupabaseConfig() && global.PlatformSupabaseBridge.isPrimary()) {
       return pullFromSupabase().then(function (remote) {
-        if (remote) {
-          snap = (snap.localSeq || 0) >= (remote.localSeq || 0)
-            ? mergeAveriasSnapshots(snap, remote)
-            : mergeAveriasSnapshots(remote, snap);
-        }
+        if (remote) snap = mergeAveriasSnapshots(snap, remote);
         snap.localSeq = Math.max(snap.localSeq || 0, (remote && remote.localSeq) || 0, lastKnownRemoteSeq) + 1;
         snap.updatedAt = new Date().toISOString();
         return normalizeSnapshot(snap);
@@ -587,17 +595,28 @@
 
   function applySnapshotToLocal(snap, silent, source) {
     if (!snap || !global.localStorage) return false;
+    if (pushing) {
+      var livePush = getEffectiveLocalSnapshot();
+      if (livePush && isLocalSnapshotAhead(normalizeSnapshot(livePush), normalizeSnapshot(snap))) {
+        return false;
+      }
+    }
     snap = normalizeSnapshot(snap);
-    if (inLocalEditGrace() && !isCloudAuthoritativeSource(source) && source !== 'firebase-pending') {
+    if (inLocalEditGrace()) {
       var live = getEffectiveLocalSnapshot();
       if (live) {
         live = normalizeSnapshot(live);
-        if ((live.localSeq || 0) >= (snap.localSeq || 0) &&
-            countSnapshotRecords(live) >= countSnapshotRecords(snap)) {
+        if (isLocalSnapshotAhead(live, snap)) {
+          snap = mergeAveriasSnapshots(snap, live);
           schedulePushFromLocal();
-          return false;
+        } else if (!isCloudAuthoritativeSource(source) && source !== 'firebase-pending') {
+          if ((live.localSeq || 0) >= (snap.localSeq || 0) &&
+              countSnapshotRecords(live) >= countSnapshotRecords(snap)) {
+            schedulePushFromLocal();
+            return false;
+          }
+          snap = mergeAveriasSnapshots(snap, live);
         }
-        snap = mergeAveriasSnapshots(snap, live);
       }
     }
     var current = getEffectiveLocalSnapshot();
@@ -898,6 +917,7 @@
 
   function pullAll() {
     if (pulling) return Promise.resolve(getLocalSnapshot());
+    if (pushing) return Promise.resolve(getEffectiveLocalSnapshot());
     pulling = true;
     var localBefore = getEffectiveLocalSnapshot();
     return pullFromJsonBin().then(function (jsonBinSnap) {
