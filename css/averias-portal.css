@@ -1110,6 +1110,75 @@ body.averias-dash-view {
             transform: none;
         }
 
+        .da-wizard-wrong .da-wizard-q-text { color: #FFCDD2; }
+        .da-wizard-incidence {
+            margin-top: 18px;
+            padding: 14px;
+            border-radius: 12px;
+            background: rgba(183, 28, 28, 0.12);
+            border: 1px solid rgba(198, 40, 40, 0.45);
+            text-align: left;
+        }
+        .da-wizard-incidence-title {
+            margin: 0 0 12px;
+            font-size: 14px;
+            font-weight: 700;
+            color: #FFCDD2;
+        }
+        .da-wizard-incidence-label {
+            display: block;
+            font-size: 12px;
+            font-weight: 700;
+            color: #B3B3B3;
+            margin: 0 0 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+        .da-wizard-incidence-tipo { margin-bottom: 12px; }
+        .da-wizard-tipo-btns {
+            display: flex;
+            gap: 10px;
+        }
+        .da-tipo-btn {
+            flex: 1;
+            padding: 12px 10px;
+            border-radius: 10px;
+            border: 2px solid #555;
+            background: #2A2A2A;
+            color: #ECEFF1;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            min-height: 46px;
+        }
+        .da-tipo-btn.sobrante.selected {
+            background: #E65100;
+            border-color: #FF9800;
+            color: #FFF3E0;
+        }
+        .da-tipo-btn.faltante.selected {
+            background: #B71C1C;
+            border-color: #EF5350;
+            color: #FFEBEE;
+        }
+        .da-wizard-incidence-text {
+            width: 100%;
+            min-height: 84px;
+            padding: 12px 14px;
+            font-size: 15px;
+            border-radius: 10px;
+            border: 2px solid #555;
+            background: #1A1A1A;
+            color: #FFF;
+            box-sizing: border-box;
+            resize: vertical;
+            font-family: inherit;
+        }
+        .da-wizard-incidence-text:focus {
+            outline: none;
+            border-color: #EF5350;
+        }
+
         .equipment-list-item {
             display: flex;
             align-items: center;

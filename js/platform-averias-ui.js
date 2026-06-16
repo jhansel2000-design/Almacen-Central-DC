@@ -311,7 +311,7 @@
         };
 
         const despachoAuditCheckItems = [
-            { key: 'cantidadesOk', label: '1. ¿Las cantidades físicas coinciden con la factura?', expected: true },
+            { key: 'cantidadesOk', label: '1. ¿Las cantidades físicas coinciden con la factura?', expected: true, qtyTipo: true },
             { key: 'fechaCortaOk', label: '2. ¿El producto tiene fecha corta?', expected: false },
             { key: 'averiadosPolvoOk', label: '3. ¿Hay productos averiados o con exceso de polvo?', expected: false },
             { key: 'cargaIdentificadaOk', label: '4. ¿Está identificada la carga?', expected: true },
@@ -327,6 +327,46 @@
             var val = a[item.key];
             if (val !== true && val !== false) return false;
             return val !== despachoAuditExpectedAnswer(item);
+        }
+
+        function despachoAuditFindItem(key) {
+            return despachoAuditCheckItems.find(function (i) { return i.key === key; }) || null;
+        }
+
+        function despachoAuditAnswerIsWrong(key, val) {
+            if (val !== true && val !== false) return false;
+            var item = despachoAuditFindItem(key);
+            return item ? val !== despachoAuditExpectedAnswer(item) : false;
+        }
+
+        function despachoAuditIncidenceNotes(a) {
+            return a && a.incidenceNotes && typeof a.incidenceNotes === 'object' ? a.incidenceNotes : {};
+        }
+
+        function despachoAuditIncidenceComplete(key, answer, notes) {
+            if (!despachoAuditAnswerIsWrong(key, answer)) return true;
+            var note = notes && notes[key] ? notes[key] : {};
+            var comentario = String(note.comentario || '').trim();
+            if (!comentario) return false;
+            var item = despachoAuditFindItem(key);
+            if (item && item.qtyTipo) {
+                return note.tipo === 'sobrante' || note.tipo === 'faltante';
+            }
+            return true;
+        }
+
+        function despachoAuditFormatIncidenceSummary(a) {
+            var notes = despachoAuditIncidenceNotes(a);
+            var parts = [];
+            despachoAuditCheckItems.forEach(function (item) {
+                if (!despachoAuditIsIncidence(a, item)) return;
+                var note = notes[item.key] || {};
+                var line = item.label.replace(/^\d+\.\s*/, '');
+                if (note.tipo) line += ' (' + note.tipo + ')';
+                if (note.comentario) line += ': ' + note.comentario;
+                parts.push(line);
+            });
+            return parts.join(' | ');
         }
 
         const equipmentCheckItems = [
@@ -1514,7 +1554,7 @@
             { type: 'field', key: 'idcFactura', label: 'IDC o factura', hint: 'Número de IDC o factura', placeholder: 'Ej: 1234567890' }
         ];
 
-        var daWizardState = { step: 0, fields: {}, answers: {} };
+        var daWizardState = { step: 0, fields: {}, answers: {}, incidenceNotes: {} };
 
         function getDespachoAuditWizardSteps() {
             var qSteps = despachoAuditCheckItems.map(function (item) {
@@ -1534,7 +1574,7 @@
         }
 
         function initDespachoAuditWizard(prefill) {
-            daWizardState = { step: 0, fields: {}, answers: {} };
+            daWizardState = { step: 0, fields: {}, answers: {}, incidenceNotes: {} };
             if (prefill) {
                 daWizardState.fields = {
                     supervisor: prefill.supervisor || '',
@@ -1547,6 +1587,15 @@
                     if (prefill[item.key] === true || prefill[item.key] === false) {
                         daWizardState.answers[item.key] = prefill[item.key];
                     }
+                });
+                var savedNotes = despachoAuditIncidenceNotes(prefill);
+                Object.keys(savedNotes).forEach(function (k) {
+                    var n = savedNotes[k];
+                    if (!n || typeof n !== 'object') return;
+                    daWizardState.incidenceNotes[k] = {
+                        comentario: String(n.comentario || ''),
+                        tipo: n.tipo === 'sobrante' || n.tipo === 'faltante' ? n.tipo : null
+                    };
                 });
             }
             renderDespachoAuditWizardStep();
@@ -1575,6 +1624,40 @@
             return true;
         }
 
+        function daWizardSyncIncidenceInput(stepKey) {
+            var textarea = document.getElementById('daWizardIncidenceComment');
+            if (!textarea || !stepKey) return;
+            if (!daWizardState.incidenceNotes[stepKey]) {
+                daWizardState.incidenceNotes[stepKey] = { comentario: '', tipo: null };
+            }
+            daWizardState.incidenceNotes[stepKey].comentario = String(textarea.value || '').trim();
+        }
+
+        function daWizardBuildIncidencePanel(step) {
+            var item = despachoAuditFindItem(step.key);
+            var ans = daWizardState.answers[step.key];
+            if (!despachoAuditAnswerIsWrong(step.key, ans)) return '';
+            var note = daWizardState.incidenceNotes[step.key] || { comentario: '', tipo: null };
+            var sobrCls = note.tipo === 'sobrante' ? ' selected' : '';
+            var faltCls = note.tipo === 'faltante' ? ' selected' : '';
+            var qtyHtml = item && item.qtyTipo
+                ? '<div class="da-wizard-incidence-tipo">' +
+                '<span class="da-wizard-incidence-label">Tipo de incidencia</span>' +
+                '<div class="da-wizard-tipo-btns">' +
+                '<button type="button" class="da-tipo-btn sobrante' + sobrCls + '" onclick="despachoAuditWizardIncidenceTipo(\'sobrante\')">Sobrante</button>' +
+                '<button type="button" class="da-tipo-btn faltante' + faltCls + '" onclick="despachoAuditWizardIncidenceTipo(\'faltante\')">Faltante</button>' +
+                '</div></div>'
+                : '';
+            return '<div class="da-wizard-incidence">' +
+                '<p class="da-wizard-incidence-title">⚠️ Respuesta incorrecta — registre la incidencia</p>' +
+                qtyHtml +
+                '<label class="da-wizard-incidence-label" for="daWizardIncidenceComment">Comentario</label>' +
+                '<textarea id="daWizardIncidenceComment" class="da-wizard-incidence-text" rows="3" ' +
+                'placeholder="Describa el hallazgo..." oninput="despachoAuditWizardIncidenceSync()">' +
+                escAv(note.comentario || '') + '</textarea>' +
+                '</div>';
+        }
+
         function renderDespachoAuditWizardStep() {
             var steps = getDespachoAuditWizardSteps();
             var total = steps.length;
@@ -1593,7 +1676,21 @@
             if (totalEl) totalEl.textContent = String(total);
             if (barEl) barEl.style.width = Math.round(((idx + 1) / total) * 100) + '%';
             if (titleEl) titleEl.textContent = step.label;
-            if (hintEl) hintEl.textContent = step.hint || '';
+            if (hintEl) {
+                if (step.type === 'question') {
+                    var qAns = daWizardState.answers[step.key];
+                    if (despachoAuditAnswerIsWrong(step.key, qAns)) {
+                        var qItem = despachoAuditFindItem(step.key);
+                        hintEl.textContent = qItem && qItem.qtyTipo
+                            ? 'Indique si es sobrante o faltante y escriba el comentario.'
+                            : 'Escriba el comentario de la incidencia para continuar.';
+                    } else {
+                        hintEl.textContent = step.hint || '';
+                    }
+                } else {
+                    hintEl.textContent = step.hint || '';
+                }
+            }
             daWizardShowError('');
             if (prevBtn) prevBtn.hidden = idx === 0;
             if (nextBtn) nextBtn.textContent = idx === total - 1
@@ -1624,13 +1721,43 @@
             var ans = daWizardState.answers[step.key];
             var siCls = ans === true ? ' selected-si' : '';
             var noCls = ans === false ? ' selected-no' : '';
+            var wrongCls = despachoAuditAnswerIsWrong(step.key, ans) ? ' da-wizard-wrong' : '';
             bodyEl.innerHTML =
-                '<div class="da-wizard-question">' +
+                '<div class="da-wizard-question' + wrongCls + '">' +
                 '<p class="da-wizard-q-text">' + escAv(step.label) + '</p>' +
                 '<div class="da-wizard-sino">' +
                 '<button type="button" class="si-no-btn' + siCls + '" onclick="despachoAuditWizardAnswer(true)">Sí</button>' +
                 '<button type="button" class="si-no-btn' + noCls + '" onclick="despachoAuditWizardAnswer(false)">No</button>' +
-                '</div></div>';
+                '</div>' +
+                daWizardBuildIncidencePanel(step) +
+                '</div>';
+            if (despachoAuditAnswerIsWrong(step.key, ans)) {
+                global.setTimeout(function () {
+                    var ta = document.getElementById('daWizardIncidenceComment');
+                    if (ta) ta.focus();
+                }, 50);
+            }
+        }
+
+        function despachoAuditWizardIncidenceSync() {
+            var steps = getDespachoAuditWizardSteps();
+            var step = steps[daWizardState.step];
+            if (!step || step.type !== 'question') return;
+            daWizardSyncIncidenceInput(step.key);
+            daWizardShowError('');
+        }
+
+        function despachoAuditWizardIncidenceTipo(tipo) {
+            playSelectFeedback();
+            var steps = getDespachoAuditWizardSteps();
+            var step = steps[daWizardState.step];
+            if (!step || step.type !== 'question') return;
+            if (!daWizardState.incidenceNotes[step.key]) {
+                daWizardState.incidenceNotes[step.key] = { comentario: '', tipo: null };
+            }
+            daWizardState.incidenceNotes[step.key].tipo = tipo === 'faltante' ? 'faltante' : 'sobrante';
+            daWizardSyncIncidenceInput(step.key);
+            renderDespachoAuditWizardStep();
         }
 
         function despachoAuditWizardAnswer(val) {
@@ -1638,16 +1765,27 @@
             var steps = getDespachoAuditWizardSteps();
             var step = steps[daWizardState.step];
             if (!step || step.type !== 'question') return;
-            daWizardState.answers[step.key] = !!val;
+            var key = step.key;
+            var wasWrong = despachoAuditAnswerIsWrong(key, daWizardState.answers[key]);
+            daWizardState.answers[key] = !!val;
+            if (!despachoAuditAnswerIsWrong(key, daWizardState.answers[key])) {
+                delete daWizardState.incidenceNotes[key];
+            } else if (!daWizardState.incidenceNotes[key]) {
+                daWizardState.incidenceNotes[key] = { comentario: '', tipo: null };
+            }
             renderDespachoAuditWizardStep();
+            if (despachoAuditAnswerIsWrong(key, daWizardState.answers[key])) return;
             global.setTimeout(function () {
                 if (daWizardState.step < steps.length - 1) despachoAuditWizardNext();
-            }, 280);
+            }, wasWrong ? 0 : 280);
         }
 
         function despachoAuditWizardPrev() {
             playSelectFeedback();
             if (daWizardState.step <= 0) return;
+            var steps = getDespachoAuditWizardSteps();
+            var step = steps[daWizardState.step];
+            if (step && step.type === 'question') daWizardSyncIncidenceInput(step.key);
             daWizardSyncFieldInput();
             daWizardState.step -= 1;
             renderDespachoAuditWizardStep();
@@ -1667,6 +1805,16 @@
             } else if (step.type === 'question') {
                 if (daWizardState.answers[step.key] !== true && daWizardState.answers[step.key] !== false) {
                     daWizardShowError('Seleccione Sí o No para continuar.');
+                    return;
+                }
+                daWizardSyncIncidenceInput(step.key);
+                if (!despachoAuditIncidenceComplete(step.key, daWizardState.answers[step.key], daWizardState.incidenceNotes)) {
+                    var qItem = despachoAuditFindItem(step.key);
+                    daWizardShowError(qItem && qItem.qtyTipo
+                        ? 'Indique sobrante o faltante y escriba el comentario.'
+                        : 'Escriba el comentario de la incidencia para continuar.');
+                    var ta = document.getElementById('daWizardIncidenceComment');
+                    if (ta) ta.focus();
                     return;
                 }
             }
@@ -1754,6 +1902,30 @@
                 return;
             }
 
+            var incidenceNotes = {};
+            var missingIncidenceStep = -1;
+            despachoAuditCheckItems.forEach(function (item, idx) {
+                var ans = values[item.key];
+                if (!despachoAuditAnswerIsWrong(item.key, ans)) return;
+                var note = daWizardState.incidenceNotes[item.key] || {};
+                if (!despachoAuditIncidenceComplete(item.key, ans, daWizardState.incidenceNotes)) {
+                    if (missingIncidenceStep < 0) {
+                        missingIncidenceStep = despachoAuditFieldSteps.length + idx;
+                    }
+                    return;
+                }
+                incidenceNotes[item.key] = {
+                    comentario: (avCore() && avCore().sanitizeText(String(note.comentario || '').trim(), 500)) || String(note.comentario || '').trim(),
+                    tipo: note.tipo === 'sobrante' || note.tipo === 'faltante' ? note.tipo : null
+                };
+            });
+            if (missingIncidenceStep >= 0) {
+                daWizardShowError('Complete el comentario de todas las incidencias antes de guardar.');
+                daWizardState.step = missingIncidenceStep;
+                renderDespachoAuditWizardStep();
+                return;
+            }
+
             var nextBtn = document.getElementById('daWizardNext');
             if (nextBtn) {
                 nextBtn.disabled = true;
@@ -1771,6 +1943,7 @@
                     despachoAuditCheckItems.forEach(function (item) {
                         existingDa[item.key] = values[item.key];
                     });
+                    existingDa.incidenceNotes = incidenceNotes;
                     existingDa.modifiedAt = new Date().toISOString();
                     saveDespachoAuditsData();
                     clearEditingRecord();
@@ -1794,6 +1967,7 @@
                 cargaIdentificadaOk: values.cargaIdentificadaOk,
                 paletasOk: values.paletasOk,
                 checklistValidadorOk: values.checklistValidadorOk,
+                incidenceNotes: incidenceNotes,
                 usuario: currentEmployee.name,
                 status: 'PENDIENTE',
                 correctedBy: null,
@@ -1874,11 +2048,16 @@
             list.innerHTML = pending.map(function (a) {
                 var ok = despachoAuditOkCount(a);
                 var pct = Math.round((ok / despachoAuditCheckItems.length) * 100);
+                var incSummary = despachoAuditFormatIncidenceSummary(a);
+                var incHtml = incSummary
+                    ? '<div class="incidence-card-row"><span class="incidence-card-label">Incidencias:</span><span class="incidence-card-value">' + escAv(incSummary) + '</span></div>'
+                    : '';
                 return '<div class="incidence-card ' + (despachoAuditHasIssues(a) ? 'alto' : 'medio') + '">' +
                     '<div class="incidence-card-row"><span class="incidence-card-label">IDC/Factura:</span><span class="incidence-card-value">' + escAv(a.idcFactura) + '</span></div>' +
                     '<div class="incidence-card-row"><span class="incidence-card-label">Cliente:</span><span class="incidence-card-value">' + escAv(a.cliente) + '</span></div>' +
                     '<div class="incidence-card-row"><span class="incidence-card-label">Chofer:</span><span class="incidence-card-value">' + escAv(a.chofer) + '</span></div>' +
                     '<div class="incidence-card-row"><span class="incidence-card-label">Cumplimiento:</span><span class="incidence-card-value">' + pct + '% (' + ok + '/' + despachoAuditCheckItems.length + ')</span></div>' +
+                    incHtml +
                     '<div class="incidence-card-row"><span class="incidence-card-label">Fecha:</span><span class="incidence-card-value">' + escAv(a.fecha || a.reportDate || '—') + '</span></div>' +
                     '<button type="button" class="btn-correct-incidence" data-correct-module="despachoAudit" data-correct-id="' + a.id + '">✅ Auditoría finalizada</button>' +
                     '</div>';
@@ -2589,10 +2768,15 @@
                 return;
             }
             list.innerHTML = pending.map(function (a) {
+                var incSummary = despachoAuditFormatIncidenceSummary(a);
+                var incHtml = incSummary
+                    ? '<div class="incidence-card-row"><span class="incidence-card-label">Incidencias:</span><span class="incidence-card-value">' + escAv(incSummary) + '</span></div>'
+                    : '';
                 return '<div class="incidence-card ' + (despachoAuditHasIssues(a) ? 'alto' : 'medio') + '">' +
                     '<div class="incidence-card-row"><span class="incidence-card-label">IDC/Factura:</span><span class="incidence-card-value">' + escAv(a.idcFactura) + '</span></div>' +
                     '<div class="incidence-card-row"><span class="incidence-card-label">Cliente:</span><span class="incidence-card-value">' + escAv(a.cliente) + '</span></div>' +
                     '<div class="incidence-card-row"><span class="incidence-card-label">Chofer:</span><span class="incidence-card-value">' + escAv(a.chofer) + '</span></div>' +
+                    incHtml +
                     datesHtml(a) +
                     reportedWorkActionsHtml('despachoAudit', a.id, a) +
                     '</div>';
@@ -3278,13 +3462,14 @@
             const headers = [
                 'ID', 'Supervisor', 'Validador', 'Chofer', 'Cliente', 'IDC o Factura',
                 'Cantidades coinciden', 'Fecha corta', 'Averiados o polvo', 'Carga identificada',
-                'Paletas buen estado', 'Checklist validador', 'Estado', 'Registrado Por', 'Fecha Registro'
+                'Paletas buen estado', 'Checklist validador', 'Detalle incidencias', 'Estado', 'Registrado Por', 'Fecha Registro'
             ];
             const yesNo = v => v ? 'Sí' : 'No';
             const rows = allDespachoAudits.map(a => [
                 a.id, a.supervisor, a.validador, a.chofer, a.cliente, a.idcFactura,
                 yesNo(a.cantidadesOk), yesNo(a.fechaCortaOk), yesNo(a.averiadosPolvoOk),
                 yesNo(a.cargaIdentificadaOk), yesNo(a.paletasOk), yesNo(a.checklistValidadorOk),
+                despachoAuditFormatIncidenceSummary(a),
                 a.status || 'PENDIENTE', a.usuario, a.fecha || a.reportDate || ''
             ]);
             downloadCsv('auditoria_despacho_' + new Date().toLocaleDateString('es-ES').replace(/\//g, '-') + '.csv', headers, rows);
@@ -3455,6 +3640,8 @@
   global.despachoAuditWizardPrev = despachoAuditWizardPrev;
   global.despachoAuditWizardNext = despachoAuditWizardNext;
   global.despachoAuditWizardAnswer = despachoAuditWizardAnswer;
+  global.despachoAuditWizardIncidenceSync = despachoAuditWizardIncidenceSync;
+  global.despachoAuditWizardIncidenceTipo = despachoAuditWizardIncidenceTipo;
   global.saveDespachoAudit = saveDespachoAudit;
   global.showEquipmentForm = showEquipmentForm;
   global.showEquipmentList = showEquipmentList;
