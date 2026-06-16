@@ -1232,6 +1232,9 @@
       if (getActiveModule() === 'despacho') {
         renderDespachoModule();
       }
+      if (state.config && state.config.tvMode) {
+        refreshTvUnifiedInPlace();
+      }
     });
     document.addEventListener('despacho-web-wiped', function () {
       state.dataDespacho = loadDespachoData();
@@ -1321,7 +1324,7 @@
     state.config.tvMode = false;
     document.body.classList.remove(
       'tv-mode', 'tv-unified-active', 'ops-tv-active', 'facturas-tv-active',
-      'tv-slide-ops', 'tv-slide-fac'
+      'tv-slide-ops', 'tv-slide-fac', 'tv-slide-desp'
     );
     global.PlatformStore.saveConfig(state.config);
     syncTvUnifiedPresentation();

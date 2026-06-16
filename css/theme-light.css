@@ -718,6 +718,11 @@ html[data-theme="light"] .tv-pill.fac {
   color: #047857;
 }
 
+html[data-theme="light"] .tv-pill.desp {
+  background: rgba(234, 88, 12, 0.12);
+  color: #c2410c;
+}
+
 html[data-theme="light"] .tv-slide--fac .tv-pill.fac {
   background: linear-gradient(135deg, rgba(5, 150, 105, 0.14), rgba(16, 185, 129, 0.08));
   border: 1px solid rgba(5, 150, 105, 0.25);
@@ -763,12 +768,20 @@ html[data-theme="light"] .tv-slide-now.tv-slide-now--fac {
   color: #047857;
 }
 
+html[data-theme="light"] .tv-slide-now.tv-slide-now--desp {
+  color: #c2410c;
+}
+
 html[data-theme="light"] .tv-seg-fill {
   background: linear-gradient(90deg, #1565c0, #3b82f6);
 }
 
 html[data-theme="light"] .tv-seg[data-slide="fac"] .tv-seg-fill {
   background: linear-gradient(90deg, #047857, #10b981);
+}
+
+html[data-theme="light"] .tv-seg[data-slide="desp"] .tv-seg-fill {
+  background: linear-gradient(90deg, #c2410c, #ff9800);
 }
 
 html[data-theme="light"] .tv-foot-list li {

@@ -1,5 +1,5 @@
 /**
- * Modo TV — Dashboard general, rotación Operación → Facturas
+ * Modo TV — Dashboard general, rotación Operación → Facturas → Despacho
  */
 (function (global) {
   'use strict';
@@ -30,8 +30,23 @@
   var TV_ROTATE_MAX = 60;
   var SLIDE_META = {
     ops: { pill: 'ops', title: 'Operación', emptyKpi: 'Sin datos de operación', emptyFoot: 'Importar Excel de operaciones', chartTitle: 'Tendencia' },
-    fac: { pill: 'fac', title: 'Facturación · CENTRAL', emptyKpi: 'Sin datos de facturas', emptyFoot: 'Importar diario de facturas', chartTitle: 'Facturación diaria (RD$)' }
+    fac: { pill: 'fac', title: 'Facturación · CENTRAL', emptyKpi: 'Sin datos de facturas', emptyFoot: 'Importar diario de facturas', chartTitle: 'Facturación diaria (RD$)' },
+    desp: { pill: 'desp', title: 'Despacho · IDC', emptyKpi: 'Sin IDC en seguimiento', emptyFoot: 'Registre IDC en el portal de despacho', chartTitle: 'IDC por estado' }
   };
+
+  function tvSegLabels() {
+    var labels = {};
+    if (global.PlatformLayout && global.PlatformLayout.TV_SLIDE_CATALOG) {
+      Object.keys(global.PlatformLayout.TV_SLIDE_CATALOG).forEach(function (id) {
+        var item = global.PlatformLayout.TV_SLIDE_CATALOG[id];
+        labels[id] = item.segLabel || item.label || id;
+      });
+    }
+    Object.keys(SLIDE_META).forEach(function (id) {
+      if (!labels[id]) labels[id] = SLIDE_META[id].title;
+    });
+    return labels;
+  }
 
   var KPI_ICONS = {
     open: '○',
@@ -88,6 +103,44 @@
     return Math.round(pct) + '%';
   }
 
+  function appendDespToSnapshot(snap) {
+    if (!snap) return snap;
+    snap.desp = snap.desp || { hasData: false, kpis: [], footer: [], chart: { labels: [], values: [] } };
+    var DS = global.PlatformDespachoStore;
+    var despData = DS ? DS.load() : (global.PlatformStore && global.PlatformStore.getPublishedData
+      ? global.PlatformStore.getPublishedData('despacho')
+      : null);
+    if (!DS || !despData || !Array.isArray(despData.pedidos)) return snap;
+    var despCounts = DS.countResumenValidador(despData.pedidos);
+    var despPedidos = DS.getPedidosVisiblesValidador(despData.pedidos);
+    if (!(despCounts.total > 0 || despPedidos.length)) return snap;
+    snap.desp.hasData = true;
+    snap.desp.kpis = [
+      { label: 'Pend. por cargar', value: despCounts.pendiente_carga || 0, variant: 'warn' },
+      { label: 'Validado', value: despCounts.en_validacion || 0, variant: 'process' },
+      { label: 'Cargado', value: despCounts.listo_despacho || 0, variant: 'total' }
+    ];
+    snap.desp.chart.labels = ['Pend. carga', 'Validado', 'Cargado'];
+    snap.desp.chart.values = [
+      despCounts.pendiente_carga || 0,
+      despCounts.en_validacion || 0,
+      despCounts.listo_despacho || 0
+    ];
+    snap.desp.footer = [];
+    if (despCounts.total) {
+      snap.desp.footer.push({ label: 'Total en seguimiento', value: despCounts.total });
+    }
+    despPedidos.slice(0, 6).forEach(function (p) {
+      var e = DS.ESTADOS[p.estado] || {};
+      var cliente = p.cliente ? String(p.cliente).trim() : '';
+      snap.desp.footer.push({
+        label: DS.formatIdc(p.idc) + ' · Jaula ' + (p.jaula || '—') + (cliente ? ' · ' + cliente : ''),
+        value: e.short || p.estado || '—'
+      });
+    });
+    return snap;
+  }
+
   function collectSnapshot(opsData, facData, tipoCambio, facturasMetas, config) {
     config = config || (global.PlatformStore && global.PlatformStore.getConfig && global.PlatformStore.getConfig()) || {};
     var siteTitle = (global.PlatformSite && global.PlatformSite.product) || 'Almacén Central DC';
@@ -102,7 +155,8 @@
     var snap = {
       siteTitle: siteTitle,
       ops: { hasData: false, kpis: [], footer: [], chart: { labels: [], values: [] } },
-      fac: { hasData: false, kpis: [], footer: [], chart: { labels: [], values: [] }, tipoCambio: 58.5 }
+      fac: { hasData: false, kpis: [], footer: [], chart: { labels: [], values: [] }, tipoCambio: 58.5 },
+      desp: { hasData: false, kpis: [], footer: [], chart: { labels: [], values: [] } }
     };
 
     var OPS = global.PlatformOpsDashboard;
@@ -183,7 +237,7 @@
               { label: 'Acumulado', value: fmtMontoRd(fm.acumulada != null ? fm.acumulada : fm.total) },
               { label: 'Tipo de cambio', value: 'TC ' + fm.tipoCambio }
             ];
-            return snap;
+            return appendDespToSnapshot(snap);
           }
         }
 
@@ -255,7 +309,7 @@
       }
     }
 
-    return snap;
+    return appendDespToSnapshot(snap);
   }
 
   function formatKpiDisplay(value) {
@@ -466,7 +520,10 @@
       '<div class="tv-slide-foot">' +
       '<h3 class="tv-foot-title">' + esc(footTitle) + '</h3>' + slideFootBody(slideId, block, meta) +
       '</div>';
-    return '<section class="tv-slide' + (slideId === 'fac' ? ' tv-slide--fac' + facExtra : '') + '" data-slide="' + slideId + '">' +
+    var slideClass = '';
+    if (slideId === 'fac') slideClass = ' tv-slide--fac' + facExtra;
+    else if (slideId === 'desp') slideClass = ' tv-slide--desp';
+    return '<section class="tv-slide' + slideClass + '" data-slide="' + slideId + '">' +
       '<header class="tv-slide-head">' +
       '<span class="tv-pill ' + meta.pill + '">' + esc(meta.title) + '</span>' + extra +
       '</header>' +
@@ -486,15 +543,15 @@
 
     var subLabel = global.PlatformLayout && global.PlatformLayout.getTvSlideLabels
       ? global.PlatformLayout.getTvSlideLabels(opts.config || (global.PlatformStore && global.PlatformStore.getConfig && global.PlatformStore.getConfig()) || {})
-      : 'Operación → Facturas';
+      : 'Operación → Facturas → Despacho';
 
     var wallTitle = (snapshot.siteTitle || 'Almacén Central DC') + ' · TV';
+    var segLabels = tvSegLabels();
 
     var slidesHtml = TV_SLIDES.map(function (id) {
       return renderSlide(id, snapshot);
     }).join('');
 
-    var segLabels = { ops: 'Operación', fac: 'Facturas' };
     var segsHtml = TV_SLIDES.map(function (id, i) {
       return '<button type="button" class="tv-seg' + (i === 0 ? ' active' : '') + '" data-slide="' + id + '"' +
         ' aria-label="' + esc(segLabels[id] || id) + '">' +
@@ -527,8 +584,6 @@
     bindFacExecutiveTabs(carouselRoot, snapshot);
     return snapshot;
   }
-
-  var SLIDE_NOW_LABEL = { ops: 'Operación', fac: 'Facturas' };
 
   function rotateHintText() {
     if (TV_SLIDES.length <= 1) return 'Una sola diapositiva activa · sin rotación';
@@ -619,17 +674,22 @@
     });
   }
 
+  function slideNowLabel(slideId) {
+    var labels = tvSegLabels();
+    return labels[slideId] || slideId;
+  }
+
   function updateSlideNowLabel(slideId) {
     var el = document.getElementById('tvSlideNow');
     if (!el) return;
-    el.textContent = SLIDE_NOW_LABEL[slideId] || slideId;
+    el.textContent = slideNowLabel(slideId);
     el.className = 'tv-slide-now tv-slide-now--' + (slideId || 'ops');
   }
 
   function syncTvBodySlideClass(slideId) {
     if (!document.body.classList.contains('tv-unified-active')) return;
-    document.body.classList.remove('tv-slide-ops', 'tv-slide-fac');
-    if (slideId === 'ops' || slideId === 'fac') {
+    document.body.classList.remove('tv-slide-ops', 'tv-slide-fac', 'tv-slide-desp');
+    if (slideId === 'ops' || slideId === 'fac' || slideId === 'desp') {
       document.body.classList.add('tv-slide-' + slideId);
     }
   }
@@ -842,6 +902,25 @@
             borderWidth: 2,
             fill: block.chart.labels.length > 3,
             tension: 0.3
+          }]
+        },
+        options: barOpts()
+      });
+    } else if (slideId === 'desp') {
+      makeChart(id, {
+        type: 'bar',
+        data: {
+          labels: block.chart.labels,
+          datasets: [{
+            label: 'IDC',
+            data: block.chart.values,
+            backgroundColor: [
+              'rgba(255, 107, 122, 0.88)',
+              'rgba(251, 191, 36, 0.9)',
+              'rgba(52, 211, 153, 0.9)'
+            ],
+            borderRadius: 12,
+            maxBarThickness: 72
           }]
         },
         options: barOpts()

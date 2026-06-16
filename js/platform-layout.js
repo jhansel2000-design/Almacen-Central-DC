@@ -10,22 +10,26 @@
 
   var CARD_CATALOG = {
     ops: { id: 'ops', title: 'Operaciones', icon: '⬡', jump: 'operaciones', statusLabel: 'Operación' },
-    fac: { id: 'fac', title: 'Facturas', icon: '$', jump: 'facturas', statusLabel: 'Facturas' }
+    fac: { id: 'fac', title: 'Facturas', icon: '$', jump: 'facturas', statusLabel: 'Facturas' },
+    desp: { id: 'desp', title: 'Despacho', icon: '🚚', jump: 'despacho', statusLabel: 'Despacho' }
   };
 
   var TV_SLIDE_CATALOG = {
     ops: { id: 'ops', label: 'Operación', segLabel: 'Operación' },
-    fac: { id: 'fac', label: 'Facturas', segLabel: 'Facturas' }
+    fac: { id: 'fac', label: 'Facturas', segLabel: 'Facturas' },
+    desp: { id: 'desp', label: 'Despacho', segLabel: 'Despacho' }
   };
 
   var DEFAULT_GENERAL_LAYOUT = [
     { id: 'ops', enabled: true, order: 0 },
-    { id: 'fac', enabled: true, order: 1 }
+    { id: 'fac', enabled: true, order: 1 },
+    { id: 'desp', enabled: true, order: 2 }
   ];
 
   var DEFAULT_TV_LAYOUT = [
     { id: 'ops', enabled: true, order: 0 },
-    { id: 'fac', enabled: true, order: 1 }
+    { id: 'fac', enabled: true, order: 1 },
+    { id: 'desp', enabled: true, order: 2 }
   ];
 
   function normalizeLayoutItems(items, defaults, catalog) {
