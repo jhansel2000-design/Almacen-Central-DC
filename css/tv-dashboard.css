@@ -458,8 +458,26 @@ body.tv-mode.tv-unified-active #module-general {
 }
 
 .tv-slide--fac.tv-slide--central.tv-slide--fac-status .tv-slide-grid,
-.tv-slide--fac.tv-slide--fac-exec.tv-slide--fac-status .tv-slide-grid {
-  grid-template-rows: auto minmax(0, 1fr) minmax(0, 0.4fr);
+.tv-slide--fac.tv-slide--fac-exec.tv-slide--fac-status .tv-slide-grid,
+.tv-slide--fac.tv-slide--fac-status .tv-slide-grid {
+  grid-template-rows: auto minmax(0, 1fr) minmax(150px, 0.44fr);
+}
+
+.tv-slide-status {
+  background: rgba(10, 16, 28, 0.72);
+  border: 1px solid rgba(52, 211, 153, 0.22);
+  border-radius: 16px;
+  padding: 0.55vh 0.85vw 0.65vh;
+  min-height: clamp(150px, 20vh, 300px);
+  max-height: 30vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.32), inset 0 1px 0 rgba(52, 211, 153, 0.1);
+}
+
+.tv-slide-status--fac {
+  flex-shrink: 0;
 }
 
 .tv-slide-foot--fac-status {
@@ -664,7 +682,8 @@ body.tv-mode.tv-unified-active #module-general {
 
 .tv-slide--fac .tv-slide-kpis,
 .tv-slide--fac .tv-slide-chart,
-.tv-slide--fac .tv-slide-foot {
+.tv-slide--fac .tv-slide-foot,
+.tv-slide--fac .tv-slide-status {
   border-color: rgba(52, 211, 153, 0.12);
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.32), inset 0 1px 0 rgba(52, 211, 153, 0.08);
 }

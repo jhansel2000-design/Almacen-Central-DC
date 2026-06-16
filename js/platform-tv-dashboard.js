@@ -124,15 +124,13 @@
     if (!FX || !snapFac || !facData) return;
     var regs = Array.isArray(facData.registros) ? facData.registros : [];
     if (!regs.length) return;
-    var agg = facData.aggregates && facData.aggregates.porAlmacen
-      ? facData.aggregates
-      : FX.buildAggregates(regs);
+    var agg = FX.buildAggregates(regs);
     var tc = FX.resolveTipoCambio(tipoCambio);
     var view = FX.enrichAggregatesForDisplay(agg, tc);
     var porAlm = view.porAlmacen || [];
     var compliance = [];
     try {
-      compliance = FX.buildMetasCompliance(agg.porAlmacen || porAlm, facturasMetas || {}, tc);
+      compliance = FX.buildMetasCompliance(porAlm, facturasMetas || {}, tc);
     } catch (eMeta) {
       compliance = [];
     }
@@ -140,10 +138,21 @@
     snapFac.compliance = compliance;
   }
 
+  function facComplianceStatusSection(block) {
+    if (!block || !block.hasData) return '';
+    return '<div class="tv-slide-status tv-slide-status--fac">' +
+      '<h3 class="tv-foot-title">Estatus almacén · real vs meta</h3>' +
+      facComplianceStatusHtml(block.compliance) + '</div>';
+  }
+
+  function facShowsAlmacenStatus(block) {
+    return !!(block && block.hasData);
+  }
+
   function facComplianceStatusHtml(compliance) {
     compliance = compliance || [];
     if (!compliance.length) {
-      return '<p class="tv-fac-status-empty">Sin metas por almacén. Configure metas en el módulo Facturas.</p>';
+      return '<p class="tv-fac-status-empty">Sin datos por almacén. Importe el diario de facturas y configure metas en el módulo Facturas.</p>';
     }
     return '<div class="tv-fac-status-wrap"><table class="tv-fac-status-table" aria-label="Estatus almacén vs meta">' +
       '<thead><tr><th>Almacén</th><th>Ventas RD$</th><th>% meta</th><th>Estado</th></tr></thead><tbody>' +
@@ -161,10 +170,7 @@
   }
 
   function facComplianceFootSection(block) {
-    if (!block || !block.hasData) return '';
-    return '<div class="tv-slide-foot tv-slide-foot--fac-status">' +
-      '<h3 class="tv-foot-title">Estatus almacén · real vs meta</h3>' +
-      facComplianceStatusHtml(block.compliance) + '</div>';
+    return facComplianceStatusSection(block);
   }
 
   function hasFacCompliance(block) {
@@ -271,6 +277,7 @@
   function collectSnapshot(opsData, facData, tipoCambio, facturasMetas, config) {
     config = config || (global.PlatformStore && global.PlatformStore.getConfig && global.PlatformStore.getConfig()) || {};
     var siteTitle = (global.PlatformSite && global.PlatformSite.product) || 'Almacén Central DC';
+    var facDataAll = facData;
     var SF = global.PlatformSiteFilter;
     if (SF) {
       var filtered = SF.applySiteFilter({ operaciones: opsData, facturas: facData, config: config });
@@ -364,7 +371,7 @@
               { label: 'Acumulado', value: fmtMontoRd(fm.acumulada != null ? fm.acumulada : fm.total) },
               { label: 'Tipo de cambio', value: 'TC ' + fm.tipoCambio }
             ];
-            attachFacAlmacenCompliance(snap.fac, facData, facturasMetas, fm.tipoCambio);
+            attachFacAlmacenCompliance(snap.fac, facDataAll || facData, facturasMetas, fm.tipoCambio);
             return appendDespToSnapshot(snap);
           }
         }
@@ -387,13 +394,8 @@
         var view = FX.enrichAggregatesForDisplay(agg, tc);
         var porAlm = view.porAlmacen || [];
         snap.fac.porAlmacen = porAlm;
-        var compliance = [];
-        try {
-          compliance = FX.buildMetasCompliance(agg.porAlmacen || porAlm, facturasMetas || {}, tc);
-        } catch (eMeta) {
-          compliance = [];
-        }
-        snap.fac.compliance = compliance;
+        attachFacAlmacenCompliance(snap.fac, facDataAll || facData, facturasMetas, tc);
+        var compliance = snap.fac.compliance || [];
         var compByAlm = {};
         compliance.forEach(function (c) {
           compByAlm[c.almacen] = c;
@@ -646,25 +648,27 @@
         ? despSlideChartBlock(block, meta)
         : '<h3 class="tv-chart-title">' + esc(chartTitle) + '</h3>' +
           '<div class="tv-chart-box"><canvas id="' + chartCanvasId(slideId) + '"></canvas></div>');
-    var facStatusFoot = slideId === 'fac' ? facComplianceFootSection(block) : '';
-    var footSection = facStatusFoot;
-    if (!footSection) {
-      if (facExec) {
-        footSection = '';
-      } else if (slideId === 'desp' && block.footer && block.footer.length) {
-        footSection = '<div class="tv-slide-foot tv-slide-foot--desp">' +
-          '<h3 class="tv-foot-title">Resumen despacho</h3>' + slideFootBody(slideId, block, meta) +
-          '</div>';
-      } else if (slideId !== 'desp') {
+    var facStatusSection = slideId === 'fac' ? facComplianceStatusSection(block) : '';
+    var footSection = '';
+    if (slideId === 'fac') {
+      if (!facStatusSection && !facExec) {
         footSection = '<div class="tv-slide-foot">' +
           '<h3 class="tv-foot-title">' + esc(footTitle) + '</h3>' + slideFootBody(slideId, block, meta) +
           '</div>';
       }
+    } else if (slideId === 'desp' && block.footer && block.footer.length) {
+      footSection = '<div class="tv-slide-foot tv-slide-foot--desp">' +
+        '<h3 class="tv-foot-title">Resumen despacho</h3>' + slideFootBody(slideId, block, meta) +
+        '</div>';
+    } else if (slideId !== 'desp') {
+      footSection = '<div class="tv-slide-foot">' +
+        '<h3 class="tv-foot-title">' + esc(footTitle) + '</h3>' + slideFootBody(slideId, block, meta) +
+        '</div>';
     }
     var slideClass = '';
     if (slideId === 'fac') {
       slideClass = ' tv-slide--fac' + facExtra;
-      if (facStatusFoot) slideClass += ' tv-slide--fac-status';
+      if (facShowsAlmacenStatus(block)) slideClass += ' tv-slide--fac-status';
     } else if (slideId === 'desp') slideClass = ' tv-slide--desp';
     return '<section class="tv-slide' + slideClass + '" data-slide="' + slideId + '">' +
       '<header class="tv-slide-head">' +
@@ -673,6 +677,7 @@
       '<div class="tv-slide-grid' + (slideId === 'desp' ? ' tv-slide-grid--desp' : '') + '">' +
       '<div class="tv-slide-kpis">' + kpiBlock + '</div>' +
       '<div class="tv-slide-chart">' + chartBlock + '</div>' +
+      facStatusSection +
       footSection +
       '</div></section>';
   }
@@ -760,20 +765,20 @@
       if (slideId === 'fac') {
         slideEl.classList.toggle('tv-slide--central', !!block.centralLayout);
         slideEl.classList.toggle('tv-slide--fac-exec', facUsesExecutiveLayout(block));
-        slideEl.classList.toggle('tv-slide--fac-status', !!(block.hasData && (block.centralLayout || block.useExecutiveLayout || hasFacCompliance(block))));
+        slideEl.classList.toggle('tv-slide--fac-status', facShowsAlmacenStatus(block));
       }
       var kpiHost = slideEl.querySelector('.tv-slide-kpis');
       if (kpiHost) {
         kpiHost.innerHTML = facKpiBlock(slideId, block, meta.emptyKpi);
         ok = true;
       }
-      var footHost = slideEl.querySelector('.tv-slide-foot--fac-status');
-      if (footHost) {
-        footHost.innerHTML = '<h3 class="tv-foot-title">Estatus almacén · real vs meta</h3>' +
+      var statusHost = slideEl.querySelector('.tv-slide-status--fac');
+      if (statusHost) {
+        statusHost.innerHTML = '<h3 class="tv-foot-title">Estatus almacén · real vs meta</h3>' +
           facComplianceStatusHtml(block.compliance);
         ok = true;
       } else {
-        footHost = slideEl.querySelector('.tv-slide-foot');
+        var footHost = slideEl.querySelector('.tv-slide-foot--fac-status, .tv-slide-foot');
         if (footHost) {
           footHost.innerHTML = slideFootInner(slideId, block, meta);
         }
