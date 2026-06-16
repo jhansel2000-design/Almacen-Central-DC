@@ -73,6 +73,15 @@
 
   var PREPARADOR_ESTADOS = ['facturado'];
   var VALIDADOR_ESTADOS = ['pendiente_carga', 'en_validacion', 'listo_despacho'];
+  var VALIDADORES_ASIGNABLES = [
+    'Franklin M.',
+    'Francisco Gil',
+    'Eduardo L.',
+    'Kelvin P.',
+    'Ramon M.',
+    'Raul M.',
+    'José P.'
+  ];
   var FLUJO = ['facturado', 'pendiente_carga', 'en_validacion', 'listo_despacho'];
 
   function uid() {
@@ -287,6 +296,9 @@
     if (!idc) return { ok: false, error: 'Ingrese el ID del pedido (IDC).' };
     if (!jaula) return { ok: false, error: 'Ingrese la jaula.' };
     if (!validadorAsignado) return { ok: false, error: 'Seleccione el validador asignado al pedido.' };
+    if (VALIDADORES_ASIGNABLES.indexOf(validadorAsignado) < 0) {
+      return { ok: false, error: 'Seleccione un validador de la lista autorizada.' };
+    }
 
     var data = load();
     var idx = findByIdc(data.pedidos, idc);
@@ -821,6 +833,7 @@
     ESTADOS: ESTADOS,
     PREPARADOR_ESTADOS: PREPARADOR_ESTADOS,
     VALIDADOR_ESTADOS: VALIDADOR_ESTADOS,
+    VALIDADORES_ASIGNABLES: VALIDADORES_ASIGNABLES,
     FLUJO: FLUJO,
     load: load,
     save: save,

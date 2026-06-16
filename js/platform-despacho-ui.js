@@ -369,58 +369,32 @@
   }
 
   function listValidadoresAsignables() {
-    var names = [];
-    var seen = Object.create(null);
-    function add(name) {
-      name = String(name || '').trim();
-      if (!name) return;
-      var key = name.toLowerCase();
-      if (seen[key]) return;
-      seen[key] = true;
-      names.push(name);
-    }
-    if (global.PlatformAdmin && global.PlatformAdmin.getUsers) {
-      global.PlatformAdmin.getUsers().forEach(function (u) {
-        if (u.active === false) return;
-        var role = u.role;
-        if (role === 'validador') {
-          add(u.name || u.username);
-          return;
-        }
-        if (global.PlatformAdmin.can && global.PlatformAdmin.can(role, 'despacho.validate', u)) {
-          add(u.name || u.username);
-        }
-      });
-    }
-    if (global.PlatformDespachoAuth && global.PlatformDespachoAuth.getUsers) {
-      global.PlatformDespachoAuth.getUsers().forEach(function (u) {
-        if (u.active === false || u.role !== 'validador') return;
-        add(u.name || u.username);
-      });
-    }
-    return names.sort(function (a, b) { return a.localeCompare(b, 'es'); });
+    if (DS && DS.VALIDADORES_ASIGNABLES) return DS.VALIDADORES_ASIGNABLES.slice();
+    return [
+      'Franklin M.',
+      'Francisco Gil',
+      'Eduardo L.',
+      'Kelvin P.',
+      'Ramon M.',
+      'Raul M.',
+      'José P.'
+    ];
   }
 
   function renderValidadorAsignadoField(selected) {
     selected = String(selected || '').trim();
     var opts = listValidadoresAsignables();
-    var hasSelected = selected && opts.some(function (n) { return n === selected; });
-    if (opts.length) {
-      return '<label class="desp-field desp-field--validador"><span>Validador asignado</span>' +
-        '<select id="despValidador" name="validadorAsignado" required>' +
-        '<option value="">Seleccione validador…</option>' +
-        opts.map(function (name) {
-          return '<option value="' + esc(name) + '"' + (selected === name ? ' selected' : '') + '>' + esc(name) + '</option>';
-        }).join('') +
-        (selected && !hasSelected
-          ? '<option value="' + esc(selected) + '" selected>' + esc(selected) + '</option>'
-          : '') +
-        '</select></label>';
-    }
+    var hasSelected = selected && opts.indexOf(selected) >= 0;
     return '<label class="desp-field desp-field--validador"><span>Validador asignado</span>' +
-      '<input type="text" id="despValidador" name="validadorAsignado" required placeholder="Nombre del validador" ' +
-      'value="' + esc(selected) + '" autocomplete="off" list="despValidadorList"></label>' +
-      '<datalist id="despValidadorList"></datalist>';
+      '<select id="despValidador" name="validadorAsignado" required>' +
+      '<option value="">Seleccione validador…</option>' +
+      opts.map(function (name) {
+        return '<option value="' + esc(name) + '"' + (selected === name ? ' selected' : '') + '>' + esc(name) + '</option>';
+      }).join('') +
+      (selected && !hasSelected
+        ? '<option value="' + esc(selected) + '" selected disabled hidden>' + esc(selected) + '</option>'
+        : '') +
+      '</select></label>';
   }
 
   function renderPrepEstadoField(inputName) {
