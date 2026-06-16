@@ -12,6 +12,7 @@
     { employeeId: '12345', displayName: 'María López', role: 'COUNT', active: true, adminPin: '' },
     { employeeId: 'admin', displayName: 'Administrador', role: 'ADMIN', active: true, adminPin: 'Central@' }
   ];
+  var ADMIN_EMPLOYEE_ID = 'admin';
   var CORE = null;
   var realtimeUnsub = null;
   var listeners = [];
@@ -94,24 +95,69 @@
     return DEFAULT_USERS.slice();
   }
 
+  function defaultAdminPin() {
+    var admin = DEFAULT_USERS.find(function (u) {
+      return u.role === 'ADMIN' && normEmployeeId(u.employeeId).toLowerCase() === ADMIN_EMPLOYEE_ID;
+    });
+    return admin ? String(admin.adminPin || '') : '';
+  }
+
+  /** Aplica PIN admin del código (Supabase/caché pueden quedar con 1234 antiguo). */
+  function applyDefaultAdminPin(users) {
+    var pin = defaultAdminPin();
+    if (!pin) return users || [];
+    var list = (users || []).slice();
+    var found = false;
+    list = list.map(function (u) {
+      if (u.role === 'ADMIN' && normEmployeeId(u.employeeId).toLowerCase() === ADMIN_EMPLOYEE_ID) {
+        found = true;
+        if (u.adminPin !== pin) return Object.assign({}, u, { adminPin: pin });
+      }
+      return u;
+    });
+    if (!found) {
+      var defAdmin = DEFAULT_USERS.find(function (u) { return u.role === 'ADMIN'; });
+      if (defAdmin) list.push(Object.assign({}, defAdmin));
+    }
+    return list;
+  }
+
+  function syncAdminPinToCloud() {
+    var client = sb();
+    var pin = defaultAdminPin();
+    if (!client || !pin) return Promise.resolve(false);
+    return client.from('inv_users')
+      .update({ admin_pin: pin })
+      .eq('employee_id', ADMIN_EMPLOYEE_ID)
+      .then(function (res) {
+        return !res.error;
+      })
+      .catch(function () { return false; });
+  }
+
   function fetchUsers() {
     var client = sb();
     if (!client) {
       var cached = readCache(CACHE_USERS, null);
-      return Promise.resolve(cached && cached.length ? cached : defaultUsers());
+      var offline = applyDefaultAdminPin(cached && cached.length ? cached : defaultUsers());
+      writeCache(CACHE_USERS, offline);
+      return Promise.resolve(offline);
     }
     return client.from('inv_users')
       .select('employee_id, display_name, role, active, admin_pin')
       .eq('active', true)
       .then(function (res) {
         if (res.error) throw res.error;
-        var list = (res.data || []).map(mapUser);
+        var list = applyDefaultAdminPin((res.data || []).map(mapUser));
         writeCache(CACHE_USERS, list);
+        syncAdminPinToCloud();
         return list;
       })
       .catch(function () {
         var cached = readCache(CACHE_USERS, null);
-        return cached && cached.length ? cached : defaultUsers();
+        var fallback = applyDefaultAdminPin(cached && cached.length ? cached : defaultUsers());
+        writeCache(CACHE_USERS, fallback);
+        return fallback;
       });
   }
 
@@ -270,7 +316,9 @@
     return (global.PlatformSupabase ? global.PlatformSupabase.init() : Promise.resolve(false))
       .then(function () {
         bindRealtime();
-        return fetchUsers();
+        return fetchUsers().then(function (users) {
+          return syncAdminPinToCloud().then(function () { return users; });
+        });
       });
   }
 
