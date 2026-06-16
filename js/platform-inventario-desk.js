@@ -205,6 +205,54 @@
     return String(val == null ? '' : val) === String(q);
   }
 
+  var PASILLO_FILTER_PREFIX = '__pasillo__:';
+
+  function pasilloFromLocation(loc) {
+    if (CORE && CORE.pasilloFromLocation) return CORE.pasilloFromLocation(loc);
+    var parts = String(loc || '').trim().split('-');
+    var m = /^[A-Za-z](\d{3})$/i.exec((parts[0] || '').trim());
+    if (!m) return null;
+    var n = parseInt(m[1], 10);
+    return n >= 1 && n <= 999 ? n : null;
+  }
+
+  function pasilloFilterValue(n) {
+    return PASILLO_FILTER_PREFIX + n;
+  }
+
+  function pasilloFilterLabel(n, count) {
+    var label = 'Pasillo ' + n;
+    if (count != null) label += ' (' + count + ')';
+    return label;
+  }
+
+  function parsePasilloFilter(val) {
+    if (!val || String(val).indexOf(PASILLO_FILTER_PREFIX) !== 0) return null;
+    var n = parseInt(String(val).slice(PASILLO_FILTER_PREFIX.length), 10);
+    return isNaN(n) ? null : n;
+  }
+
+  function locationFilterMatch(row, filterVal) {
+    if (!filterVal) return true;
+    var pasillo = parsePasilloFilter(filterVal);
+    if (pasillo != null) return pasilloFromLocation(row.location) === pasillo;
+    return String(row.location == null ? '' : row.location) === String(filterVal);
+  }
+
+  function rowMatchesFilters(r, f, skipKey) {
+    return Object.keys(f).every(function (key) {
+      if (skipKey && key === skipKey) return true;
+      if (key === 'location') return locationFilterMatch(r, f[key]);
+      return filterMatch(rowFilterValue(r, key), f[key]);
+    });
+  }
+
+  function rowsForFilterOptions(excludeKey) {
+    return rowsForTab().filter(function (r) {
+      return rowMatchesFilters(r, desk.filters, excludeKey);
+    });
+  }
+
   function rowFilterValue(r, key) {
     if (key === 'qtySistema') return fmtQty(r.qtySistema);
     if (key === 'qtyContada') return fmtQty(r.qtyContada);
@@ -213,36 +261,84 @@
   }
 
   function uniqueFilterValues(rows, key) {
+    if (key === 'location') return uniqueLocationFilterValues(rows);
     var seen = {};
     var list = [];
     (rows || []).forEach(function (r) {
       var v = rowFilterValue(r, key);
       if (!v || v === '—' || seen[v]) return;
       seen[v] = true;
-      list.push(v);
+      list.push({ value: v, label: v });
     });
     list.sort(function (a, b) {
-      return String(a).localeCompare(String(b), 'es', { numeric: true, sensitivity: 'base' });
+      return String(a.label).localeCompare(String(b.label), 'es', { numeric: true, sensitivity: 'base' });
     });
     return list;
+  }
+
+  function uniqueLocationFilterValues(rows) {
+    var pasilloCounts = {};
+    var locs = {};
+    (rows || []).forEach(function (r) {
+      var loc = String(r.location || '').trim();
+      if (!loc) return;
+      locs[loc] = true;
+      var p = pasilloFromLocation(loc);
+      if (p != null) pasilloCounts[p] = (pasilloCounts[p] || 0) + 1;
+    });
+    var out = [];
+    Object.keys(pasilloCounts).map(Number).sort(function (a, b) { return a - b; }).forEach(function (p) {
+      out.push({
+        value: pasilloFilterValue(p),
+        label: pasilloFilterLabel(p, pasilloCounts[p]),
+        group: 'pasillo'
+      });
+    });
+    Object.keys(locs).sort(function (a, b) {
+      return String(a).localeCompare(String(b), 'es', { numeric: true, sensitivity: 'base' });
+    }).forEach(function (loc) {
+      out.push({ value: loc, label: loc, group: 'ubicacion' });
+    });
+    return out;
   }
 
   function escAttr(s) {
     return String(s || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
   }
 
-  function populateFilterSelects(allRows) {
+  function populateFilterSelects() {
     Object.keys(desk.filters).forEach(function (key) {
       var sel = document.querySelector('.inv-sheet-filter[data-filter="' + key + '"]');
       if (!sel) return;
       var current = desk.filters[key] || '';
-      var vals = uniqueFilterValues(allRows, key);
-      var html = '<option value="">Todos (' + vals.length + ')</option>';
-      vals.forEach(function (v) {
-        html += '<option value="' + escAttr(v) + '">' + escFn(v) + '</option>';
-      });
+      var pool = rowsForFilterOptions(key);
+      var vals = uniqueFilterValues(pool, key);
+      var html = '<option value="">Todos (' + pool.length + ')</option>';
+      if (key === 'location') {
+        var pasillos = vals.filter(function (v) { return v.group === 'pasillo'; });
+        var ubicaciones = vals.filter(function (v) { return v.group === 'ubicacion'; });
+        if (pasillos.length) {
+          html += '<optgroup label="Por pasillo">';
+          pasillos.forEach(function (v) {
+            html += '<option value="' + escAttr(v.value) + '">' + escFn(v.label) + '</option>';
+          });
+          html += '</optgroup>';
+        }
+        if (ubicaciones.length) {
+          html += '<optgroup label="Ubicación exacta">';
+          ubicaciones.forEach(function (v) {
+            html += '<option value="' + escAttr(v.value) + '">' + escFn(v.label) + '</option>';
+          });
+          html += '</optgroup>';
+        }
+      } else {
+        vals.forEach(function (v) {
+          html += '<option value="' + escAttr(v.value) + '">' + escFn(v.label) + '</option>';
+        });
+      }
       sel.innerHTML = html;
-      if (current && vals.indexOf(current) >= 0) sel.value = current;
+      var valid = vals.some(function (v) { return v.value === current; });
+      if (current && valid) sel.value = current;
       else {
         sel.value = '';
         desk.filters[key] = '';
@@ -254,7 +350,7 @@
   function applyRowFilters(rows) {
     var f = desk.filters;
     return (rows || []).filter(function (r) {
-      return filterMatch(rowFilterValue(r, 'location'), f.location) &&
+      return locationFilterMatch(r, f.location) &&
         filterMatch(rowFilterValue(r, 'barcode'), f.barcode) &&
         filterMatch(rowFilterValue(r, 'product'), f.product) &&
         filterMatch(rowFilterValue(r, 'matricula'), f.matricula) &&
@@ -273,9 +369,7 @@
 
   function clearFilters() {
     Object.keys(desk.filters).forEach(function (k) { desk.filters[k] = ''; });
-    document.querySelectorAll('.inv-sheet-filter').forEach(function (inp) { inp.value = ''; });
-    var btn = $('invBtnClearFilters');
-    if (btn) btn.hidden = true;
+    populateFilterSelects();
     renderTable();
   }
 
@@ -379,7 +473,7 @@
       if (sub) sub.textContent = 'Dashboard de exactitud · sistema vs conteo CJ';
       if (logo) logo.src = 'assets/img/icon-exactitud.svg?v=1';
     }
-    populateFilterSelects(rowsForTab());
+    populateFilterSelects();
     renderTable();
   }
 
@@ -467,6 +561,7 @@
       sel.addEventListener('change', function () {
         var key = sel.getAttribute('data-filter');
         if (key && desk.filters.hasOwnProperty(key)) desk.filters[key] = sel.value || '';
+        populateFilterSelects();
         renderTable();
       });
     });
