@@ -165,8 +165,8 @@
   function initSupabase() {
     if (!hasSupabaseConfig() || !global.PlatformSupabaseBridge.subscribe) return;
     global.PlatformSupabaseBridge.subscribe('averias', function (remote) {
-      if (!remote) return;
-      if (shouldBlockStaleRemote(remote)) {
+      if (!remote || pushing) return;
+      if (inLocalEditGrace()) {
         schedulePushFromLocal();
         return;
       }
@@ -290,6 +290,8 @@
       return prepareSnapshotForPush(snap).then(function (ready) {
         return pushToSupabase(ready).then(function (ok) {
           if (ok) {
+            var live = getEffectiveLocalSnapshot();
+            if (live) ready = mergeAveriasSnapshots(normalizeSnapshot(live), normalizeSnapshot(ready));
             noteLocalSave(ready);
             try {
               global.localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(ready));
@@ -646,35 +648,25 @@
 
   function applySnapshotToLocal(snap, silent, source) {
     if (!snap || !global.localStorage) return false;
-    if (shouldBlockStaleRemote(snap)) {
-      schedulePushFromLocal();
-      return false;
-    }
-    if (pushing) {
-      var livePush = getEffectiveLocalSnapshot();
-      if (livePush && isLocalSnapshotAhead(normalizeSnapshot(livePush), normalizeSnapshot(snap)) &&
-          countCorrectedRecords(snap) <= countCorrectedRecords(livePush)) {
-        return false;
+    if (pushing) return false;
+    snap = normalizeSnapshot(snap);
+    var liveNow = getEffectiveLocalSnapshot();
+    if (liveNow) {
+      liveNow = normalizeSnapshot(liveNow);
+      if (shouldBlockStaleRemote(snap)) {
+        snap = mergeAveriasSnapshots(liveNow, snap);
+        schedulePushFromLocal();
+      } else if (inLocalEditGrace()) {
+        snap = mergeAveriasSnapshots(liveNow, snap);
       }
     }
-    snap = normalizeSnapshot(snap);
     if (inLocalEditGrace()) {
       var live = getEffectiveLocalSnapshot();
       if (live) {
         live = normalizeSnapshot(live);
+        snap = mergeAveriasSnapshots(live, snap);
         if (isLocalSnapshotAhead(live, snap)) {
-          snap = mergeAveriasSnapshots(snap, live);
           schedulePushFromLocal();
-        } else if (!isCloudAuthoritativeSource(source) && source !== 'firebase-pending') {
-          if ((live.localSeq || 0) >= (snap.localSeq || 0) &&
-              countSnapshotRecords(live) >= countSnapshotRecords(snap) &&
-              countCorrectedRecords(snap) <= countCorrectedRecords(live)) {
-            schedulePushFromLocal();
-            return false;
-          }
-          snap = mergeAveriasSnapshots(snap, live);
-        } else if (countCorrectedRecords(snap) > countCorrectedRecords(live)) {
-          snap = mergeAveriasSnapshots(snap, live);
         }
       }
     }
@@ -1672,6 +1664,7 @@
     beginLocalEdit: beginLocalEdit,
     shouldBlockStaleRemote: shouldBlockStaleRemote,
     inLocalEditGrace: inLocalEditGrace,
+    isPushing: function () { return pushing; },
     noteLocalSave: noteLocalSave,
     pushPendingRecord: pushPendingRecord,
     publishChange: publishChange,

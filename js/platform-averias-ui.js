@@ -622,10 +622,18 @@
         function applyRemoteSnapshot(snap, opts) {
             opts = opts || {};
             if (!snap) return false;
-            if (global.PlatformAveriasCloudSync &&
-                global.PlatformAveriasCloudSync.shouldBlockStaleRemote &&
-                global.PlatformAveriasCloudSync.shouldBlockStaleRemote(snap)) {
-                return false;
+            if (global.PlatformAveriasCloudSync) {
+                if (global.PlatformAveriasCloudSync.isPushing && global.PlatformAveriasCloudSync.isPushing()) {
+                    return false;
+                }
+                if (global.PlatformAveriasCloudSync.inLocalEditGrace &&
+                    global.PlatformAveriasCloudSync.inLocalEditGrace()) {
+                    return false;
+                }
+                if (global.PlatformAveriasCloudSync.shouldBlockStaleRemote &&
+                    global.PlatformAveriasCloudSync.shouldBlockStaleRemote(snap)) {
+                    return false;
+                }
             }
             var sigBefore = lastUiSignature || contentSignature(buildSnapshot());
             var countsBefore = countReports(buildSnapshot());
@@ -646,7 +654,10 @@
                 countsAfter.pending !== countsBefore.pending;
             if (opts.fromCloud || changed) {
                 updateAllStats();
-                refreshCurrentView();
+                var onReportForm = currentModule === 'pallets' &&
+                    document.getElementById('palletsReport') &&
+                    !document.getElementById('palletsReport').classList.contains('hidden');
+                if (!onReportForm) refreshCurrentView();
                 updateLiveChip(true);
             }
             if (opts.fromCloud && countsAfter.pending < countsBefore.pending && global.PlatformToast) {
@@ -701,6 +712,11 @@
 
         function reloadFromSyncDebounced(ev) {
             clearTimeout(reloadSyncTimer);
+            if (global.PlatformAveriasCloudSync) {
+                if (global.PlatformAveriasCloudSync.isPushing && global.PlatformAveriasCloudSync.isPushing()) return;
+                if (global.PlatformAveriasCloudSync.inLocalEditGrace &&
+                    global.PlatformAveriasCloudSync.inLocalEditGrace()) return;
+            }
             if (ev && ev.detail) {
                 if (ev.detail.source === 'push-ok' || ev.detail.source === 'local-save') return;
                 if (ev.detail.source === 'apply') return;
@@ -1685,14 +1701,8 @@
                     : '⚠️ Solo en este equipo — publique reglas Firebase';
                 document.getElementById('reportSuccess').classList.add('show');
                 setTimeout(function () {
-                    document.getElementById('reportLocation').value = '';
-                    document.getElementById('reportProduct').value = '';
-                    document.getElementById('reportObservation').value = '';
-                    document.getElementById('reportSeverity').value = '';
-                    document.querySelectorAll('.severity-btn').forEach(function (btn) { btn.classList.remove('selected'); });
-                    document.getElementById('reportSuccess').classList.remove('show');
                     showPalletsDashboard();
-                }, 1500);
+                }, 1200);
             });
         }
 
