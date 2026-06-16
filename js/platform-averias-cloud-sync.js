@@ -131,6 +131,27 @@
     return !!(hasSupabaseConfig() && global.PlatformSupabaseBridge.isPrimary && global.PlatformSupabaseBridge.isPrimary());
   }
 
+  /** Solo Supabase en tiempo real — sin guardar snapshot en localStorage */
+  function isLiveCloudOnly() {
+    return isSupabasePrimary();
+  }
+
+  function applyCloudSnapshotToUi(snap, silent, fromCloud) {
+    if (!snap) return false;
+    snap = normalizeSnapshot(snap);
+    lastKnownRemoteSeq = Math.max(lastKnownRemoteSeq, snap.localSeq || 0);
+    lastAppliedContentSig = contentSignature(snap);
+    lastRemoteUpdatedAt = String(snap.updatedAt || '');
+    if (global.PlatformAveriasUI && global.PlatformAveriasUI.applySnapshotToMemory) {
+      global.PlatformAveriasUI.applySnapshotToMemory(snap);
+    }
+    if (!silent) {
+      notifyUpdated('apply', { fromCloud: !!fromCloud, signature: lastAppliedContentSig });
+    }
+    updateLiveIndicator(true);
+    return true;
+  }
+
   function isCloudAuthoritativeSource(source) {
     return source === 'supabase' || source === 'supabase-realtime' || source === 'push-ok';
   }
@@ -166,11 +187,7 @@
     if (!hasSupabaseConfig() || !global.PlatformSupabaseBridge.subscribe) return;
     global.PlatformSupabaseBridge.subscribe('averias', function (remote) {
       if (!remote || pushing) return;
-      if (inLocalEditGrace()) {
-        schedulePushFromLocal();
-        return;
-      }
-      applySnapshotToLocal(remote, false, 'supabase-realtime');
+      applyCloudSnapshotToUi(remote, false, true);
     });
   }
 
@@ -290,23 +307,14 @@
       return prepareSnapshotForPush(snap).then(function (ready) {
         return pushToSupabase(ready).then(function (ok) {
           if (ok) {
-            var live = getEffectiveLocalSnapshot();
-            if (live) ready = mergeAveriasSnapshots(normalizeSnapshot(live), normalizeSnapshot(ready));
             noteLocalSave(ready);
-            try {
-              global.localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(ready));
-            } catch (e) { /* noop */ }
-            if (global.PlatformAveriasUI && global.PlatformAveriasUI.applySnapshotToMemory) {
-              global.PlatformAveriasUI.applySnapshotToMemory(ready);
-            }
+            applyCloudSnapshotToUi(ready, true, true);
             lastKnownRemoteSeq = ready.localSeq || 0;
             broadcastSyncHint();
             notifyUpdated('push-ok');
             global.dispatchEvent(new CustomEvent('averias-sync-push', { detail: { ok: true } }));
-          } else {
-            schedulePushFromLocal();
           }
-          return { ok: true, cloud: !!ok, pendingOk: false, snapOk: !!ok };
+          return { ok: !!ok, cloud: !!ok, pendingOk: false, snapOk: !!ok };
         });
       }).then(finish, finish);
     }
@@ -512,6 +520,7 @@
   }
 
   function getLocalSnapshot() {
+    if (isLiveCloudOnly()) return null;
     try {
       var raw = global.localStorage.getItem(SNAPSHOT_KEY);
       return raw ? JSON.parse(raw) : null;
@@ -530,8 +539,11 @@
   }
 
   function getEffectiveLocalSnapshot() {
-    var local = getLocalSnapshot();
     var mem = getMemorySnapshot();
+    if (isLiveCloudOnly()) {
+      return mem ? normalizeSnapshot(mem) : null;
+    }
+    var local = getLocalSnapshot();
     if (mem) {
       return mergeAveriasSnapshots(local || EMPTY, mem);
     }
@@ -610,11 +622,6 @@
   function prepareSnapshotForPush(snap) {
     snap = pickBestPushSnapshot(snap);
     if (hasSupabaseConfig() && global.PlatformSupabaseBridge.isPrimary()) {
-      if (inLocalEditGrace()) {
-        snap.localSeq = Math.max(snap.localSeq || 0, lastKnownRemoteSeq) + 1;
-        snap.updatedAt = new Date().toISOString();
-        return Promise.resolve(normalizeSnapshot(snap));
-      }
       return pullFromSupabase().then(function (remote) {
         if (remote) snap = mergeAveriasSnapshots(snap, remote);
         snap.localSeq = Math.max(snap.localSeq || 0, (remote && remote.localSeq) || 0, lastKnownRemoteSeq) + 1;
@@ -684,7 +691,12 @@
   }
 
   function applySnapshotToLocal(snap, silent, source) {
-    if (!snap || !global.localStorage) return false;
+    if (!snap) return false;
+    if (isLiveCloudOnly()) {
+      if (pushing) return false;
+      return applyCloudSnapshotToUi(snap, !!silent, source === 'supabase' || source === 'supabase-realtime');
+    }
+    if (!global.localStorage) return false;
     if (pushing || inLocalEditGrace()) {
       schedulePushFromLocal();
       return false;
@@ -996,8 +1008,19 @@
   }
 
   function pullAll() {
-    if (pulling) return Promise.resolve(getLocalSnapshot());
+    if (pulling) return Promise.resolve(getEffectiveLocalSnapshot());
     if (pushing) return Promise.resolve(getEffectiveLocalSnapshot());
+    if (isLiveCloudOnly()) {
+      pulling = true;
+      return pullFromSupabaseRetry().then(function (sbSnap) {
+        if (sbSnap) applyCloudSnapshotToUi(sbSnap, false, true);
+        lastPullAt = Date.now();
+        updateSyncStatusUi();
+        return sbSnap;
+      }).finally(function () {
+        pulling = false;
+      });
+    }
     if (inLocalEditGrace()) {
       schedulePushFromLocal();
       return Promise.resolve(getEffectiveLocalSnapshot());
@@ -1400,7 +1423,7 @@
     var ago = lastPullAt ? Math.round((Date.now() - lastPullAt) / 1000) : -1;
     if (isSupabasePrimary()) {
       el.className = 'av-sync-status-line av-sync-status-ok';
-      el.textContent = 'EN VIVO — Supabase · todos los dispositivos comparten datos · hace ' +
+      el.textContent = 'EN VIVO — Supabase (solo nube, sin guardado local) · hace ' +
         (ago >= 0 ? ago + ' s' : '—');
       return;
     }
@@ -1697,6 +1720,7 @@
     beginLocalEdit: beginLocalEdit,
     shouldBlockStaleRemote: shouldBlockStaleRemote,
     inLocalEditGrace: inLocalEditGrace,
+    isLiveCloudOnly: isLiveCloudOnly,
     isPushing: function () { return pushing; },
     noteLocalSave: noteLocalSave,
     pushPendingRecord: pushPendingRecord,

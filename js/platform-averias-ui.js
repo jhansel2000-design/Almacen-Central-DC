@@ -332,15 +332,23 @@
             return C ? C.datesBlockHtml(record, escAv) : '';
         }
 
+        function isLiveCloudOnly() {
+            return !!(global.PlatformAveriasCloudSync &&
+                global.PlatformAveriasCloudSync.isLiveCloudOnly &&
+                global.PlatformAveriasCloudSync.isLiveCloudOnly());
+        }
+
         function buildSnapshot() {
             var prevSeq = memoryLocalSeq;
-            try {
-                var raw = localStorage.getItem(SNAPSHOT_KEY);
-                if (raw) {
-                    var prev = JSON.parse(raw);
-                    prevSeq = Math.max(prevSeq, prev && prev.localSeq ? prev.localSeq : 0);
-                }
-            } catch (e) { /* noop */ }
+            if (!isLiveCloudOnly()) {
+                try {
+                    var raw = localStorage.getItem(SNAPSHOT_KEY);
+                    if (raw) {
+                        var prev = JSON.parse(raw);
+                        prevSeq = Math.max(prevSeq, prev && prev.localSeq ? prev.localSeq : 0);
+                    }
+                } catch (e) { /* noop */ }
+            }
             return {
                 version: 1,
                 localSeq: prevSeq,
@@ -440,6 +448,7 @@
         }
 
         function writeIndividualKeys() {
+            if (isLiveCloudOnly()) return;
             localStorage.setItem('averias_dc_incidences', JSON.stringify(allIncidences));
             localStorage.setItem('averias_dc_damages', JSON.stringify(allDamages));
             localStorage.setItem('averias_dc_securityIncidents', JSON.stringify(allSecurity));
@@ -449,6 +458,7 @@
         }
 
         function persistLocalOnly() {
+            if (isLiveCloudOnly()) return;
             ensureRecordStatuses();
             writeIndividualKeys();
             var snap = buildSnapshot();
@@ -456,8 +466,38 @@
             localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(snap));
         }
 
+        function persistSnapshotCloudLive(options) {
+            options = options || {};
+            ensureRecordStatuses();
+            var snap = buildSnapshot();
+            snap.updatedAt = new Date().toISOString();
+            if (!options.seqAlreadyBumped) {
+                snap.localSeq = (snap.localSeq || 0) + 1;
+                memoryLocalSeq = snap.localSeq;
+            }
+            if (!global.PlatformAveriasCloudSync || !global.PlatformAveriasCloudSync.publishChange) {
+                return Promise.resolve({ ok: false, cloud: false, error: 'no-cloud' });
+            }
+            return global.PlatformAveriasCloudSync.publishChange(snap, options.liveRecord || null).then(function (result) {
+                if (result && result.cloud) {
+                    updateAllStats();
+                    if (global.PlatformToast) {
+                        global.PlatformToast.success('Guardado en Supabase — todos lo ven en vivo', 2500);
+                    }
+                    return { ok: true, cloud: true };
+                }
+                if (global.PlatformToast) {
+                    global.PlatformToast.error('No se guardó en Supabase. Revise conexión y recargue (Ctrl+F5).', 8000);
+                }
+                return { ok: false, cloud: false };
+            });
+        }
+
         function persistSnapshot(options) {
             options = options || {};
+            if (isLiveCloudOnly() && !options.localOnly && !options.bootstrap) {
+                return persistSnapshotCloudLive(options);
+            }
             if (isLoadingRemoteSnapshot && !options.force) {
                 return Promise.resolve({ ok: false, skipped: true });
             }
@@ -534,6 +574,11 @@
 
         function loadData(options) {
             options = options || {};
+            if (isLiveCloudOnly()) {
+                updateAllStats();
+                lastUiSignature = contentSignature(buildSnapshot());
+                return;
+            }
             const snapRaw = localStorage.getItem(SNAPSHOT_KEY);
             if (snapRaw) {
                 try {
@@ -652,10 +697,12 @@
             isLoadingRemoteSnapshot = true;
             try {
                 applySnapshot(snap, true);
-                writeIndividualKeys();
-                var synced = buildSnapshot();
-                synced.updatedAt = new Date().toISOString();
-                localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(synced));
+                if (!isLiveCloudOnly()) {
+                    writeIndividualKeys();
+                    var synced = buildSnapshot();
+                    synced.updatedAt = new Date().toISOString();
+                    localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(synced));
+                }
             } finally {
                 isLoadingRemoteSnapshot = false;
             }
@@ -703,6 +750,12 @@
         }
 
         function reloadFromSync() {
+            if (isLiveCloudOnly() && global.PlatformAveriasCloudSync && global.PlatformAveriasCloudSync.pull) {
+                global.PlatformAveriasCloudSync.pull().then(function () {
+                    updateAllStats();
+                });
+                return;
+            }
             isLoadingRemoteSnapshot = true;
             try {
                 var snapRaw = localStorage.getItem(SNAPSHOT_KEY);
@@ -1676,32 +1729,40 @@
 
             allIncidences.push(incidence);
             ensureRecordStatuses();
-            writeIndividualKeys();
-            var preSnap = buildSnapshot();
-            preSnap.updatedAt = new Date().toISOString();
-            preSnap.localSeq = (preSnap.localSeq || 0) + 1;
-            memoryLocalSeq = preSnap.localSeq;
-            try {
-                localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(preSnap));
-            } catch (e) { /* noop */ }
-            if (global.PlatformAveriasCloudSync && global.PlatformAveriasCloudSync.beginLocalEdit) {
-                global.PlatformAveriasCloudSync.beginLocalEdit(preSnap);
-            }
-            if (global.PlatformAveriasCloudSync && global.PlatformAveriasCloudSync.noteLocalSave) {
-                global.PlatformAveriasCloudSync.noteLocalSave(preSnap);
+            if (!isLiveCloudOnly()) {
+                writeIndividualKeys();
+                var preSnap = buildSnapshot();
+                preSnap.updatedAt = new Date().toISOString();
+                preSnap.localSeq = (preSnap.localSeq || 0) + 1;
+                memoryLocalSeq = preSnap.localSeq;
+                try {
+                    localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(preSnap));
+                } catch (e) { /* noop */ }
+                if (global.PlatformAveriasCloudSync && global.PlatformAveriasCloudSync.beginLocalEdit) {
+                    global.PlatformAveriasCloudSync.beginLocalEdit(preSnap);
+                }
+                if (global.PlatformAveriasCloudSync && global.PlatformAveriasCloudSync.noteLocalSave) {
+                    global.PlatformAveriasCloudSync.noteLocalSave(preSnap);
+                }
             }
             memoryLocalSeq = Math.max(memoryLocalSeq, (buildSnapshot().localSeq || 0));
             updateStats();
             renderPalletsReportedList();
             auditAction('REPORTAR', { module: 'pallets', location: incidence.location, product: incidence.product });
-            persistSnapshot({ force: true, seqAlreadyBumped: true, liveRecord: { module: 'pallets', record: incidence } }).then(function (result) {
-                if (!findById(allIncidences, incidence.id)) {
-                    allIncidences.push(incidence);
-                    writeIndividualKeys();
-                }
+            persistSnapshot({ force: true, seqAlreadyBumped: isLiveCloudOnly(), liveRecord: { module: 'pallets', record: incidence } }).then(function (result) {
                 if (submitBtn) {
                     submitBtn.disabled = false;
                     submitBtn.textContent = 'GUARDAR INCIDENCIA';
+                }
+                if (!result || !result.cloud) {
+                    var idx = allIncidences.findIndex(function (r) { return r && r.id === incidence.id; });
+                    if (idx >= 0) allIncidences.splice(idx, 1);
+                    updateStats();
+                    renderPalletsReportedList();
+                    document.getElementById('reportError').textContent = '❌ No se guardó en Supabase. Revise conexión e intente de nuevo.';
+                    document.getElementById('reportError').classList.add('show');
+                    document.getElementById('reportSuccess').classList.remove('show');
+                    return;
                 }
                 if (result && result.ok === false && !result.skipped) {
                     document.getElementById('reportError').textContent = '❌ No se pudo guardar. Revise espacio del navegador e intente de nuevo.';
@@ -1713,8 +1774,8 @@
                 renderPalletsReportedList();
                 document.getElementById('reportError').classList.remove('show');
                 document.getElementById('reportSuccess').textContent = result && result.cloud
-                    ? '✅ Publicado en vivo — todos lo ven'
-                    : '⚠️ Solo en este equipo — publique reglas Firebase';
+                    ? '✅ Guardado en Supabase — todos lo ven en vivo'
+                    : '❌ No se guardó. Revise conexión e intente de nuevo.';
                 document.getElementById('reportSuccess').classList.add('show');
                 setTimeout(function () {
                     showPalletsDashboard();
@@ -2071,21 +2132,23 @@
             function doFinalize(record, mod, onDone) {
                 finalizeWorkRecord(record);
                 correctionLockUntil = Date.now() + 30000;
-                writeIndividualKeys();
-                var preSnap = buildSnapshot();
-                preSnap.updatedAt = new Date().toISOString();
-                preSnap.localSeq = (preSnap.localSeq || 0) + 1;
-                memoryLocalSeq = preSnap.localSeq;
-                try {
-                    localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(preSnap));
-                } catch (e) { /* noop */ }
-                if (global.PlatformAveriasCloudSync && global.PlatformAveriasCloudSync.beginLocalEdit) {
-                    global.PlatformAveriasCloudSync.beginLocalEdit(preSnap);
+                if (!isLiveCloudOnly()) {
+                    writeIndividualKeys();
+                    var preSnap = buildSnapshot();
+                    preSnap.updatedAt = new Date().toISOString();
+                    preSnap.localSeq = (preSnap.localSeq || 0) + 1;
+                    memoryLocalSeq = preSnap.localSeq;
+                    try {
+                        localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(preSnap));
+                    } catch (e) { /* noop */ }
+                    if (global.PlatformAveriasCloudSync && global.PlatformAveriasCloudSync.beginLocalEdit) {
+                        global.PlatformAveriasCloudSync.beginLocalEdit(preSnap);
+                    }
+                    if (global.PlatformAveriasCloudSync && global.PlatformAveriasCloudSync.noteLocalSave) {
+                        global.PlatformAveriasCloudSync.noteLocalSave(preSnap);
+                    }
                 }
-                if (global.PlatformAveriasCloudSync && global.PlatformAveriasCloudSync.noteLocalSave) {
-                    global.PlatformAveriasCloudSync.noteLocalSave(preSnap);
-                }
-                return persistSnapshot({ force: true, seqAlreadyBumped: true, liveRecord: { module: mod, record: record } }).then(function (result) {
+                return persistSnapshot({ force: true, seqAlreadyBumped: isLiveCloudOnly(), liveRecord: { module: mod, record: record } }).then(function (result) {
                     if (typeof onDone === 'function') onDone();
                     afterPersist(result);
                     return true;
