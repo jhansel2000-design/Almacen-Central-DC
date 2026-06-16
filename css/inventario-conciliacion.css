@@ -157,6 +157,17 @@
   border: 1px solid #cfd8dc;
 }
 
+.inv-desk-btn.active {
+  background: #1e2d3d;
+  color: #fff;
+  border-color: #1e2d3d;
+}
+
+.inv-desk-btn--ghost.active {
+  background: #1e2d3d;
+  color: #fff;
+}
+
 .inv-desk-meta {
   font-size: 12px;
   color: #546e7a;

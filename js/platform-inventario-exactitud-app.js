@@ -68,6 +68,7 @@
 
   function enterDesk() {
     setAuthVisible(false);
+    updateModeButtons();
     if (DESK) DESK.showDesk(state.workspace);
   }
 
@@ -113,8 +114,31 @@
     } catch (e) { /* noop */ }
   }
 
+  function switchWorkspace(ws) {
+    state.workspace = ws === 'auditoria' ? 'auditoria' : 'conciliacion';
+    try {
+      global.sessionStorage.setItem('ixWorkspace', state.workspace);
+      var url = new URL(global.location.href);
+      if (state.workspace === 'auditoria') url.searchParams.set('ws', 'auditoria');
+      else url.searchParams.delete('ws');
+      global.history.replaceState({}, '', url.pathname + url.search);
+    } catch (e) { /* noop */ }
+    applyWorkspaceLabels();
+    if (state.user && DESK) DESK.showDesk(state.workspace);
+    updateModeButtons();
+  }
+
+  function updateModeButtons() {
+    var conc = $('ixBtnModeConc');
+    var audit = $('ixBtnModeAudit');
+    if (conc) conc.classList.toggle('active', state.workspace !== 'auditoria');
+    if (audit) audit.classList.toggle('active', state.workspace === 'auditoria');
+  }
+
   function bindEvents() {
     $('ixBtnEnter') && $('ixBtnEnter').addEventListener('click', doLogin);
+    $('ixBtnModeConc') && $('ixBtnModeConc').addEventListener('click', function () { switchWorkspace('conciliacion'); });
+    $('ixBtnModeAudit') && $('ixBtnModeAudit').addEventListener('click', function () { switchWorkspace('auditoria'); });
     ['ixAdmUser', 'ixAdmPin'].forEach(function (id) {
       var el = $(id);
       if (!el) return;

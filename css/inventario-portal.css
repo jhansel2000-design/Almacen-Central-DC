@@ -472,6 +472,11 @@ body.inv-dash-view {
   line-height: 1.4;
 }
 
+a.inv-admin-link {
+  text-decoration: none;
+  color: inherit;
+}
+
 .inv-btn {
   width: 100%;
   padding: 14px 16px;

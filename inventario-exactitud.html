@@ -12,7 +12,7 @@
   <script src="js/relay-bootstrap.js?v=1"></script>
   <link rel="stylesheet" href="css/platform.css?v=32">
   <link rel="stylesheet" href="css/dc-brand.css?v=11">
-  <link rel="stylesheet" href="css/inventario-conciliacion.css?v=3">
+  <link rel="stylesheet" href="css/inventario-conciliacion.css?v=4">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700&display=swap" rel="stylesheet">
@@ -22,7 +22,7 @@
 
   <div class="ix-auth-overlay" id="ixAuthOverlay">
     <div class="ix-auth-panel">
-      <a href="inventario-hub.html" class="ix-auth-back">← Cambiar módulo</a>
+      <a href="index.html" class="ix-auth-back">← Volver al centro de mando</a>
       <img class="jc-logo-img" src="assets/img/jc-logo.png?v=5" alt="AC" width="48" height="48">
       <h1 class="ix-auth-title" id="ixAuthTitle">Conciliación · Exactitud</h1>
       <p class="ix-auth-sub" id="ixAuthSub">Escritorio web · lee conteos del lector en vivo (Supabase). La APK no cambia.</p>
@@ -63,7 +63,9 @@
         <button type="button" class="inv-desk-btn" id="invBtnLoadSistema">Cargar Inventario disponible</button>
         <button type="button" class="inv-desk-btn inv-desk-btn--ghost" id="invBtnRefreshDesk">Actualizar</button>
         <button type="button" class="inv-desk-btn inv-desk-btn--ghost" id="invBtnExportCuadre">Exportar cuadre</button>
-        <a href="inventario-hub.html" class="inv-desk-btn inv-desk-btn--ghost">Otro módulo</a>
+        <button type="button" class="inv-desk-btn inv-desk-btn--ghost" id="ixBtnModeConc">Conciliación</button>
+        <button type="button" class="inv-desk-btn inv-desk-btn--ghost" id="ixBtnModeAudit">Auditoría</button>
+        <a href="index.html" class="inv-desk-btn inv-desk-btn--ghost">Portales</a>
         <p class="inv-desk-meta" id="invDeskMeta">Cargue «Inventario disponible» exportado de Dynamics (Física disponible · CJ · almacén 300).</p>
       </div>
       <div class="inv-desk-body">
@@ -95,6 +97,6 @@
   <script src="js/platform-inventario-sync.js?v=6"></script>
   <script src="js/platform-inventario-conciliacion.js?v=3"></script>
   <script src="js/platform-inventario-desk.js?v=4"></script>
-  <script src="js/platform-inventario-exactitud-app.js?v=2"></script>
+  <script src="js/platform-inventario-exactitud-app.js?v=3"></script>
 </body>
 </html>
