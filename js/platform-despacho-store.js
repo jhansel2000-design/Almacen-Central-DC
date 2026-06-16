@@ -174,6 +174,7 @@
       archivadoPasillo: p.archivadoPasillo != null ? String(p.archivadoPasillo) : null,
       createdAt: p.createdAt || nowIso(),
       createdBy: p.createdBy || '—',
+      validadorAsignado: String(p.validadorAsignado || '').trim(),
       updatedAt: p.updatedAt || p.createdAt || nowIso(),
       updatedBy: p.updatedBy || p.createdBy || '—',
       historial: Array.isArray(p.historial) ? p.historial : []
@@ -275,15 +276,17 @@
     });
   }
 
-  function registrarPedido(idc, jaula, estado, usuario, cliente) {
+  function registrarPedido(idc, jaula, estado, usuario, cliente, validadorAsignado) {
     idc = formatIdc(idc);
     jaula = String(jaula || '').trim();
     cliente = String(cliente || '').trim();
+    validadorAsignado = String(validadorAsignado || '').trim();
     estado = ESTADOS[estado] && PREPARADOR_ESTADOS.indexOf(estado) >= 0 ? estado : 'facturado';
     usuario = usuario || '—';
 
     if (!idc) return { ok: false, error: 'Ingrese el ID del pedido (IDC).' };
     if (!jaula) return { ok: false, error: 'Ingrese la jaula.' };
+    if (!validadorAsignado) return { ok: false, error: 'Seleccione el validador asignado al pedido.' };
 
     var data = load();
     var idx = findByIdc(data.pedidos, idc);
@@ -297,6 +300,7 @@
       var wasArchived = existing.visibleValidador === false;
       existing.jaula = jaula;
       existing.cliente = cliente;
+      existing.validadorAsignado = validadorAsignado;
       existing.visibleValidador = true;
       promoverASeguimientoValidador(existing, estado, usuario, ts);
       if (wasArchived) {
@@ -311,6 +315,7 @@
       idc: idc,
       jaula: jaula,
       cliente: cliente,
+      validadorAsignado: validadorAsignado,
       estadoOperador: estado,
       estado: 'pendiente_carga',
       seguimientoValidador: true,
@@ -331,7 +336,7 @@
       panel: 'preparador',
       desde: null,
       hacia: 'pendiente_carga',
-      nota: 'Registro operador (' + opLabel + ') → ingresó a seguimiento validador'
+      nota: 'Registro operador (' + opLabel + ') → validador ' + validadorAsignado
     });
     data.pedidos.unshift(pedido);
     save(data);
@@ -425,7 +430,8 @@
         list = list.filter(function (p) {
           return String(p.idc).toLowerCase().indexOf(q) >= 0 ||
             String(p.jaula).toLowerCase().indexOf(q) >= 0 ||
-            String(p.cliente || '').toLowerCase().indexOf(q) >= 0;
+            String(p.cliente || '').toLowerCase().indexOf(q) >= 0 ||
+            String(p.validadorAsignado || '').toLowerCase().indexOf(q) >= 0;
         });
       }
     }

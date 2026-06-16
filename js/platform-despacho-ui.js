@@ -363,6 +363,66 @@
       '</nav>';
   }
 
+  function fmtValidador(p) {
+    var n = p && p.validadorAsignado ? String(p.validadorAsignado).trim() : '';
+    return n || '—';
+  }
+
+  function listValidadoresAsignables() {
+    var names = [];
+    var seen = Object.create(null);
+    function add(name) {
+      name = String(name || '').trim();
+      if (!name) return;
+      var key = name.toLowerCase();
+      if (seen[key]) return;
+      seen[key] = true;
+      names.push(name);
+    }
+    if (global.PlatformAdmin && global.PlatformAdmin.getUsers) {
+      global.PlatformAdmin.getUsers().forEach(function (u) {
+        if (u.active === false) return;
+        var role = u.role;
+        if (role === 'validador') {
+          add(u.name || u.username);
+          return;
+        }
+        if (global.PlatformAdmin.can && global.PlatformAdmin.can(role, 'despacho.validate', u)) {
+          add(u.name || u.username);
+        }
+      });
+    }
+    if (global.PlatformDespachoAuth && global.PlatformDespachoAuth.getUsers) {
+      global.PlatformDespachoAuth.getUsers().forEach(function (u) {
+        if (u.active === false || u.role !== 'validador') return;
+        add(u.name || u.username);
+      });
+    }
+    return names.sort(function (a, b) { return a.localeCompare(b, 'es'); });
+  }
+
+  function renderValidadorAsignadoField(selected) {
+    selected = String(selected || '').trim();
+    var opts = listValidadoresAsignables();
+    var hasSelected = selected && opts.some(function (n) { return n === selected; });
+    if (opts.length) {
+      return '<label class="desp-field desp-field--validador"><span>Validador asignado</span>' +
+        '<select id="despValidador" name="validadorAsignado" required>' +
+        '<option value="">Seleccione validador…</option>' +
+        opts.map(function (name) {
+          return '<option value="' + esc(name) + '"' + (selected === name ? ' selected' : '') + '>' + esc(name) + '</option>';
+        }).join('') +
+        (selected && !hasSelected
+          ? '<option value="' + esc(selected) + '" selected>' + esc(selected) + '</option>'
+          : '') +
+        '</select></label>';
+    }
+    return '<label class="desp-field desp-field--validador"><span>Validador asignado</span>' +
+      '<input type="text" id="despValidador" name="validadorAsignado" required placeholder="Nombre del validador" ' +
+      'value="' + esc(selected) + '" autocomplete="off" list="despValidadorList"></label>' +
+      '<datalist id="despValidadorList"></datalist>';
+  }
+
   function renderPrepEstadoField(inputName) {
     inputName = inputName || 'prepEstado';
     var ids = DS.PREPARADOR_ESTADOS;
@@ -410,6 +470,7 @@
       '<input type="text" id="despJaula" name="x_dc_prep_ref" placeholder="Escriba lo que necesite" autocomplete="off" autocorrect="off" spellcheck="false" inputmode="text" aria-label="Referencia"></label>' +
       '<label class="desp-field"><span>Nombre del cliente</span>' +
       '<input type="text" id="despCliente" name="cliente" placeholder="Nombre del cliente" autocomplete="off" autocorrect="off" spellcheck="false"></label>' +
+      renderValidadorAsignadoField('') +
       renderPrepEstadoField('prepEstado') +
       '</div>' +
       '<div class="desp-prep-actions desp-prep-actions--single">' +
@@ -436,7 +497,7 @@
       '<div class="desp-table-wrap">' +
       '<table class="desp-table desp-table--registro-envios">' +
       '<thead><tr>' +
-      '<th>IDC</th><th>Cliente</th><th>Jaula</th><th>Operador</th><th>Estado validador</th><th>Vista</th><th>Registro</th><th></th>' +
+      '<th>IDC</th><th>Cliente</th><th>Jaula</th><th>Operador</th><th>Validador</th><th>Estado validador</th><th>Vista</th><th>Registro</th><th></th>' +
       '</tr></thead><tbody>' +
       (pedidos.length ? pedidos.map(function (p) {
         var activo = p.visibleValidador !== false;
@@ -450,13 +511,14 @@
           '<td class="desp-cliente">' + esc(fmtCliente(p)) + '</td>' +
           '<td>' + esc(pasillo || '—') + '</td>' +
           '<td>' + estadoBadge(opEstado) + '</td>' +
+          '<td class="desp-validador-asignado">' + esc(fmtValidador(p)) + '</td>' +
           '<td>' + estadoBadge(p.estado) + '</td>' +
           '<td>' + vistaBadge + '</td>' +
           '<td class="desp-dt">' + esc(fmtDt(p.createdAt)) + '<br><small>' + esc(p.createdBy) + '</small></td>' +
           '<td><button type="button" class="btn btn-ghost desp-btn-hist" data-pedido-id="' + esc(p.id) + '">Historial</button></td>' +
           '</tr>';
       }).join('') :
-        '<tr><td colspan="8" class="desp-empty-row">Aún no hay IDC enviados al validador.</td></tr>') +
+        '<tr><td colspan="9" class="desp-empty-row">Aún no hay IDC enviados al validador.</td></tr>') +
       '</tbody></table></div></section>';
   }
 
@@ -529,8 +591,8 @@
     }
     return '<div class="desp-table-wrap desp-lista-vivo-wrap">' +
       '<table class="desp-table desp-table--lista-vivo" aria-label="Seguimiento validador en vivo">' +
-      '<thead><tr><th>IDC</th><th>Cliente</th><th>Jaula</th><th>Estado</th><th>Fecha y hora</th>' +
-      (canRemove ? '<th>Validador</th>' : '') +
+      '<thead><tr><th>IDC</th><th>Cliente</th><th>Jaula</th><th>Estado</th><th>Validador</th><th>Fecha y hora</th>' +
+      (canRemove ? '<th>Acción</th>' : '') +
       '</tr></thead><tbody>' +
       pedidos.map(function (p) {
         return '<tr data-pedido-id="' + esc(p.id) + '">' +
@@ -538,6 +600,7 @@
           '<td class="desp-cliente">' + esc(fmtCliente(p)) + '</td>' +
           '<td>' + esc(p.jaula || '—') + '</td>' +
           '<td>' + estadoBadge(p.estado) + '</td>' +
+          '<td class="desp-validador-asignado">' + esc(fmtValidador(p)) + '</td>' +
           '<td class="desp-dt">' + esc(fmtDt(p.createdAt || p.updatedAt)) + '</td>' +
           (canRemove
             ? '<td class="desp-val-actions desp-val-actions--live">' +
@@ -581,11 +644,13 @@
     var idc = host.querySelector('#despIdc');
     var jaula = host.querySelector('#despJaula');
     var cliente = host.querySelector('#despCliente');
+    var validador = host.querySelector('#despValidador');
     if (!idc && !jaula) return null;
     return {
       idc: idc ? idc.value : '',
       jaula: pasilloValueFromField(jaula),
       cliente: cliente ? cliente.value : '',
+      validadorAsignado: validador ? String(validador.value || '').trim() : '',
       estado: prepEstadoValue(host, 'prepEstado')
     };
   }
@@ -595,8 +660,10 @@
     var idc = host.querySelector('#despIdc');
     var jaula = host.querySelector('#despJaula');
     var cliente = host.querySelector('#despCliente');
+    var validador = host.querySelector('#despValidador');
     if (idc && global.document.activeElement !== idc) idc.value = snap.idc || '';
     if (cliente && global.document.activeElement !== cliente) cliente.value = snap.cliente || '';
+    if (validador && global.document.activeElement !== validador) validador.value = snap.validadorAsignado || '';
     if (jaula && global.document.activeElement !== jaula) {
       jaula.value = snap.jaula || '';
     }
@@ -685,6 +752,7 @@
     var idcEl = host.querySelector('#despIdc');
     var pasilloEl = host.querySelector('#despJaula');
     var clienteEl = host.querySelector('#despCliente');
+    var validadorEl = host.querySelector('#despValidador');
     return {
       idc: idcEl ? idcEl.value : '',
       jaula: pasilloValueFromField(pasilloEl),
@@ -750,7 +818,7 @@
           return '<li><strong class="desp-idc">' + esc(formatIdc(p.idc)) + '</strong> ' +
             '<span class="desp-cliente-inline">' + esc(fmtCliente(p)) + '</span> ' +
             estadoBadge(p.estado) + '<br><small class="desp-muted">' +
-            esc(fmtDt(p.createdAt || p.updatedAt)) + '</small></li>';
+            esc(fmtValidador(p)) + ' · ' + esc(fmtDt(p.createdAt || p.updatedAt)) + '</small></li>';
         }).join('') + '</ul></article>';
     }).join('') + '</div>';
   }
@@ -789,12 +857,12 @@
       '<div class="desp-table-wrap">' +
       '<table class="desp-table" id="despValTable">' +
       '<thead><tr>' +
-      '<th>IDC</th><th>Cliente</th><th>Jaula</th><th>Estado</th><th>Fecha y hora</th>' +
+      '<th>IDC</th><th>Cliente</th><th>Jaula</th><th>Estado</th><th>Validador</th><th>Fecha y hora</th>' +
       (canValidate ? '<th>Acción</th>' : '') +
       '<th></th>' +
       '</tr></thead><tbody>' +
       (list.length ? list.map(function (p) { return renderValidadorRow(p, opts); }).join('') :
-        '<tr><td colspan="' + (canValidate ? 7 : 6) + '" class="desp-empty-row">No hay IDC en seguimiento validador' +
+        '<tr><td colspan="' + (canValidate ? 8 : 7) + '" class="desp-empty-row">No hay IDC en seguimiento validador' +
         (filterEstado || filterQ ? ' con este filtro' : ' — el operador debe enviarlos desde su panel') + '.</td></tr>') +
       '</tbody></table></div>' +
       renderRegistroArchivados(archivados, canValidate) +
@@ -836,6 +904,7 @@
       '<td class="desp-cliente">' + esc(fmtCliente(p)) + '</td>' +
       '<td>' + esc(p.jaula) + '</td>' +
       '<td>' + estadoBadge(p.estado) + '</td>' +
+      '<td class="desp-validador-asignado">' + esc(fmtValidador(p)) + '</td>' +
       '<td class="desp-dt">' + esc(fmtDt(p.createdAt || p.updatedAt)) + '<br><small>' + esc(p.updatedBy) + '</small></td>' +
       '<td class="desp-val-actions">' + renderValidadorEstadoBtns(p, canValidate, false) +
       (canValidate ? ' <button type="button" class="btn btn-ghost desp-btn-archive" data-pedido-id="' + esc(p.id) + '" data-idc="' + esc(formatIdc(p.idc)) + '" data-pasillo="' + esc(p.jaula || '') + '" title="Quitar del seguimiento validador">Quitar</button>' : '') +
@@ -1006,7 +1075,7 @@
       if (btnUpdate) {
         btnUpdate.addEventListener('click', function () {
           var vals = getPrepFormValues(host);
-          var res = DS.registrarPedido(vals.idc, vals.jaula, vals.estado, userName, vals.cliente);
+          var res = DS.registrarPedido(vals.idc, vals.jaula, vals.estado, userName, vals.cliente, vals.validadorAsignado);
           if (!res.ok) {
             toast(res.error, 'warn');
             return;

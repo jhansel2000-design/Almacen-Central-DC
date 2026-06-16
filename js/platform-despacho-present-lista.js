@@ -42,7 +42,7 @@
   function listaSignature(share, pedidos, counts) {
     if (!share || !share.active) return '';
     var rows = (pedidos || []).map(function (p) {
-      return [p.idc, p.cliente, p.jaula, p.estado, p.createdAt, p.updatedAt].join(':');
+      return [p.idc, p.cliente, p.jaula, p.estado, p.validadorAsignado, p.createdAt, p.updatedAt].join(':');
     }).join('|');
     var countSig = counts
       ? [counts.pendiente_carga, counts.en_validacion, counts.listo_despacho, counts.total].join(',')
@@ -65,7 +65,7 @@
 
   function renderTableRows(pedidos) {
     if (!pedidos.length) {
-      return '<tr><td colspan="5" class="desp-lista-present-empty">Sin IDC registrados todavía.</td></tr>';
+      return '<tr><td colspan="6" class="desp-lista-present-empty">Sin IDC registrados todavía.</td></tr>';
     }
     return pedidos.map(function (p) {
       var store = DS();
@@ -75,6 +75,7 @@
         '<td class="desp-lista-present-idc">' + esc(idc) + '</td>' +
         '<td class="desp-lista-present-cliente">' + esc(cliente) + '</td>' +
         '<td class="desp-lista-present-jaula">' + esc(p.jaula || '—') + '</td>' +
+        '<td class="desp-lista-present-validador">' + esc(p.validadorAsignado || '—') + '</td>' +
         '<td class="desp-lista-present-fecha">' + esc(fmtDtLista(p.createdAt || p.updatedAt)) + '</td>' +
         '<td class="desp-lista-present-estado-cell">' + estadoHtml(p.estado) + '</td>' +
         '</tr>';
@@ -133,7 +134,7 @@
       renderTotalesBar(data) +
       '<div class="desp-lista-present-table-wrap">' +
       '<table class="desp-lista-present-table" aria-label="Lista IDC y jaulas en vivo">' +
-      '<thead><tr><th>IDC</th><th>Cliente</th><th>Jaula</th><th>Fecha y hora</th><th>Estado</th></tr></thead>' +
+      '<thead><tr><th>IDC</th><th>Cliente</th><th>Jaula</th><th>Validador</th><th>Fecha y hora</th><th>Estado</th></tr></thead>' +
       '<tbody>' + renderTableRows(pedidos) + '</tbody></table></div></div></div>';
 
     lastSig = listaSignature(share, pedidos, counts);
