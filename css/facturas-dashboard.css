@@ -459,8 +459,22 @@ body.tv-mode.facturas-tv-active .fac-charts-grid .fac-panel {
   grid-area: unset;
 }
 
+body.tv-mode.facturas-tv-active .fac-dashboard:has(.fac-compliance-table) {
+  grid-template-rows: auto auto minmax(0, 1fr) minmax(0, 0.35fr);
+  grid-template-areas:
+    "header"
+    "kpis"
+    "charts"
+    "status";
+}
+
 body.tv-mode.facturas-tv-active .fac-panel:has(.fac-compliance-table) {
-  display: none;
+  display: flex;
+  flex-direction: column;
+  grid-area: status;
+  min-height: 0;
+  max-height: 22vh;
+  overflow: hidden;
 }
 
 body.tv-mode.facturas-tv-active .fac-metas-table-wrap {

@@ -31,7 +31,7 @@
   var SLIDE_META = {
     ops: { pill: 'ops', title: 'Operación', emptyKpi: 'Sin datos de operación', emptyFoot: 'Importar Excel de operaciones', chartTitle: 'Tendencia' },
     fac: { pill: 'fac', title: 'Facturación · CENTRAL', emptyKpi: 'Sin datos de facturas', emptyFoot: 'Importar diario de facturas', chartTitle: 'Facturación diaria (RD$)' },
-    desp: { pill: 'desp', title: 'Despacho · IDC', emptyKpi: 'Sin IDC en seguimiento', emptyFoot: 'Registre IDC en el portal de despacho', chartTitle: 'IDC por estado' }
+    desp: { pill: 'desp', title: 'Despacho · Seguimiento', emptyKpi: 'Sin IDC en seguimiento', emptyFoot: 'Registre IDC en Despacho → Validador', chartTitle: 'IDC en seguimiento validador' }
   };
 
   function tvSegLabels() {
@@ -103,9 +103,80 @@
     return Math.round(pct) + '%';
   }
 
+  function facFmtPct(pct) {
+    if (pct == null || !isFinite(pct)) return '—';
+    return Math.round(pct) + '%';
+  }
+
+  function facSemaforoLabel(s) {
+    if (s === 'ok') return 'Cumple';
+    if (s === 'warn') return 'En riesgo';
+    if (s === 'danger') return 'Bajo meta';
+    return '—';
+  }
+
+  function facSemaforoClass(s) {
+    return s === 'ok' ? 'ok' : s === 'warn' ? 'warn' : s === 'danger' ? 'danger' : 'neutral';
+  }
+
+  function attachFacAlmacenCompliance(snapFac, facData, facturasMetas, tipoCambio) {
+    var FX = global.PlatformExcelFacturas;
+    if (!FX || !snapFac || !facData) return;
+    var regs = Array.isArray(facData.registros) ? facData.registros : [];
+    if (!regs.length) return;
+    var agg = facData.aggregates && facData.aggregates.porAlmacen
+      ? facData.aggregates
+      : FX.buildAggregates(regs);
+    var tc = FX.resolveTipoCambio(tipoCambio);
+    var view = FX.enrichAggregatesForDisplay(agg, tc);
+    var porAlm = view.porAlmacen || [];
+    var compliance = [];
+    try {
+      compliance = FX.buildMetasCompliance(agg.porAlmacen || porAlm, facturasMetas || {}, tc);
+    } catch (eMeta) {
+      compliance = [];
+    }
+    snapFac.porAlmacen = porAlm;
+    snapFac.compliance = compliance;
+  }
+
+  function facComplianceStatusHtml(compliance) {
+    compliance = compliance || [];
+    if (!compliance.length) {
+      return '<p class="tv-fac-status-empty">Sin metas por almacén. Configure metas en el módulo Facturas.</p>';
+    }
+    return '<div class="tv-fac-status-wrap"><table class="tv-fac-status-table" aria-label="Estatus almacén vs meta">' +
+      '<thead><tr><th>Almacén</th><th>Ventas RD$</th><th>% meta</th><th>Estado</th></tr></thead><tbody>' +
+      compliance.map(function (c) {
+        var cls = facSemaforoClass(c.semaforoGeneral);
+        var pct = c.pctVentas != null ? c.pctVentas : c.pctOrdenes;
+        return '<tr class="tv-fac-status-row tv-fac-status-row--' + esc(cls) + '">' +
+          '<td><strong>' + esc(c.almacen) + '</strong></td>' +
+          '<td>' + esc(fmtMontoRd(c.ventasPesos)) + '</td>' +
+          '<td class="num">' + esc(facFmtPct(pct)) + '</td>' +
+          '<td><span class="tv-fac-sem tv-fac-sem--' + esc(cls) + '">' +
+          esc(facSemaforoLabel(c.semaforoGeneral)) + '</span></td></tr>';
+      }).join('') +
+      '</tbody></table></div>';
+  }
+
+  function facComplianceFootSection(block) {
+    if (!block || !block.hasData) return '';
+    return '<div class="tv-slide-foot tv-slide-foot--fac-status">' +
+      '<h3 class="tv-foot-title">Estatus almacén · real vs meta</h3>' +
+      facComplianceStatusHtml(block.compliance) + '</div>';
+  }
+
+  function hasFacCompliance(block) {
+    return !!(block && block.compliance && block.compliance.length);
+  }
+
   function appendDespToSnapshot(snap) {
     if (!snap) return snap;
-    snap.desp = snap.desp || { hasData: false, kpis: [], footer: [], chart: { labels: [], values: [] } };
+    snap.desp = snap.desp || {
+      hasData: false, kpis: [], footer: [], rows: [],
+      chart: { labels: [], values: [] }, total: 0
+    };
     var DS = global.PlatformDespachoStore;
     var despData = DS ? DS.load() : (global.PlatformStore && global.PlatformStore.getPublishedData
       ? global.PlatformStore.getPublishedData('despacho')
@@ -113,8 +184,8 @@
     if (!DS || !despData || !Array.isArray(despData.pedidos)) return snap;
     var despCounts = DS.countResumenValidador(despData.pedidos);
     var despPedidos = DS.getPedidosVisiblesValidador(despData.pedidos);
-    if (!(despCounts.total > 0 || despPedidos.length)) return snap;
     snap.desp.hasData = true;
+    snap.desp.total = despCounts.total || 0;
     snap.desp.kpis = [
       { label: 'Pend. por cargar', value: despCounts.pendiente_carga || 0, variant: 'warn' },
       { label: 'Validado', value: despCounts.en_validacion || 0, variant: 'process' },
@@ -126,19 +197,75 @@
       despCounts.en_validacion || 0,
       despCounts.listo_despacho || 0
     ];
+    snap.desp.rows = despPedidos.slice(0, 14).map(function (p) {
+      var e = DS.ESTADOS[p.estado] || {};
+      return {
+        idc: DS.formatIdc(p.idc),
+        cliente: p.cliente ? String(p.cliente).trim() : '—',
+        jaula: p.jaula || '—',
+        estado: e.short || p.estado || '—',
+        estadoId: p.estado || '',
+        color: e.color || 'neutral',
+        when: p.createdAt || p.updatedAt || ''
+      };
+    });
     snap.desp.footer = [];
     if (despCounts.total) {
-      snap.desp.footer.push({ label: 'Total en seguimiento', value: despCounts.total });
+      snap.desp.footer.push({ label: 'Total en seguimiento validador', value: despCounts.total });
     }
-    despPedidos.slice(0, 6).forEach(function (p) {
-      var e = DS.ESTADOS[p.estado] || {};
-      var cliente = p.cliente ? String(p.cliente).trim() : '';
+    var cargados = despPedidos.filter(function (p) { return p.estado === 'listo_despacho'; });
+    cargados.slice(0, 4).forEach(function (p) {
       snap.desp.footer.push({
-        label: DS.formatIdc(p.idc) + ' · Jaula ' + (p.jaula || '—') + (cliente ? ' · ' + cliente : ''),
-        value: e.short || p.estado || '—'
+        label: 'Listo despacho · ' + DS.formatIdc(p.idc),
+        value: 'Jaula ' + (p.jaula || '—')
       });
     });
     return snap;
+  }
+
+  function fmtDespDt(iso) {
+    if (!iso) return '—';
+    try {
+      return new Intl.DateTimeFormat('es-DO', {
+        dateStyle: 'short',
+        timeStyle: 'short',
+        timeZone: 'America/Santo_Domingo'
+      }).format(new Date(iso));
+    } catch (e) {
+      return String(iso).slice(0, 16).replace('T', ' ');
+    }
+  }
+
+  function despEstadoBadge(row) {
+    var cls = 'tv-desp-estado tv-desp-estado--' + esc(row.color || 'neutral');
+    return '<span class="' + cls + '">' + esc(row.estado || '—') + '</span>';
+  }
+
+  function despLiveTableHtml(block) {
+    var rows = block.rows || [];
+    if (!rows.length) {
+      return '<p class="tv-desp-empty">Sin IDC en seguimiento validador. Registre pedidos en el módulo Despacho.</p>';
+    }
+    return '<table class="tv-desp-table" aria-label="Seguimiento despacho en vivo">' +
+      '<thead><tr><th>IDC</th><th>Cliente</th><th>Jaula</th><th>Estado</th><th>Fecha</th></tr></thead><tbody>' +
+      rows.map(function (r) {
+        return '<tr>' +
+          '<td class="tv-desp-idc">' + esc(r.idc) + '</td>' +
+          '<td>' + esc(r.cliente) + '</td>' +
+          '<td>' + esc(r.jaula) + '</td>' +
+          '<td>' + despEstadoBadge(r) + '</td>' +
+          '<td class="tv-desp-dt">' + esc(fmtDespDt(r.when)) + '</td></tr>';
+      }).join('') +
+      '</tbody></table>';
+  }
+
+  function despSlideChartBlock(block, meta) {
+    var total = block.total != null ? block.total : (block.rows ? block.rows.length : 0);
+    return '<div class="tv-desp-live">' +
+      '<div class="tv-desp-live-head">' +
+      '<h3 class="tv-chart-title">' + esc(meta.chartTitle) + '</h3>' +
+      '<span class="tv-desp-live-count">' + esc(String(total)) + ' IDC activos</span></div>' +
+      '<div class="tv-desp-table-wrap">' + despLiveTableHtml(block) + '</div></div>';
   }
 
   function collectSnapshot(opsData, facData, tipoCambio, facturasMetas, config) {
@@ -237,6 +364,7 @@
               { label: 'Acumulado', value: fmtMontoRd(fm.acumulada != null ? fm.acumulada : fm.total) },
               { label: 'Tipo de cambio', value: 'TC ' + fm.tipoCambio }
             ];
+            attachFacAlmacenCompliance(snap.fac, facData, facturasMetas, fm.tipoCambio);
             return appendDespToSnapshot(snap);
           }
         }
@@ -514,20 +642,35 @@
       : 'Resumen';
     var chartBlock = facExec
       ? facExecutiveChartBlock(slideId, block, chartTitle)
-      : '<h3 class="tv-chart-title">' + esc(chartTitle) + '</h3>' +
-        '<div class="tv-chart-box"><canvas id="' + chartCanvasId(slideId) + '"></canvas></div>';
-    var footSection = facExec ? '' :
-      '<div class="tv-slide-foot">' +
-      '<h3 class="tv-foot-title">' + esc(footTitle) + '</h3>' + slideFootBody(slideId, block, meta) +
-      '</div>';
+      : (slideId === 'desp'
+        ? despSlideChartBlock(block, meta)
+        : '<h3 class="tv-chart-title">' + esc(chartTitle) + '</h3>' +
+          '<div class="tv-chart-box"><canvas id="' + chartCanvasId(slideId) + '"></canvas></div>');
+    var facStatusFoot = slideId === 'fac' ? facComplianceFootSection(block) : '';
+    var footSection = facStatusFoot;
+    if (!footSection) {
+      if (facExec) {
+        footSection = '';
+      } else if (slideId === 'desp' && block.footer && block.footer.length) {
+        footSection = '<div class="tv-slide-foot tv-slide-foot--desp">' +
+          '<h3 class="tv-foot-title">Resumen despacho</h3>' + slideFootBody(slideId, block, meta) +
+          '</div>';
+      } else if (slideId !== 'desp') {
+        footSection = '<div class="tv-slide-foot">' +
+          '<h3 class="tv-foot-title">' + esc(footTitle) + '</h3>' + slideFootBody(slideId, block, meta) +
+          '</div>';
+      }
+    }
     var slideClass = '';
-    if (slideId === 'fac') slideClass = ' tv-slide--fac' + facExtra;
-    else if (slideId === 'desp') slideClass = ' tv-slide--desp';
+    if (slideId === 'fac') {
+      slideClass = ' tv-slide--fac' + facExtra;
+      if (facStatusFoot) slideClass += ' tv-slide--fac-status';
+    } else if (slideId === 'desp') slideClass = ' tv-slide--desp';
     return '<section class="tv-slide' + slideClass + '" data-slide="' + slideId + '">' +
       '<header class="tv-slide-head">' +
       '<span class="tv-pill ' + meta.pill + '">' + esc(meta.title) + '</span>' + extra +
       '</header>' +
-      '<div class="tv-slide-grid">' +
+      '<div class="tv-slide-grid' + (slideId === 'desp' ? ' tv-slide-grid--desp' : '') + '">' +
       '<div class="tv-slide-kpis">' + kpiBlock + '</div>' +
       '<div class="tv-slide-chart">' + chartBlock + '</div>' +
       footSection +
@@ -617,15 +760,32 @@
       if (slideId === 'fac') {
         slideEl.classList.toggle('tv-slide--central', !!block.centralLayout);
         slideEl.classList.toggle('tv-slide--fac-exec', facUsesExecutiveLayout(block));
+        slideEl.classList.toggle('tv-slide--fac-status', !!(block.hasData && (block.centralLayout || block.useExecutiveLayout || hasFacCompliance(block))));
       }
       var kpiHost = slideEl.querySelector('.tv-slide-kpis');
       if (kpiHost) {
         kpiHost.innerHTML = facKpiBlock(slideId, block, meta.emptyKpi);
         ok = true;
       }
-      var footHost = slideEl.querySelector('.tv-slide-foot');
+      var footHost = slideEl.querySelector('.tv-slide-foot--fac-status');
       if (footHost) {
-        footHost.innerHTML = slideFootInner(slideId, block, meta);
+        footHost.innerHTML = '<h3 class="tv-foot-title">Estatus almacén · real vs meta</h3>' +
+          facComplianceStatusHtml(block.compliance);
+        ok = true;
+      } else {
+        footHost = slideEl.querySelector('.tv-slide-foot');
+        if (footHost) {
+          footHost.innerHTML = slideFootInner(slideId, block, meta);
+        }
+      }
+      if (slideId === 'desp') {
+        var despWrap = slideEl.querySelector('.tv-desp-table-wrap');
+        if (despWrap) {
+          despWrap.innerHTML = despLiveTableHtml(block);
+          var despCount = slideEl.querySelector('.tv-desp-live-count');
+          if (despCount) despCount.textContent = String(block.total != null ? block.total : (block.rows || []).length) + ' IDC activos';
+          ok = true;
+        }
       }
       var chartTitleEl = slideEl.querySelector('.tv-chart-title, .exec-chart-title');
       if (chartTitleEl) {

@@ -457,6 +457,100 @@ body.tv-mode.tv-unified-active #module-general {
   grid-template-rows: auto minmax(0, 1fr);
 }
 
+.tv-slide--fac.tv-slide--central.tv-slide--fac-status .tv-slide-grid,
+.tv-slide--fac.tv-slide--fac-exec.tv-slide--fac-status .tv-slide-grid {
+  grid-template-rows: auto minmax(0, 1fr) minmax(0, 0.4fr);
+}
+
+.tv-slide-foot--fac-status {
+  padding: 0.55vh 0.85vw 0.65vh;
+  min-height: 0;
+}
+
+.tv-fac-status-wrap {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.tv-fac-status-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: clamp(0.68rem, 1.05vw, 0.88rem);
+}
+
+.tv-fac-status-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 0.35rem 0.55rem;
+  text-align: left;
+  font-size: clamp(0.62rem, 0.95vw, 0.78rem);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  background: rgba(8, 14, 26, 0.95);
+  border-bottom: 1px solid rgba(52, 211, 153, 0.2);
+}
+
+.tv-fac-status-table td {
+  padding: 0.32rem 0.55rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  vertical-align: middle;
+}
+
+.tv-fac-status-table .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.tv-fac-status-row--ok td:first-child { box-shadow: inset 3px 0 0 #34d399; }
+.tv-fac-status-row--warn td:first-child { box-shadow: inset 3px 0 0 #fbbf24; }
+.tv-fac-status-row--danger td:first-child { box-shadow: inset 3px 0 0 #ff6b7a; }
+
+.tv-fac-sem {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  font-size: clamp(0.62rem, 0.92vw, 0.78rem);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.tv-fac-sem--ok {
+  color: #6ee7b7;
+  background: rgba(16, 185, 129, 0.18);
+  border: 1px solid rgba(52, 211, 153, 0.35);
+}
+
+.tv-fac-sem--warn {
+  color: #fcd34d;
+  background: rgba(245, 158, 11, 0.16);
+  border: 1px solid rgba(251, 191, 36, 0.35);
+}
+
+.tv-fac-sem--danger {
+  color: #fda4af;
+  background: rgba(239, 68, 68, 0.16);
+  border: 1px solid rgba(248, 113, 113, 0.35);
+}
+
+.tv-fac-sem--neutral {
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.tv-fac-status-empty {
+  margin: 0;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  font-size: clamp(0.72rem, 1.1vw, 0.9rem);
+  color: var(--muted);
+}
+
 .tv-slide--fac.tv-slide--fac-exec .tv-slide-kpis {
   padding: 0;
   background: transparent;
