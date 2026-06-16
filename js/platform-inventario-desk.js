@@ -58,6 +58,7 @@
     var badge = $('invDeskExcelBadge');
     var btnLoad = $('invBtnLoadSistema');
     var btnReplace = $('invBtnReplaceSistema');
+    var btnClearSistema = $('invBtnClearSistema');
     var hasFile = !!(desk.meta && desk.meta.fileName && desk.sistemaRows.length);
     var loading = desk.excelLoading;
     if (card) {
@@ -97,6 +98,10 @@
     if (btnReplace) {
       btnReplace.hidden = !hasFile || !!loading;
       btnReplace.disabled = !!loading;
+    }
+    if (btnClearSistema) {
+      btnClearSistema.hidden = !hasFile || !!loading;
+      btnClearSistema.disabled = !!loading;
     }
   }
 
@@ -548,6 +553,28 @@
     if (desk.workspace === 'auditoria') desk.tab = 'cuadre';
   }
 
+  function clearSistemaInventory() {
+    if (!CONC) return;
+    var hasFile = !!(desk.sistemaRows.length || (desk.meta && desk.meta.fileName));
+    if (!hasFile) {
+      toastFn('No hay inventario de sistema guardado', 'err');
+      return;
+    }
+    var name = (desk.meta && desk.meta.fileName) ? desk.meta.fileName : 'inventario guardado';
+    if (!global.confirm('¿Eliminar «' + name + '» de este navegador?\n\nEl cuadre quedará sin datos de sistema hasta cargar un Excel nuevo.')) return;
+    var cleared = CONC.clearSistemaCache();
+    desk.sistemaRows = [];
+    desk.meta = {};
+    desk.tab = 'cuadre';
+    Object.keys(desk.filters).forEach(function (k) { desk.filters[k] = ''; });
+    if (!cleared.ok) {
+      toastFn('Inventario borrado en pantalla pero no del almacenamiento: ' + cleared.error, 'err');
+    } else {
+      toastFn('Inventario de sistema eliminado', 'ok');
+    }
+    refreshDesk();
+  }
+
   function loadSistemaFile(file) {
     if (!file || !CONC) return;
     setExcelLoading(true);
@@ -627,6 +654,7 @@
     var fileInput = $('invSistemaFile');
     var btnLoad = $('invBtnLoadSistema');
     var btnReplace = $('invBtnReplaceSistema');
+    var btnClearSistema = $('invBtnClearSistema');
     if (btnLoad && fileInput) {
       btnLoad.addEventListener('click', function () { fileInput.click(); });
       if (btnReplace) btnReplace.addEventListener('click', function () { fileInput.click(); });
@@ -635,6 +663,7 @@
         fileInput.value = '';
       });
     }
+    if (btnClearSistema) btnClearSistema.addEventListener('click', clearSistemaInventory);
     var btnExport = $('invBtnExportCuadre');
     if (btnExport) btnExport.addEventListener('click', exportCuadre);
     var btnRefresh = $('invBtnRefreshDesk');

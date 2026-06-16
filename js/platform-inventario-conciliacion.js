@@ -228,6 +228,16 @@
     }
   }
 
+  function clearSistemaCache() {
+    try {
+      global.localStorage.removeItem(CACHE_SISTEMA);
+      global.localStorage.removeItem(CACHE_META);
+      return { ok: true };
+    } catch (e) {
+      return { ok: false, error: e && e.message ? e.message : 'No se pudo borrar' };
+    }
+  }
+
   /** Agrupa conteos APK/web — solo cajas (CJ), último registro por ubicación+código */
   function aggregateScans(entries) {
     var map = {};
@@ -379,6 +389,7 @@
     parseWorkbook: parseWorkbook,
     loadSistemaCache: loadSistemaCache,
     saveSistemaCache: saveSistemaCache,
+    clearSistemaCache: clearSistemaCache,
     aggregateScans: aggregateScans,
     scansToLiveRows: scansToLiveRows,
     buildConciliation: buildConciliation,

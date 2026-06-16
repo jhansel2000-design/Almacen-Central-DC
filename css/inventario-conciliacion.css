@@ -408,6 +408,28 @@ html.ix-mobile-block .ix-app-shell {
   color: #fff;
 }
 
+.inv-desk-btn--mini {
+  padding: 6px 10px;
+  font-size: 11px;
+  border-radius: 6px;
+}
+
+.inv-desk-btn--danger {
+  background: #fff;
+  color: #c62828;
+  border: 1px solid #ef9a9a;
+}
+
+.inv-desk-btn--danger:hover:not(:disabled) {
+  background: #ffebee;
+  border-color: #e57373;
+}
+
+.inv-desk-btn--danger:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 .inv-desk-meta {
   font-size: 12px;
   color: #546e7a;
