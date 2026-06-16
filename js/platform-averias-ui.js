@@ -465,6 +465,9 @@
                 var idsAssigned = ensureRecordStatuses();
                 writeIndividualKeys();
                 var snap = buildSnapshot();
+                if (global.PlatformAveriasCloudSync && global.PlatformAveriasCloudSync.beginLocalEdit) {
+                    global.PlatformAveriasCloudSync.beginLocalEdit(snap);
+                }
                 snap.updatedAt = new Date().toISOString();
                 snap.localSeq = (snap.localSeq || 0) + 1;
                 memoryLocalSeq = snap.localSeq;
@@ -476,7 +479,7 @@
                 if (global.PlatformAveriasCloudSync && global.PlatformAveriasCloudSync.noteLocalSave) {
                     global.PlatformAveriasCloudSync.noteLocalSave(snap);
                 }
-                refreshUiAfterLocalChange();
+                updateAllStats();
                 try {
                     global.dispatchEvent(new CustomEvent('averias-updated', { detail: { source: 'local-save' } }));
                 } catch (e) { /* noop */ }
@@ -672,11 +675,21 @@
         function reloadFromSync() {
             isLoadingRemoteSnapshot = true;
             try {
-                loadData();
+                var snapRaw = localStorage.getItem(SNAPSHOT_KEY);
+                if (snapRaw) {
+                    try {
+                        applySnapshot(JSON.parse(snapRaw), true);
+                        writeIndividualKeys();
+                    } catch (e) {
+                        loadData();
+                    }
+                } else {
+                    loadData();
+                }
             } finally {
                 isLoadingRemoteSnapshot = false;
             }
-            refreshCurrentView();
+            updateAllStats();
         }
 
         function reloadFromSyncDebounced(ev) {
@@ -1629,6 +1642,9 @@
             if (avCore() && avCore().stampNewReport) avCore().stampNewReport(incidence);
 
             allIncidences.push(incidence);
+            if (global.PlatformAveriasCloudSync && global.PlatformAveriasCloudSync.beginLocalEdit) {
+                global.PlatformAveriasCloudSync.beginLocalEdit(buildSnapshot());
+            }
             memoryLocalSeq = Math.max(memoryLocalSeq, (buildSnapshot().localSeq || 0));
             updateStats();
             renderPalletsReportedList();

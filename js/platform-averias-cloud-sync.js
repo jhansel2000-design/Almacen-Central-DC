@@ -165,10 +165,11 @@
   function initSupabase() {
     if (!hasSupabaseConfig() || !global.PlatformSupabaseBridge.subscribe) return;
     global.PlatformSupabaseBridge.subscribe('averias', function (remote) {
-      if (remote) {
-        applySnapshotToLocal(remote, false, 'supabase-realtime');
-        schedulePullBurst();
+      if (!remote || shouldBlockStaleRemote(remote)) {
+        if (remote) schedulePushFromLocal();
+        return;
       }
+      applySnapshotToLocal(remote, false, 'supabase-realtime');
     });
   }
 
@@ -273,10 +274,16 @@
   }
 
   function publishChange(snap, liveRecord) {
+    pushing = true;
     snap = pickBestPushSnapshot(snap);
     snap.localSeq = Math.max(snap.localSeq || 0, lastKnownRemoteSeq) + 1;
     snap.updatedAt = new Date().toISOString();
     snap = normalizeSnapshot(snap);
+
+    function finish(result) {
+      pushing = false;
+      return result;
+    }
 
     if (hasSupabaseConfig() && global.PlatformSupabaseBridge.isPrimary()) {
       return prepareSnapshotForPush(snap).then(function (ready) {
@@ -295,7 +302,7 @@
           }
           return { ok: true, cloud: !!ok, pendingOk: false, snapOk: !!ok };
         });
-      });
+      }).then(finish, finish);
     }
 
     var pendingJob = liveRecord && liveRecord.module && liveRecord.record
@@ -327,7 +334,7 @@
       }).catch(function () {
         return { ok: true, cloud: cloudOk, pendingOk: cloudOk, snapOk: false };
       });
-    });
+    }).then(finish, finish);
   }
 
   function pullFromFirebaseOnceTimed(ms) {
@@ -508,6 +515,29 @@
     return countSnapshotRecords(local) > countSnapshotRecords(remote);
   }
 
+  function beginLocalEdit(snap) {
+    lastLocalEditAt = Date.now();
+    if (snap) {
+      snap = normalizeSnapshot(snap);
+      try {
+        lastAppliedContentSig = contentSignature(snap);
+        lastAppliedJson = JSON.stringify(snap);
+        lastRemoteUpdatedAt = String(snap.updatedAt || '');
+      } catch (e) { /* noop */ }
+    }
+  }
+
+  function shouldBlockStaleRemote(snap) {
+    if (!snap) return false;
+    var live = getEffectiveLocalSnapshot();
+    if (!live) return false;
+    live = normalizeSnapshot(live);
+    snap = normalizeSnapshot(snap);
+    if (countSnapshotRecords(live) > countSnapshotRecords(snap)) return true;
+    if (isLocalSnapshotAhead(live, snap)) return true;
+    return false;
+  }
+
   function noteLocalSave(snap) {
     snap = normalizeSnapshot(snap);
     lastLocalEditAt = Date.now();
@@ -525,6 +555,11 @@
   function prepareSnapshotForPush(snap) {
     snap = pickBestPushSnapshot(snap);
     if (hasSupabaseConfig() && global.PlatformSupabaseBridge.isPrimary()) {
+      if (inLocalEditGrace() || pushing) {
+        snap.localSeq = Math.max(snap.localSeq || 0, lastKnownRemoteSeq) + 1;
+        snap.updatedAt = new Date().toISOString();
+        return Promise.resolve(normalizeSnapshot(snap));
+      }
       return pullFromSupabase().then(function (remote) {
         if (remote) snap = mergeAveriasSnapshots(snap, remote);
         snap.localSeq = Math.max(snap.localSeq || 0, (remote && remote.localSeq) || 0, lastKnownRemoteSeq) + 1;
@@ -595,6 +630,10 @@
 
   function applySnapshotToLocal(snap, silent, source) {
     if (!snap || !global.localStorage) return false;
+    if (shouldBlockStaleRemote(snap)) {
+      schedulePushFromLocal();
+      return false;
+    }
     if (pushing) {
       var livePush = getEffectiveLocalSnapshot();
       if (livePush && isLocalSnapshotAhead(normalizeSnapshot(livePush), normalizeSnapshot(snap))) {
@@ -929,11 +968,12 @@
           var applySource = 'merge';
 
           if (isSupabasePrimary() && sbSnap) {
-            merged = mergeAveriasSnapshots(sbSnap, getLocalSnapshot() || EMPTY);
-            merged.localSeq = Math.max(sbSnap.localSeq || 0, (getLocalSnapshot() || {}).localSeq || 0);
+            var effectiveLocal = getEffectiveLocalSnapshot() || EMPTY;
+            merged = mergeAveriasSnapshots(sbSnap, effectiveLocal);
+            merged.localSeq = Math.max(sbSnap.localSeq || 0, effectiveLocal.localSeq || 0);
             applySource = 'supabase';
           } else {
-            merged = getLocalSnapshot() || EMPTY;
+            merged = getEffectiveLocalSnapshot() || EMPTY;
           }
 
           if (!isSupabasePrimary() || !sbSnap) {
@@ -1608,6 +1648,8 @@
     mergeAveriasSnapshots: mergeAveriasSnapshots,
     contentSignature: contentSignature,
     countSnapshotRecords: countSnapshotRecords,
+    beginLocalEdit: beginLocalEdit,
+    shouldBlockStaleRemote: shouldBlockStaleRemote,
     noteLocalSave: noteLocalSave,
     pushPendingRecord: pushPendingRecord,
     publishChange: publishChange,
