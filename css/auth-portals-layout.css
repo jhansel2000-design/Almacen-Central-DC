@@ -133,6 +133,25 @@ body.auth-locked:has(.auth-layout--hub.auth-layout--portals-only) .auth-video-sc
   border-color: rgba(197, 165, 114, 0.38);
 }
 
+.auth-layout--hub.auth-layout--portals-only .auth-portal-icon--temp {
+  background:
+    linear-gradient(135deg, rgba(0, 0, 0, 0.32), rgba(6, 182, 212, 0.35)),
+    radial-gradient(circle at 30% 70%, rgba(14, 165, 233, 0.5), rgba(8, 47, 73, 0.9));
+  border-color: rgba(34, 211, 238, 0.38);
+}
+
+.auth-layout--hub.auth-layout--portals-only .auth-portal-card--temperatura .auth-portal-icon--photo {
+  box-shadow: 0 4px 16px rgba(6, 182, 212, 0.18);
+}
+
+.auth-portal-card--temperatura:hover {
+  border-color: rgba(34, 211, 238, 0.45);
+}
+
+.auth-portal-card--temperatura .auth-portal-cta {
+  color: #22d3ee;
+}
+
 .auth-layout--hub.auth-layout--portals-only .auth-portal-card--despacho .auth-portal-icon--photo {
   box-shadow: 0 4px 16px rgba(255, 152, 0, 0.15);
 }
