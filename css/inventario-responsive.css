@@ -83,6 +83,16 @@ body.inv-dash-view {
 }
 
 /* ── Controles táctiles (lectores y teléfonos) ── */
+.inv-rf-device {
+  --inv-fs-xs: 14px;
+  --inv-fs-sm: 15px;
+  --inv-fs-base: 17px;
+  --inv-fs-md: 19px;
+  --inv-fs-lg: 21px;
+  --inv-fs-xl: 23px;
+  --inv-fs-display: 32px;
+}
+
 .inv-rf-device .inv-field,
 .inv-rf-device .inv-btn,
 .inv-rf-device .inv-nav button,
@@ -94,14 +104,14 @@ body.inv-dash-view {
 
 .inv-rf-device .inv-field,
 .inv-rf-device .inv-btn {
-  font-size: 16px;
-  min-height: 48px;
+  font-size: var(--inv-fs-base);
+  min-height: 50px;
 }
 
 .inv-rf-device .inv-nav button {
-  min-height: 48px;
-  font-size: 12px;
-  padding: 10px 8px;
+  min-height: 50px;
+  font-size: var(--inv-fs-sm);
+  padding: 12px 10px;
 }
 
 .inv-rf-device .inv-swipe-track {
@@ -153,7 +163,19 @@ body.inv-dash-view {
 }
 
 .inv-rf-device .inv-mode h3 {
-  font-size: 17px;
+  font-size: var(--inv-fs-lg);
+}
+
+.inv-rf-device .inv-card h2 {
+  font-size: var(--inv-fs-xl);
+}
+
+.inv-rf-device .inv-step-title {
+  font-size: var(--inv-fs-xl);
+}
+
+.inv-rf-device .inv-step-counter {
+  font-size: var(--inv-fs-lg);
 }
 
 /* Login auth full-screen en dispositivo RF */
@@ -225,8 +247,9 @@ html.inv-rf-viewport .inv-auth-overlay .auth-hub-links {
 }
 
 html.inv-rf-viewport .inv-auth-overlay .auth-hub-link {
-  min-height: 44px;
-  font-size: 13px;
+  min-height: 48px;
+  font-size: 15px;
+  font-weight: 700;
 }
 
 /* Toast sobre nav inferior */
@@ -237,15 +260,7 @@ html.inv-rf-viewport .inv-auth-overlay .auth-hub-link {
 /* Escáneres industriales (pantallas estrechas / bajas) */
 @media (max-width: 480px), (max-height: 640px) {
   .inv-app-shell .inv-header {
-    padding: 10px 12px 8px;
-  }
-
-  .inv-app-shell .inv-step-title {
-    font-size: 16px;
-  }
-
-  .inv-app-shell .inv-step-counter {
-    font-size: 15px;
+    padding: 12px 14px 10px;
   }
 
   .inv-login-roles {
@@ -253,32 +268,36 @@ html.inv-rf-viewport .inv-auth-overlay .auth-hub-link {
   }
 
   .inv-role {
-    min-height: 120px;
+    min-height: 128px;
   }
 }
 
 /* Landscape en lectores (TC57, CK65, etc.) */
 @media (orientation: landscape) and (max-height: 520px) {
   .inv-app-shell .inv-header {
-    padding: 6px 12px;
+    padding: 8px 12px;
   }
 
   .inv-app-shell .inv-instr {
-    font-size: 12px;
-    margin-top: 2px;
+    font-size: var(--inv-fs-sm);
+    margin-top: 4px;
   }
 
   .inv-rf-device #invViewCount .inv-body {
-    padding: 6px 10px;
+    padding: 8px 12px;
   }
 
   .inv-rf-device .inv-swipe-zone {
-    padding: 6px 12px 8px;
+    padding: 8px 12px 10px;
   }
 
   .inv-rf-device .inv-swipe-hint {
-    margin-bottom: 4px;
-    font-size: 10px;
+    margin-bottom: 6px;
+    font-size: var(--inv-fs-xs);
+  }
+
+  .inv-rf-device .inv-card h2 {
+    font-size: var(--inv-fs-lg);
   }
 }
 

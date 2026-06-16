@@ -138,10 +138,18 @@ body.auth-locked .inv-auth-overlay .inv-auth-scrim {
   min-height: auto;
   box-shadow: none;
   border-radius: 0;
+  color: var(--inv-text, #15202B);
+}
+
+.inv-auth-glass .inv-body {
+  color: var(--inv-text, #15202B);
+  background: var(--corp-canvas, #F4F6F9);
 }
 
 .inv-auth-overlay .auth-hub-link {
   min-height: 44px;
+  font-size: 14px;
+  font-weight: 700;
 }
 
 @media (max-width: 900px) {
