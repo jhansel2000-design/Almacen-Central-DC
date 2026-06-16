@@ -167,8 +167,15 @@
   }
 
   document.addEventListener('DOMContentLoaded', function () {
-    initDrawer();
-    initAuth();
-    if (!tryRestoreSession()) setAuthVisible(true);
+    var start = function () {
+      initDrawer();
+      initAuth();
+      if (!tryRestoreSession()) setAuthVisible(true);
+    };
+    if (global.PlatformWebUsers && global.PlatformWebUsers.ready) {
+      global.PlatformWebUsers.ready().then(start).catch(start);
+    } else {
+      start();
+    }
   });
 })(typeof window !== 'undefined' ? window : this);

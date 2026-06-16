@@ -61,21 +61,15 @@ create or replace function public.temp_compute_status(
   p_max numeric,
   p_margin numeric
 ) returns text
-language plpgsql
+language sql
 immutable
 as $$
-begin
-  if p_celsius is null then
-    return 'unknown';
-  end if;
-  if p_celsius < p_min or p_celsius > p_max then
-    return 'critical';
-  end if;
-  if p_celsius <= (p_min + p_margin) or p_celsius >= (p_max - p_margin) then
-    return 'warn';
-  end if;
-  return 'ok';
-end;
+  select case
+    when p_celsius is null then 'unknown'
+    when p_celsius < p_min or p_celsius > p_max then 'critical'
+    when p_celsius <= (p_min + p_margin) or p_celsius >= (p_max - p_margin) then 'warn'
+    else 'ok'
+  end;
 $$;
 
 -- Actualiza temp_current y genera alertas al registrar lectura

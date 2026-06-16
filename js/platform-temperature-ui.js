@@ -61,6 +61,17 @@
       return a.status === 'active' || a.status === 'acknowledged';
     });
 
+    var setupBanner = '';
+    if (S.isSetupRequired && S.isSetupRequired()) {
+      setupBanner =
+        '<div class="temp-setup-banner" role="alert">' +
+        '<strong>Configuración pendiente en Supabase</strong>' +
+        '<p>Para guardar y ver temperaturas en vivo, ejecute una sola vez el SQL del archivo ' +
+        '<code>supabase/migrations/20250616_temperature_monitoring.sql</code> en ' +
+        '<a href="https://supabase.com/dashboard/project/pjbzbwckcbhmkeidsqjz/sql/new" target="_blank" rel="noopener">Supabase → SQL Editor</a>, ' +
+        'o use <code>SETUP-TEMPERATURA-SUPABASE.bat</code> en la carpeta del proyecto.</p></div>';
+    }
+
     var cards = current.map(function (item) {
       var area = item.area || {};
       return '<article class="temp-area-card ' + statusClass(item.status) + '" data-area="' + esc(item.areaId) + '">' +
@@ -74,6 +85,7 @@
     }).join('');
 
     host.innerHTML =
+      setupBanner +
       '<header class="temp-view-head"><h2>Dashboard de Temperatura</h2>' +
       '<p class="temp-view-sub">Monitoreo en tiempo real · ' + esc(current.length) + ' áreas</p></header>' +
       '<div class="temp-kpi-grid">' +
@@ -363,7 +375,7 @@
       toast('Temperatura registrada.', 'ok');
       showModule('dashboard');
     }).catch(function (err) {
-      toast((err && err.message) || 'No se pudo guardar.', 'err');
+      toast(sync().formatError(err, 'No se pudo guardar.'), 'err');
     }).finally(function () {
       if (btn) btn.disabled = false;
     });
@@ -439,7 +451,11 @@
       showModule('dashboard');
     }).catch(function () {
       showModule('dashboard');
-      toast('Modo sin conexión — configure Supabase.', 'warn');
+      if (sync().isSetupRequired && sync().isSetupRequired()) {
+        toast('Activa Supabase con SETUP-TEMPERATURA-SUPABASE.bat para guardar lecturas.', 'warn');
+      } else {
+        toast('Modo sin conexión — verifique Supabase.', 'warn');
+      }
     });
   }
 

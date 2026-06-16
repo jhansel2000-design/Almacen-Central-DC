@@ -1,12 +1,31 @@
 @echo off
+title Configurar Temperatura en Supabase
+cd /d "%~dp0"
 chcp 65001 >nul
+
 echo.
-echo  Monitoreo de Temperatura — Supabase
-echo  ===================================
+echo  MONITOREO DE TEMPERATURA - ACTIVAR SUPABASE
+echo  ===========================================
 echo.
-echo  1. Abra supabase.com ^> su proyecto ^> SQL Editor
-echo  2. Pegue y ejecute: supabase/migrations/20250616_temperature_monitoring.sql
-echo  3. Verifique Realtime activo en temp_readings, temp_current, temp_alerts
-echo  4. Abra temperatura.html y registre una lectura de prueba
+echo  Paso 1: Se abrira el archivo SQL en el Bloc de notas.
+echo  Paso 2: Copie TODO el contenido (Ctrl+A, Ctrl+C).
+echo  Paso 3: Abra Supabase en el navegador:
+echo          https://supabase.com/dashboard/project/pjbzbwckcbhmkeidsqjz/sql/new
+echo  Paso 4: Pegue el SQL y pulse RUN (Ejecutar).
+echo  Paso 5: Recargue temperatura.html con Ctrl+F5.
+echo.
+
+set "SQLFILE=%~dp0supabase\migrations\20250616_temperature_monitoring.sql"
+if not exist "%SQLFILE%" (
+  echo ERROR: No se encontro el archivo SQL:
+  echo %SQLFILE%
+  pause
+  exit /b 1
+)
+
+start "" notepad "%SQLFILE%"
+start "" "https://supabase.com/dashboard/project/pjbzbwckcbhmkeidsqjz/sql/new"
+
+echo Listo. Siga los pasos en pantalla.
 echo.
 pause

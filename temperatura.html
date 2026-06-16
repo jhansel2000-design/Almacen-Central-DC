@@ -7,7 +7,7 @@
   <meta name="theme-color" content="#050810">
   <meta name="referrer" content="strict-origin-when-cross-origin">
   <meta http-equiv="X-Content-Type-Options" content="nosniff">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://challenges.cloudflare.com; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' http://localhost:* http://127.0.0.1:* http://192.168.0.0/16 http://10.0.0.0/8 https://*.supabase.co wss://*.supabase.co https://challenges.cloudflare.com; img-src 'self' data:; media-src 'self'; frame-src https://challenges.cloudflare.com; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://challenges.cloudflare.com; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' http://localhost:* http://127.0.0.1:* http://192.168.0.0/16 http://10.0.0.0/8 https://api.jsonbin.io https://*.supabase.co wss://*.supabase.co https://challenges.cloudflare.com; img-src 'self' data: https://challenges.cloudflare.com; media-src 'self'; frame-src https://challenges.cloudflare.com; object-src 'none'; base-uri 'self'; form-action 'self'">
   <title>Monitoreo de Temperatura — Almacén Central DC</title>
   <script src="js/relay-bootstrap.js?v=1"></script>
   <link rel="icon" type="image/png" href="assets/img/jc-logo-64.png?v=5">
@@ -154,15 +154,17 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/platform-supabase.js?v=4"></script>
   <script src="js/platform-supabase-realtime.js?v=1"></script>
+  <script src="js/platform-supabase-bridge.js?v=5"></script>
   <script src="js/platform-realtime-badge.js?v=5"></script>
   <script src="js/platform-store.js"></script>
   <script src="js/platform-admin.js?v=14"></script>
+  <script src="js/platform-registry-cloud-sync.js?v=2"></script>
   <script src="js/platform-web-users.js?v=18"></script>
   <script src="js/platform-toast.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
-  <script src="js/platform-temperature-core.js?v=1"></script>
-  <script src="js/platform-temperature-sync.js?v=1"></script>
-  <script src="js/platform-temperature-ui.js?v=1"></script>
-  <script src="js/platform-temperature-app.js?v=1"></script>
+  <script src="js/platform-temperature-core.js?v=2"></script>
+  <script src="js/platform-temperature-sync.js?v=2"></script>
+  <script src="js/platform-temperature-ui.js?v=2"></script>
+  <script src="js/platform-temperature-app.js?v=2"></script>
 </body>
 </html>

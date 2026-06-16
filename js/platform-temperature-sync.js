@@ -14,6 +14,25 @@
   var unsubAlerts = null;
   var readyPromise = null;
   var lastSyncAt = 0;
+  var setupRequired = false;
+
+  function isMissingTableError(err) {
+    if (!err) return false;
+    var blob = [err.message, err.details, err.hint, err.code, err.error, err.statusText]
+      .filter(Boolean).join(' ');
+    return /temp_areas|temp_readings|temp_current|temp_alerts|does not exist|42P01|PGRST205|PGRST204|Could not find the table/i.test(blob);
+  }
+
+  function formatError(err, fallback) {
+    if (isMissingTableError(err)) {
+      return 'Falta activar Supabase: ejecute SETUP-TEMPERATURA-SUPABASE.bat y pegue el SQL en supabase.com.';
+    }
+    return (err && (err.message || err.details)) || fallback || 'Error de sincronización.';
+  }
+
+  function isSetupRequired() {
+    return setupRequired;
+  }
 
   function core() {
     return CORE || (CORE = global.PlatformTemperatureCore);
@@ -94,10 +113,15 @@
       .order('sort_order')
       .then(function (res) {
         if (res.error) throw res.error;
+        setupRequired = false;
         mergeAreas(res.data);
         return areas;
       })
-      .catch(function () {
+      .catch(function (err) {
+        if (isMissingTableError(err)) {
+          setupRequired = true;
+          notify('setup', { required: true });
+        }
         mergeAreas(core().defaultAreas());
         return areas;
       });
@@ -193,6 +217,7 @@
     return client.from('temp_readings').insert(row).select('id').single()
       .then(function (res) {
         if (res.error) throw res.error;
+        setupRequired = false;
         lastSyncAt = Date.now();
         return res.data;
       });
@@ -320,6 +345,9 @@
     getCurrent: getCurrent,
     getAlerts: getAlerts,
     getLastSyncAt: getLastSyncAt,
+    isSetupRequired: isSetupRequired,
+    formatError: formatError,
+    isMissingTableError: isMissingTableError,
     fetchAreas: fetchAreas,
     fetchCurrent: fetchCurrent,
     fetchAlerts: fetchAlerts,
