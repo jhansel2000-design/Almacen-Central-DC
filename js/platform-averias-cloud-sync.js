@@ -350,8 +350,9 @@
       if (!b) return a;
       var aCor = isCor(a);
       var bCor = isCor(b);
-      if (!aCor && bCor) return a;
-      if (aCor && !bCor) return b;
+      // Finalizado/CORREGIDO siempre gana sobre pendiente
+      if (aCor && !bCor) return a;
+      if (!aCor && bCor) return b;
       return recordTime(a) >= recordTime(b) ? a : b;
     }
 
@@ -489,7 +490,11 @@
     snap = pickBestPushSnapshot(snap);
     if (hasSupabaseConfig() && global.PlatformSupabaseBridge.isPrimary()) {
       return pullFromSupabase().then(function (remote) {
-        if (remote) snap = mergeAveriasSnapshots(remote, snap);
+        if (remote) {
+          snap = (snap.localSeq || 0) >= (remote.localSeq || 0)
+            ? mergeAveriasSnapshots(snap, remote)
+            : mergeAveriasSnapshots(remote, snap);
+        }
         snap.localSeq = Math.max(snap.localSeq || 0, (remote && remote.localSeq) || 0, lastKnownRemoteSeq) + 1;
         snap.updatedAt = new Date().toISOString();
         return normalizeSnapshot(snap);

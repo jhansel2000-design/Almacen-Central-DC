@@ -1983,56 +1983,66 @@
 
         function applyCorrectionNow(module, id) {
             ensureRecordStatuses();
-            var corrected = false;
             var label = '';
+
+            function afterPersist(result) {
+                updateAllStats();
+                if (result && result.cloud === false && global.PlatformToast) {
+                    global.PlatformToast.warn('Guardado local — reintentando subir a la nube…', 4000);
+                } else if (global.PlatformToast) {
+                    global.PlatformToast.success('Trabajo finalizado — todos lo ven en vivo', 3500);
+                }
+            }
+
+            function doFinalize(record, mod, onDone) {
+                finalizeWorkRecord(record);
+                correctionLockUntil = Date.now() + 30000;
+                return persistSnapshot({ force: true, liveRecord: { module: mod, record: record } }).then(function (result) {
+                    if (typeof onDone === 'function') onDone();
+                    afterPersist(result);
+                    return true;
+                });
+            }
 
             if (module === 'pallets') {
                 var inc = findById(allIncidences, id);
                 if (inc) {
-                    finalizeWorkRecord(inc);
                     label = inc.location + ' / ' + inc.product;
-                    correctionLockUntil = Date.now() + 30000;
-                    persistSnapshot({ force: true, liveRecord: { module: 'pallets', record: inc } }).then(function () {
+                    auditAction('FINALIZAR', { module: module, id: id, label: label });
+                    return doFinalize(inc, 'pallets', function () {
                         filterIncidences();
                         renderReportedWorkLists();
                     });
-                    corrected = true;
                 }
             } else if (module === 'damages') {
                 var dmg = findById(allDamages, id);
                 if (dmg) {
-                    finalizeWorkRecord(dmg);
                     label = dmg.codigo + ' / ' + dmg.area;
-                    correctionLockUntil = Date.now() + 30000;
-                    persistSnapshot({ force: true, liveRecord: { module: 'damages', record: dmg } }).then(function () {
+                    auditAction('FINALIZAR', { module: module, id: id, label: label });
+                    return doFinalize(dmg, 'damages', function () {
                         filterDamagesPending();
                         renderReportedWorkLists();
                     });
-                    corrected = true;
                 }
             } else if (module === 'security') {
                 var sec = findById(allSecurity, id);
                 if (sec) {
-                    finalizeWorkRecord(sec);
                     label = sec.area;
-                    correctionLockUntil = Date.now() + 30000;
-                    persistSnapshot({ force: true, liveRecord: { module: 'security', record: sec } }).then(function () {
+                    auditAction('FINALIZAR', { module: module, id: id, label: label });
+                    return doFinalize(sec, 'security', function () {
                         filterSecurityPending();
                         renderReportedWorkLists();
                     });
-                    corrected = true;
                 }
             } else if (module === 'audit') {
                 var aud = findById(allAudits, id);
                 if (aud) {
-                    finalizeWorkRecord(aud);
                     label = 'Pasillo ' + aud.pasillo;
-                    correctionLockUntil = Date.now() + 30000;
-                    persistSnapshot({ force: true, liveRecord: { module: 'audit', record: aud } }).then(function () {
+                    auditAction('FINALIZAR', { module: module, id: id, label: label });
+                    return doFinalize(aud, 'audit', function () {
                         filterAuditPending();
                         renderReportedWorkLists();
                     });
-                    corrected = true;
                 }
             } else if (module === 'equipment') {
                 var codigo = String(id);
@@ -2046,25 +2056,19 @@
                     eq.correctedBy = currentEmployee.name;
                     label = codigo;
                     correctionLockUntil = Date.now() + 30000;
-                    persistSnapshot({ force: true }).then(function () {
+                    auditAction('FINALIZAR', { module: module, id: id, label: label });
+                    return persistSnapshot({ force: true }).then(function (result) {
                         updateEquipmentStats();
                         renderEquipmentCorrectList();
                         renderReportedWorkLists();
+                        afterPersist(result);
+                        return true;
                     });
-                    corrected = true;
                 }
             }
 
-            if (corrected) {
-                auditAction('FINALIZAR', { module: module, id: id, label: label });
-                updateAllStats();
-                if (global.PlatformToast) {
-                    global.PlatformToast.success('Trabajo finalizado correctamente', 3500);
-                }
-            } else {
-                alert('No se encontró el registro. Sincronice (↻) e intente de nuevo.');
-            }
-            return corrected;
+            alert('No se encontró el registro. Sincronice (↻) e intente de nuevo.');
+            return Promise.resolve(false);
         }
 
         function buildCorrectionMessage(module, id) {
