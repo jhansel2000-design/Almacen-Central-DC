@@ -148,7 +148,10 @@
   function initSupabase() {
     if (!hasSupabaseConfig() || !global.PlatformSupabaseBridge.subscribe) return;
     global.PlatformSupabaseBridge.subscribe('averias', function (remote) {
-      if (remote) applySnapshotToLocal(remote, false, 'supabase-realtime');
+      if (remote) {
+        applySnapshotToLocal(remote, false, 'supabase-realtime');
+        schedulePullBurst();
+      }
     });
   }
 
@@ -193,6 +196,9 @@
   }
 
   function pollIntervalMs() {
+    if (isSupabasePrimary()) {
+      return 600;
+    }
     if (hasFirebaseConfig()) {
       var ms = siteConfig && siteConfig.syncTargetMs ? parseInt(siteConfig.syncTargetMs, 10) : 400;
       return Math.max(400, ms || 400);
@@ -397,6 +403,7 @@
     var rTime = Date.parse(remote.updatedAt) || 0;
     return {
       version: 1,
+      localSeq: Math.max(local.localSeq || 0, remote.localSeq || 0),
       updatedAt: new Date(Math.max(lTime, rTime)).toISOString(),
       incidences: mergeArr(local.incidences, remote.incidences),
       damages: mergeArr(local.damages, remote.damages),
@@ -598,7 +605,8 @@
     var contentSig = contentSignature(snap);
     var remoteAt = String(snap.updatedAt || '');
     var remoteSeq = snap.localSeq || 0;
-    var forceApply = (remoteAt && remoteAt !== lastRemoteUpdatedAt) ||
+    var forceApply = isCloudAuthoritativeSource(source) ||
+      (remoteAt && remoteAt !== lastRemoteUpdatedAt) ||
       remoteSeq > lastKnownRemoteSeq;
     if (!forceApply && contentSig === lastAppliedContentSig) return false;
     var json = JSON.stringify(snap);
@@ -879,22 +887,25 @@
 
           if (isSupabasePrimary() && sbSnap) {
             merged = mergeAveriasSnapshots(sbSnap, getLocalSnapshot() || EMPTY);
+            merged.localSeq = Math.max(sbSnap.localSeq || 0, (getLocalSnapshot() || {}).localSeq || 0);
             applySource = 'supabase';
           } else {
             merged = getLocalSnapshot() || EMPTY;
           }
 
-          if (jsonBinSnap) {
-            merged = mergeAveriasSnapshots(merged, jsonBinSnap);
-            if (!isSupabasePrimary()) applySource = 'jsonbin';
-          }
+          if (!isSupabasePrimary() || !sbSnap) {
+            if (jsonBinSnap) {
+              merged = mergeAveriasSnapshots(merged, jsonBinSnap);
+              if (!isSupabasePrimary()) applySource = 'jsonbin';
+            }
 
-          parts.slice(1).forEach(function (part) {
-            if (part) merged = mergeAveriasSnapshots(merged, part);
-          });
+            parts.slice(1).forEach(function (part) {
+              if (part) merged = mergeAveriasSnapshots(merged, part);
+            });
 
-          if (jsonBinSnap && !isSupabasePrimary()) {
-            merged = mergeAveriasSnapshots(merged, jsonBinSnap);
+            if (jsonBinSnap && !isSupabasePrimary()) {
+              merged = mergeAveriasSnapshots(merged, jsonBinSnap);
+            }
           }
 
           if (!isSupabasePrimary() && localBefore && countSnapshotRecords(localBefore) > countSnapshotRecords(merged)) {
@@ -1417,8 +1428,7 @@
       startPolling();
       startSSE();
       startSiteConfigRefresh();
-      global.addEventListener('pageshow', function (ev) {
-        if (!ev.persisted) return;
+      global.addEventListener('pageshow', function () {
         pullAll();
       }, { passive: true });
       global.addEventListener('visibilitychange', function () {

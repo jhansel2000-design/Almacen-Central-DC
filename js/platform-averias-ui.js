@@ -356,7 +356,8 @@
 
         function applySnapshot(snap, preferIncoming) {
             if (!snap || typeof snap !== 'object') return false;
-            if (global.PlatformAveriasCloudSync && global.PlatformAveriasCloudSync.mergeAveriasSnapshots) {
+            var trustCloud = preferIncoming === 'cloud';
+            if (!trustCloud && global.PlatformAveriasCloudSync && global.PlatformAveriasCloudSync.mergeAveriasSnapshots) {
                 if (preferIncoming) {
                     snap = global.PlatformAveriasCloudSync.mergeAveriasSnapshots(snap, buildSnapshot());
                 } else {
@@ -618,7 +619,7 @@
             var countsBefore = countReports(buildSnapshot());
             isLoadingRemoteSnapshot = true;
             try {
-                applySnapshot(snap, true);
+                applySnapshot(snap, opts.fromCloud ? 'cloud' : true);
                 writeIndividualKeys();
                 var synced = buildSnapshot();
                 synced.updatedAt = new Date().toISOString();
@@ -635,6 +636,13 @@
                 updateAllStats();
                 refreshCurrentView();
                 updateLiveChip(true);
+            }
+            if (opts.fromCloud && countsAfter.pending < countsBefore.pending && global.PlatformToast) {
+                var resolvedNow = Date.now();
+                if (resolvedNow - lastNewReportToastAt > 2500) {
+                    lastNewReportToastAt = resolvedNow;
+                    global.PlatformToast.success('Actualizado en vivo — trabajo finalizado en otro dispositivo', 3200);
+                }
             }
             if (!opts.silent && countsAfter.pending > countsBefore.pending && global.PlatformToast) {
                 var now = Date.now();
@@ -849,7 +857,9 @@
             global.addEventListener('visibilitychange', function () {
                 if (document.visibilityState === 'visible') {
                     if (global.PlatformAveriasCloudSync && global.PlatformAveriasCloudSync.pull) {
-                        global.PlatformAveriasCloudSync.pull().then(reloadFromSyncDebounced);
+                        global.PlatformAveriasCloudSync.pull().then(function () {
+                            reloadFromSync();
+                        });
                     } else if (global.PlatformLanSync && global.PlatformLanSync.isEnabled()) {
                         global.PlatformLanSync.forcePull().then(function () { reloadFromSyncDebounced(); });
                     }
