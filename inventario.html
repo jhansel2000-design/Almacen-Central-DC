@@ -23,7 +23,7 @@
   <meta name="theme-color" content="#15202B">
   <meta name="referrer" content="strict-origin-when-cross-origin">
   <meta http-equiv="X-Content-Type-Options" content="nosniff">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://challenges.cloudflare.com; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' http://localhost:* http://127.0.0.1:* http://192.168.0.0/16 http://10.0.0.0/8 https://*.supabase.co wss://*.supabase.co https://challenges.cloudflare.com; img-src 'self' data:; media-src 'self'; frame-src https://challenges.cloudflare.com; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://cdn.sheetjs.com https://challenges.cloudflare.com; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' http://localhost:* http://127.0.0.1:* http://192.168.0.0/16 http://10.0.0.0/8 https://*.supabase.co wss://*.supabase.co https://challenges.cloudflare.com; img-src 'self' data:; media-src 'self'; frame-src https://challenges.cloudflare.com; object-src 'none'; base-uri 'self'; form-action 'self'">
   <title>Inventario RF — Almacén Central DC</title>
   <link rel="preload" href="assets/img/login-inventario-poster.jpg" as="image">
   <script src="js/relay-bootstrap.js?v=1"></script>
@@ -35,6 +35,7 @@
   <link rel="stylesheet" href="css/dc-brand.css?v=11">
   <link rel="stylesheet" href="css/inventario-portal.css?v=7">
   <link rel="stylesheet" href="css/inventario-responsive.css?v=4">
+  <link rel="stylesheet" href="css/inventario-conciliacion.css?v=1">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700&display=swap" rel="stylesheet">
@@ -75,12 +76,35 @@
                 <div class="inv-brand">Almacén Central</div>
               </div>
               <div class="inv-step-row">
-                <span class="inv-step-counter" id="invLoginStepNum">1/2</span>
-                <span class="inv-step-title" id="invLoginStepTitle">Seleccione su perfil</span>
+                <span class="inv-step-counter" id="invLoginStepNum">1/3</span>
+                <span class="inv-step-title" id="invLoginStepTitle">Seleccione el módulo</span>
               </div>
             </div>
             <div class="inv-body">
-              <div id="invLoginStep1">
+              <div id="invLoginStep0">
+                <h2 class="inv-login-title">Área de trabajo</h2>
+                <p class="inv-login-sub">La APK escanea en piso; aquí ve la hoja en vivo</p>
+                <div class="inv-module-pick">
+                  <div class="inv-module inv-module--audit" id="invModAudit" data-workspace="auditoria" role="button" tabindex="0">
+                    <span class="inv-module-tag">Auditoría</span>
+                    <h3 class="inv-module-title">Auditoría de conteo</h3>
+                    <p class="inv-module-desc">Ubicaciones REVISAR detectadas al comparar con sistema</p>
+                  </div>
+                  <div class="inv-module inv-module--inv" id="invModInv" data-workspace="inventario" role="button" tabindex="0">
+                    <span class="inv-module-tag">Inventario RF</span>
+                    <h3 class="inv-module-title">Conteo en piso</h3>
+                    <p class="inv-module-desc">Modo contador web (la APK sigue igual en el lector)</p>
+                  </div>
+                  <div class="inv-module inv-module--conc" id="invModConc" data-workspace="conciliacion" role="button" tabindex="0">
+                    <span class="inv-module-tag">Exactitud</span>
+                    <h3 class="inv-module-title">Conciliación · Exactitud</h3>
+                    <p class="inv-module-desc">Cargue «Inventario disponible» y cuadre CJ vs APK en vivo</p>
+                  </div>
+                </div>
+                <button type="button" class="inv-btn inv-btn-primary" id="invBtnModuleContinue" disabled>Continuar →</button>
+              </div>
+              <div id="invLoginStep1" hidden>
+                <button type="button" class="inv-btn inv-btn-back" id="invBtnBackModule">◀ Cambiar módulo</button>
                 <h2 class="inv-login-title">¿Quién usará el equipo?</h2>
                 <p class="inv-login-sub">Elija el tipo de usuario</p>
                 <div class="inv-login-roles">
@@ -262,6 +286,8 @@
         <div class="inv-admin-row" id="invBtnTestSb"><span style="font-size:20px">🔗</span><div><strong>Probar conexión</strong><span>Verificar enlace en vivo</span></div></div>
         <div class="inv-admin-row" id="invBtnSetupSb"><span style="font-size:20px">⚙️</span><div><strong>Configurar sincronización</strong><span>URL y clave (solo este equipo)</span></div></div>
         <div class="inv-admin-row" data-inv-action="delete-all"><span style="font-size:20px">🗑️</span><div><strong>Borrar registros</strong><span>Elimina todos en la nube</span></div></div>
+        <div class="inv-admin-row" data-inv-nav="conciliacion"><span style="font-size:20px">📊</span><div><strong>Conciliación · Exactitud</strong><span>Cuadre CJ vs APK en vivo</span></div></div>
+        <div class="inv-admin-row" data-inv-nav="auditoria"><span style="font-size:20px">🔍</span><div><strong>Auditoría de conteo</strong><span>Solo ubicaciones REVISAR</span></div></div>
         <div class="inv-admin-row" data-inv-nav="count"><span style="font-size:20px">📦</span><div><strong>Ir a conteo</strong><span>Modo contador</span></div></div>
       </div>
       <nav class="inv-nav">
@@ -270,7 +296,52 @@
       </nav>
     </div>
 
-    <!-- Registros -->
+    <!-- Conciliación / Auditoría (escritorio web — APK en vivo) -->
+    <div class="inv-desk" id="invViewConciliacion" hidden>
+      <header class="inv-desk-header">
+        <div class="inv-desk-header-top">
+          <div>
+            <h1 class="inv-desk-title" id="invDeskTitle">Conciliación · Exactitud</h1>
+            <p class="inv-desk-sub" id="invDeskSub">Sistema vs conteo APK — unidad CJ</p>
+          </div>
+          <span class="inv-desk-live" id="invDeskLive">○ Sin enlace</span>
+        </div>
+        <div class="inv-desk-kpis">
+          <div class="inv-desk-kpi inv-desk-kpi--ok"><label>Ok</label><b id="invDeskKpiOk">0</b></div>
+          <div class="inv-desk-kpi inv-desk-kpi--warn"><label>Revisar</label><b id="invDeskKpiRev">0</b></div>
+          <div class="inv-desk-kpi"><label>Total</label><b id="invDeskKpiTotal">0</b></div>
+          <div class="inv-desk-kpi inv-desk-kpi--acc"><label>Exactitud</label><b id="invDeskKpiAcc">—</b></div>
+        </div>
+      </header>
+      <div class="inv-desk-toolbar">
+        <div class="inv-desk-tabs">
+          <button type="button" class="inv-desk-tab active" data-desk-tab="cuadre">Cuadre Ok / Revisar</button>
+          <button type="button" class="inv-desk-tab" data-desk-tab="vivo">En vivo · APK</button>
+          <button type="button" class="inv-desk-tab" data-desk-tab="sistema">Inventario sistema</button>
+        </div>
+        <input type="file" id="invSistemaFile" accept=".xlsx,.xls" hidden>
+        <button type="button" class="inv-desk-btn" id="invBtnLoadSistema">Cargar Inventario disponible</button>
+        <button type="button" class="inv-desk-btn inv-desk-btn--ghost" id="invBtnRefreshDesk">Actualizar</button>
+        <button type="button" class="inv-desk-btn inv-desk-btn--ghost" id="invBtnExportCuadre">Exportar cuadre</button>
+        <p class="inv-desk-meta" id="invDeskMeta">Cargue «Inventario disponible» exportado de Dynamics (Física disponible · CJ · almacén 300).</p>
+      </div>
+      <div class="inv-desk-body">
+        <table class="inv-sheet">
+          <thead>
+            <tr>
+              <th>Ubicación</th><th>Código</th><th>Producto</th><th>Matrícula</th><th>Empaque</th>
+              <th>Sistema CJ</th><th>Contado CJ</th><th>Estado</th><th>Usuario</th><th>Fecha</th>
+            </tr>
+          </thead>
+          <tbody id="invDeskTbody"></tbody>
+        </table>
+      </div>
+      <nav class="inv-desk-nav">
+        <button type="button" data-inv-nav="admin">Admin</button>
+        <button type="button" class="inv-btn-logout">Salir</button>
+      </nav>
+    </div>
+    <div class="inv-desk" id="invViewAuditoria" hidden aria-hidden="true"></div>
     <div class="inv-phone" id="invViewRecords" hidden>
       <div class="inv-header">
         <h1 class="inv-records-title">Todos los registros</h1>
@@ -295,8 +366,11 @@
   <script src="js/platform-supabase.js?v=4"></script>
   <script src="js/platform-supabase-realtime.js?v=1"></script>
   <script src="js/platform-supabase-bridge.js?v=4"></script>
+  <script defer src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js" crossorigin="anonymous"></script>
   <script src="js/platform-inventario-core.js?v=1"></script>
   <script src="js/platform-inventario-sync.js?v=6"></script>
-  <script src="js/platform-inventario-app.js?v=6"></script>
+  <script src="js/platform-inventario-conciliacion.js?v=1"></script>
+  <script src="js/platform-inventario-desk.js?v=2"></script>
+  <script src="js/platform-inventario-app.js?v=8"></script>
 </body>
 </html>

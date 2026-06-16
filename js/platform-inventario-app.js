@@ -8,12 +8,16 @@
   var SYNC = global.PlatformInventarioSync;
   var SB = global.PlatformSupabase;
 
+  var DESK = global.PlatformInventarioDesk;
+  var CONC = global.PlatformInventarioConciliacion;
+
   var state = {
     user: null,
     role: null,
+    workspace: 'inventario',
     mode: 'pickup',
     view: 'login',
-    step: 1,
+    step: 0,
     flowIndex: 0,
     flowSteps: [1, 2, 4, 5],
     countRound: 1,
@@ -44,12 +48,24 @@
     return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   }
 
+  function isDeskWorkspace(ws) {
+    return ws === 'conciliacion' || ws === 'auditoria';
+  }
+
   function setView(view) {
     state.view = view;
-    ['login', 'mode', 'count', 'admin', 'records'].forEach(function (v) {
+    var phoneViews = ['mode', 'count', 'admin', 'records'];
+    phoneViews.forEach(function (v) {
       var el = $('invView' + v.charAt(0).toUpperCase() + v.slice(1));
       if (el) el.hidden = v !== view;
     });
+    if (isDeskWorkspace(view)) {
+      if (DESK) DESK.showDesk(view);
+    } else {
+      if (DESK) DESK.hideDeskLayout();
+      var concEl = $('invViewConciliacion');
+      if (concEl) concEl.hidden = true;
+    }
     if (view === 'records') renderRecords();
     if (view === 'admin') renderAdminStats();
     if (view === 'count') applyCountStep();
@@ -114,6 +130,40 @@
   }
 
   /* ── Login ── */
+  function pickModule(workspace) {
+    state.workspace = workspace || 'inventario';
+    ['invModAudit', 'invModInv', 'invModConc'].forEach(function (id) {
+      var el = $(id);
+      if (!el) return;
+      el.classList.toggle('sel', el.getAttribute('data-workspace') === state.workspace);
+    });
+    var btn = $('invBtnModuleContinue');
+    if (btn) btn.disabled = !state.workspace;
+  }
+
+  function goLoginStepFromModule() {
+    if (!state.workspace) { toast('Seleccione un módulo', 'err'); return; }
+    $('invLoginStep0').hidden = true;
+    $('invLoginStep1').hidden = false;
+    $('invLoginStep2').hidden = true;
+    $('invLoginStepNum').textContent = '2/3';
+    $('invLoginStepTitle').textContent = 'Seleccione su perfil';
+    var desk = isDeskWorkspace(state.workspace);
+    var countRole = $('invRoleCount');
+    if (countRole) countRole.hidden = desk;
+    if (desk) pickRole('admin');
+  }
+
+  function goLoginStep0() {
+    $('invLoginStep0').hidden = false;
+    $('invLoginStep1').hidden = true;
+    $('invLoginStep2').hidden = true;
+    $('invLoginStepNum').textContent = '1/3';
+    $('invLoginStepTitle').textContent = 'Seleccione el módulo';
+    var countRole = $('invRoleCount');
+    if (countRole) countRole.hidden = false;
+  }
+
   function pickRole(role) {
     state.role = role;
     $('invRoleAdmin').classList.toggle('sel', role === 'admin');
@@ -123,18 +173,24 @@
 
   function goLoginStep2() {
     if (!state.role) { toast('Seleccione un perfil', 'err'); return; }
+    if (isDeskWorkspace(state.workspace) && state.role !== 'admin') {
+      toast('Conciliación y auditoría requieren administrador', 'err');
+      return;
+    }
+    $('invLoginStep0').hidden = true;
     $('invLoginStep1').hidden = true;
     $('invLoginStep2').hidden = false;
     $('invPanelCount').hidden = state.role !== 'count';
     $('invPanelAdmin').hidden = state.role !== 'admin';
-    $('invLoginStepNum').textContent = '2/2';
+    $('invLoginStepNum').textContent = '3/3';
     $('invLoginStepTitle').textContent = 'Confirme su acceso';
   }
 
   function goLoginStep1() {
+    $('invLoginStep0').hidden = true;
     $('invLoginStep1').hidden = false;
     $('invLoginStep2').hidden = true;
-    $('invLoginStepNum').textContent = '1/2';
+    $('invLoginStepNum').textContent = '2/3';
     $('invLoginStepTitle').textContent = 'Seleccione su perfil';
   }
 
@@ -164,11 +220,23 @@
       state.user = user;
       try {
         global.sessionStorage.setItem('invUser', JSON.stringify(user));
+        global.sessionStorage.setItem('invWorkspace', state.workspace || 'inventario');
       } catch (e) { /* noop */ }
       refreshUserHeader();
       setAuthVisible(false);
-      if (user.role === 'ADMIN') setView('admin');
-      else setView('mode');
+      if (isDeskWorkspace(state.workspace)) {
+        if (user.role !== 'ADMIN') {
+          toast('Este módulo requiere administrador', 'err');
+          setAuthVisible(true);
+          goLoginStep2();
+          return;
+        }
+        setView(state.workspace);
+      } else if (user.role === 'ADMIN') {
+        setView('admin');
+      } else {
+        setView('mode');
+      }
       toast('Bienvenido, ' + user.displayName, 'ok');
     }).catch(function () {
       toast('Error al validar acceso. Revise la conexión en vivo.', 'err');
@@ -544,6 +612,21 @@
   }
 
   function bindEvents() {
+    ['invModAudit', 'invModInv', 'invModConc'].forEach(function (id) {
+      var el = $(id);
+      if (!el) return;
+      el.addEventListener('click', function () {
+        pickModule(el.getAttribute('data-workspace'));
+      });
+      el.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          pickModule(el.getAttribute('data-workspace'));
+        }
+      });
+    });
+    $('invBtnModuleContinue') && $('invBtnModuleContinue').addEventListener('click', goLoginStepFromModule);
+    $('invBtnBackModule') && $('invBtnBackModule').addEventListener('click', goLoginStep0);
     $('invRoleAdmin') && $('invRoleAdmin').addEventListener('click', function () { pickRole('admin'); });
     $('invRoleCount') && $('invRoleCount').addEventListener('click', function () { pickRole('count'); });
     $('invBtnContinue') && $('invBtnContinue').addEventListener('click', goLoginStep2);
@@ -570,9 +653,16 @@
 
     bindAll('.inv-btn-logout', function () {
       state.user = null;
-      try { global.sessionStorage.removeItem('invUser'); } catch (e) { /* noop */ }
+      state.workspace = 'inventario';
+      state.role = null;
+      try {
+        global.sessionStorage.removeItem('invUser');
+        global.sessionStorage.removeItem('invWorkspace');
+      } catch (e) { /* noop */ }
+      if (DESK) DESK.hideDeskLayout();
       setAuthVisible(true);
-      goLoginStep1();
+      goLoginStep0();
+      pickModule('inventario');
     });
 
     ['invModePickup', 'invModePallet', 'invModeCuadre'].forEach(function (id) {
@@ -590,6 +680,8 @@
     bindAll('[data-inv-nav="records"]', function () { setView('records'); });
     bindAll('[data-inv-nav="count"]', function () { setView('count'); });
     bindAll('[data-inv-nav="mode"]', function () { setView('mode'); });
+    bindAll('[data-inv-nav="conciliacion"]', function () { setView('conciliacion'); });
+    bindAll('[data-inv-nav="auditoria"]', function () { setView('auditoria'); });
 
     bindAll('[data-inv-action="export"]', exportCsv);
     bindAll('[data-inv-action="delete-all"]', confirmDeleteAll);
@@ -629,9 +721,16 @@
       var raw = global.sessionStorage.getItem('invUser');
       if (!raw) return;
       state.user = JSON.parse(raw);
+      state.workspace = global.sessionStorage.getItem('invWorkspace') || 'inventario';
       refreshUserHeader();
       setAuthVisible(false);
-      setView(state.user.role === 'ADMIN' ? 'admin' : 'mode');
+      if (isDeskWorkspace(state.workspace) && state.user.role === 'ADMIN') {
+        setView(state.workspace);
+      } else if (state.user.role === 'ADMIN') {
+        setView('admin');
+      } else {
+        setView('mode');
+      }
     } catch (e) { /* noop */ }
   }
 
@@ -640,12 +739,17 @@
       document.body.innerHTML += '<p class="noscript-msg">Error al cargar Inventario RF.</p>';
       return;
     }
+    if (DESK && CONC) {
+      DESK.init({ CONC: CONC, SYNC: SYNC, CORE: CORE, toast: toast, esc: esc });
+    }
     initRfViewport();
     bindEvents();
+    pickModule('inventario');
     SYNC.onChange(function (kind) {
       if (kind === 'sync' || kind === 'entry' || kind === 'clear') {
         if (state.view === 'records') renderRecords();
         if (state.view === 'admin') renderAdminStats();
+        if (isDeskWorkspace(state.view) && DESK) DESK.refreshDesk();
         updateCloudBadge();
       }
     });
