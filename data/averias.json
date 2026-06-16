@@ -5,6 +5,7 @@
   "damages": [],
   "securityIncidents": [],
   "audits5s": [],
+  "despachoAudits": [],
   "equipmentInspections": [],
   "equipmentRegistry": {}
 }

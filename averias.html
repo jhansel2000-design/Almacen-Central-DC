@@ -167,7 +167,7 @@
                 <div class="av-sync-banner" id="avSyncBanner" hidden role="status">
                     <span class="av-sync-banner-text">⚠️ Falta activar sync en tiempo real — cada celular guarda reportes por separado.</span>
                     <button type="button" class="av-sync-banner-btn" id="btnActivateCloud" onclick="openCloudSetupModal()">Activar ahora</button>
-                    <span class="av-sync-banner-hint">Sync automática vía <strong>Firebase</strong> — misma URL en todos los celulares. Recargue con Ctrl+F5 si no ve el indicador LIVE.</span>
+                    <span class="av-sync-banner-hint">Sync automática vía <strong>Supabase</strong> — misma URL en todos los celulares. Recargue con Ctrl+F5 si no ve el indicador LIVE.</span>
                 </div>
                 <p class="av-sync-status-line av-sync-status-ok" id="avSyncStatus" hidden aria-hidden="true">Conectando sync…</p>
 
@@ -621,21 +621,30 @@
         </div>
     </div>
 
-    <!-- Sincronización en vivo (Firebase — no requiere JSONBin en GitHub Pages) -->
+    <!-- Sincronización en vivo (Supabase — tiempo real en GitHub Pages) -->
     <div id="cloudSetupModal" class="modal av-cloud-modal" hidden>
         <div class="modal-content av-cloud-modal-content">
             <div class="modal-title">Sincronización en vivo</div>
-            <div id="cloudSetupFirebasePanel">
-                <p class="av-cloud-help">Los celulares con internet compartirán los mismos reportes en menos de 1 segundo.</p>
-                <p class="av-cloud-note"><strong>Firebase ya está activo</strong> en la web publicada. No necesita crear cuenta en jsonbin.io ni ejecutar ningún .bat en el PC.</p>
+            <div id="cloudSetupSupabasePanel">
+                <p class="av-cloud-help">Los celulares con internet compartirán los mismos reportes en tiempo real.</p>
+                <p class="av-cloud-note"><strong>Supabase ya está activo</strong> en la web publicada. No necesita JSONBin ni configuración extra en el celular.</p>
                 <ol class="av-cloud-steps">
                     <li>Abra la <strong>misma URL</strong> en todos los celulares y PCs</li>
                     <li>Recargue con <strong>Ctrl+F5</strong> (o cierre y vuelva a abrir en el teléfono)</li>
                     <li>Verifique el indicador <strong>● LIVE</strong> arriba a la derecha</li>
                 </ol>
             </div>
+            <div id="cloudSetupFirebasePanel" hidden>
+                <p class="av-cloud-help">Los celulares con internet compartirán los mismos reportes en menos de 1 segundo.</p>
+                <p class="av-cloud-note"><strong>Firebase</strong> como respaldo de sync en vivo.</p>
+                <ol class="av-cloud-steps">
+                    <li>Abra la <strong>misma URL</strong> en todos los celulares y PCs</li>
+                    <li>Recargue con <strong>Ctrl+F5</strong></li>
+                    <li>Verifique el indicador <strong>● LIVE</strong></li>
+                </ol>
+            </div>
             <div id="cloudSetupJsonBinPanel" hidden>
-                <p class="av-cloud-help">Opción alternativa solo si Firebase no está disponible (servidor LAN local).</p>
+                <p class="av-cloud-help">Opción alternativa solo si Supabase no está disponible (servidor LAN local).</p>
                 <ol class="av-cloud-steps">
                     <li>Cree cuenta gratis en <a href="https://jsonbin.io" target="_blank" rel="noopener">jsonbin.io</a></li>
                     <li>Copie la <strong>Master Key</strong> (API Keys)</li>
@@ -656,7 +665,7 @@
   <script src="js/panel-core.js?v=17"></script>
   <script src="js/platform-security.js?v=5"></script>
   <script src="js/platform-network-relay.js?v=1"></script>
-  <script src="js/platform-lan-sync.js?v=3"></script>
+  <script src="js/platform-lan-sync.js?v=4"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/platform-supabase.js?v=4"></script>
   <script src="js/platform-supabase-realtime.js?v=1"></script>
@@ -666,13 +675,13 @@
   <script src="js/platform-firebase-bridge.js?v=5"></script>
   <script src="js/platform-realtime-badge.js?v=5"></script>
   <script src="js/platform-averias-core.js?v=1"></script>
-  <script src="js/platform-averias-cloud-sync.js?v=44"></script>
+  <script src="js/platform-averias-cloud-sync.js?v=45"></script>
   <script src="js/platform-store.js"></script>
   <script src="js/platform-admin.js?v=14"></script>
   <script src="js/platform-registry-cloud-sync.js?v=2"></script>
   <script src="js/platform-web-users.js?v=18"></script>
   <script src="js/platform-toast.js"></script>
-  <script src="js/platform-averias-ui.js?v=45"></script>
+  <script src="js/platform-averias-ui.js?v=46"></script>
   <script src="js/platform-averias-app.js?v=6"></script>
 </body>
 </html>

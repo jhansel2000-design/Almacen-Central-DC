@@ -111,10 +111,17 @@ create table if not exists public.web_snapshots (
 
 insert into public.web_snapshots (module, data) values
   ('platform', '{"version":1,"updatedAt":"1970-01-01T00:00:00.000Z"}'::jsonb),
-  ('averias', '{"version":1,"updatedAt":"1970-01-01T00:00:00.000Z","incidences":[],"damages":[],"securityIncidents":[],"audits5s":[],"equipmentInspections":[],"equipmentRegistry":{}}'::jsonb),
+  ('averias', '{"version":1,"updatedAt":"1970-01-01T00:00:00.000Z","incidences":[],"damages":[],"securityIncidents":[],"audits5s":[],"despachoAudits":[],"equipmentInspections":[],"equipmentRegistry":{}}'::jsonb),
   ('despacho', '{"version":1,"updatedAt":"1970-01-01T00:00:00.000Z"}'::jsonb),
   ('registry', '{"version":1,"updatedAt":"1970-01-01T00:00:00.000Z","users":[],"areas":[],"accessRequests":[]}'::jsonb)
 on conflict (module) do nothing;
+
+-- Instalaciones existentes: añadir array despachoAudits al snapshot averias
+update public.web_snapshots
+set data = jsonb_set(coalesce(data, '{}'::jsonb), '{despachoAudits}', '[]'::jsonb, true),
+    updated_at = now()
+where module = 'averias'
+  and not (coalesce(data, '{}'::jsonb) ? 'despachoAudits');
 
 alter table public.web_snapshots enable row level security;
 

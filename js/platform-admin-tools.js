@@ -33,6 +33,7 @@
     'averias_dc_damages',
     'averias_dc_securityIncidents',
     'averias_dc_audits5s',
+    'averias_dc_despachoAudits',
     'averias_dc_equipmentInspections',
     'averias_dc_equipmentRegistry',
     'averias_dc_audit_log'
@@ -380,6 +381,7 @@
       damages: [],
       securityIncidents: [],
       audits5s: [],
+      despachoAudits: [],
       equipmentInspections: [],
       equipmentRegistry: {}
     };

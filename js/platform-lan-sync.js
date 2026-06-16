@@ -158,6 +158,7 @@
       damages: mergeArr(local.damages, remote.damages),
       securityIncidents: mergeArr(local.securityIncidents, remote.securityIncidents),
       audits5s: mergeArr(local.audits5s, remote.audits5s),
+      despachoAudits: mergeArr(local.despachoAudits, remote.despachoAudits),
       equipmentInspections: mergeArr(local.equipmentInspections, remote.equipmentInspections),
       equipmentRegistry: Object.assign({}, local.equipmentRegistry || {}, remote.equipmentRegistry || {})
     };

@@ -1305,6 +1305,7 @@
                 global.localStorage.setItem('averias_dc_damages', JSON.stringify(snap.damages || []));
                 global.localStorage.setItem('averias_dc_securityIncidents', JSON.stringify(snap.securityIncidents || []));
                 global.localStorage.setItem('averias_dc_audits5s', JSON.stringify(snap.audits5s || []));
+                global.localStorage.setItem('averias_dc_despachoAudits', JSON.stringify(snap.despachoAudits || []));
                 global.localStorage.setItem('averias_dc_equipmentInspections', JSON.stringify(snap.equipmentInspections || []));
                 global.localStorage.setItem('averias_dc_equipmentRegistry', JSON.stringify(snap.equipmentRegistry || {}));
               } catch (e) { /* noop */ }

@@ -11,6 +11,7 @@ function emptySnapshot() {
     damages: [],
     securityIncidents: [],
     audits5s: [],
+    despachoAudits: [],
     equipmentInspections: [],
     equipmentRegistry: {}
   };
@@ -26,6 +27,7 @@ function normalizeSnapshot(data) {
     damages: Array.isArray(data.damages) ? data.damages : [],
     securityIncidents: Array.isArray(data.securityIncidents) ? data.securityIncidents : [],
     audits5s: Array.isArray(data.audits5s) ? data.audits5s : [],
+    despachoAudits: Array.isArray(data.despachoAudits) ? data.despachoAudits : [],
     equipmentInspections: Array.isArray(data.equipmentInspections) ? data.equipmentInspections : [],
     equipmentRegistry: data.equipmentRegistry && typeof data.equipmentRegistry === 'object' ? data.equipmentRegistry : {}
   };

@@ -915,6 +915,16 @@
             refreshCurrentView();
         }
 
+        function averiasUsesSupabase() {
+            return !!(global.PlatformSupabaseBridge && global.PlatformSupabaseBridge.isEnabled &&
+                global.PlatformSupabaseBridge.isEnabled());
+        }
+
+        function averiasSupabasePrimary() {
+            return averiasUsesSupabase() && global.PlatformSupabaseBridge.isPrimary &&
+                global.PlatformSupabaseBridge.isPrimary();
+        }
+
         function syncAveriasData() {
             playSelectFeedback();
             var tasks = [];
@@ -929,8 +939,10 @@
                 var cloud = global.PlatformAveriasCloudSync && global.PlatformAveriasCloudSync.isCloudConfigured &&
                     global.PlatformAveriasCloudSync.isCloudConfigured();
                 var msg = cloud
-                    ? 'Reportes sincronizados — todos ven los mismos datos (Firebase en vivo)'
-                    : 'Conectando sync… recargue con Ctrl+F5. No necesita JSONBin en GitHub Pages.';
+                    ? (averiasSupabasePrimary()
+                        ? 'Reportes sincronizados — todos ven los mismos datos (Supabase en vivo)'
+                        : 'Reportes sincronizados — todos ven los mismos datos en la nube')
+                    : 'Conectando sync… recargue con Ctrl+F5.';
                 if (global.PlatformToast) {
                     global.PlatformToast[cloud ? 'success' : 'warn'](msg, 4500);
                 } else {
@@ -944,10 +956,12 @@
             var modal = document.getElementById('cloudSetupModal');
             var input = document.getElementById('cloudMasterKey');
             var status = document.getElementById('cloudSetupStatus');
+            var sbPanel = document.getElementById('cloudSetupSupabasePanel');
             var fbPanel = document.getElementById('cloudSetupFirebasePanel');
             var jbPanel = document.getElementById('cloudSetupJsonBinPanel');
             var submit = document.getElementById('cloudSetupSubmit');
-            var useFirebase = global.PlatformFirebaseBridge && global.PlatformFirebaseBridge.isEnabled &&
+            var useSupabase = averiasUsesSupabase();
+            var useFirebase = !useSupabase && global.PlatformFirebaseBridge && global.PlatformFirebaseBridge.isEnabled &&
                 global.PlatformFirebaseBridge.isEnabled();
             if (status) {
                 status.hidden = true;
@@ -955,11 +969,12 @@
                 status.className = 'av-cloud-status';
             }
             if (input) input.value = '';
+            if (sbPanel) sbPanel.hidden = !useSupabase;
             if (fbPanel) fbPanel.hidden = !useFirebase;
-            if (jbPanel) jbPanel.hidden = !!useFirebase;
-            if (submit) submit.textContent = useFirebase ? 'Sincronizar ahora' : 'Activar JSONBin';
+            if (jbPanel) jbPanel.hidden = !!(useSupabase || useFirebase);
+            if (submit) submit.textContent = (useSupabase || useFirebase) ? 'Sincronizar ahora' : 'Activar JSONBin';
             if (modal) modal.hidden = false;
-            if (!useFirebase && input) global.setTimeout(function () { input.focus(); }, 100);
+            if (!useSupabase && !useFirebase && input) global.setTimeout(function () { input.focus(); }, 100);
         }
 
         function closeCloudSetupModal() {
@@ -971,6 +986,35 @@
             var input = document.getElementById('cloudMasterKey');
             var submit = document.getElementById('cloudSetupSubmit');
             var status = document.getElementById('cloudSetupStatus');
+            if (averiasUsesSupabase()) {
+                if (submit) submit.disabled = true;
+                if (status) {
+                    status.hidden = false;
+                    status.className = 'av-cloud-status';
+                    status.textContent = 'Conectando Supabase en vivo…';
+                }
+                var sbTasks = [];
+                if (global.PlatformSupabase && global.PlatformSupabase.init) {
+                    sbTasks.push(global.PlatformSupabase.init());
+                }
+                if (global.PlatformAveriasCloudSync && global.PlatformAveriasCloudSync.pull) {
+                    sbTasks.push(global.PlatformAveriasCloudSync.pull());
+                }
+                Promise.all(sbTasks.length ? sbTasks : [Promise.resolve()]).then(function () {
+                    reloadFromSync();
+                    if (status) {
+                        status.className = 'av-cloud-status ok';
+                        status.textContent = '✅ Supabase en vivo — todos los celulares comparten reportes.';
+                    }
+                    if (global.PlatformToast) {
+                        global.PlatformToast.success('Sync Supabase conectada. Misma URL en todos los dispositivos.', 5000);
+                    }
+                    global.setTimeout(closeCloudSetupModal, 1200);
+                }).finally(function () {
+                    if (submit) submit.disabled = false;
+                });
+                return;
+            }
             if (global.PlatformFirebaseBridge && global.PlatformFirebaseBridge.isEnabled &&
                 global.PlatformFirebaseBridge.isEnabled()) {
                 if (submit) submit.disabled = true;

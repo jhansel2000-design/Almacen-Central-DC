@@ -191,7 +191,7 @@
       }).length;
     }
     return pending(snap.incidences) + pending(snap.damages) + pending(snap.securityIncidents) +
-      pending(snap.audits5s) + pending(snap.equipmentInspections);
+      pending(snap.audits5s) + pending(snap.despachoAudits) + pending(snap.equipmentInspections);
   }
 
   function renderReportes(host, ctx) {
