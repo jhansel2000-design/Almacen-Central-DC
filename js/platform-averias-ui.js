@@ -1678,8 +1678,12 @@
             return despachoAuditCheckItems.filter(function (i) { return a[i.key] === true; }).length;
         }
 
+        function despachoAuditFailCount(a) {
+            return despachoAuditCheckItems.filter(function (i) { return a[i.key] === false; }).length;
+        }
+
         function despachoAuditHasIssues(a) {
-            return despachoAuditCheckItems.some(function (i) { return a[i.key] === false; });
+            return despachoAuditFailCount(a) > 0;
         }
 
         function showDespachoAuditDashboard() {
@@ -1810,7 +1814,10 @@
         function updateDespachoAuditStats() {
             const total = allDespachoAudits.length;
             const pending = allDespachoAudits.filter(function (a) { return isPendingStatus(a); }).length;
-            const hallazgos = allDespachoAudits.filter(function (a) { return isPendingStatus(a) && despachoAuditHasIssues(a); }).length;
+            const incidencias = allDespachoAudits.reduce(function (sum, a) {
+                if (!isPendingStatus(a)) return sum;
+                return sum + despachoAuditFailCount(a);
+            }, 0);
             const todayStr = new Date().toLocaleDateString('es-DO');
             const hoy = allDespachoAudits.filter(function (a) {
                 return String(a.fecha || a.reportDate || '').indexOf(todayStr) >= 0 ||
@@ -1826,7 +1833,7 @@
             const el = (id) => document.getElementById(id);
             if (el('statDespTotal')) el('statDespTotal').textContent = total;
             if (el('statDespPending')) el('statDespPending').textContent = pending;
-            if (el('statDespHallazgos')) el('statDespHallazgos').textContent = hallazgos;
+            if (el('statDespHallazgos')) el('statDespHallazgos').textContent = incidencias;
             if (el('statDespHoy')) el('statDespHoy').textContent = hoy;
             if (el('statDespCompliance')) el('statDespCompliance').textContent = compliance + '%';
         }
