@@ -263,16 +263,26 @@
 
   function buildConciliation(sistemaRows, scanMap) {
     var rows = [];
-    var seen = {};
+    var seenKeys = {};
+    var groupExpected = {};
     (sistemaRows || []).forEach(function (sr) {
       var key = rowKey(sr.location, sr.barcode, sr.matricula);
-      seen[key] = true;
+      seenKeys[key] = true;
+      groupExpected[key] = (groupExpected[key] || 0) + parseQty(sr.qtyCj);
+    });
+    (sistemaRows || []).forEach(function (sr, lineIdx) {
+      var key = rowKey(sr.location, sr.barcode, sr.matricula);
       var scan = scanMap[key];
       var expected = parseQty(sr.qtyCj);
       var counted = scan ? parseQty(scan.qtyCj) : null;
       var status = 'REVISAR';
-      if (scan && Math.abs(counted - expected) < 0.001) status = 'Ok';
+      if (scan) {
+        var groupOk = Math.abs(parseQty(scan.qtyCj) - parseQty(groupExpected[key])) < 0.001;
+        var lineOk = Math.abs(counted - expected) < 0.001;
+        if (groupOk || lineOk) status = 'Ok';
+      }
       rows.push({
+        lineId: lineIdx,
         location: sr.location,
         barcode: sr.barcode,
         product: sr.product || (scan && scan.product) || '',
@@ -286,7 +296,7 @@
       });
     });
     Object.keys(scanMap || {}).forEach(function (key) {
-      if (seen[key]) return;
+      if (seenKeys[key]) return;
       var scan = scanMap[key];
       rows.push({
         location: scan.location,
@@ -303,7 +313,10 @@
     });
     rows.sort(function (a, b) {
       var c = normLoc(a.location).localeCompare(normLoc(b.location));
-      return c !== 0 ? c : normCode(a.barcode).localeCompare(normCode(b.barcode));
+      if (c !== 0) return c;
+      c = normCode(a.barcode).localeCompare(normCode(b.barcode));
+      if (c !== 0) return c;
+      return (a.lineId || 0) - (b.lineId || 0);
     });
     return rows;
   }

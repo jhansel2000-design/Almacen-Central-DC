@@ -5,7 +5,12 @@
   'use strict';
 
   var WAREHOUSE = '300-001';
-  var DOUBLE_PASILLOS = { 1:1,2:1,3:1,4:1,5:1,12:1,13:1,14:1,15:1,16:1,18:1,23:1,24:1,26:1,27:1,36:1,38:1,39:1,40:1,41:1 };
+  var DOUBLE_PASILLOS = {
+    1:1, 2:1, 3:1, 4:1, 5:1,
+    12:1, 13:1, 14:1, 15:1, 16:1, 18:1,
+    23:1, 24:1, 26:1, 27:1,
+    37:1, 38:1, 39:1, 40:1, 41:1
+  };
   var RACK_PREFIX = /^[A-Za-z](\d{3})$/i;
 
   var MODE_LABELS = { pickup: 'PICKUP', pallet: 'RACK', cuadre: 'PISO' };
@@ -33,6 +38,20 @@
     var p = pasilloFromLocation(location);
     if (p == null || p < 1 || p > 41) return 'Sencillo';
     return isDoubleRackPasillo(p) ? 'Doble Rick' : 'Sencillo';
+  }
+
+  function rackTypeForPasillo(pasillo) {
+    var p = parseInt(pasillo, 10);
+    if (isNaN(p) || p < 1 || p > 41) return 'Sencillo';
+    return isDoubleRackPasillo(p) ? 'Doble Rick' : 'Sencillo';
+  }
+
+  function pasilloCatalog() {
+    var list = [];
+    for (var p = 1; p <= 41; p++) {
+      list.push({ pasillo: p, tipo: rackTypeForPasillo(p) });
+    }
+    return list;
   }
 
   function levelFromLocation(location) {
@@ -145,6 +164,9 @@
     MODE_LABELS: MODE_LABELS,
     MODE_DB: MODE_DB,
     pasilloFromLocation: pasilloFromLocation,
+    isDoubleRackPasillo: isDoubleRackPasillo,
+    rackTypeForPasillo: rackTypeForPasillo,
+    pasilloCatalog: pasilloCatalog,
     isDoubleRackLocation: isDoubleRackLocation,
     rackTypeLabel: rackTypeLabel,
     levelFromLocation: levelFromLocation,

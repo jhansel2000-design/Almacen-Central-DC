@@ -221,9 +221,33 @@
   }
 
   function pasilloFilterLabel(n, count) {
-    var label = 'Pasillo ' + n;
-    if (count != null) label += ' (' + count + ')';
+    var tipo = rackTypeLabelForPasillo(n);
+    var label = tipo + ' · Pasillo ' + n;
+    if (count != null && count > 0) label += ' (' + count + ')';
     return label;
+  }
+
+  function rackTypeLabelForPasillo(p) {
+    if (CORE && CORE.rackTypeForPasillo) return CORE.rackTypeForPasillo(p);
+    var dob = { 1:1,2:1,3:1,4:1,5:1,12:1,13:1,14:1,15:1,16:1,18:1,23:1,24:1,26:1,27:1,37:1,38:1,39:1,40:1,41:1 };
+    return dob[p] ? 'Doble Rick' : 'Sencillo';
+  }
+
+  function pasilloCatalogList() {
+    if (CORE && CORE.pasilloCatalog) return CORE.pasilloCatalog();
+    var list = [];
+    for (var p = 1; p <= 41; p++) {
+      list.push({ pasillo: p, tipo: rackTypeLabelForPasillo(p) });
+    }
+    return list;
+  }
+
+  function pasilloRowCount(rows, p) {
+    var n = 0;
+    (rows || []).forEach(function (r) {
+      if (pasilloFromLocation(r.location) === p) n++;
+    });
+    return n;
   }
 
   function parsePasilloFilter(val) {
@@ -277,27 +301,41 @@
   }
 
   function uniqueLocationFilterValues(rows) {
-    var pasilloCounts = {};
-    var locs = {};
+    var out = [];
+    var catalog = pasilloCatalogList();
+    catalog.forEach(function (item) {
+      if (item.tipo !== 'Doble Rick') return;
+      var c = pasilloRowCount(rows, item.pasillo);
+      out.push({
+        value: pasilloFilterValue(item.pasillo),
+        label: pasilloFilterLabel(item.pasillo, c),
+        group: 'doble'
+      });
+    });
+    catalog.forEach(function (item) {
+      if (item.tipo !== 'Sencillo') return;
+      var c = pasilloRowCount(rows, item.pasillo);
+      out.push({
+        value: pasilloFilterValue(item.pasillo),
+        label: pasilloFilterLabel(item.pasillo, c),
+        group: 'sencillo'
+      });
+    });
+    var locCounts = {};
     (rows || []).forEach(function (r) {
       var loc = String(r.location || '').trim();
       if (!loc) return;
-      locs[loc] = true;
-      var p = pasilloFromLocation(loc);
-      if (p != null) pasilloCounts[p] = (pasilloCounts[p] || 0) + 1;
+      locCounts[loc] = (locCounts[loc] || 0) + 1;
     });
-    var out = [];
-    Object.keys(pasilloCounts).map(Number).sort(function (a, b) { return a - b; }).forEach(function (p) {
-      out.push({
-        value: pasilloFilterValue(p),
-        label: pasilloFilterLabel(p, pasilloCounts[p]),
-        group: 'pasillo'
-      });
-    });
-    Object.keys(locs).sort(function (a, b) {
+    Object.keys(locCounts).sort(function (a, b) {
       return String(a).localeCompare(String(b), 'es', { numeric: true, sensitivity: 'base' });
     }).forEach(function (loc) {
-      out.push({ value: loc, label: loc, group: 'ubicacion' });
+      var c = locCounts[loc];
+      out.push({
+        value: loc,
+        label: c > 1 ? (loc + ' (' + c + ' líneas)') : loc,
+        group: 'ubicacion'
+      });
     });
     return out;
   }
@@ -315,11 +353,19 @@
       var vals = uniqueFilterValues(pool, key);
       var html = '<option value="">Todos (' + pool.length + ')</option>';
       if (key === 'location') {
-        var pasillos = vals.filter(function (v) { return v.group === 'pasillo'; });
+        var dobres = vals.filter(function (v) { return v.group === 'doble'; });
+        var sencillos = vals.filter(function (v) { return v.group === 'sencillo'; });
         var ubicaciones = vals.filter(function (v) { return v.group === 'ubicacion'; });
-        if (pasillos.length) {
-          html += '<optgroup label="Por pasillo">';
-          pasillos.forEach(function (v) {
+        if (dobres.length) {
+          html += '<optgroup label="Doble Rick">';
+          dobres.forEach(function (v) {
+            html += '<option value="' + escAttr(v.value) + '">' + escFn(v.label) + '</option>';
+          });
+          html += '</optgroup>';
+        }
+        if (sencillos.length) {
+          html += '<optgroup label="Sencillo">';
+          sencillos.forEach(function (v) {
             html += '<option value="' + escAttr(v.value) + '">' + escFn(v.label) + '</option>';
           });
           html += '</optgroup>';
