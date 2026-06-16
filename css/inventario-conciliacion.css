@@ -418,38 +418,118 @@ html.ix-mobile-block .ix-app-shell {
 .inv-desk-body {
   flex: 1;
   min-height: 0;
-  overflow: auto;
-  -webkit-overflow-scrolling: touch;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
   padding: 0;
   background: #fff;
 }
 
+.inv-sheet-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 8px 12px;
+  background: #f0f3f6;
+  border-bottom: 2px solid #15202b;
+  flex-shrink: 0;
+}
+
+.inv-sheet-scroll-hint {
+  flex: 1;
+  font-size: 12px;
+  font-weight: 700;
+  color: #546e7a;
+}
+
+.inv-sheet-count {
+  font-size: 12px;
+  font-weight: 800;
+  color: #15202b;
+  white-space: nowrap;
+}
+
+.inv-sheet-clear {
+  padding: 6px 12px !important;
+  font-size: 12px !important;
+}
+
+.inv-sheet-wrap {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  border-bottom: 2px solid #15202b;
+}
+
 .inv-sheet {
   width: 100%;
+  min-width: 1280px;
   border-collapse: collapse;
   font-size: 13px;
   font-family: 'Segoe UI', system-ui, sans-serif;
+  border: 2px solid #15202b;
 }
 
 .inv-sheet th,
 .inv-sheet td {
-  border: 1px solid #d0d7de;
+  border: 1px solid #15202b;
   padding: 8px 10px;
   text-align: left;
-  vertical-align: top;
+  vertical-align: middle;
   color: #15202b;
 }
 
-.inv-sheet th {
+.inv-sheet thead tr.inv-sheet-head th {
   position: sticky;
   top: 0;
-  z-index: 2;
-  background: #f0f3f6;
+  z-index: 5;
+  background: #cfd8dc;
   font-size: 11px;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: #455a64;
+  color: #15202b;
+  border-bottom: 2px solid #15202b;
+  white-space: nowrap;
+}
+
+.inv-sheet thead tr.inv-sheet-filters th {
+  position: sticky;
+  top: 37px;
+  z-index: 4;
+  background: #eceff1;
+  padding: 4px 6px;
+  border-bottom: 2px solid #15202b;
+}
+
+.inv-sheet-filter {
+  width: 100%;
+  min-width: 72px;
+  box-sizing: border-box;
+  padding: 6px 8px;
+  border: 1px solid #546e7a;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  color: #15202b;
+  background: #fff;
+}
+
+.inv-sheet-filter:focus {
+  outline: 2px solid #1565c0;
+  border-color: #1565c0;
+}
+
+.inv-sheet-filter::placeholder {
+  color: #90a4ae;
+  font-weight: 500;
+}
+
+.inv-sheet tbody tr:nth-child(even) td {
+  background: #fafbfc;
 }
 
 .inv-sheet td.num {
@@ -458,9 +538,9 @@ html.ix-mobile-block .ix-app-shell {
   font-variant-numeric: tabular-nums;
 }
 
-.inv-sheet tr.row-revisar td { background: #fff8e1; }
-.inv-sheet tr.row-ok td { background: #f1f8f4; }
-.inv-sheet tr.row-live td { background: #fafbfc; }
+.inv-sheet tr.row-revisar td { background: #fff8e1 !important; }
+.inv-sheet tr.row-ok td { background: #f1f8f4 !important; }
+.inv-sheet tr.row-live td { background: #fafbfc !important; }
 
 .inv-sheet .st-ok {
   color: #1b5e20;
@@ -475,6 +555,13 @@ html.ix-mobile-block .ix-app-shell {
 .inv-sheet .qty-hi {
   background: #fff59d;
   font-weight: 800;
+}
+
+.inv-sheet .inv-empty {
+  text-align: center;
+  padding: 24px;
+  color: #546e7a;
+  font-weight: 700;
 }
 
 .inv-desk-nav {

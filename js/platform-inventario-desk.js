@@ -14,7 +14,11 @@
     meta: {},
     concRows: [],
     liveRows: [],
-    stats: { ok: 0, revisar: 0, total: 0, accuracy: 0 }
+    stats: { ok: 0, revisar: 0, total: 0, accuracy: 0 },
+    filters: {
+      location: '', barcode: '', product: '', matricula: '', pack: '',
+      qtySistema: '', qtyContada: '', status: '', userId: '', scannedAt: ''
+    }
   };
 
   function $(id) { return document.getElementById(id); }
@@ -196,6 +200,45 @@
     }
   }
 
+  function filterMatch(val, q) {
+    if (!q) return true;
+    return String(val == null ? '' : val).toLowerCase().indexOf(String(q).toLowerCase()) >= 0;
+  }
+
+  function applyRowFilters(rows) {
+    var f = desk.filters;
+    return (rows || []).filter(function (r) {
+      return filterMatch(r.location, f.location) &&
+        filterMatch(r.barcode, f.barcode) &&
+        filterMatch(r.product, f.product) &&
+        filterMatch(r.matricula, f.matricula) &&
+        filterMatch(r.pack, f.pack) &&
+        filterMatch(r.qtySistema, f.qtySistema) &&
+        filterMatch(r.qtyContada, f.qtyContada) &&
+        filterMatch(r.status, f.status) &&
+        filterMatch(r.userId, f.userId) &&
+        filterMatch(fmtDate(r.scannedAt), f.scannedAt) &&
+        filterMatch(r.scannedAt, f.scannedAt);
+    });
+  }
+
+  function hasActiveFilters() {
+    return Object.keys(desk.filters).some(function (k) { return !!desk.filters[k]; });
+  }
+
+  function clearFilters() {
+    Object.keys(desk.filters).forEach(function (k) { desk.filters[k] = ''; });
+    document.querySelectorAll('.inv-sheet-filter').forEach(function (inp) { inp.value = ''; });
+    var btn = $('invBtnClearFilters');
+    if (btn) btn.hidden = true;
+    renderTable();
+  }
+
+  function updateFilterUi() {
+    var btn = $('invBtnClearFilters');
+    if (btn) btn.hidden = !hasActiveFilters();
+  }
+
   function rowsForTab() {
     if (desk.tab === 'vivo') {
       return desk.liveRows.map(function (r) {
@@ -238,9 +281,19 @@
   function renderTable() {
     var tbody = $('invDeskTbody');
     if (!tbody) return;
-    var rows = rowsForTab();
+    var allRows = rowsForTab();
+    var rows = applyRowFilters(allRows);
+    var countEl = $('invDeskRowCount');
+    if (countEl) {
+      countEl.textContent = rows.length === allRows.length
+        ? rows.length.toLocaleString('es-DO') + ' filas'
+        : rows.length.toLocaleString('es-DO') + ' de ' + allRows.length.toLocaleString('es-DO') + ' filas';
+    }
+    updateFilterUi();
     if (!rows.length) {
-      tbody.innerHTML = '<tr><td colspan="10" class="inv-empty">Sin datos para esta vista.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="10" class="inv-empty">' +
+        (allRows.length ? 'Ninguna fila coincide con el filtro.' : 'Sin datos para esta vista.') +
+        '</td></tr>';
       return;
     }
     tbody.innerHTML = rows.map(function (r) {
@@ -361,6 +414,31 @@
     toastFn('CSV exportado', 'ok');
   }
 
+  function bindFilterEvents() {
+    document.querySelectorAll('.inv-sheet-filter').forEach(function (inp) {
+      if (inp.dataset.bound) return;
+      inp.dataset.bound = '1';
+      inp.addEventListener('input', function () {
+        var key = inp.getAttribute('data-filter');
+        if (key && desk.filters.hasOwnProperty(key)) desk.filters[key] = inp.value || '';
+        renderTable();
+      });
+      inp.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') {
+          inp.value = '';
+          var key = inp.getAttribute('data-filter');
+          if (key && desk.filters.hasOwnProperty(key)) desk.filters[key] = '';
+          renderTable();
+        }
+      });
+    });
+    var btnClear = $('invBtnClearFilters');
+    if (btnClear && !btnClear.dataset.bound) {
+      btnClear.dataset.bound = '1';
+      btnClear.addEventListener('click', clearFilters);
+    }
+  }
+
   function bindDeskEvents() {
     document.querySelectorAll('[data-desk-tab]').forEach(function (btn) {
       btn.addEventListener('click', function () {
@@ -391,6 +469,7 @@
     toastFn = deps.toast || function () {};
     escFn = deps.esc || function (s) { return String(s || ''); };
     bindDeskEvents();
+    bindFilterEvents();
     var cached = CONC.loadSistemaCache();
     desk.sistemaRows = cached.rows || [];
     desk.meta = cached.meta || {};
