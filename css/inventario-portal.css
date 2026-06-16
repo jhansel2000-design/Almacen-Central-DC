@@ -670,6 +670,52 @@ a.inv-admin-link {
   color: #E8D5B5;
 }
 
+.inv-auth-desk-label {
+  margin: 14px 0 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.inv-auth-steps--desk {
+  margin-top: 8px;
+}
+
+a.inv-auth-step--link {
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+}
+
+a.inv-auth-step--link:hover {
+  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.inv-auth-step--conc {
+  background: rgba(46, 125, 50, 0.22);
+  border-color: rgba(129, 199, 132, 0.55);
+  color: #c8e6c9;
+}
+
+.inv-auth-step--conc:hover {
+  background: rgba(46, 125, 50, 0.35);
+  border-color: rgba(129, 199, 132, 0.75);
+}
+
+.inv-auth-step--audit {
+  background: rgba(106, 27, 154, 0.22);
+  border-color: rgba(186, 104, 200, 0.5);
+  color: #e1bee7;
+}
+
+.inv-auth-step--audit:hover {
+  background: rgba(106, 27, 154, 0.35);
+  border-color: rgba(186, 104, 200, 0.75);
+}
+
 /* Anular tema oscuro global (platform.css) en zonas claras del inventario */
 body.executive-ui .inv-app-shell,
 body.executive-ui .inv-auth-overlay .inv-phone,
