@@ -1,4 +1,4 @@
-/* Portal Inventario RF — login independiente */
+/* Portal Inventario RF — login independiente (web cinematográfica) */
 
 body.auth-locked .auth-overlay.inv-auth-overlay {
   pointer-events: auto !important;
@@ -104,6 +104,19 @@ body.auth-locked .inv-auth-overlay .inv-auth-scrim {
   font-size: clamp(1.5rem, 3vw, 2rem);
   font-weight: 800;
   letter-spacing: -0.03em;
+  color: #f8fafc;
+}
+
+.inv-auth-hero-desc {
+  font-size: clamp(0.92rem, 2.5vw, 1rem);
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.88);
+  margin: 12px 0 0;
+}
+
+.inv-auth-hero-desc strong {
+  color: #E8D5B5;
+  font-weight: 700;
 }
 
 .inv-auth-back {
@@ -170,44 +183,51 @@ body.auth-locked .inv-auth-overlay .inv-auth-scrim {
 
 @media (max-width: 900px) {
   body.auth-locked .inv-auth-overlay {
-    align-items: stretch;
-    justify-content: stretch;
+    align-items: flex-start;
+    justify-content: flex-start;
     padding:
-      env(safe-area-inset-top, 0px)
-      env(safe-area-inset-right, 0px)
-      env(safe-area-inset-bottom, 0px)
-      env(safe-area-inset-left, 0px);
-    overflow: hidden;
+      max(0.75rem, env(safe-area-inset-top, 0px))
+      max(0.75rem, env(safe-area-inset-right, 0px))
+      max(0.75rem, env(safe-area-inset-bottom, 0px))
+      max(0.75rem, env(safe-area-inset-left, 0px));
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   .inv-auth-overlay .auth-layout {
     grid-template-columns: 1fr;
-    max-width: none;
+    max-width: min(100%, 540px);
     width: 100%;
-    height: 100%;
+    height: auto;
     min-height: 0;
-    padding: 0;
+    padding: 0.5rem 0 1rem;
+    margin: 0 auto;
   }
 
   .inv-auth-hero {
-    display: none;
+    display: block;
+    padding: 0 0 0.85rem;
+  }
+
+  .inv-auth-hero .auth-hero-panel {
+    max-width: 100%;
+    padding: 1.1rem 1.15rem;
   }
 
   .inv-auth-overlay .auth-stack {
     min-height: 0;
-    height: 100%;
+    height: auto;
   }
 
   .inv-auth-glass {
-    border-radius: 0;
-    flex: 1;
+    border-radius: 16px;
+    flex: none;
     min-height: 0;
-    display: flex;
-    flex-direction: column;
+    display: block;
   }
 
   .inv-auth-glass .inv-phone {
-    flex: 1;
+    flex: none;
     min-height: 0;
   }
 }
