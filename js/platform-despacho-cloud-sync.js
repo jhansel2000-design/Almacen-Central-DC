@@ -234,6 +234,21 @@
     return Date.parse(share && share.updatedAt) || 0;
   }
 
+  function pickNewerShare(localShare, remoteShare) {
+    if (!localShare && !remoteShare) return null;
+    if (!localShare) {
+      if (!remoteShare || remoteShare.active === false) return null;
+      return remoteShare;
+    }
+    if (!remoteShare) {
+      if (localShare.active === false) return null;
+      return localShare;
+    }
+    var picked = shareTime(remoteShare) >= shareTime(localShare) ? remoteShare : localShare;
+    if (!picked || picked.active === false) return null;
+    return picked.active ? picked : null;
+  }
+
   function mergeDespacho(local, remote) {
     if (!remote) return local;
     if (!local) return remote;
@@ -253,12 +268,8 @@
       pedidos: Object.keys(map).map(function (k) { return map[k]; })
     });
 
-    merged.liveShare = shareTime(remote.liveShare) >= shareTime(local.liveShare)
-      ? remote.liveShare
-      : local.liveShare;
-    merged.liveShareLista = shareTime(remote.liveShareLista) >= shareTime(local.liveShareLista)
-      ? remote.liveShareLista
-      : local.liveShareLista;
+    merged.liveShare = pickNewerShare(local.liveShare, remote.liveShare);
+    merged.liveShareLista = pickNewerShare(local.liveShareLista, remote.liveShareLista);
 
     var tLocal = Date.parse(local.updatedAt) || 0;
     var tRemote = Date.parse(remote.updatedAt) || 0;

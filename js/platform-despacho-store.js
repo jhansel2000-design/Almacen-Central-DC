@@ -555,7 +555,11 @@
 
   function stopLiveShare(usuario) {
     var data = load();
-    data.liveShare = null;
+    data.liveShare = {
+      active: false,
+      updatedAt: nowIso(),
+      sharedBy: usuario || '—'
+    };
     save(data);
     notifyLiveShare(null);
     return { ok: true, data: data, stoppedBy: usuario };
@@ -622,7 +626,11 @@
 
   function stopLiveShareLista(usuario) {
     var data = load();
-    data.liveShareLista = null;
+    data.liveShareLista = {
+      active: false,
+      updatedAt: nowIso(),
+      sharedBy: usuario || '—'
+    };
     save(data);
     notifyLiveShareLista(null);
     return { ok: true, data: data, stoppedBy: usuario };

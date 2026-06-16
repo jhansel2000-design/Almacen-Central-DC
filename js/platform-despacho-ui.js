@@ -1054,8 +1054,8 @@
         btnShare.addEventListener('click', function () {
           var vals = getShareFormValues(host);
           if (DS.isLiveShareActive()) {
-            DS.stopLiveShare(userName);
-            updateShareScreenUi(host, DS.load());
+            var stopped = DS.stopLiveShare(userName);
+            render(host, stopped.data, opts);
             toast('Pantalla externa desactivada', 'info');
             return;
           }
@@ -1086,7 +1086,7 @@
         } else {
           toast('Pantalla TV desactivada', 'info');
         }
-        updateShareListaUi(host, res.data);
+        render(host, res.data, opts);
       });
     }
 
