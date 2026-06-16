@@ -202,23 +202,68 @@
 
   function filterMatch(val, q) {
     if (!q) return true;
-    return String(val == null ? '' : val).toLowerCase().indexOf(String(q).toLowerCase()) >= 0;
+    return String(val == null ? '' : val) === String(q);
+  }
+
+  function rowFilterValue(r, key) {
+    if (key === 'qtySistema') return fmtQty(r.qtySistema);
+    if (key === 'qtyContada') return fmtQty(r.qtyContada);
+    if (key === 'scannedAt') return fmtDate(r.scannedAt);
+    return String(r[key] == null ? '' : r[key]);
+  }
+
+  function uniqueFilterValues(rows, key) {
+    var seen = {};
+    var list = [];
+    (rows || []).forEach(function (r) {
+      var v = rowFilterValue(r, key);
+      if (!v || v === '—' || seen[v]) return;
+      seen[v] = true;
+      list.push(v);
+    });
+    list.sort(function (a, b) {
+      return String(a).localeCompare(String(b), 'es', { numeric: true, sensitivity: 'base' });
+    });
+    return list;
+  }
+
+  function escAttr(s) {
+    return String(s || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+  }
+
+  function populateFilterSelects(allRows) {
+    Object.keys(desk.filters).forEach(function (key) {
+      var sel = document.querySelector('.inv-sheet-filter[data-filter="' + key + '"]');
+      if (!sel) return;
+      var current = desk.filters[key] || '';
+      var vals = uniqueFilterValues(allRows, key);
+      var html = '<option value="">Todos (' + vals.length + ')</option>';
+      vals.forEach(function (v) {
+        html += '<option value="' + escAttr(v) + '">' + escFn(v) + '</option>';
+      });
+      sel.innerHTML = html;
+      if (current && vals.indexOf(current) >= 0) sel.value = current;
+      else {
+        sel.value = '';
+        desk.filters[key] = '';
+      }
+    });
+    updateFilterUi();
   }
 
   function applyRowFilters(rows) {
     var f = desk.filters;
     return (rows || []).filter(function (r) {
-      return filterMatch(r.location, f.location) &&
-        filterMatch(r.barcode, f.barcode) &&
-        filterMatch(r.product, f.product) &&
-        filterMatch(r.matricula, f.matricula) &&
-        filterMatch(r.pack, f.pack) &&
-        filterMatch(r.qtySistema, f.qtySistema) &&
-        filterMatch(r.qtyContada, f.qtyContada) &&
-        filterMatch(r.status, f.status) &&
-        filterMatch(r.userId, f.userId) &&
-        filterMatch(fmtDate(r.scannedAt), f.scannedAt) &&
-        filterMatch(r.scannedAt, f.scannedAt);
+      return filterMatch(rowFilterValue(r, 'location'), f.location) &&
+        filterMatch(rowFilterValue(r, 'barcode'), f.barcode) &&
+        filterMatch(rowFilterValue(r, 'product'), f.product) &&
+        filterMatch(rowFilterValue(r, 'matricula'), f.matricula) &&
+        filterMatch(rowFilterValue(r, 'pack'), f.pack) &&
+        filterMatch(rowFilterValue(r, 'qtySistema'), f.qtySistema) &&
+        filterMatch(rowFilterValue(r, 'qtyContada'), f.qtyContada) &&
+        filterMatch(rowFilterValue(r, 'status'), f.status) &&
+        filterMatch(rowFilterValue(r, 'userId'), f.userId) &&
+        filterMatch(rowFilterValue(r, 'scannedAt'), f.scannedAt);
     });
   }
 
@@ -334,6 +379,7 @@
       if (sub) sub.textContent = 'Dashboard de exactitud · sistema vs conteo CJ';
       if (logo) logo.src = 'assets/img/icon-exactitud.svg?v=1';
     }
+    populateFilterSelects(rowsForTab());
     renderTable();
   }
 
@@ -415,21 +461,13 @@
   }
 
   function bindFilterEvents() {
-    document.querySelectorAll('.inv-sheet-filter').forEach(function (inp) {
-      if (inp.dataset.bound) return;
-      inp.dataset.bound = '1';
-      inp.addEventListener('input', function () {
-        var key = inp.getAttribute('data-filter');
-        if (key && desk.filters.hasOwnProperty(key)) desk.filters[key] = inp.value || '';
+    document.querySelectorAll('.inv-sheet-filter').forEach(function (sel) {
+      if (sel.dataset.bound) return;
+      sel.dataset.bound = '1';
+      sel.addEventListener('change', function () {
+        var key = sel.getAttribute('data-filter');
+        if (key && desk.filters.hasOwnProperty(key)) desk.filters[key] = sel.value || '';
         renderTable();
-      });
-      inp.addEventListener('keydown', function (e) {
-        if (e.key === 'Escape') {
-          inp.value = '';
-          var key = inp.getAttribute('data-filter');
-          if (key && desk.filters.hasOwnProperty(key)) desk.filters[key] = '';
-          renderTable();
-        }
       });
     });
     var btnClear = $('invBtnClearFilters');

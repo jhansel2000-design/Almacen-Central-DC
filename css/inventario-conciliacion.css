@@ -516,16 +516,12 @@ html.ix-mobile-block .ix-app-shell {
   font-family: inherit;
   color: #15202b;
   background: #fff;
+  cursor: pointer;
 }
 
 .inv-sheet-filter:focus {
   outline: 2px solid #1565c0;
   border-color: #1565c0;
-}
-
-.inv-sheet-filter::placeholder {
-  color: #90a4ae;
-  font-weight: 500;
 }
 
 .inv-sheet tbody tr:nth-child(even) td {

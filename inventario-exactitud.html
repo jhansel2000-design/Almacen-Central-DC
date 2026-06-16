@@ -20,7 +20,7 @@
   <script src="js/relay-bootstrap.js?v=1"></script>
   <link rel="stylesheet" href="css/platform.css?v=32">
   <link rel="stylesheet" href="css/dc-brand.css?v=11">
-  <link rel="stylesheet" href="css/inventario-conciliacion.css?v=7">
+  <link rel="stylesheet" href="css/inventario-conciliacion.css?v=9">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700&display=swap" rel="stylesheet">
@@ -134,16 +134,16 @@
                 <th>Sistema CJ</th><th>Contado CJ</th><th>Estado</th><th>Usuario</th><th>Fecha</th>
               </tr>
               <tr class="inv-sheet-filters">
-                <th><input type="text" class="inv-sheet-filter" data-filter="location" placeholder="Filtrar…" aria-label="Filtrar ubicación"></th>
-                <th><input type="text" class="inv-sheet-filter" data-filter="barcode" placeholder="Filtrar…" aria-label="Filtrar código"></th>
-                <th><input type="text" class="inv-sheet-filter" data-filter="product" placeholder="Filtrar…" aria-label="Filtrar producto"></th>
-                <th><input type="text" class="inv-sheet-filter" data-filter="matricula" placeholder="Filtrar…" aria-label="Filtrar matrícula"></th>
-                <th><input type="text" class="inv-sheet-filter" data-filter="pack" placeholder="Filtrar…" aria-label="Filtrar empaque"></th>
-                <th><input type="text" class="inv-sheet-filter" data-filter="qtySistema" placeholder="Filtrar…" aria-label="Filtrar sistema CJ"></th>
-                <th><input type="text" class="inv-sheet-filter" data-filter="qtyContada" placeholder="Filtrar…" aria-label="Filtrar contado CJ"></th>
-                <th><input type="text" class="inv-sheet-filter" data-filter="status" placeholder="Ok / Revisar…" aria-label="Filtrar estado"></th>
-                <th><input type="text" class="inv-sheet-filter" data-filter="userId" placeholder="Filtrar…" aria-label="Filtrar usuario"></th>
-                <th><input type="text" class="inv-sheet-filter" data-filter="scannedAt" placeholder="Filtrar…" aria-label="Filtrar fecha"></th>
+                <th><select class="inv-sheet-filter" data-filter="location" aria-label="Filtrar ubicación"><option value="">Todos</option></select></th>
+                <th><select class="inv-sheet-filter" data-filter="barcode" aria-label="Filtrar código"><option value="">Todos</option></select></th>
+                <th><select class="inv-sheet-filter" data-filter="product" aria-label="Filtrar producto"><option value="">Todos</option></select></th>
+                <th><select class="inv-sheet-filter" data-filter="matricula" aria-label="Filtrar matrícula"><option value="">Todos</option></select></th>
+                <th><select class="inv-sheet-filter" data-filter="pack" aria-label="Filtrar empaque"><option value="">Todos</option></select></th>
+                <th><select class="inv-sheet-filter" data-filter="qtySistema" aria-label="Filtrar sistema CJ"><option value="">Todos</option></select></th>
+                <th><select class="inv-sheet-filter" data-filter="qtyContada" aria-label="Filtrar contado CJ"><option value="">Todos</option></select></th>
+                <th><select class="inv-sheet-filter" data-filter="status" aria-label="Filtrar estado"><option value="">Todos</option></select></th>
+                <th><select class="inv-sheet-filter" data-filter="userId" aria-label="Filtrar usuario"><option value="">Todos</option></select></th>
+                <th><select class="inv-sheet-filter" data-filter="scannedAt" aria-label="Filtrar fecha"><option value="">Todos</option></select></th>
               </tr>
             </thead>
             <tbody id="invDeskTbody"></tbody>
@@ -167,7 +167,7 @@
   <script src="js/platform-inventario-core.js?v=1"></script>
   <script src="js/platform-inventario-sync.js?v=6"></script>
   <script src="js/platform-inventario-conciliacion.js?v=5"></script>
-  <script src="js/platform-inventario-desk.js?v=7"></script>
+  <script src="js/platform-inventario-desk.js?v=9"></script>
   <script src="js/platform-inventario-exactitud-app.js?v=5"></script>
 </body>
 </html>
