@@ -936,6 +936,7 @@ body.averias-dash-view {
         .drawer-icon-wrap.damages { background: rgba(255, 140, 0, 0.15); }
         .drawer-icon-wrap.security { background: rgba(0, 51, 102, 0.35); }
         .drawer-icon-wrap.audit { background: rgba(46, 125, 50, 0.2); }
+        .drawer-icon-wrap.despacho-audit { background: rgba(33, 150, 243, 0.18); }
         .drawer-icon-wrap.equipment { background: rgba(255, 193, 7, 0.15); }
         .drawer-icon-wrap svg {
             width: 24px;
@@ -951,6 +952,7 @@ body.averias-dash-view {
         .drawer-icon-wrap.damages svg { color: #FF8C00; }
         .drawer-icon-wrap.security svg { color: #58A6FF; }
         .drawer-icon-wrap.audit svg { color: #2E7D32; }
+        .drawer-icon-wrap.despacho-audit svg { color: #42A5F5; }
         .drawer-icon-wrap.equipment svg { color: #FFC107; }
 
         .equipment-check-row {

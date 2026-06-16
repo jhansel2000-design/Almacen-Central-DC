@@ -12,6 +12,7 @@
     damages: [],
     securityIncidents: [],
     audits5s: [],
+    despachoAudits: [],
     equipmentInspections: [],
     equipmentRegistry: {}
   };
@@ -60,6 +61,7 @@
       rowSig(snap.damages),
       rowSig(snap.securityIncidents),
       rowSig(snap.audits5s),
+      rowSig(snap.despachoAudits),
       String((snap.equipmentInspections || []).length),
       Object.keys(snap.equipmentRegistry || {}).sort().join(',')
     ].join('~');
@@ -254,7 +256,8 @@
     pallets: 'incidences',
     damages: 'damages',
     security: 'securityIncidents',
-    audit: 'audits5s'
+    audit: 'audits5s',
+    despachoAudit: 'despachoAudits'
   };
   var lastKnownRemoteSeq = 0;
   var reportingLockUntil = 0;
@@ -422,6 +425,7 @@
     if (!snap) return 0;
     return (snap.incidences || []).length + (snap.damages || []).length +
       (snap.securityIncidents || []).length + (snap.audits5s || []).length +
+      (snap.despachoAudits || []).length +
       (snap.equipmentInspections || []).length;
   }
 
@@ -434,7 +438,7 @@
       return s === 'CORREGIDO' || s === 'FINALIZADO';
     }
     var n = 0;
-    ['incidences', 'damages', 'securityIncidents', 'audits5s', 'equipmentInspections'].forEach(function (key) {
+    ['incidences', 'damages', 'securityIncidents', 'audits5s', 'despachoAudits', 'equipmentInspections'].forEach(function (key) {
       (snap[key] || []).forEach(function (r) { if (isCor(r)) n += 1; });
     });
     return n;
@@ -452,6 +456,7 @@
     (snap.damages || []).forEach(function (r) { if (isPend(r)) keys.push('damages:' + r.id); });
     (snap.securityIncidents || []).forEach(function (r) { if (isPend(r)) keys.push('security:' + r.id); });
     (snap.audits5s || []).forEach(function (r) { if (isPend(r)) keys.push('audit:' + r.id); });
+    (snap.despachoAudits || []).forEach(function (r) { if (isPend(r)) keys.push('despachoAudit:' + r.id); });
     (snap.equipmentInspections || []).forEach(function (r) { if (isPend(r)) keys.push('equipment:' + r.id); });
     return keys;
   }
@@ -549,6 +554,7 @@
       damages: mergeArr(local.damages, remote.damages),
       securityIncidents: mergeArr(local.securityIncidents, remote.securityIncidents),
       audits5s: mergeArr(local.audits5s, remote.audits5s),
+      despachoAudits: mergeArr(local.despachoAudits, remote.despachoAudits),
       equipmentInspections: mergeArr(local.equipmentInspections, remote.equipmentInspections),
       equipmentRegistry: mergeEquipmentRegistry(local.equipmentRegistry, remote.equipmentRegistry)
     };
@@ -719,6 +725,7 @@
       damages: Array.isArray(snap.damages) ? snap.damages : [],
       securityIncidents: Array.isArray(snap.securityIncidents) ? snap.securityIncidents : [],
       audits5s: Array.isArray(snap.audits5s) ? snap.audits5s : [],
+      despachoAudits: Array.isArray(snap.despachoAudits) ? snap.despachoAudits : [],
       equipmentInspections: Array.isArray(snap.equipmentInspections) ? snap.equipmentInspections : [],
       equipmentRegistry: snap.equipmentRegistry && typeof snap.equipmentRegistry === 'object' ? snap.equipmentRegistry : {}
     };
@@ -803,6 +810,7 @@
       global.localStorage.setItem('averias_dc_damages', JSON.stringify(snap.damages || []));
       global.localStorage.setItem('averias_dc_securityIncidents', JSON.stringify(snap.securityIncidents || []));
       global.localStorage.setItem('averias_dc_audits5s', JSON.stringify(snap.audits5s || []));
+      global.localStorage.setItem('averias_dc_despachoAudits', JSON.stringify(snap.despachoAudits || []));
       global.localStorage.setItem('averias_dc_equipmentInspections', JSON.stringify(snap.equipmentInspections || []));
       global.localStorage.setItem('averias_dc_equipmentRegistry', JSON.stringify(snap.equipmentRegistry || {}));
       lastAppliedJson = json;
@@ -1716,6 +1724,7 @@
       damages: [],
       securityIncidents: [],
       audits5s: [],
+      despachoAudits: [],
       equipmentInspections: [],
       equipmentRegistry: {}
     };
@@ -1725,6 +1734,7 @@
       'averias_dc_damages',
       'averias_dc_securityIncidents',
       'averias_dc_audits5s',
+      'averias_dc_despachoAudits',
       'averias_dc_equipmentInspections',
       'averias_dc_equipmentRegistry',
       'averias_dc_audit_log'
@@ -1738,6 +1748,7 @@
       global.localStorage.setItem('averias_dc_damages', '[]');
       global.localStorage.setItem('averias_dc_securityIncidents', '[]');
       global.localStorage.setItem('averias_dc_audits5s', '[]');
+      global.localStorage.setItem('averias_dc_despachoAudits', '[]');
       global.localStorage.setItem('averias_dc_equipmentInspections', '[]');
       global.localStorage.setItem('averias_dc_equipmentRegistry', '{}');
     } catch (e) { /* noop */ }

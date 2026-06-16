@@ -232,6 +232,7 @@
         let allDamages = [];
         let allSecurity = [];
         let allAudits = [];
+        let allDespachoAudits = [];
         let allEquipmentInspections = [];
         let equipmentRegistry = {};
         let currentModule = 'home';
@@ -305,8 +306,18 @@
             damages: 'Averías',
             security: 'Incidencias de Seguridad',
             audit: 'Auditoría 5S',
+            despachoAudit: 'Auditoría de Despacho',
             equipment: 'Inspección de Equipos'
         };
+
+        const despachoAuditCheckItems = [
+            { key: 'cantidadesOk', label: '1. ¿Las cantidades físicas coinciden con la factura?' },
+            { key: 'fechaCortaOk', label: '2. ¿El producto tiene fecha corta?' },
+            { key: 'averiadosPolvoOk', label: '3. ¿Hay productos averiados o con exceso de polvo?' },
+            { key: 'cargaIdentificadaOk', label: '4. ¿Está identificada la carga?' },
+            { key: 'paletasOk', label: '5. ¿Las paletas están en buen estado?' },
+            { key: 'checklistValidadorOk', label: '6. ¿El checklist de carga fue completado por el validador?' }
+        ];
 
         const equipmentCheckItems = [
             { key: 'bateriaOk', label: 'Nivel de batería', critical: false },
@@ -397,6 +408,25 @@
                 global.PlatformAveriasCloudSync.isLiveCloudOnly());
         }
 
+        var LIVE_SAVED_MSG = '✅ Guardado — todos lo ven en vivo';
+        var LIVE_FAIL_MSG = '❌ No se guardó. Revise conexión e intente de nuevo.';
+        var LIVE_SAVING_MSG = 'Guardando…';
+
+        function publishNewReportLive(module, record, onSuccess) {
+            if (!isLiveCloudOnly() || !global.PlatformAveriasCloudSync ||
+                !global.PlatformAveriasCloudSync.publishReportLive) {
+                return false;
+            }
+            global.PlatformAveriasCloudSync.publishReportLive(module, record).then(function (result) {
+                if (!result || !result.cloud) {
+                    alert(LIVE_FAIL_MSG);
+                    return;
+                }
+                if (onSuccess) onSuccess();
+            });
+            return true;
+        }
+
         function buildSnapshot() {
             var prevSeq = memoryLocalSeq;
             if (!isLiveCloudOnly()) {
@@ -416,6 +446,7 @@
                 damages: allDamages.slice(),
                 securityIncidents: allSecurity.slice(),
                 audits5s: allAudits.slice(),
+                despachoAudits: allDespachoAudits.slice(),
                 equipmentInspections: allEquipmentInspections.slice(),
                 equipmentRegistry: Object.assign({}, equipmentRegistry)
             };
@@ -434,6 +465,7 @@
             allDamages = Array.isArray(snap.damages) ? snap.damages.slice() : [];
             allSecurity = Array.isArray(snap.securityIncidents) ? snap.securityIncidents.slice() : [];
             allAudits = Array.isArray(snap.audits5s) ? snap.audits5s.slice() : [];
+            allDespachoAudits = Array.isArray(snap.despachoAudits) ? snap.despachoAudits.slice() : [];
             allEquipmentInspections = Array.isArray(snap.equipmentInspections) ? snap.equipmentInspections.slice() : [];
             equipmentRegistry = snap.equipmentRegistry && typeof snap.equipmentRegistry === 'object'
                 ? Object.assign({}, snap.equipmentRegistry) : {};
@@ -478,16 +510,19 @@
             changed = assignMissingIds(allDamages, 200000) || changed;
             changed = assignMissingIds(allSecurity, 300000) || changed;
             changed = assignMissingIds(allAudits, 400000) || changed;
+            changed = assignMissingIds(allDespachoAudits, 500000) || changed;
             allIncidences.forEach(function (r) { if (r && !r.status) r.status = 'PENDIENTE'; });
             allDamages.forEach(function (r) { if (r && !r.status) r.status = 'PENDIENTE'; });
             allSecurity.forEach(function (r) { if (r && !r.status) r.status = 'PENDIENTE'; });
             allAudits.forEach(function (r) { if (r && !r.status) r.status = 'PENDIENTE'; });
+            allDespachoAudits.forEach(function (r) { if (r && !r.status) r.status = 'PENDIENTE'; });
             var C = avCore();
             if (C && C.normalizeRecordTimestamps) {
                 allIncidences.forEach(C.normalizeRecordTimestamps);
                 allDamages.forEach(C.normalizeRecordTimestamps);
                 allSecurity.forEach(C.normalizeRecordTimestamps);
                 allAudits.forEach(C.normalizeRecordTimestamps);
+                allDespachoAudits.forEach(C.normalizeRecordTimestamps);
             }
             return changed;
         }
@@ -512,6 +547,7 @@
             localStorage.setItem('averias_dc_damages', JSON.stringify(allDamages));
             localStorage.setItem('averias_dc_securityIncidents', JSON.stringify(allSecurity));
             localStorage.setItem('averias_dc_audits5s', JSON.stringify(allAudits));
+            localStorage.setItem('averias_dc_despachoAudits', JSON.stringify(allDespachoAudits));
             localStorage.setItem('averias_dc_equipmentInspections', JSON.stringify(allEquipmentInspections));
             localStorage.setItem('averias_dc_equipmentRegistry', JSON.stringify(equipmentRegistry));
         }
@@ -541,12 +577,12 @@
                 if (result && result.cloud) {
                     updateAllStats();
                     if (global.PlatformToast) {
-                        global.PlatformToast.success('Guardado en Supabase — todos lo ven en vivo', 2500);
+                        global.PlatformToast.success('Guardado — todos lo ven en vivo', 2500);
                     }
                     return { ok: true, cloud: true };
                 }
                 if (global.PlatformToast) {
-                    global.PlatformToast.error('No se guardó en Supabase. Revise conexión y recargue (Ctrl+F5).', 8000);
+                    global.PlatformToast.error('No se guardó. Revise conexión y recargue (Ctrl+F5).', 8000);
                 }
                 return { ok: false, cloud: false };
             });
@@ -625,6 +661,8 @@
             if (s) allSecurity = JSON.parse(s);
             const a = localStorage.getItem('averias_dc_audits5s');
             if (a) allAudits = JSON.parse(a);
+            const da = localStorage.getItem('averias_dc_despachoAudits');
+            if (da) allDespachoAudits = JSON.parse(da);
             const eq = localStorage.getItem('averias_dc_equipmentInspections');
             if (eq) allEquipmentInspections = JSON.parse(eq);
             const reg = localStorage.getItem('averias_dc_equipmentRegistry');
@@ -661,6 +699,7 @@
             updateDamagesStats();
             updateSecurityStats();
             updateAuditStats();
+            updateDespachoAuditStats();
             renderReportedWorkLists();
         }
 
@@ -682,6 +721,10 @@
                 if (!document.getElementById('auditCorrect').classList.contains('hidden')) filterAuditPending();
                 else if (!document.getElementById('auditFormPanel').classList.contains('hidden')) { /* form */ }
                 else showAuditDashboard();
+            } else if (currentModule === 'despachoAudit') {
+                if (!document.getElementById('despachoAuditCorrect').classList.contains('hidden')) filterDespachoAuditPending();
+                else if (!document.getElementById('despachoAuditFormPanel').classList.contains('hidden')) { /* form */ }
+                else showDespachoAuditDashboard();
             } else if (currentModule === 'equipment') {
                 if (!document.getElementById('equipmentCorrect').classList.contains('hidden')) renderEquipmentCorrectList();
                 else if (!document.getElementById('equipmentListPanel').classList.contains('hidden')) renderEquipmentList();
@@ -703,7 +746,8 @@
                 (snap.incidences || []).length,
                 (snap.damages || []).length,
                 (snap.securityIncidents || []).length,
-                (snap.audits5s || []).length
+                (snap.audits5s || []).length,
+                (snap.despachoAudits || []).length
             ].join(':');
         }
 
@@ -715,11 +759,13 @@
             snap = snap || buildSnapshot();
             return {
                 total: (snap.incidences || []).length + (snap.damages || []).length +
-                    (snap.securityIncidents || []).length + (snap.audits5s || []).length,
+                    (snap.securityIncidents || []).length + (snap.audits5s || []).length +
+                    (snap.despachoAudits || []).length,
                 pending: allIncidences.filter(isPendingStatus).length +
                     allDamages.filter(isPendingStatus).length +
                     allSecurity.filter(isPendingStatus).length +
-                    allAudits.filter(isPendingStatus).length
+                    allAudits.filter(isPendingStatus).length +
+                    allDespachoAudits.filter(isPendingStatus).length
             };
         }
 
@@ -1083,6 +1129,11 @@
             updateAuditStats();
         }
 
+        function saveDespachoAuditsData() {
+            persistSnapshot({ force: true });
+            updateDespachoAuditStats();
+        }
+
         function saveEquipmentData() {
             persistSnapshot({ force: true });
         }
@@ -1101,6 +1152,7 @@
             document.getElementById('damageFecha').value = new Date().toISOString().split('T')[0];
             initEquipmentFormDefaults();
             buildEquipmentChecklist();
+            buildDespachoAuditChecklist();
             showWelcome();
         }
 
@@ -1289,6 +1341,7 @@
                 damages: 'moduleDamages',
                 security: 'moduleSecurity',
                 audit: 'moduleAudit',
+                despachoAudit: 'moduleDespachoAudit',
                 equipment: 'moduleEquipment'
             };
             document.getElementById(panelMap[module]).classList.remove('hidden');
@@ -1297,6 +1350,7 @@
             else if (module === 'damages') showDamagesDashboard();
             else if (module === 'security') showSecurityDashboard();
             else if (module === 'audit') showAuditDashboard();
+            else if (module === 'despachoAudit') showDespachoAuditDashboard();
             else if (module === 'equipment') showEquipmentDashboard();
             closeDrawer();
             writeNavState();
@@ -1397,6 +1451,232 @@
             document.getElementById('auditDashboard').classList.add('hidden');
             document.getElementById('auditFormPanel').classList.remove('hidden');
             document.getElementById('auditAuditor').value = currentEmployee.name;
+        }
+
+        function buildDespachoAuditChecklist() {
+            const container = document.getElementById('despachoAuditChecklist');
+            if (!container) return;
+            container.innerHTML = despachoAuditCheckItems.map(item => `
+                <div class="equipment-check-row" data-key="${item.key}">
+                    <span class="check-label">${item.label}</span>
+                    <div class="si-no-group">
+                        <button type="button" class="si-no-btn" data-val="si" onclick="selectDespCheck(this)">Sí</button>
+                        <button type="button" class="si-no-btn" data-val="no" onclick="selectDespCheck(this)">No</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function selectDespCheck(btn) {
+            playSelectFeedback();
+            const group = btn.parentElement;
+            group.querySelectorAll('.si-no-btn').forEach(b => {
+                b.classList.remove('selected-si', 'selected-no');
+            });
+            btn.classList.add(btn.dataset.val === 'si' ? 'selected-si' : 'selected-no');
+        }
+
+        function getDespCheckValues() {
+            const values = {};
+            despachoAuditCheckItems.forEach(item => {
+                const row = document.querySelector('#despachoAuditChecklist .equipment-check-row[data-key="' + item.key + '"]');
+                if (!row) {
+                    values[item.key] = null;
+                    return;
+                }
+                const si = row.querySelector('.si-no-btn[data-val="si"]');
+                const no = row.querySelector('.si-no-btn[data-val="no"]');
+                if (si && si.classList.contains('selected-si')) values[item.key] = true;
+                else if (no && no.classList.contains('selected-no')) values[item.key] = false;
+                else values[item.key] = null;
+            });
+            return {
+                values: values,
+                allAnswered: despachoAuditCheckItems.every(i => values[i.key] !== null)
+            };
+        }
+
+        function resetDespachoAuditChecklist() {
+            document.querySelectorAll('#despachoAuditChecklist .si-no-btn').forEach(b => {
+                b.classList.remove('selected-si', 'selected-no');
+            });
+        }
+
+        function setDespCheckValues(record) {
+            despachoAuditCheckItems.forEach(function (item) {
+                const row = document.querySelector('#despachoAuditChecklist .equipment-check-row[data-key="' + item.key + '"]');
+                if (!row) return;
+                row.querySelectorAll('.si-no-btn').forEach(b => b.classList.remove('selected-si', 'selected-no'));
+                const val = record[item.key];
+                if (val === true) {
+                    const si = row.querySelector('.si-no-btn[data-val="si"]');
+                    if (si) si.classList.add('selected-si');
+                } else if (val === false) {
+                    const no = row.querySelector('.si-no-btn[data-val="no"]');
+                    if (no) no.classList.add('selected-no');
+                }
+            });
+        }
+
+        function despachoAuditOkCount(a) {
+            return despachoAuditCheckItems.filter(function (i) { return a[i.key] === true; }).length;
+        }
+
+        function despachoAuditHasIssues(a) {
+            return despachoAuditCheckItems.some(function (i) { return a[i.key] === false; });
+        }
+
+        function showDespachoAuditDashboard() {
+            clearEditingRecord();
+            document.getElementById('despachoAuditDashboard').classList.remove('hidden');
+            document.getElementById('despachoAuditFormPanel').classList.add('hidden');
+            document.getElementById('despachoAuditCorrect').classList.add('hidden');
+            updateDespachoAuditStats();
+        }
+
+        function handleDespachoAuditCorrectButton() {
+            playSelectFeedback();
+            document.getElementById('despachoAuditDashboard').classList.add('hidden');
+            document.getElementById('despachoAuditFormPanel').classList.add('hidden');
+            document.getElementById('despachoAuditCorrect').classList.remove('hidden');
+            filterDespachoAuditPending();
+        }
+
+        function showDespachoAuditForm() {
+            clearEditingRecord();
+            document.getElementById('despachoAuditDashboard').classList.add('hidden');
+            document.getElementById('despachoAuditFormPanel').classList.remove('hidden');
+            resetDespachoAuditChecklist();
+        }
+
+        function saveDespachoAudit() {
+            const supervisor = document.getElementById('daSupervisor').value.trim();
+            const validador = document.getElementById('daValidador').value.trim();
+            const chofer = document.getElementById('daChofer').value.trim();
+            const cliente = document.getElementById('daCliente').value.trim();
+            const idcFactura = document.getElementById('daIdcFactura').value.trim();
+            const { values, allAnswered } = getDespCheckValues();
+
+            if (!supervisor || !validador || !chofer || !cliente || !idcFactura) {
+                alert('Complete supervisor, validador, chofer, cliente e IDC/factura');
+                return;
+            }
+            if (!allAnswered) {
+                alert('Responda todas las preguntas (Sí / No)');
+                return;
+            }
+
+            if (editingRecord && editingRecord.module === 'despachoAudit') {
+                var existingDa = findById(allDespachoAudits, editingRecord.id);
+                if (existingDa) {
+                    existingDa.supervisor = supervisor;
+                    existingDa.validador = validador;
+                    existingDa.chofer = chofer;
+                    existingDa.cliente = cliente;
+                    existingDa.idcFactura = idcFactura;
+                    despachoAuditCheckItems.forEach(function (item) {
+                        existingDa[item.key] = values[item.key];
+                    });
+                    existingDa.modifiedAt = new Date().toISOString();
+                    saveDespachoAuditsData();
+                    clearEditingRecord();
+                    alert('✅ Reporte corregido');
+                    showDespachoAuditDashboard();
+                    return;
+                }
+            }
+
+            var record = {
+                id: Date.now(),
+                supervisor: (avCore() && avCore().sanitizeText(supervisor, 120)) || supervisor,
+                validador: (avCore() && avCore().sanitizeText(validador, 120)) || validador,
+                chofer: (avCore() && avCore().sanitizeText(chofer, 120)) || chofer,
+                cliente: (avCore() && avCore().sanitizeText(cliente, 160)) || cliente,
+                idcFactura: (avCore() && avCore().sanitizeText(idcFactura, 80)) || idcFactura,
+                cantidadesOk: values.cantidadesOk,
+                fechaCortaOk: values.fechaCortaOk,
+                averiadosPolvoOk: values.averiadosPolvoOk,
+                cargaIdentificadaOk: values.cargaIdentificadaOk,
+                paletasOk: values.paletasOk,
+                checklistValidadorOk: values.checklistValidadorOk,
+                usuario: currentEmployee.name,
+                status: 'PENDIENTE',
+                correctedBy: null,
+                correctionDate: null
+            };
+            allDespachoAudits.push(record);
+            var lastDa = allDespachoAudits[allDespachoAudits.length - 1];
+            if (avCore() && avCore().stampNewReport) {
+                lastDa.fecha = avCore().formatDisplayDateTime(avCore().nowIso());
+                avCore().stampNewReport(lastDa);
+            }
+            auditAction('REPORTAR', { module: 'despachoAudit', idc: idcFactura, cliente: cliente });
+            persistSnapshot({ force: true, liveRecord: { module: 'despachoAudit', record: lastDa } }).then(function () {
+                updateDespachoAuditStats();
+                alert('✅ Auditoría de despacho guardada');
+                document.getElementById('daSupervisor').value = '';
+                document.getElementById('daValidador').value = '';
+                document.getElementById('daChofer').value = '';
+                document.getElementById('daCliente').value = '';
+                document.getElementById('daIdcFactura').value = '';
+                resetDespachoAuditChecklist();
+                showDespachoAuditDashboard();
+            });
+        }
+
+        function updateDespachoAuditStats() {
+            const total = allDespachoAudits.length;
+            const pending = allDespachoAudits.filter(function (a) { return isPendingStatus(a); }).length;
+            const hallazgos = allDespachoAudits.filter(function (a) { return isPendingStatus(a) && despachoAuditHasIssues(a); }).length;
+            const todayStr = new Date().toLocaleDateString('es-DO');
+            const hoy = allDespachoAudits.filter(function (a) {
+                return String(a.fecha || a.reportDate || '').indexOf(todayStr) >= 0 ||
+                    String(a.reportDateIso || '').slice(0, 10) === new Date().toISOString().slice(0, 10);
+            }).length;
+            let compliance = 0;
+            if (total > 0) {
+                const passed = allDespachoAudits.reduce(function (sum, a) {
+                    return sum + despachoAuditOkCount(a);
+                }, 0);
+                compliance = Math.round((passed / (total * despachoAuditCheckItems.length)) * 100);
+            }
+            const el = (id) => document.getElementById(id);
+            if (el('statDespTotal')) el('statDespTotal').textContent = total;
+            if (el('statDespPending')) el('statDespPending').textContent = pending;
+            if (el('statDespHallazgos')) el('statDespHallazgos').textContent = hallazgos;
+            if (el('statDespHoy')) el('statDespHoy').textContent = hoy;
+            if (el('statDespCompliance')) el('statDespCompliance').textContent = compliance + '%';
+        }
+
+        function filterDespachoAuditPending() {
+            ensureRecordStatuses();
+            var filterEl = document.getElementById('despachoAuditCorrectFilter');
+            var filter = filterEl ? filterEl.value.toUpperCase() : '';
+            var pending = allDespachoAudits.filter(function (a) {
+                if (!isPendingStatus(a)) return false;
+                var hay = [a.idcFactura, a.cliente, a.chofer, a.validador, a.supervisor].join(' ').toUpperCase();
+                return hay.indexOf(filter) !== -1;
+            });
+            var countEl = document.getElementById('despachoAuditPendingCount');
+            if (countEl) countEl.textContent = pending.length;
+            var list = document.getElementById('despachoAuditCorrectList');
+            if (!list) return;
+            if (pending.length === 0) {
+                list.innerHTML = '<div style="color: #999; text-align: center; padding: 24px;">No hay auditorías pendientes</div>';
+                return;
+            }
+            list.innerHTML = pending.map(function (a) {
+                var ok = despachoAuditOkCount(a);
+                var pct = Math.round((ok / despachoAuditCheckItems.length) * 100);
+                return '<div class="incidence-card ' + (despachoAuditHasIssues(a) ? 'alto' : 'medio') + '">' +
+                    '<div class="incidence-card-row"><span class="incidence-card-label">IDC/Factura:</span><span class="incidence-card-value">' + escAv(a.idcFactura) + '</span></div>' +
+                    '<div class="incidence-card-row"><span class="incidence-card-label">Cliente:</span><span class="incidence-card-value">' + escAv(a.cliente) + '</span></div>' +
+                    '<div class="incidence-card-row"><span class="incidence-card-label">Chofer:</span><span class="incidence-card-value">' + escAv(a.chofer) + '</span></div>' +
+                    '<div class="incidence-card-row"><span class="incidence-card-label">Cumplimiento:</span><span class="incidence-card-value">' + pct + '% (' + ok + '/' + despachoAuditCheckItems.length + ')</span></div>' +
+                    '<div class="incidence-card-row"><span class="incidence-card-label">Fecha:</span><span class="incidence-card-value">' + escAv(a.fecha || a.reportDate || '—') + '</span></div>' +
+                    '<button type="button" class="btn-correct-incidence" data-correct-module="despachoAudit" data-correct-id="' + a.id + '">✅ Auditoría finalizada</button>' +
+                    '</div>';
+            }).join('');
         }
 
         function showEquipmentDashboard() {
@@ -1578,6 +1858,22 @@
                 correctionDate: null
             });
             var lastD = allDamages[allDamages.length - 1];
+            if (isLiveCloudOnly()) allDamages.pop();
+            else lastD = allDamages[allDamages.length - 1];
+            if (!lastD) {
+                lastD = {
+                    id: Date.now(),
+                    area: selectedDamageArea,
+                    codigo: (avCore() && avCore().sanitizeText(codigo, 64)) || codigo,
+                    cantidad,
+                    fecha: document.getElementById('damageFecha').value,
+                    condicion: document.getElementById('damageCondicion').value,
+                    usuario: currentEmployee.name,
+                    status: 'PENDIENTE',
+                    correctedBy: null,
+                    correctionDate: null
+                };
+            }
             if (avCore() && avCore().stampNewReport) {
                 lastD.fechaRegistro = avCore().formatDisplayDateTime(avCore().nowIso());
                 avCore().stampNewReport(lastD);
@@ -1967,6 +2263,7 @@
             renderDamagesReportedList();
             renderSecurityReportedList();
             renderAuditReportedList();
+            renderDespachoAuditReportedList();
             renderEquipmentReportedList();
         }
 
@@ -2029,6 +2326,7 @@
                 var title = module === 'pallets' ? escAv(r.location + ' · ' + r.product)
                     : module === 'damages' ? escAv(r.codigo + ' · ' + r.area)
                     : module === 'security' ? escAv(r.area)
+                    : module === 'despachoAudit' ? escAv((r.idcFactura || '—') + ' · ' + (r.cliente || '—'))
                     : escAv(r.pasillo || r.codigo || '—');
                 return '<div class="incidence-card completed">' +
                     '<div class="incidence-card-row"><span class="incidence-card-label">Trabajo:</span><span class="incidence-card-value">' + title + '</span></div>' +
@@ -2076,6 +2374,26 @@
             renderRecentCompleted('audit', allAudits, 'auditCompletedList');
         }
 
+        function renderDespachoAuditReportedList() {
+            var list = document.getElementById('despachoAuditReportedList');
+            if (!list) return;
+            var pending = allDespachoAudits.filter(function (a) { return isPendingStatus(a); }).slice(0, 20);
+            if (!pending.length) {
+                list.innerHTML = '<div class="reported-work-empty">No hay auditorías de despacho pendientes.</div>';
+                return;
+            }
+            list.innerHTML = pending.map(function (a) {
+                return '<div class="incidence-card ' + (despachoAuditHasIssues(a) ? 'alto' : 'medio') + '">' +
+                    '<div class="incidence-card-row"><span class="incidence-card-label">IDC/Factura:</span><span class="incidence-card-value">' + escAv(a.idcFactura) + '</span></div>' +
+                    '<div class="incidence-card-row"><span class="incidence-card-label">Cliente:</span><span class="incidence-card-value">' + escAv(a.cliente) + '</span></div>' +
+                    '<div class="incidence-card-row"><span class="incidence-card-label">Chofer:</span><span class="incidence-card-value">' + escAv(a.chofer) + '</span></div>' +
+                    datesHtml(a) +
+                    reportedWorkActionsHtml('despachoAudit', a.id, a) +
+                    '</div>';
+            }).join('');
+            renderRecentCompleted('despachoAudit', allDespachoAudits, 'despachoAuditCompletedList');
+        }
+
         function renderEquipmentReportedList() {
             var list = document.getElementById('equipmentReportedList');
             if (!list) return;
@@ -2107,6 +2425,8 @@
             if (secBtn) secBtn.textContent = 'GUARDAR INCIDENCIA';
             var auditBtn = document.querySelector('#auditFormPanel .btn-primary');
             if (auditBtn) auditBtn.textContent = 'GUARDAR AUDITORÍA';
+            var despBtn = document.querySelector('#despachoAuditFormPanel .btn-primary');
+            if (despBtn) despBtn.textContent = 'GUARDAR AUDITORÍA';
         }
 
         function clearEditingRecord() {
@@ -2212,6 +2532,26 @@
                 setAuditToggle('chkAcuracidad', aud.acuracidad);
                 var auditBtn = document.querySelector('#auditFormPanel .btn-primary');
                 if (auditBtn) auditBtn.textContent = 'GUARDAR CORRECCIÓN';
+                return;
+            }
+            if (module === 'despachoAudit') {
+                var da = findById(allDespachoAudits, id);
+                if (!da || !canEditReport(da)) {
+                    alert('No puede editar este reporte.');
+                    return;
+                }
+                editingRecord = { module: module, id: id };
+                document.getElementById('despachoAuditDashboard').classList.add('hidden');
+                document.getElementById('despachoAuditCorrect').classList.add('hidden');
+                document.getElementById('despachoAuditFormPanel').classList.remove('hidden');
+                document.getElementById('daSupervisor').value = da.supervisor || '';
+                document.getElementById('daValidador').value = da.validador || '';
+                document.getElementById('daChofer').value = da.chofer || '';
+                document.getElementById('daCliente').value = da.cliente || '';
+                document.getElementById('daIdcFactura').value = da.idcFactura || '';
+                setDespCheckValues(da);
+                var despBtn = document.querySelector('#despachoAuditFormPanel .btn-primary');
+                if (despBtn) despBtn.textContent = 'GUARDAR CORRECCIÓN';
             }
         }
 
@@ -2307,6 +2647,16 @@
                         renderReportedWorkLists();
                     });
                 }
+            } else if (module === 'despachoAudit') {
+                var daRec = findById(allDespachoAudits, id);
+                if (daRec) {
+                    label = 'IDC ' + daRec.idcFactura;
+                    auditAction('FINALIZAR', { module: module, id: id, label: label });
+                    return doFinalize(daRec, 'despachoAudit', function () {
+                        filterDespachoAuditPending();
+                        renderReportedWorkLists();
+                    });
+                }
             } else if (module === 'equipment') {
                 var codigo = String(id);
                 var eq = equipmentRegistry[codigo];
@@ -2352,6 +2702,10 @@
             if (module === 'audit') {
                 var a = findById(allAudits, id);
                 return a ? '¿Finalizar hallazgo 5S en pasillo ' + a.pasillo + '?' : '¿Finalizar este trabajo?';
+            }
+            if (module === 'despachoAudit') {
+                var da = findById(allDespachoAudits, id);
+                return da ? '¿Finalizar auditoría de despacho ' + da.idcFactura + ' (' + da.cliente + ')?' : '¿Finalizar este trabajo?';
             }
             if (module === 'equipment') {
                 return '¿Marcar equipo ' + id + ' como DISPONIBLE?';
@@ -2719,6 +3073,27 @@
             alert('✅ CSV de auditoría 5S exportado');
         }
 
+        function exportDespachoAuditCSV() {
+            if (allDespachoAudits.length === 0) {
+                alert('No hay auditorías de despacho para exportar');
+                return;
+            }
+            const headers = [
+                'ID', 'Supervisor', 'Validador', 'Chofer', 'Cliente', 'IDC o Factura',
+                'Cantidades coinciden', 'Fecha corta', 'Averiados o polvo', 'Carga identificada',
+                'Paletas buen estado', 'Checklist validador', 'Estado', 'Registrado Por', 'Fecha Registro'
+            ];
+            const yesNo = v => v ? 'Sí' : 'No';
+            const rows = allDespachoAudits.map(a => [
+                a.id, a.supervisor, a.validador, a.chofer, a.cliente, a.idcFactura,
+                yesNo(a.cantidadesOk), yesNo(a.fechaCortaOk), yesNo(a.averiadosPolvoOk),
+                yesNo(a.cargaIdentificadaOk), yesNo(a.paletasOk), yesNo(a.checklistValidadorOk),
+                a.status || 'PENDIENTE', a.usuario, a.fecha || a.reportDate || ''
+            ]);
+            downloadCsv('auditoria_despacho_' + new Date().toLocaleDateString('es-ES').replace(/\//g, '-') + '.csv', headers, rows);
+            alert('✅ CSV de auditoría de despacho exportado');
+        }
+
         function exportEquipmentCSV() {
             if (allEquipmentInspections.length === 0) {
                 alert('No hay inspecciones de equipos para exportar');
@@ -2850,10 +3225,12 @@
   global.handleDamagesCorrectButton = handleDamagesCorrectButton;
   global.handleSecurityCorrectButton = handleSecurityCorrectButton;
   global.handleAuditCorrectButton = handleAuditCorrectButton;
+  global.handleDespachoAuditCorrectButton = handleDespachoAuditCorrectButton;
   global.handleEquipmentCorrectButton = handleEquipmentCorrectButton;
   global.filterDamagesPending = filterDamagesPending;
   global.filterSecurityPending = filterSecurityPending;
   global.filterAuditPending = filterAuditPending;
+  global.filterDespachoAuditPending = filterDespachoAuditPending;
   global.markRecordCorrected = markRecordCorrected;
   global.openEditReport = openEditReport;
   global.showPalletsDashboard = showPalletsDashboard;
@@ -2876,6 +3253,10 @@
   global.selectTurno = selectTurno;
   global.toggleCheck = toggleCheck;
   global.saveAudit = saveAudit;
+  global.showDespachoAuditForm = showDespachoAuditForm;
+  global.showDespachoAuditDashboard = showDespachoAuditDashboard;
+  global.selectDespCheck = selectDespCheck;
+  global.saveDespachoAudit = saveDespachoAudit;
   global.showEquipmentForm = showEquipmentForm;
   global.showEquipmentList = showEquipmentList;
   global.selectEqCheck = selectEqCheck;
@@ -2884,6 +3265,7 @@
   global.exportDamagesCSV = exportDamagesCSV;
   global.exportSecurityCSV = exportSecurityCSV;
   global.exportAuditCSV = exportAuditCSV;
+  global.exportDespachoAuditCSV = exportDespachoAuditCSV;
   global.exportEquipmentCSV = exportEquipmentCSV;
   global.playSelectFeedback = playSelectFeedback;
   global.lookupProductDescription = lookupProductDescription;

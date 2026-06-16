@@ -22,7 +22,7 @@
   <link rel="stylesheet" href="css/auth-security.css?v=3">
   <link rel="stylesheet" href="css/auth-portals-layout.css?v=10">
   <link rel="stylesheet" href="css/dc-brand.css?v=11">
-  <link rel="stylesheet" href="css/averias-portal.css?v=3">
+  <link rel="stylesheet" href="css/averias-portal.css?v=4">
   <link rel="stylesheet" href="css/averias-responsive.css?v=13">
   <link rel="stylesheet" href="css/theme-light.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -46,13 +46,14 @@
               <h1 class="desp-auth-brand-title">Operaciones de Piso · DC</h1>
             </div>
           </header>
-          <p class="av-auth-tag">Reporte de averías · 5S · Seguridad</p>
-          <p class="av-auth-desc">Misma app de operaciones del almacén (APK), con inicio de sesión del centro de mando WMS: paletas rotas, averías de inventario, seguridad, auditoría 5S e inspección de equipos.</p>
+          <p class="av-auth-tag">Reporte de averías · 5S · Seguridad · Despacho</p>
+          <p class="av-auth-desc">Misma app de operaciones del almacén (APK), con inicio de sesión del centro de mando WMS: paletas rotas, averías de inventario, seguridad, auditoría 5S, auditoría de despacho e inspección de equipos.</p>
           <div class="av-auth-steps" aria-label="Módulos">
             <span class="av-auth-step">Paletas</span>
             <span class="av-auth-step">Averías</span>
             <span class="av-auth-step">Seguridad</span>
             <span class="av-auth-step">5S</span>
+            <span class="av-auth-step">Despacho</span>
             <span class="av-auth-step">Equipos</span>
           </div>
           <a href="index.html" class="av-auth-back">← Volver al centro de mando WMS</a>
@@ -137,6 +138,13 @@
                             <span class="drawer-item-desc">Orden y limpieza del almacén</span>
                         </span>
                     </button>
+                    <button class="drawer-item" data-module="despachoAudit" onclick="navigateToModule('despachoAudit')">
+                        <span class="drawer-icon-wrap despacho-audit"><svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/><path d="M16 17l2 2 4-4"/></svg></span>
+                        <span class="drawer-item-text">
+                            <span class="drawer-item-title">Auditoría de Despacho</span>
+                            <span class="drawer-item-desc">Control de calidad en despacho</span>
+                        </span>
+                    </button>
                     <button class="drawer-item" data-module="equipment" onclick="navigateToModule('equipment')">
                         <span class="drawer-icon-wrap equipment"><svg viewBox="0 0 24 24"><rect x="2" y="14" width="12" height="6" rx="1"/><path d="M14 17h4l3-5V8H6"/><circle cx="6" cy="20" r="2"/><circle cx="18" cy="20" r="2"/></svg></span>
                         <span class="drawer-item-text">
@@ -183,7 +191,7 @@
                         </div>
                         <div class="welcome-hint">
                             <span class="welcome-hint-icon">☰</span>
-                            <span>Toque el menú ☰ arriba para elegir un módulo: Paletas, Averías, Seguridad, Auditoría 5S o Inspección de Equipos.</span>
+                            <span>Toque el menú ☰ arriba para elegir un módulo: Paletas, Averías, Seguridad, Auditoría 5S, Auditoría de Despacho o Inspección de Equipos.</span>
                         </div>
                     </div>
 
@@ -466,6 +474,57 @@
                         </div>
                     </div>
 
+                    <!-- MÓDULO AUDITORÍA DE DESPACHO -->
+                    <div id="moduleDespachoAudit" class="module-panel hidden">
+                        <div id="despachoAuditDashboard" class="sub-panel">
+                            <h3 style="margin-bottom:8px;">Dashboard Auditoría de Despacho</h3>
+                            <div class="dashboard-grid">
+                                <div class="stat-card"><div class="stat-number" id="statDespTotal">0</div><div class="stat-label">Total auditorías</div></div>
+                                <div class="stat-card"><div class="stat-number" id="statDespPending">0</div><div class="stat-label">Pendientes</div></div>
+                                <div class="stat-card critical"><div class="stat-number" id="statDespHallazgos">0</div><div class="stat-label">Con hallazgos</div></div>
+                                <div class="stat-card"><div class="stat-number" id="statDespHoy">0</div><div class="stat-label">Hoy</div></div>
+                            </div>
+                            <div class="dash-kpi-banner">
+                                <div style="font-size:12px;color:#B3B3B3;">Cumplimiento checklist</div>
+                                <div style="font-size:32px;font-weight:700;color:#2A7F2A;" id="statDespCompliance">0%</div>
+                            </div>
+                            <div class="action-buttons">
+                                <button class="btn-action btn-report" onclick="playSelectFeedback(); showDespachoAuditForm()">📋 NUEVA AUDITORÍA</button>
+                                <button class="btn-action btn-correct" onclick="handleDespachoAuditCorrectButton()">📋 Ver lista completa</button>
+                                <button class="btn-action btn-export" onclick="playSelectFeedback(); exportDespachoAuditCSV()">📊 EXPORTAR CSV</button>
+                            </div>
+                            <section class="reported-work-section">
+                                <h4 class="reported-work-title">Auditorías pendientes</h4>
+                                <p class="reported-work-hint">Corrija datos o marque resueltas desde aquí.</p>
+                                <div id="despachoAuditReportedList" class="reported-work-list"></div>
+                            </section>
+                            <section class="reported-work-section reported-work-section--done">
+                                <h4 class="reported-work-title">Últimas finalizadas</h4>
+                                <div id="despachoAuditCompletedList" class="reported-work-list"></div>
+                            </section>
+                        </div>
+                        <div id="despachoAuditFormPanel" class="sub-panel hidden">
+                            <button class="btn btn-small" onclick="showDespachoAuditDashboard()" style="margin-bottom:16px;">← Volver al dashboard</button>
+                            <div class="form-field"><label>Nombre supervisor</label><input type="text" id="daSupervisor" placeholder="Supervisor de turno"></div>
+                            <div class="form-field"><label>Nombre validador</label><input type="text" id="daValidador" placeholder="Validador asignado"></div>
+                            <div class="form-field"><label>Nombre del chofer</label><input type="text" id="daChofer" placeholder="Chofer de la carga"></div>
+                            <div class="form-field"><label>Cliente</label><input type="text" id="daCliente" placeholder="Nombre del cliente"></div>
+                            <div class="form-field"><label>IDC o factura</label><input type="text" id="daIdcFactura" placeholder="Número IDC o factura" autocapitalize="off"></div>
+                            <p style="font-weight:700;margin:16px 0 8px;">Preguntas <span style="color:#8B949E;font-size:12px;">Sí / No</span></p>
+                            <div id="despachoAuditChecklist"></div>
+                            <button class="btn btn-primary" style="margin-top:16px;" onclick="saveDespachoAudit()">GUARDAR AUDITORÍA</button>
+                        </div>
+                        <div id="despachoAuditCorrect" class="sub-panel hidden">
+                            <button class="btn btn-small" onclick="showDespachoAuditDashboard()" style="margin-bottom:16px;">← Volver</button>
+                            <div class="form-field">
+                                <label>Filtrar por IDC, cliente o chofer (opcional)</label>
+                                <input type="text" id="despachoAuditCorrectFilter" placeholder="Ver todas si está vacío" onkeyup="filterDespachoAuditPending()">
+                            </div>
+                            <div style="font-size:14px;color:#B3B3B3;margin-bottom:12px;">Pendientes (<span id="despachoAuditPendingCount">0</span>)</div>
+                            <div id="despachoAuditCorrectList"></div>
+                        </div>
+                    </div>
+
                     <!-- MÓDULO INSPECCIÓN DE EQUIPOS -->
                     <div id="moduleEquipment" class="module-panel hidden">
                         <div id="equipmentDashboard" class="sub-panel">
@@ -607,13 +666,13 @@
   <script src="js/platform-firebase-bridge.js?v=5"></script>
   <script src="js/platform-realtime-badge.js?v=5"></script>
   <script src="js/platform-averias-core.js?v=1"></script>
-  <script src="js/platform-averias-cloud-sync.js?v=43"></script>
+  <script src="js/platform-averias-cloud-sync.js?v=44"></script>
   <script src="js/platform-store.js"></script>
   <script src="js/platform-admin.js?v=14"></script>
   <script src="js/platform-registry-cloud-sync.js?v=2"></script>
   <script src="js/platform-web-users.js?v=18"></script>
   <script src="js/platform-toast.js"></script>
-  <script src="js/platform-averias-ui.js?v=44"></script>
+  <script src="js/platform-averias-ui.js?v=45"></script>
   <script src="js/platform-averias-app.js?v=6"></script>
 </body>
 </html>
