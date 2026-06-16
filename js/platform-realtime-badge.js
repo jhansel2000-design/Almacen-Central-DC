@@ -19,8 +19,15 @@
   }
 
   function isLive() {
-    if (global.PlatformSupabase && global.PlatformSupabase.isEnabled && global.PlatformSupabase.isConnected()) {
-      return true;
+    if (global.PlatformSupabase && global.PlatformSupabase.isEnabled && global.PlatformSupabase.isEnabled()) {
+      if (global.PlatformSupabase.isConnected && global.PlatformSupabase.isConnected()) return true;
+      if (global.PlatformSupabaseBridge && global.PlatformSupabaseBridge.getLastPullAt) {
+        var keys = ['averias', 'despacho', 'platform', 'registry'];
+        for (var i = 0; i < keys.length; i++) {
+          var t = global.PlatformSupabaseBridge.getLastPullAt(keys[i]);
+          if (t && (Date.now() - t) < 15000) return true;
+        }
+      }
     }
     return !!(global.PlatformFirebaseBridge && global.PlatformFirebaseBridge.isEnabled &&
       global.PlatformFirebaseBridge.isConnected && global.PlatformFirebaseBridge.isConnected());

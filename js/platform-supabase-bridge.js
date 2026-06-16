@@ -6,7 +6,8 @@
 
   var TABLE = 'web_snapshots';
   var channels = {};
-  var boundModules = {};
+  var pollTimers = {};
+  var lastPullAt = {};
 
   function sb() {
     return global.PlatformSupabase && global.PlatformSupabase.getClient();
@@ -24,8 +25,21 @@
     return true;
   }
 
+  function restConfig() {
+    var cfg = global.PlatformSupabase && global.PlatformSupabase.getConfig && global.PlatformSupabase.getConfig();
+    var sb = cfg && cfg.supabase;
+    if (!sb || !sb.enabled || !sb.url || !sb.anonKey) return null;
+    return { url: String(sb.url).replace(/\/+$/, ''), key: sb.anonKey };
+  }
+
   function sanitize(data) {
     try { return JSON.parse(JSON.stringify(data || {})); } catch (e) { return data || {}; }
+  }
+
+  function markConnected(ok) {
+    if (global.PlatformSupabase && global.PlatformSupabase.markConnected) {
+      global.PlatformSupabase.markConnected(!!ok);
+    }
   }
 
   function ensureReady() {
@@ -35,26 +49,79 @@
     });
   }
 
+  function pullViaRest(moduleKey) {
+    var rc = restConfig();
+    if (!rc || !moduleKey) return Promise.resolve(null);
+    return global.fetch(
+      rc.url + '/rest/v1/' + TABLE + '?module=eq.' + encodeURIComponent(moduleKey) + '&select=data',
+      {
+        headers: {
+          apikey: rc.key,
+          Authorization: 'Bearer ' + rc.key
+        },
+        cache: 'no-store',
+        mode: 'cors'
+      }
+    ).then(function (res) {
+      if (!res.ok) return null;
+      return res.json().then(function (rows) {
+        var data = rows && rows[0] && rows[0].data ? rows[0].data : null;
+        if (data) {
+          markConnected(true);
+          lastPullAt[moduleKey] = Date.now();
+        }
+        return data;
+      });
+    }).catch(function () { return null; });
+  }
+
+  function pushViaRest(moduleKey, data) {
+    var rc = restConfig();
+    if (!rc || !moduleKey || !data) return Promise.resolve(false);
+    var row = {
+      module: moduleKey,
+      data: sanitize(data),
+      updated_at: new Date().toISOString()
+    };
+    return global.fetch(rc.url + '/rest/v1/' + TABLE, {
+      method: 'POST',
+      headers: {
+        apikey: rc.key,
+        Authorization: 'Bearer ' + rc.key,
+        'Content-Type': 'application/json',
+        Prefer: 'resolution=merge-duplicates'
+      },
+      body: JSON.stringify(row),
+      mode: 'cors'
+    }).then(function (res) {
+      var ok = res.ok;
+      if (ok) markConnected(true);
+      return ok;
+    }).catch(function () { return false; });
+  }
+
   function pull(moduleKey) {
     if (!moduleKey) return Promise.resolve(null);
     return ensureReady().then(function (client) {
-      if (!client) return null;
+      if (!client) return pullViaRest(moduleKey);
       return client.from(TABLE)
         .select('data, updated_at')
         .eq('module', moduleKey)
         .maybeSingle()
         .then(function (res) {
-          if (res.error || !res.data) return null;
+          if (res.error || !res.data) return pullViaRest(moduleKey);
+          markConnected(true);
+          lastPullAt[moduleKey] = Date.now();
           return res.data.data || null;
         })
-        .catch(function () { return null; });
-    });
+        .catch(function () { return pullViaRest(moduleKey); });
+    }).catch(function () { return pullViaRest(moduleKey); });
   }
 
   function push(moduleKey, data) {
     if (!moduleKey || !data) return Promise.resolve(false);
     return ensureReady().then(function (client) {
-      if (!client) return false;
+      if (!client) return pushViaRest(moduleKey, data);
       var row = {
         module: moduleKey,
         data: sanitize(data),
@@ -63,19 +130,27 @@
       return client.from(TABLE)
         .upsert(row, { onConflict: 'module' })
         .then(function (res) {
-          var ok = !res.error;
-          if (ok && global.PlatformSupabase.testConnection) {
-            global.PlatformSupabase.testConnection();
-          }
-          return ok;
+          if (res.error) return pushViaRest(moduleKey, data);
+          markConnected(true);
+          return true;
         })
-        .catch(function () { return false; });
-    });
+        .catch(function () { return pushViaRest(moduleKey, data); });
+    }).catch(function () { return pushViaRest(moduleKey, data); });
+  }
+
+  function startPollFallback(moduleKey, callback) {
+    if (pollTimers[moduleKey]) global.clearInterval(pollTimers[moduleKey]);
+    pollTimers[moduleKey] = global.setInterval(function () {
+      if (global.document && global.document.visibilityState === 'hidden') return;
+      pull(moduleKey).then(function (data) {
+        if (data && typeof callback === 'function') callback(data);
+      });
+    }, 800);
   }
 
   function subscribe(moduleKey, callback) {
     if (!moduleKey || typeof callback !== 'function') return function () {};
-    boundModules[moduleKey] = callback;
+    startPollFallback(moduleKey, callback);
     return ensureReady().then(function (client) {
       if (!client) return function () {};
       if (channels[moduleKey]) {
@@ -109,6 +184,7 @@
     isPrimary: isPrimary,
     pull: pull,
     push: push,
-    subscribe: subscribe
+    subscribe: subscribe,
+    getLastPullAt: function (moduleKey) { return lastPullAt[moduleKey] || 0; }
   };
 })(typeof window !== 'undefined' ? window : this);

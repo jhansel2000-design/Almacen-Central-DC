@@ -350,6 +350,7 @@
   }
 
   function initFirebase() {
+    if (isSupabasePrimary()) return Promise.resolve(false);
     if (!hasFirebaseConfig() || !global.PlatformFirebaseBridge) return Promise.resolve(false);
     return global.PlatformFirebaseBridge.ensureReady().then(function (db) {
       if (!db || firebaseBound) {
@@ -721,16 +722,20 @@
 
   function init() {
     loadSiteConfig().then(function () {
+      return (global.PlatformSupabase ? global.PlatformSupabase.init() : Promise.resolve(false));
+    }).then(function () {
       return probeCurrentServer().then(function () {
+        if (isSupabasePrimary()) return false;
         return initFirebase();
       });
     }).then(function () {
       initSupabase();
+      if (isSupabasePrimary()) return null;
       return pullFirebaseInitial();
     }).then(function (remoteFirebase) {
       hookLocalStorage();
       var local = buildSnapshotFromLocal();
-      if (remoteFirebase && hasAnyData(remoteFirebase)) {
+      if (remoteFirebase && hasAnyData(remoteFirebase) && !isSupabasePrimary()) {
         applySnapshot(mergeSnapshots(local, remoteFirebase), 'firebase');
       }
       if (local) lastAppliedSig = snapshotSignature(buildSnapshotFromLocal() || local);
@@ -743,8 +748,7 @@
       global.addEventListener('firebase-connection', function () {
         if (hasFirebaseConfig()) hideSyncBannerIfOk();
       });
-      global.addEventListener('pageshow', function (ev) {
-        if (!ev.persisted) return;
+      global.addEventListener('pageshow', function () {
         pullAll();
       }, { passive: true });
       global.addEventListener('visibilitychange', function () {

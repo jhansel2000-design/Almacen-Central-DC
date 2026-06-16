@@ -56,6 +56,10 @@
     } catch (e) { /* noop */ }
   }
 
+  function markConnected(ok) {
+    dispatchConnection(!!ok);
+  }
+
   function getClient() {
     return client;
   }
@@ -121,6 +125,7 @@
     getClient: getClient,
     getConfig: getConfig,
     testConnection: testConnection,
+    markConnected: markConnected,
     saveOverride: saveOverride,
     clearOverride: clearOverride,
     isConnected: function () { return connected; }

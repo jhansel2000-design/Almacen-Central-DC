@@ -140,6 +140,23 @@
     return global.PlatformSupabaseBridge.pull('averias');
   }
 
+  function pullFromSupabaseRetry() {
+    var attempt = 0;
+    function run() {
+      return pullFromSupabase().then(function (data) {
+        if (data || attempt >= 2) return data;
+        attempt += 1;
+        return (global.PlatformSupabase ? global.PlatformSupabase.init() : Promise.resolve(false))
+          .then(function () {
+            return new Promise(function (resolve) {
+              global.setTimeout(function () { resolve(run()); }, 350);
+            });
+          });
+      });
+    }
+    return run();
+  }
+
   function pushToSupabase(snap) {
     if (!hasSupabaseConfig()) return Promise.resolve(false);
     return global.PlatformSupabaseBridge.push('averias', snap);
@@ -588,7 +605,9 @@
       current = normalizeSnapshot(current);
       var localSeq = current.localSeq || 0;
       var remoteSeq = snap.localSeq || 0;
-      if (isCloudAuthoritativeSource(source)) {
+      if (isCloudAuthoritativeSource(source) && remoteSeq >= localSeq) {
+        snap = mergeAveriasSnapshots(snap, current);
+      } else if (isCloudAuthoritativeSource(source)) {
         snap = mergeAveriasSnapshots(snap, current);
       } else if (localSeq > remoteSeq) {
         if (source === 'firebase') schedulePushFromLocal();
@@ -764,6 +783,7 @@
   }
 
   function applyPendingFromFirebase(val) {
+    if (isSupabasePrimary()) return;
     if (!val) return;
     var partial = partialFromPending(val);
     if (!partial) return;
@@ -773,6 +793,7 @@
   }
 
   function initFirebase() {
+    if (isSupabasePrimary()) return Promise.resolve(false);
     if (!hasFirebaseConfig() || !global.PlatformFirebaseBridge) return Promise.resolve(false);
     return global.PlatformFirebaseBridge.ensureReady().then(function (db) {
       if (!db) return false;
@@ -780,6 +801,7 @@
       if (!firebaseBound) {
         firebaseBound = true;
         db.ref('averias/snapshot').on('value', function (snap) {
+          if (isSupabasePrimary()) return;
           var val = snap.val();
           if (!val) return;
           var local = getEffectiveLocalSnapshot();
@@ -793,6 +815,7 @@
       if (!liveBound) {
         liveBound = true;
         db.ref('averias/pending').on('value', function (snap) {
+          if (isSupabasePrimary()) return;
           applyPendingFromFirebase(snap.val());
         });
       }
@@ -878,7 +901,7 @@
     pulling = true;
     var localBefore = getEffectiveLocalSnapshot();
     return pullFromJsonBin().then(function (jsonBinSnap) {
-      return pullFromSupabase().then(function (sbSnap) {
+      return pullFromSupabaseRetry().then(function (sbSnap) {
         var tasks = [Promise.resolve(sbSnap), pullFromServer(), pullFromCloudProxy(), pullFromStatic(), pullFromFirebaseOnce(), pullPendingRecords()];
         return Promise.all(tasks).then(function (parts) {
           sbSnap = parts[0];
@@ -1255,13 +1278,25 @@
 
   function updateLiveIndicator(active) {
     var btn = global.document.getElementById('btnSyncAverias');
-    if (!btn) return;
-    btn.classList.toggle('sync-live', !!active && isCloudConfigured());
+    var live = global.document.getElementById('avSyncLive');
+    var on = !!active && isCloudConfigured();
+    if (btn) btn.classList.toggle('sync-live', on);
+    if (live) {
+      live.hidden = !isCloudConfigured();
+      live.classList.toggle('is-pulse', on);
+    }
   }
 
   function updateSyncStatusUi() {
     var el = global.document.getElementById('avSyncStatus');
     if (!el || el.hidden) return;
+    var ago = lastPullAt ? Math.round((Date.now() - lastPullAt) / 1000) : -1;
+    if (isSupabasePrimary()) {
+      el.className = 'av-sync-status-line av-sync-status-ok';
+      el.textContent = 'EN VIVO — Supabase · todos los dispositivos comparten datos · hace ' +
+        (ago >= 0 ? ago + ' s' : '—');
+      return;
+    }
     if (hasFirebaseConfig()) {
       var ago = lastPullAt ? Math.round((Date.now() - lastPullAt) / 1000) : -1;
       var mode = global.PlatformFirebaseBridge && global.PlatformFirebaseBridge.getMode
@@ -1397,17 +1432,22 @@
 
   function init() {
     initReady = loadSiteConfig().then(function () {
+      return global.PlatformSupabase ? global.PlatformSupabase.init() : Promise.resolve(false);
+    }).then(function () {
+      if (isSupabasePrimary()) return false;
       return initFirebase();
     }).then(function () {
       initSupabase();
+      if (isSupabasePrimary()) return null;
       return pullFirebaseInitial();
     }).then(function (remoteFirebase) {
-      if (remoteFirebase) {
+      if (remoteFirebase && !isSupabasePrimary()) {
         applySnapshotToLocal(mergeAveriasSnapshots(getEffectiveLocalSnapshot(), remoteFirebase), true, 'firebase');
       }
+      if (isSupabasePrimary()) return null;
       return pullPendingRecords();
     }).then(function (pendingPartial) {
-      if (pendingPartial) {
+      if (pendingPartial && !isSupabasePrimary()) {
         applySnapshotToLocal(mergeAveriasSnapshots(getEffectiveLocalSnapshot(), pendingPartial), true, 'firebase-pending');
       }
       return probeCurrentServer().then(function () {
@@ -1438,6 +1478,9 @@
         }
       }, { passive: true });
       global.addEventListener('focus', function () { pullAll(); }, { passive: true });
+      global.addEventListener('supabase-connection', function () {
+        updateSyncUi();
+      });
       global.addEventListener('firebase-connection', function () {
         updateSyncUi();
       });

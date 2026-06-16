@@ -356,6 +356,7 @@
   }
 
   function initFirebase() {
+    if (isSupabasePrimary()) return Promise.resolve(false);
     if (!hasFirebaseConfig()) return Promise.resolve(false);
     if (!global.PlatformFirebaseBridge || !global.PlatformFirebaseBridge.ensureReady) {
       return Promise.resolve(false);
@@ -776,16 +777,20 @@
 
   function init() {
     loadSiteConfig().then(function () {
+      return (global.PlatformSupabase ? global.PlatformSupabase.init() : Promise.resolve(false));
+    }).then(function () {
       return probeCurrentServer().then(function () {
+        if (isSupabasePrimary()) return false;
         return initFirebase();
       });
     }).then(function () {
       initSupabase();
+      if (isSupabasePrimary()) return null;
       return pullFirebaseInitial();
     }).then(function (remoteFirebase) {
       hookLocalStorage();
       var local = getLocalData();
-      if (remoteFirebase) {
+      if (remoteFirebase && !isSupabasePrimary()) {
         applyRemote(mergeDespacho(local, remoteFirebase), 'firebase');
       }
       if (local) lastAppliedSig = dataSignature(getLocalData() || local);
