@@ -1,21 +1,77 @@
 /**
  * Alertas de voz — nuevo IDC en seguimiento validador
- * Lee solo lo escrito en IDC, jaula y cliente.
+ * Frase natural, sin repetir etiquetas (IDC, jaula, cliente).
  */
 (function (global) {
   'use strict';
 
+  function stripLeadingLabel(value, labels) {
+    var s = String(value || '').trim();
+    if (!s) return '';
+    for (var i = 0; i < labels.length; i++) {
+      var label = labels[i];
+      var re = new RegExp('^\\s*' + label.replace(/\s+/g, '\\s+') + '\\s*[:\\-\\.]?\\s*', 'i');
+      if (re.test(s)) {
+        s = s.replace(re, '').trim();
+        break;
+      }
+    }
+    return s;
+  }
+
+  function isEmptyCliente(val) {
+    if (!val) return true;
+    val = String(val).trim();
+    return !val || val === '—' || val === '-' || /^sin\s+(cliente|nombre)/i.test(val);
+  }
+
+  /** Códigos alfanuméricos: separar para que no los lea como número grande. */
+  function formatCodeForSpeech(code) {
+    code = String(code || '').trim();
+    if (!code) return '';
+    if (/^[A-Za-z0-9][A-Za-z0-9\-\/\.\s]*$/.test(code)) {
+      return code
+        .replace(/[\-\/\.]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .split('')
+        .filter(function (c) { return /\S/.test(c); })
+        .join(' ');
+    }
+    return code.replace(/\s+/g, ' ').trim();
+  }
+
+  function joinNatural(parts) {
+    if (!parts.length) return '';
+    if (parts.length === 1) return parts[0];
+    if (parts.length === 2) return parts[0] + ' y ' + parts[1];
+    return parts.slice(0, -1).join(', ') + ' y ' + parts[parts.length - 1];
+  }
+
   function buildNuevoIdcMessage(pedido) {
     if (!pedido) return '';
-    var idc = String(pedido.idc || '').trim();
-    var jaula = String(pedido.jaula || '').trim();
-    var cliente = String(pedido.cliente || '').trim();
-    var parts = [];
-    if (idc) parts.push('IDC ' + idc);
-    if (jaula) parts.push('Jaula ' + jaula);
-    if (cliente) parts.push('Cliente ' + cliente);
-    if (!parts.length) return '';
-    return parts.join('. ') + '.';
+
+    var idc = stripLeadingLabel(pedido.idc, [
+      'idc', 'i d c', 'i.d.c', 'pedido', 'código', 'codigo', 'code', 'id pedido', 'id del pedido'
+    ]);
+    var jaula = stripLeadingLabel(pedido.jaula, [
+      'jaula', 'pasillo', 'referencia', 'ref', 'rack', 'ubicación', 'ubicacion'
+    ]);
+    var cliente = stripLeadingLabel(pedido.cliente, [
+      'cliente', 'clienta', 'nombre del cliente', 'nombre cliente', 'nombre'
+    ]);
+
+    idc = formatCodeForSpeech(idc);
+    jaula = formatCodeForSpeech(jaula);
+
+    var details = [];
+    if (idc) details.push('código ' + idc);
+    if (jaula) details.push('jaula ' + jaula);
+    if (!isEmptyCliente(cliente)) details.push('cliente ' + cliente);
+
+    if (!details.length) return '';
+
+    var body = joinNatural(details);
+    return 'Nuevo pedido en validador, ' + body + '.';
   }
 
   function speak(message, opts) {
@@ -33,7 +89,7 @@
       if (opts.cancel !== false) global.speechSynthesis.cancel();
       var utter = new global.SpeechSynthesisUtterance(message);
       utter.lang = 'es-DO';
-      utter.rate = 0.95;
+      utter.rate = 0.92;
       utter.pitch = 1;
       utter.volume = 0.88;
       var voices = global.speechSynthesis.getVoices ? global.speechSynthesis.getVoices() : [];
