@@ -739,6 +739,7 @@
       idc: idcEl ? idcEl.value : '',
       jaula: pasilloValueFromField(pasilloEl),
       cliente: clienteEl ? clienteEl.value : '',
+      validadorAsignado: validadorEl ? String(validadorEl.value || '').trim() : '',
       estado: prepEstadoValue(host, 'prepEstado')
     };
   }
