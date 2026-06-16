@@ -166,10 +166,6 @@
     if (!hasSupabaseConfig() || !global.PlatformSupabaseBridge.subscribe) return;
     global.PlatformSupabaseBridge.subscribe('averias', function (remote) {
       if (!remote) return;
-      if (inLocalEditGrace() || pushing) {
-        schedulePushFromLocal();
-        return;
-      }
       if (shouldBlockStaleRemote(remote)) {
         schedulePushFromLocal();
         return;
@@ -359,6 +355,21 @@
       (snap.equipmentInspections || []).length;
   }
 
+  function countCorrectedRecords(snap) {
+    if (!snap) return 0;
+    var Core = global.PlatformAveriasCore;
+    function isCor(r) {
+      if (Core && Core.isCorrectedStatus) return Core.isCorrectedStatus(r);
+      var s = String(r && r.status || '').toUpperCase();
+      return s === 'CORREGIDO' || s === 'FINALIZADO';
+    }
+    var n = 0;
+    ['incidences', 'damages', 'securityIncidents', 'audits5s', 'equipmentInspections'].forEach(function (key) {
+      (snap[key] || []).forEach(function (r) { if (isCor(r)) n += 1; });
+    });
+    return n;
+  }
+
   function isEmptySnapshot(snap) {
     return countSnapshotRecords(snap) === 0 &&
       !Object.keys(snap && snap.equipmentRegistry || {}).length;
@@ -538,6 +549,11 @@
     if (!live) return false;
     live = normalizeSnapshot(live);
     snap = normalizeSnapshot(snap);
+    var remoteSeq = snap.localSeq || 0;
+    var liveSeq = live.localSeq || 0;
+    if (remoteSeq > liveSeq) return false;
+    if (countCorrectedRecords(snap) > countCorrectedRecords(live)) return false;
+    if (countSnapshotRecords(live) > countSnapshotRecords(snap) && isLocalSnapshotAhead(live, snap)) return true;
     if (countSnapshotRecords(live) > countSnapshotRecords(snap)) return true;
     if (isLocalSnapshotAhead(live, snap)) return true;
     return false;
@@ -560,11 +576,6 @@
   function prepareSnapshotForPush(snap) {
     snap = pickBestPushSnapshot(snap);
     if (hasSupabaseConfig() && global.PlatformSupabaseBridge.isPrimary()) {
-      if (inLocalEditGrace() || pushing) {
-        snap.localSeq = Math.max(snap.localSeq || 0, lastKnownRemoteSeq) + 1;
-        snap.updatedAt = new Date().toISOString();
-        return Promise.resolve(normalizeSnapshot(snap));
-      }
       return pullFromSupabase().then(function (remote) {
         if (remote) snap = mergeAveriasSnapshots(snap, remote);
         snap.localSeq = Math.max(snap.localSeq || 0, (remote && remote.localSeq) || 0, lastKnownRemoteSeq) + 1;
@@ -641,7 +652,8 @@
     }
     if (pushing) {
       var livePush = getEffectiveLocalSnapshot();
-      if (livePush && isLocalSnapshotAhead(normalizeSnapshot(livePush), normalizeSnapshot(snap))) {
+      if (livePush && isLocalSnapshotAhead(normalizeSnapshot(livePush), normalizeSnapshot(snap)) &&
+          countCorrectedRecords(snap) <= countCorrectedRecords(livePush)) {
         return false;
       }
     }
@@ -655,10 +667,13 @@
           schedulePushFromLocal();
         } else if (!isCloudAuthoritativeSource(source) && source !== 'firebase-pending') {
           if ((live.localSeq || 0) >= (snap.localSeq || 0) &&
-              countSnapshotRecords(live) >= countSnapshotRecords(snap)) {
+              countSnapshotRecords(live) >= countSnapshotRecords(snap) &&
+              countCorrectedRecords(snap) <= countCorrectedRecords(live)) {
             schedulePushFromLocal();
             return false;
           }
+          snap = mergeAveriasSnapshots(snap, live);
+        } else if (countCorrectedRecords(snap) > countCorrectedRecords(live)) {
           snap = mergeAveriasSnapshots(snap, live);
         }
       }
@@ -962,10 +977,6 @@
   function pullAll() {
     if (pulling) return Promise.resolve(getLocalSnapshot());
     if (pushing) return Promise.resolve(getEffectiveLocalSnapshot());
-    if (inLocalEditGrace()) {
-      schedulePushFromLocal();
-      return Promise.resolve(getEffectiveLocalSnapshot());
-    }
     pulling = true;
     var localBefore = getEffectiveLocalSnapshot();
     return pullFromJsonBin().then(function (jsonBinSnap) {

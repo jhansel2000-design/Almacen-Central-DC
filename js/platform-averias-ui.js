@@ -622,15 +622,10 @@
         function applyRemoteSnapshot(snap, opts) {
             opts = opts || {};
             if (!snap) return false;
-            if (global.PlatformAveriasCloudSync) {
-                if (global.PlatformAveriasCloudSync.inLocalEditGrace &&
-                    global.PlatformAveriasCloudSync.inLocalEditGrace()) {
-                    return false;
-                }
-                if (global.PlatformAveriasCloudSync.shouldBlockStaleRemote &&
-                    global.PlatformAveriasCloudSync.shouldBlockStaleRemote(snap)) {
-                    return false;
-                }
+            if (global.PlatformAveriasCloudSync &&
+                global.PlatformAveriasCloudSync.shouldBlockStaleRemote &&
+                global.PlatformAveriasCloudSync.shouldBlockStaleRemote(snap)) {
+                return false;
             }
             var sigBefore = lastUiSignature || contentSignature(buildSnapshot());
             var countsBefore = countReports(buildSnapshot());
@@ -651,10 +646,7 @@
                 countsAfter.pending !== countsBefore.pending;
             if (opts.fromCloud || changed) {
                 updateAllStats();
-                var onReportForm = currentModule === 'pallets' &&
-                    document.getElementById('palletsReport') &&
-                    !document.getElementById('palletsReport').classList.contains('hidden');
-                if (!onReportForm) refreshCurrentView();
+                refreshCurrentView();
                 updateLiveChip(true);
             }
             if (opts.fromCloud && countsAfter.pending < countsBefore.pending && global.PlatformToast) {
@@ -2053,7 +2045,21 @@
             function doFinalize(record, mod, onDone) {
                 finalizeWorkRecord(record);
                 correctionLockUntil = Date.now() + 30000;
-                return persistSnapshot({ force: true, liveRecord: { module: mod, record: record } }).then(function (result) {
+                writeIndividualKeys();
+                var preSnap = buildSnapshot();
+                preSnap.updatedAt = new Date().toISOString();
+                preSnap.localSeq = (preSnap.localSeq || 0) + 1;
+                memoryLocalSeq = preSnap.localSeq;
+                try {
+                    localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(preSnap));
+                } catch (e) { /* noop */ }
+                if (global.PlatformAveriasCloudSync && global.PlatformAveriasCloudSync.beginLocalEdit) {
+                    global.PlatformAveriasCloudSync.beginLocalEdit(preSnap);
+                }
+                if (global.PlatformAveriasCloudSync && global.PlatformAveriasCloudSync.noteLocalSave) {
+                    global.PlatformAveriasCloudSync.noteLocalSave(preSnap);
+                }
+                return persistSnapshot({ force: true, seqAlreadyBumped: true, liveRecord: { module: mod, record: record } }).then(function (result) {
                     if (typeof onDone === 'function') onDone();
                     afterPersist(result);
                     return true;
