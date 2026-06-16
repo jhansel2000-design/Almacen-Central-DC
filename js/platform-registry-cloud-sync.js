@@ -271,7 +271,7 @@
   }
 
   function pollIntervalMs() {
-    return 1500;
+    return 250;
   }
 
   function startPolling() {

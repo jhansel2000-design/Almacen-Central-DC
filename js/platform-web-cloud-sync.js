@@ -700,6 +700,7 @@
   }
 
   function pollIntervalMs() {
+    if (isSupabasePrimary()) return 250;
     if (firebaseLive()) return 10000;
     var sec = (siteConfig && siteConfig.pollSeconds) || 1;
     if (siteConfig && siteConfig.realtime === false) sec = 5;

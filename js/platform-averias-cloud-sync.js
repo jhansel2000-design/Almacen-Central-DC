@@ -214,7 +214,7 @@
 
   function pollIntervalMs() {
     if (isSupabasePrimary()) {
-      return 600;
+      return 250;
     }
     if (hasFirebaseConfig()) {
       var ms = siteConfig && siteConfig.syncTargetMs ? parseInt(siteConfig.syncTargetMs, 10) : 400;
@@ -970,9 +970,10 @@
 
   function schedulePullBurst() {
     var now = Date.now();
-    if (now - lastBurstAt < 4000) return;
+    if (now - lastBurstAt < 1200) return;
     lastBurstAt = now;
-    [300, 900, 2000].forEach(function (ms) {
+    pullAll();
+    [80, 200, 500].forEach(function (ms) {
       global.setTimeout(function () { pullAll(); }, ms);
     });
   }
@@ -1330,7 +1331,7 @@
     if (btn) {
       var online = isCloudConfigured();
       btn.title = online
-        ? 'En vivo — todos los dispositivos comparten datos (~' + ((siteConfig && siteConfig.pollSeconds) || 1) + 's)'
+        ? 'En vivo — todos los dispositivos · actualización instantánea'
         : 'Pulse para sincronizar con la nube';
       btn.classList.toggle('cloud-active', online);
     }
@@ -1506,9 +1507,9 @@
         };
       }
       global.setInterval(function () {
-        if (Date.now() - lastPullAt < 8000) updateLiveIndicator(true);
+        if (Date.now() - lastPullAt < 4000) updateLiveIndicator(true);
         else updateLiveIndicator(false);
-      }, 2000);
+      }, 800);
     });
     return initReady;
   }

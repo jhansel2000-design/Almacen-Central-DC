@@ -25,7 +25,7 @@
         var keys = ['averias', 'despacho', 'platform', 'registry'];
         for (var i = 0; i < keys.length; i++) {
           var t = global.PlatformSupabaseBridge.getLastPullAt(keys[i]);
-          if (t && (Date.now() - t) < 15000) return true;
+          if (t && (Date.now() - t) < 8000) return true;
         }
       }
     }
@@ -70,7 +70,7 @@
     update();
     global.addEventListener('firebase-connection', update);
     global.addEventListener('supabase-connection', update);
-    global.setInterval(update, 3000);
+    global.setInterval(update, 400);
     if (global.PlatformSupabase && global.PlatformSupabase.init) {
       global.PlatformSupabase.init().then(update);
     }

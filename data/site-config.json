@@ -7,7 +7,7 @@
   "githubPagesPlatformDataUrl": "https://jhansel2000-design.github.io/Almacen-Central-DC/data/platform.json",
   "pollSeconds": 1,
   "realtime": true,
-  "syncTargetMs": 400,
+  "syncTargetMs": 250,
   "firebase": {
     "enabled": true,
     "apiKey": "AIzaSyBzH_tp242QEDgBAIxaRfkNwPYyf9VeY6g",

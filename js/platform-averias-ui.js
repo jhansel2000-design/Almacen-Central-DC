@@ -683,7 +683,7 @@
                 if (ev.detail.source === 'push-ok' || ev.detail.source === 'local-save') return;
                 if (ev.detail.source === 'apply') return;
             }
-            reloadSyncTimer = setTimeout(reloadFromSync, 120);
+            reloadFromSync();
         }
 
         function refreshUiAfterLocalChange() {

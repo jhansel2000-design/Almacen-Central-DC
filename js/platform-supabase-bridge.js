@@ -140,12 +140,15 @@
 
   function startPollFallback(moduleKey, callback) {
     if (pollTimers[moduleKey]) global.clearInterval(pollTimers[moduleKey]);
+    pull(moduleKey).then(function (data) {
+      if (data && typeof callback === 'function') callback(data);
+    });
     pollTimers[moduleKey] = global.setInterval(function () {
       if (global.document && global.document.visibilityState === 'hidden') return;
       pull(moduleKey).then(function (data) {
         if (data && typeof callback === 'function') callback(data);
       });
-    }, 800);
+    }, 250);
   }
 
   function subscribe(moduleKey, callback) {

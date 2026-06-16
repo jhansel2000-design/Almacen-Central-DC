@@ -114,6 +114,7 @@
         client = global.supabase.createClient(sb.url, sb.anonKey, {
           auth: { persistSession: false, autoRefreshToken: false }
         });
+        markConnected(true);
         return testConnection();
       });
     return readyPromise;
