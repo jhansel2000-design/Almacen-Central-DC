@@ -63,7 +63,7 @@
       return Promise.resolve(items);
     }
     return client.from('hub_news')
-      .select('id, title, body, published_at, published_by, active, pinned')
+      .select('id, title, body, published_at, published_by, active, pinned, image_url, link_url, theme')
       .eq('active', true)
       .order('pinned', { ascending: false })
       .order('published_at', { ascending: false })
@@ -72,6 +72,7 @@
         if (res.error) throw res.error;
         setupRequired = false;
         mergeRows(res.data);
+        if (!items.length) mergeRows(core().readLocal());
         return items;
       })
       .catch(function (err) {
@@ -122,7 +123,10 @@
       publishedAt: data.id ? undefined : now,
       publishedBy: actorName || '',
       active: true,
-      pinned: check.item.pinned
+      pinned: check.item.pinned,
+      imageUrl: check.item.imageUrl,
+      linkUrl: check.item.linkUrl,
+      theme: check.item.theme
     });
 
     if (client && !setupRequired) {
@@ -131,10 +135,13 @@
           .update({
             title: row.title,
             body: row.body,
-            pinned: row.pinned
+            pinned: row.pinned,
+            image_url: row.image_url,
+            link_url: row.link_url,
+            theme: row.theme
           })
           .eq('id', data.id)
-          .select('id, title, body, published_at, published_by, active, pinned')
+          .select('id, title, body, published_at, published_by, active, pinned, image_url, link_url, theme')
           .single()
           .then(function (res) {
             if (res.error) throw res.error;
@@ -153,9 +160,12 @@
           published_at: now,
           published_by: actorName || '',
           active: true,
-          pinned: row.pinned
+          pinned: row.pinned,
+          image_url: row.image_url,
+          link_url: row.link_url,
+          theme: row.theme
         })
-        .select('id, title, body, published_at, published_by, active, pinned')
+        .select('id, title, body, published_at, published_by, active, pinned, image_url, link_url, theme')
         .single()
         .then(function (res) {
           if (res.error) throw res.error;
@@ -187,7 +197,10 @@
         publishedAt: now,
         publishedBy: actorName || '',
         active: true,
-        pinned: validated.pinned
+        pinned: validated.pinned,
+        imageUrl: validated.imageUrl || '',
+        linkUrl: validated.linkUrl || '',
+        theme: validated.theme || ''
       });
     }
     mergeRows(list);

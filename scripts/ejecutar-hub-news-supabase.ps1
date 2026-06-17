@@ -9,6 +9,7 @@ param(
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
 $sqlPath = Join-Path $root 'supabase\migrations\20250617_hub_news.sql'
+$seedPath = Join-Path $root 'supabase\migrations\20250618_hub_news_portal_seed.sql'
 $secretsPath = Join-Path $root 'data\supabase-admin.local.json'
 
 function Test-HubNewsTable {
@@ -62,6 +63,7 @@ if (Test-HubNewsTable -Key $AnonKey) {
 }
 
 $sql = Get-Content $sqlPath -Raw
+if (Test-Path $seedPath) { $sql += "`n`n" + (Get-Content $seedPath -Raw) }
 $token = Get-AccessToken
 
 if ($token) {

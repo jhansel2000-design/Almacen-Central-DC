@@ -1002,22 +1002,76 @@ html[data-theme="light"] .auth-hub-link {
 
 .hub-news-feed {
   display: grid;
-  gap: 12px;
-  max-width: 560px;
+  gap: 16px;
+  max-width: 640px;
   margin: 0 auto 20px;
   text-align: left;
 }
 .hub-news-item {
   position: relative;
-  border-radius: 16px;
-  padding: 18px 18px 14px;
+  border-radius: 18px;
+  padding: 18px;
   border: 1px solid rgba(255, 255, 255, 0.12);
   background: rgba(255, 255, 255, 0.05);
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.18);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.22);
+}
+.hub-news-item--has-media {
+  display: grid;
+  grid-template-columns: 112px minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+  padding: 16px;
+}
+.hub-news-item-media {
+  width: 112px;
+  height: 112px;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.28);
+}
+.hub-news-item-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.hub-news-item--despacho {
+  border-color: rgba(255, 183, 77, 0.34);
+  background: linear-gradient(145deg, rgba(255, 152, 0, 0.1), rgba(255, 255, 255, 0.04));
+}
+.hub-news-item--despacho .hub-news-item-media {
+  border-color: rgba(255, 183, 77, 0.35);
+}
+.hub-news-item--ops {
+  border-color: rgba(129, 199, 132, 0.34);
+  background: linear-gradient(145deg, rgba(46, 125, 50, 0.12), rgba(255, 255, 255, 0.04));
+}
+.hub-news-item--ops .hub-news-item-media {
+  border-color: rgba(129, 199, 132, 0.35);
 }
 .hub-news-item--pinned {
   border-color: rgba(147, 197, 253, 0.35);
-  background: linear-gradient(145deg, rgba(30, 58, 138, 0.22), rgba(255, 255, 255, 0.04));
+}
+.hub-news-item-tag {
+  display: inline-block;
+  margin-bottom: 6px;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.72);
+  background: rgba(255, 255, 255, 0.08);
+}
+.hub-news-item--despacho .hub-news-item-tag {
+  color: #ffcc80;
+  background: rgba(255, 152, 0, 0.16);
+}
+.hub-news-item--ops .hub-news-item-tag {
+  color: #a5d6a7;
+  background: rgba(76, 175, 80, 0.16);
 }
 .hub-news-pin {
   position: absolute;
@@ -1028,25 +1082,55 @@ html[data-theme="light"] .auth-hub-link {
 }
 .hub-news-item-title {
   margin: 0 0 8px;
-  font-size: 1.05rem;
+  font-size: 1.08rem;
   font-weight: 800;
   color: #fff;
   line-height: 1.35;
-  padding-right: 1.5rem;
+  padding-right: 1.25rem;
+}
+.hub-news-item-intro,
+.hub-news-item-lead {
+  margin: 0 0 8px;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+.hub-news-item-list {
+  margin: 0 0 10px;
+  padding-left: 1.1rem;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 0.86rem;
+  line-height: 1.55;
+}
+.hub-news-item-list li {
+  margin-bottom: 0.25rem;
 }
 .hub-news-item-body {
   margin: 0 0 10px;
-  color: rgba(255, 255, 255, 0.72);
-  font-size: 0.92rem;
-  line-height: 1.55;
-  white-space: pre-wrap;
+}
+.hub-news-item-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-bottom: 10px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-decoration: none;
+  color: #fff;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+.hub-news-item--despacho .hub-news-item-cta { color: #ffcc80; }
+.hub-news-item--ops .hub-news-item-cta { color: #a5d6a7; }
+.hub-news-item-cta:hover {
+  opacity: 0.88;
+  transform: translateX(2px);
 }
 .hub-news-item-meta {
   display: flex;
   flex-wrap: wrap;
   gap: 8px 12px;
-  font-size: 0.74rem;
-  color: rgba(255, 255, 255, 0.42);
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.38);
 }
 .hub-news-item-by::before {
   content: '·';
@@ -1063,6 +1147,16 @@ html[data-theme="light"] .auth-hub-link {
   align-items: center;
   gap: 0.5rem;
   margin-top: 0.75rem !important;
+}
+
+@media (max-width: 520px) {
+  .hub-news-item--has-media {
+    grid-template-columns: 1fr;
+  }
+  .hub-news-item-media {
+    width: 100%;
+    height: 140px;
+  }
 }
 
 .auth-layout--hub.auth-layout--login-open .hub-main-web {

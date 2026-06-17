@@ -9,6 +9,9 @@ create table if not exists public.hub_news (
   body text not null default '',
   published_at timestamptz not null default now(),
   published_by text not null default '',
+  image_url text not null default '',
+  link_url text not null default '',
+  theme text not null default '',
   active boolean not null default true,
   pinned boolean not null default false
 );
