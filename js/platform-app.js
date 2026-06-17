@@ -477,14 +477,45 @@
     setAuthHubLoginOpen(false);
   }
 
+  function setHubDrawerOpen(open) {
+    var drawer = $('hubDrawer');
+    var overlay = $('hubDrawerOverlay');
+    var btn = $('hubMenuBtn');
+    if (!drawer) return;
+    var isOpen = !!open;
+    drawer.classList.toggle('open', isOpen);
+    if (overlay) {
+      overlay.classList.toggle('show', isOpen);
+      overlay.setAttribute('aria-hidden', isOpen ? 'false' : 'true');
+    }
+    drawer.setAttribute('aria-hidden', isOpen ? 'false' : 'true');
+    if (btn) btn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+  }
+
+  function initHubDrawer() {
+    var btn = $('hubMenuBtn');
+    var overlay = $('hubDrawerOverlay');
+    if (!btn) return;
+    bindOnce(btn, 'click', function () {
+      var drawer = $('hubDrawer');
+      setHubDrawerOpen(!(drawer && drawer.classList.contains('open')));
+    });
+    if (overlay) {
+      bindOnce(overlay, 'click', function () { setHubDrawerOpen(false); });
+    }
+  }
+
   function setAuthHubLoginOpen(open) {
     var layout = $('authHubLayout') || document.querySelector('.auth-layout--hub');
     var panel = $('authLoginPanel');
     var portalCard = $('authPortalMando');
     if (!layout || !panel) return;
 
+    if (open) setHubDrawerOpen(false);
+
     layout.classList.toggle('auth-layout--portals-only', !open);
     layout.classList.toggle('auth-layout--login-open', open);
+    layout.classList.toggle('auth-layout--hub-news', !open);
     panel.hidden = !open;
     panel.setAttribute('aria-hidden', open ? 'false' : 'true');
 
@@ -513,6 +544,7 @@
   }
 
   function initAuthHub() {
+    initHubDrawer();
     var layout = $('authHubLayout') || document.querySelector('.auth-layout--hub');
     if (!layout) return;
 
@@ -522,6 +554,7 @@
     if (portalBtn) {
       bindOnce(portalBtn, 'click', function (ev) {
         ev.preventDefault();
+        setHubDrawerOpen(false);
         setAuthHubLoginOpen(true);
       });
     }
