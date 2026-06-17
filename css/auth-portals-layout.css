@@ -913,18 +913,22 @@ html[data-theme="light"] .auth-hub-link {
 
 .auth-portal-icon--turnos,
 .hub-drawer .auth-portal-card--turnos .auth-portal-icon {
-  background: linear-gradient(135deg, rgba(30, 64, 175, 0.95), rgba(22, 163, 74, 0.75));
+  background:
+    linear-gradient(135deg, rgba(0, 0, 0, 0.32), rgba(30, 64, 175, 0.35)),
+    url('../assets/img/icon-turnos-portal.svg') center 52% / 68% no-repeat;
   border-color: rgba(96, 165, 250, 0.45);
-  color: #fff;
-  font-size: 0.72rem;
-  font-weight: 800;
-  letter-spacing: 0.06em;
 }
 .auth-portal-card--turnos:hover {
   border-color: rgba(96, 165, 250, 0.55);
 }
 .hub-drawer .auth-portal-card--turnos .auth-portal-icon {
   box-shadow: 0 4px 16px rgba(30, 64, 175, 0.22);
+}
+.hub-drawer .auth-portal-icon--turnos {
+  background:
+    linear-gradient(135deg, rgba(0, 0, 0, 0.32), rgba(30, 64, 175, 0.35)),
+    url('../assets/img/icon-turnos-portal.svg') center 52% / 68% no-repeat;
+  border-color: rgba(96, 165, 250, 0.45);
 }
 
 .auth-layout--hub.auth-layout--portals-only.auth-layout--hub-news {

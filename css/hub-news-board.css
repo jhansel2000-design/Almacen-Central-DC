@@ -430,6 +430,26 @@
   background: #15803d;
 }
 
+.hub-board-card--turnos {
+  --hub-accent: #3b82f6;
+  --hub-accent-soft: rgba(59, 130, 246, 0.14);
+}
+
+.hub-board-card--turnos .hub-board-card__badge {
+  color: #93c5fd;
+  border-color: rgba(59, 130, 246, 0.35);
+}
+
+.hub-board-card--turnos .hub-board-card__btn {
+  background: #2563eb;
+  border-color: #3b82f6;
+  box-shadow: 0 4px 16px rgba(37, 99, 235, 0.4);
+}
+
+.hub-board-card--turnos .hub-board-card__btn:hover {
+  background: #1d4ed8;
+}
+
 .hub-board-card--inventario .hub-board-card__badge {
   color: #e8d5b5;
   background: rgba(197, 165, 114, 0.12);

@@ -25,24 +25,31 @@
 
   var lastEntry = null;
 
+  var ICONS = {
+    despacho_facturas: 'assets/img/icon-turnos-despacho.svg',
+    liquidacion_facturas: 'assets/img/icon-turnos-liquidacion.svg',
+    nota_credito: 'assets/img/icon-turnos-nota-credito.svg'
+  };
+
   function renderMenu() {
     return (
       '<section class="turnos-chofer-section">' +
       '<p class="turnos-chofer-lead">Seleccione el trámite que necesita hoy:</p>' +
       '<div class="turnos-service-grid">' +
-      serviceCard(C().TIPOS.DESPACHO, '📦', 'Despacho de facturas', 'Entrega con ID de carga') +
-      serviceCard(C().TIPOS.LIQUIDACION, '🚛', 'Liquidación de facturas', 'Cierre por cantidad de viajes') +
-      serviceCard(C().TIPOS.NOTA_CREDITO, '📝', 'Nota de crédito', 'Solicitud para autorización') +
+      serviceCard(C().TIPOS.DESPACHO, ICONS.despacho_facturas, 'Despacho de facturas', 'Entrega con ID de carga') +
+      serviceCard(C().TIPOS.LIQUIDACION, ICONS.liquidacion_facturas, 'Liquidación de facturas', 'Cierre por cantidad de viajes') +
+      serviceCard(C().TIPOS.NOTA_CREDITO, ICONS.nota_credito, 'Nota de crédito', 'Solicitud para autorización') +
       '</div></section>'
     );
   }
 
-  function serviceCard(tipo, icon, title, desc) {
+  function serviceCard(tipo, iconSrc, title, desc) {
     return (
       '<button type="button" class="turnos-service-card" data-chofer-tipo="' + esc(tipo) + '">' +
-      '<span class="turnos-service-icon" aria-hidden="true">' + icon + '</span>' +
+      '<span class="turnos-service-icon"><img src="' + esc(iconSrc) + '" alt="" width="48" height="48" loading="lazy"></span>' +
+      '<span class="turnos-service-text">' +
       '<span class="turnos-service-title">' + esc(title) + '</span>' +
-      '<span class="turnos-service-desc">' + esc(desc) + '</span></button>'
+      '<span class="turnos-service-desc">' + esc(desc) + '</span></span></button>'
     );
   }
 

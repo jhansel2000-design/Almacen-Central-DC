@@ -114,8 +114,10 @@
     host.innerHTML =
       '<section class="turnos-panel turnos-export-cards">' +
       '<h2>Exportar</h2><p class="turnos-sub">' + n + ' registros.</p>' +
-      '<button type="button" class="turnos-export-card" data-admin-action="export-xlsx"><span class="turnos-export-icon">📊</span><strong>Excel (.xlsx)</strong></button>' +
-      '<button type="button" class="turnos-export-card" data-admin-action="export-csv"><span class="turnos-export-icon">📄</span><strong>CSV</strong></button>' +
+      '<button type="button" class="turnos-export-card" data-admin-action="export-xlsx">' +
+      '<span class="turnos-export-icon"><img src="assets/img/icon-turnos-export.svg" alt="" width="40" height="40"></span><strong>Excel (.xlsx)</strong></button>' +
+      '<button type="button" class="turnos-export-card" data-admin-action="export-csv">' +
+      '<span class="turnos-export-icon"><img src="assets/img/icon-turnos-gestion.svg" alt="" width="40" height="40"></span><strong>CSV</strong></button>' +
       '</section>';
   }
 
