@@ -860,6 +860,52 @@ html[data-theme="light"] .auth-hub-link {
   grid-template-columns: 1fr;
 }
 
+/* Iconos con foto en drawer lateral (mismos assets que hub original) */
+.hub-drawer .auth-portals-grid--hub .auth-portal-icon {
+  width: 2.65rem;
+  height: 2.65rem;
+  font-size: 1.2rem;
+}
+.hub-drawer .auth-portal-icon--photo {
+  font-size: 0;
+  overflow: hidden;
+  background-size: cover;
+  background-position: center;
+  border-radius: 12px;
+  width: 3.15rem;
+  height: 3.15rem;
+}
+.hub-drawer .auth-portal-icon--despacho,
+.hub-drawer .auth-portal-card--despacho .auth-portal-icon {
+  background:
+    linear-gradient(135deg, rgba(0, 0, 0, 0.32), rgba(255, 152, 0, 0.28)),
+    url('../assets/img/login-dispatch-poster.jpg') center 46% / cover no-repeat;
+  border-color: rgba(255, 183, 77, 0.38);
+}
+.hub-drawer .auth-portal-icon--ops,
+.hub-drawer .auth-portal-card--averias .auth-portal-icon {
+  background:
+    linear-gradient(135deg, rgba(0, 0, 0, 0.32), rgba(46, 125, 50, 0.28)),
+    url('../assets/img/login-averias-poster.jpg') center 40% / cover no-repeat;
+  border-color: rgba(129, 199, 132, 0.38);
+}
+.hub-drawer .auth-portal-icon--inventario,
+.hub-drawer .auth-portal-card--inventario .auth-portal-icon {
+  background:
+    linear-gradient(135deg, rgba(0, 0, 0, 0.28), rgba(197, 165, 114, 0.22)),
+    url('../assets/img/login-inventario-poster.jpg') center 50% / cover no-repeat;
+  border-color: rgba(197, 165, 114, 0.38);
+}
+.hub-drawer .auth-portal-card--despacho .auth-portal-icon--photo {
+  box-shadow: 0 4px 16px rgba(255, 152, 0, 0.15);
+}
+.hub-drawer .auth-portal-card--averias .auth-portal-icon--photo {
+  box-shadow: 0 4px 16px rgba(76, 175, 80, 0.12);
+}
+.hub-drawer .auth-portal-card--inventario .auth-portal-icon--photo {
+  box-shadow: 0 4px 16px rgba(197, 165, 114, 0.14);
+}
+
 .auth-layout--hub-news {
   width: min(100%, 900px);
   max-width: 900px;
