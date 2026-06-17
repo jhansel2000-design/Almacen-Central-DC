@@ -168,6 +168,28 @@
       if (overlay) overlay.classList.remove('show');
       document.body.classList.remove('temp-drawer-open');
     };
+
+    var shell = $('tempMainApp');
+    if (shell && !shell.dataset.tempUiBound) {
+      shell.dataset.tempUiBound = '1';
+      shell.addEventListener('click', function (ev) {
+        if (ev.target.closest('#tempBtnMenu')) {
+          ev.preventDefault();
+          global.toggleDrawer();
+          return;
+        }
+        if (ev.target.closest('#tempDrawerOverlay')) {
+          ev.preventDefault();
+          global.closeDrawer();
+          return;
+        }
+        var modBtn = ev.target.closest('.drawer-item[data-module]');
+        if (modBtn && modBtn.dataset.module && global.navigateTempModule) {
+          ev.preventDefault();
+          global.navigateTempModule(modBtn.dataset.module);
+        }
+      });
+    }
   }
 
   document.addEventListener('DOMContentLoaded', function () {

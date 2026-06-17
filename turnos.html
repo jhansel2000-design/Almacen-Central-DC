@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="Control de turnos de despacho por lectura QR — Almacén Central DC">
+  <meta name="theme-color" content="#111827">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta http-equiv="X-Content-Type-Options" content="nosniff">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://cdn.sheetjs.com; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' http://localhost:* http://127.0.0.1:*; img-src 'self' data: blob:; media-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <title>Control de Turnos de Despacho — Almacén Central DC</title>
+  <script src="js/relay-bootstrap.js?v=1"></script>
+  <link rel="icon" type="image/png" href="assets/img/jc-logo-64.png?v=5">
+  <link rel="stylesheet" href="css/turnos-portal.css?v=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body class="turnos-body">
+  <noscript><p class="turnos-noscript">Activa JavaScript para usar el control de turnos.</p></noscript>
+
+  <div class="turnos-app">
+    <aside class="turnos-sidebar" aria-label="Menú principal">
+      <div class="turnos-brand">
+        <img src="assets/img/jc-logo-64.png" alt="AC" width="40" height="40">
+        <div>
+          <p class="turnos-brand-eyebrow">Almacén Central DC</p>
+          <h1 class="turnos-brand-title">Control de Turnos</h1>
+        </div>
+      </div>
+      <nav class="turnos-nav">
+        <button type="button" class="turnos-nav-item active" data-turnos-nav="dashboard">📊 Dashboard</button>
+        <button type="button" class="turnos-nav-item" data-turnos-nav="scan">📷 Escanear QR</button>
+        <button type="button" class="turnos-nav-item" data-turnos-nav="history">📋 Historial</button>
+        <button type="button" class="turnos-nav-item" data-turnos-nav="export">📤 Exportar</button>
+        <button type="button" class="turnos-nav-item" data-turnos-nav="config">⚙ Configuración</button>
+      </nav>
+      <div class="turnos-sidebar-foot">
+        <p class="turnos-operator-label">Operador</p>
+        <p class="turnos-operator-name" id="turnosOperatorLabel">Operador DC</p>
+        <a href="index.html" class="turnos-back-link">← Volver al mando</a>
+      </div>
+    </aside>
+
+    <div class="turnos-main-wrap">
+      <header class="turnos-topbar">
+        <div>
+          <p class="turnos-top-eyebrow">Despacho de almacén</p>
+          <h2 class="turnos-top-title">Control de Turnos de Despacho</h2>
+        </div>
+        <div class="turnos-clock">
+          <p id="turnosClockTime" class="turnos-clock-time">--:--:--</p>
+          <p id="turnosClockDate" class="turnos-clock-date">—</p>
+        </div>
+      </header>
+
+      <main class="turnos-main">
+        <div class="turnos-view" id="turnosViewDashboard" data-module="dashboard"></div>
+        <div class="turnos-view" id="turnosViewScan" data-module="scan" hidden></div>
+        <div class="turnos-view" id="turnosViewHistory" data-module="history" hidden></div>
+        <div class="turnos-view" id="turnosViewExport" data-module="export" hidden></div>
+        <div class="turnos-view" id="turnosViewConfig" data-module="config" hidden></div>
+      </main>
+    </div>
+
+    <nav class="turnos-mobile-nav" aria-label="Navegación móvil">
+      <button type="button" class="turnos-nav-item active" data-turnos-nav="dashboard">📊</button>
+      <button type="button" class="turnos-nav-item" data-turnos-nav="scan">📷</button>
+      <button type="button" class="turnos-nav-item" data-turnos-nav="history">📋</button>
+      <button type="button" class="turnos-nav-item" data-turnos-nav="export">📤</button>
+      <button type="button" class="turnos-nav-item" data-turnos-nav="config">⚙</button>
+    </nav>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+  <script src="js/platform-turnos-core.js?v=1"></script>
+  <script src="js/platform-turnos-ui.js?v=1"></script>
+  <script src="js/platform-turnos-app.js?v=1"></script>
+</body>
+</html>

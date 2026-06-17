@@ -22,7 +22,7 @@
   <link rel="stylesheet" href="css/auth-security.css?v=3">
   <link rel="stylesheet" href="css/auth-portals-layout.css?v=10">
   <link rel="stylesheet" href="css/dc-brand.css?v=11">
-  <link rel="stylesheet" href="css/averias-portal.css?v=9">
+  <link rel="stylesheet" href="css/averias-portal.css?v=10">
   <link rel="stylesheet" href="css/averias-responsive.css?v=13">
   <link rel="stylesheet" href="css/theme-light.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -152,13 +152,20 @@
                             <span class="drawer-item-desc">Montacargas, uñas eléctricas y de mano</span>
                         </span>
                     </button>
-                    <button type="button" class="drawer-item drawer-item--temperature" onclick="window.location.href='temperatura.html'">
+                    <a href="turnos.html" class="drawer-item drawer-item--turnos" data-external-portal="turnos.html">
+                        <span class="drawer-icon-wrap turnos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h7v7h-7z"/><path d="M16 16h3v3h-3z"/></svg></span>
+                        <span class="drawer-item-text">
+                            <span class="drawer-item-title">Control de Turnos</span>
+                            <span class="drawer-item-desc">QR · turnos consecutivos de despacho</span>
+                        </span>
+                    </a>
+                    <a href="temperatura.html" class="drawer-item drawer-item--temperature" data-external-portal="temperatura.html">
                         <span class="drawer-icon-wrap temperature"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 14.76V3.5a2.5 2.5 0 00-5 0v11.26a4.5 4.5 0 105 0z"/></svg></span>
                         <span class="drawer-item-text">
                             <span class="drawer-item-title">Monitoreo de Temperatura</span>
                             <span class="drawer-item-desc">6 áreas en vivo · alertas e historial</span>
                         </span>
-                    </button>
+                    </a>
                 </div>
             </nav>
 
@@ -695,7 +702,7 @@
   <script src="js/platform-registry-cloud-sync.js?v=2"></script>
   <script src="js/platform-web-users.js?v=18"></script>
   <script src="js/platform-toast.js"></script>
-  <script src="js/platform-averias-ui.js?v=51"></script>
+  <script src="js/platform-averias-ui.js?v=53"></script>
   <script src="js/platform-averias-app.js?v=6"></script>
 </body>
 </html>

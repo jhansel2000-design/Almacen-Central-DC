@@ -6,7 +6,9 @@
   "scripts": {
     "start": "node server/lan-server.js --port 8080",
     "start:lan": "node server/lan-server.js --port 8080",
-    "verify": "node scripts/verify-platform.js"
+    "verify": "node scripts/verify-platform.js",
+    "turnos:dev": "npm run dev --prefix turnos-qr",
+    "turnos:build": "npm run build --prefix turnos-qr"
   },
   "engines": {
     "node": ">=18"

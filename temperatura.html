@@ -85,7 +85,7 @@
 
   <div class="temp-app averias-app is-hidden" id="tempApp" aria-hidden="true" inert>
     <div id="tempMainApp" class="screen" aria-label="Monitoreo de temperatura">
-      <div class="drawer-overlay" id="tempDrawerOverlay" onclick="closeDrawer()"></div>
+      <div class="drawer-overlay" id="tempDrawerOverlay"></div>
       <nav class="drawer" id="tempDrawer">
         <div class="drawer-header">
           <h2>Almacén Central</h2>
@@ -95,42 +95,42 @@
         </div>
         <div class="drawer-menu-label">MÓDULOS</div>
         <div class="drawer-menu">
-          <button type="button" class="drawer-item active" data-module="home" onclick="navigateTempModule('home')">
+          <button type="button" class="drawer-item active" data-module="home">
             <span class="drawer-icon-wrap home"><svg viewBox="0 0 24 24"><path d="M3 10.5L12 4l9 6.5V20a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1v-9.5z"/></svg></span>
             <span class="drawer-item-text">
               <span class="drawer-item-title">Inicio</span>
               <span class="drawer-item-desc">Tablón de noticias</span>
             </span>
           </button>
-          <button type="button" class="drawer-item" data-module="dashboard" onclick="navigateTempModule('dashboard')">
+          <button type="button" class="drawer-item" data-module="dashboard">
             <span class="drawer-icon-wrap temperature"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 14.76V3.5a2.5 2.5 0 00-5 0v11.26a4.5 4.5 0 105 0z"/></svg></span>
             <span class="drawer-item-text">
               <span class="drawer-item-title">Dashboard</span>
               <span class="drawer-item-desc">Temperatura en vivo por área</span>
             </span>
           </button>
-          <button type="button" class="drawer-item" data-module="register" onclick="navigateTempModule('register')">
+          <button type="button" class="drawer-item" data-module="register">
             <span class="drawer-icon-wrap pallets"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg></span>
             <span class="drawer-item-text">
               <span class="drawer-item-title">Registrar</span>
               <span class="drawer-item-desc">Entrada manual de lectura</span>
             </span>
           </button>
-          <button type="button" class="drawer-item" data-module="history" onclick="navigateTempModule('history')">
+          <button type="button" class="drawer-item" data-module="history">
             <span class="drawer-icon-wrap damages"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg></span>
             <span class="drawer-item-text">
               <span class="drawer-item-title">Historial</span>
               <span class="drawer-item-desc">Registros con fecha y hora</span>
             </span>
           </button>
-          <button type="button" class="drawer-item" data-module="alerts" onclick="navigateTempModule('alerts')">
+          <button type="button" class="drawer-item" data-module="alerts">
             <span class="drawer-icon-wrap security"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>
             <span class="drawer-item-text">
               <span class="drawer-item-title">Alertas</span>
               <span class="drawer-item-desc">Anomalías fuera de rango</span>
             </span>
           </button>
-          <button type="button" class="drawer-item" data-module="charts" onclick="navigateTempModule('charts')">
+          <button type="button" class="drawer-item" data-module="charts">
             <span class="drawer-icon-wrap audit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></span>
             <span class="drawer-item-text">
               <span class="drawer-item-title">Gráficas</span>
@@ -140,7 +140,7 @@
         </div>
       </nav>
 
-      <button type="button" class="temp-corner-menu av-corner-menu" id="tempBtnMenu" onclick="toggleDrawer()" aria-label="Menú">☰</button>
+      <button type="button" class="temp-corner-menu av-corner-menu" id="tempBtnMenu" aria-label="Menú">☰</button>
 
       <header class="header temp-app-header" id="tempAppHeader">
         <h1 id="tempPageTitle">Tablón informativo</h1>
@@ -174,6 +174,6 @@
   <script src="js/platform-temperature-core.js?v=2"></script>
   <script src="js/platform-temperature-sync.js?v=2"></script>
   <script src="js/platform-temperature-ui.js?v=3"></script>
-  <script src="js/platform-temperature-app.js?v=3"></script>
+  <script src="js/platform-temperature-app.js?v=4"></script>
 </body>
 </html>

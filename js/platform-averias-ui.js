@@ -59,19 +59,48 @@
     return args;
   }
 
+  function openTemperaturaPortal() {
+    global.location.href = 'temperatura.html';
+  }
+
   function runOnclickAction(raw, el, ev) {
     raw = String(raw || '').trim();
     if (!raw) return;
     raw.split(';').forEach(function (stmt) {
       stmt = stmt.trim();
       if (!stmt) return;
+      var locAssign = stmt.match(/^(?:window\.)?location\.href\s*=\s*['"]([^'"]+)['"]$/);
+      if (locAssign) {
+        global.location.href = locAssign[1];
+        return;
+      }
       var match = stmt.match(/^([A-Za-z_$][\w.$]*)\s*\(([\s\S]*)\)$/);
       if (!match) throw new Error('Acción no reconocida: ' + stmt);
-      var fn = global[match[1]];
+      var fnPath = match[1].split('.');
+      var fn = global;
+      for (var i = 0; i < fnPath.length; i++) {
+        fn = fn && fn[fnPath[i]];
+      }
       if (typeof fn !== 'function') throw new Error('Función no disponible: ' + match[1]);
       var argTokens = match[2].trim() ? splitOnclickArgs(match[2]) : [];
       var args = argTokens.map(function (t) { return parseOnclickArg(t, el, ev); });
-      fn.apply(global, args);
+      fn.apply(fnPath.length > 1 ? global[fnPath[0]] : global, args);
+    });
+  }
+
+  function bindExternalPortalLinks(root) {
+    if (!root || !root.querySelectorAll) return;
+    root.querySelectorAll('[data-external-portal]').forEach(function (el) {
+      if (el.__avPortalHandler) {
+        el.removeEventListener('click', el.__avPortalHandler);
+      }
+      el.__avPortalHandler = function (ev) {
+        var href = el.getAttribute('data-external-portal') || el.getAttribute('href') || 'temperatura.html';
+        if (!href || href === '#') return;
+        ev.preventDefault();
+        global.location.href = href;
+      };
+      el.addEventListener('click', el.__avPortalHandler);
     });
   }
 
@@ -104,6 +133,15 @@
     global.__avDelegatedBound = true;
     app.addEventListener('click', function (ev) {
       if (ev.target && ev.target.closest && ev.target.closest('[data-av-click-bound="1"]')) return;
+      var tempPortal = ev.target.closest('.drawer-item--temperature, .drawer-item--turnos, [data-external-portal]');
+      if (tempPortal) {
+        var href = tempPortal.getAttribute('data-external-portal') || tempPortal.getAttribute('href') || 'temperatura.html';
+        if (href && href !== '#') {
+          ev.preventDefault();
+          global.location.href = href;
+        }
+        return;
+      }
       var drawerItem = ev.target.closest('.drawer-item[data-module]');
       if (drawerItem && drawerItem.dataset.module && typeof navigateToModule === 'function') {
         ev.preventDefault();
@@ -143,7 +181,9 @@
     initAveriasDelegatedActions();
     initAveriasFormHandlers();
     bindInlineClickHandlers(app);
+    bindExternalPortalLinks(app);
     bindInlineClickHandlers(document.getElementById('cloudSetupModal'));
+    bindExternalPortalLinks(document.getElementById('cloudSetupModal'));
     if (global.__avClickBridgeObs) return;
     global.__avClickBridgeObs = new MutationObserver(function (mutations) {
       mutations.forEach(function (m) {
@@ -153,6 +193,7 @@
             bindInlineClickHandlers(node.parentNode || app);
           }
           bindInlineClickHandlers(node);
+          bindExternalPortalLinks(node);
         });
       });
     });
@@ -3596,6 +3637,7 @@
 
   global.navigateToModule = navigateToModule;
   global.toggleDrawer = toggleDrawer;
+  global.openTemperaturaPortal = openTemperaturaPortal;
   global.closeDrawer = closeDrawer;
   global.toggleFitScreen = toggleFitScreen;
   global.syncAveriasData = syncAveriasData;
