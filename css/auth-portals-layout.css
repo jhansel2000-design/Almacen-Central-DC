@@ -138,6 +138,17 @@ body.auth-locked:has(.auth-layout--hub-news) .auth-video-scrim {
   border-color: rgba(197, 165, 114, 0.38);
 }
 
+.auth-layout--hub.auth-layout--portals-only .auth-portal-icon--turnos {
+  background:
+    linear-gradient(135deg, rgba(0, 0, 0, 0.28), rgba(37, 99, 235, 0.32)),
+    url('../assets/img/turnos-hub-poster.jpg') center 45% / cover no-repeat;
+  border-color: rgba(96, 165, 250, 0.42);
+}
+
+.auth-layout--hub.auth-layout--portals-only .auth-portal-card--turnos .auth-portal-icon--photo {
+  box-shadow: 0 4px 16px rgba(37, 99, 235, 0.22);
+}
+
 .auth-layout--hub.auth-layout--portals-only .auth-portal-card--despacho .auth-portal-icon--photo {
   box-shadow: 0 4px 16px rgba(255, 152, 0, 0.15);
 }
@@ -914,21 +925,21 @@ html[data-theme="light"] .auth-hub-link {
 .auth-portal-icon--turnos,
 .hub-drawer .auth-portal-card--turnos .auth-portal-icon {
   background:
-    linear-gradient(135deg, rgba(0, 0, 0, 0.32), rgba(30, 64, 175, 0.35)),
-    url('../assets/img/icon-turnos-portal.svg') center 52% / 68% no-repeat;
-  border-color: rgba(96, 165, 250, 0.45);
+    linear-gradient(135deg, rgba(0, 0, 0, 0.28), rgba(37, 99, 235, 0.32)),
+    url('../assets/img/turnos-hub-poster.jpg') center 45% / cover no-repeat;
+  border-color: rgba(96, 165, 250, 0.42);
 }
 .auth-portal-card--turnos:hover {
   border-color: rgba(96, 165, 250, 0.55);
 }
 .hub-drawer .auth-portal-card--turnos .auth-portal-icon {
-  box-shadow: 0 4px 16px rgba(30, 64, 175, 0.22);
+  box-shadow: 0 4px 16px rgba(37, 99, 235, 0.22);
 }
 .hub-drawer .auth-portal-icon--turnos {
   background:
-    linear-gradient(135deg, rgba(0, 0, 0, 0.32), rgba(30, 64, 175, 0.35)),
-    url('../assets/img/icon-turnos-portal.svg') center 52% / 68% no-repeat;
-  border-color: rgba(96, 165, 250, 0.45);
+    linear-gradient(135deg, rgba(0, 0, 0, 0.28), rgba(37, 99, 235, 0.32)),
+    url('../assets/img/turnos-hub-poster.jpg') center 45% / cover no-repeat;
+  border-color: rgba(96, 165, 250, 0.42);
 }
 
 .auth-layout--hub.auth-layout--portals-only.auth-layout--hub-news {
