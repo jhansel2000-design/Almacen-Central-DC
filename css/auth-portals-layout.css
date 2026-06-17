@@ -65,7 +65,7 @@ body.auth-locked:has(.auth-layout--hub.auth-layout--portals-only) .auth-video-sc
 
 body.auth-locked:has(.auth-layout--hub-news) .auth-video-scrim {
   background:
-    linear-gradient(180deg, rgba(4, 8, 16, 0.78) 0%, rgba(6, 10, 18, 0.86) 50%, rgba(4, 8, 16, 0.92) 100%);
+    linear-gradient(180deg, rgba(2, 4, 8, 0.88) 0%, rgba(3, 6, 12, 0.92) 50%, rgba(2, 4, 8, 0.94) 100%);
 }
 
 .auth-layout--hub.auth-layout--portals-only .auth-hero-head--hub {
@@ -912,13 +912,13 @@ html[data-theme="light"] .auth-hub-link {
 }
 
 .auth-layout--hub.auth-layout--portals-only.auth-layout--hub-news {
-  width: min(100%, calc(100vw - 1rem));
-  max-width: min(1400px, calc(100vw - 1rem));
+  width: min(90vw, calc(100vw - 2rem));
+  max-width: 1800px;
   min-height: calc(100vh - 1.5rem);
   min-height: calc(100dvh - 1.5rem);
   max-height: calc(100vh - 1.5rem);
   max-height: calc(100dvh - 1.5rem);
-  padding: clamp(0.65rem, 1.5vw, 1rem);
+  padding: clamp(0.5rem, 1vw, 0.85rem);
   justify-content: center;
   align-items: center;
   overflow: hidden;

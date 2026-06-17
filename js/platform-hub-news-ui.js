@@ -22,7 +22,7 @@
     inventario: 'Inventario RF'
   };
 
-  var ROTATE_MS = 6000;
+  var ROTATE_MS = 6500;
   var carouselTimer = null;
   var carouselIndex = 0;
   var carouselPaused = false;
@@ -72,6 +72,7 @@
     var classes = 'hub-board-slide hub-board-card';
     if (isActive) classes += ' is-active';
     if (theme) classes += ' hub-board-card--' + theme;
+    if (item.imageUrl) classes += ' hub-board-card--has-media';
 
     var html = '<article class="' + classes + '" aria-hidden="' + (isActive ? 'false' : 'true') + '">';
 
@@ -91,7 +92,9 @@
     html += '<div class="hub-board-card__footer">';
     if (item.linkUrl) {
       var cta = CTA_BY_THEME[theme] || 'Ver más';
+      html += '<div class="hub-board-card__actions">';
       html += '<a class="hub-board-card__btn" href="' + esc(item.linkUrl) + '">' + esc(cta) + ' →</a>';
+      html += '</div>';
     }
     html += '<div class="hub-board-card__meta">';
     if (item.publishedAt) {
