@@ -172,7 +172,6 @@
   function renderBoard(items) {
     var feed = document.getElementById('hubNewsFeed');
     var empty = document.getElementById('hubNewsEmpty');
-    var template = document.getElementById('hubNewsTemplate');
     if (!feed) return;
 
     stopCarousel();
@@ -181,12 +180,10 @@
     if (!list.length) {
       feed.innerHTML = '';
       if (empty) empty.hidden = false;
-      if (template) template.hidden = false;
       return;
     }
 
     if (empty) empty.hidden = true;
-    if (template) template.hidden = true;
 
     var html = '<div class="hub-news-carousel" role="region" aria-label="Noticias del almacén" aria-live="polite">';
     html += '<div class="hub-news-carousel-track">';

@@ -32,7 +32,7 @@
   <link rel="stylesheet" href="css/executive-comfort.css">
   <link rel="stylesheet" href="css/auth-cinematic.css?v=18">
   <link rel="stylesheet" href="css/auth-security.css?v=3">
-  <link rel="stylesheet" href="css/auth-portals-layout.css?v=21">
+  <link rel="stylesheet" href="css/auth-portals-layout.css?v=22">
   <link rel="stylesheet" href="css/perf-lite.css?v=17">
   <link rel="stylesheet" href="css/despacho-auth.css?v=30">
   <link rel="stylesheet" href="css/averias-auth.css?v=3">
@@ -116,27 +116,23 @@
     <div class="auth-layout auth-layout--hub auth-layout--portals-only auth-layout--hub-news" id="authHubLayout">
       <main class="hub-main-web" id="hubMainWeb" aria-label="Tablón informativo">
         <div class="hub-news-board news-board">
-          <header class="news-board-head">
-            <div class="auth-hero-logo-wrap hub-news-logo" aria-hidden="true">
-              <img class="jc-logo-img jc-logo-img--hero auth-hero-logo-img" src="assets/img/jc-logo.png?v=5" alt="AC" width="64" height="64">
+          <header class="news-board-head news-board-head--compact">
+            <img class="jc-logo-img hub-news-logo-sm" src="assets/img/jc-logo.png?v=5" alt="AC" width="48" height="48">
+            <div class="news-board-head-copy">
+              <p class="news-board-eyebrow">Bienvenido · Almacén Central DC</p>
+              <div class="news-board-head-line">
+                <h1 class="news-board-title auth-brand-title">Tablón informativo</h1>
+                <span class="auth-brand-tag auth-brand-tag--inline">300-001</span>
+              </div>
+              <p class="news-board-sub">Comunicados y avisos para todo el almacén</p>
             </div>
-            <p class="news-board-eyebrow">Bienvenido a · Almacén Central DC</p>
-            <h1 class="news-board-title auth-brand-title">Tablón informativo</h1>
-            <p class="auth-brand-tag auth-brand-tag--inline">300-001</p>
-            <p class="news-board-sub">Comunicados y avisos para todo el almacén</p>
           </header>
-          <div class="news-board-empty" id="hubNewsEmpty">
+          <div class="news-board-empty" id="hubNewsEmpty" hidden>
             <div class="news-board-empty-icon" aria-hidden="true">📰</div>
             <p class="news-board-empty-title">Sin noticias publicadas</p>
-            <p class="news-board-empty-desc">La web principal está lista para mostrar avisos. Por ahora no hay comunicados activos.</p>
+            <p class="news-board-empty-desc">No hay comunicados activos en este momento.</p>
           </div>
           <div id="hubNewsFeed" class="hub-news-feed" aria-live="polite"></div>
-          <div class="news-board-template" id="hubNewsTemplate" aria-label="Plantilla de noticias">
-            <article class="news-slot news-slot--ghost"><span class="news-slot-label">Espacio para aviso 1</span></article>
-            <article class="news-slot news-slot--ghost"><span class="news-slot-label">Espacio para aviso 2</span></article>
-            <article class="news-slot news-slot--ghost"><span class="news-slot-label">Espacio para aviso 3</span></article>
-          </div>
-          <p class="news-board-hint">Las noticias rotan solas. Pulse <strong>☰</strong> en la esquina para elegir un portal.</p>
         </div>
       </main>
       <div class="auth-glass-card auth-glass-card--login" id="authLoginPanel" hidden aria-hidden="true">
@@ -619,7 +615,7 @@
   <script defer src="js/platform-wake-lock.js?v=1"></script>
   <script defer src="js/platform-hub-news-core.js?v=2"></script>
   <script defer src="js/platform-hub-news-sync.js?v=2"></script>
-  <script defer src="js/platform-hub-news-ui.js?v=3"></script>
+  <script defer src="js/platform-hub-news-ui.js?v=4"></script>
   <script defer src="js/platform-hub-news-app.js?v=2"></script>
   <script defer src="js/platform-app.js?v=57"></script>
   <script defer src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js" crossorigin="anonymous"></script>
