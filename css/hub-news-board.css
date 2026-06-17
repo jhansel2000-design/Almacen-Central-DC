@@ -177,7 +177,7 @@
 .hub-board-carousel {
   width: 100%;
   height: 100%;
-  max-height: calc(var(--hub-card-h) + 48px);
+  max-height: calc(var(--hub-card-h) + 28px);
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -189,37 +189,8 @@
   height: var(--hub-card-h);
   max-height: var(--hub-card-h);
   min-height: 0;
-  display: grid;
-  grid-template-columns: 60px minmax(0, 1fr) 60px;
-  align-items: stretch;
-  gap: 10px;
+  display: block;
   overflow: hidden;
-}
-
-.hub-board-carousel__arrow {
-  width: 60px;
-  height: 60px;
-  align-self: center;
-  border: 1px solid var(--hub-border);
-  border-radius: 999px;
-  background: #1e293b;
-  color: #f8fafc;
-  font-size: 1.5rem;
-  line-height: 1;
-  cursor: pointer;
-  transition: background 0.2s, border-color 0.2s, transform 0.15s;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
-}
-
-.hub-board-carousel__arrow:hover {
-  background: #2563eb;
-  border-color: #60a5fa;
-}
-
-.hub-board-carousel__arrow--hidden {
-  visibility: hidden;
-  opacity: 0;
-  pointer-events: none;
 }
 
 .hub-board-carousel__viewport {
@@ -257,42 +228,13 @@
   z-index: 2;
 }
 
-.hub-board-carousel__controls {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
-}
-
-.hub-board-carousel__dots {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.hub-board-carousel__dot {
-  width: 10px;
-  height: 10px;
-  padding: 0;
-  border: none;
-  border-radius: 999px;
-  background: rgba(148, 163, 184, 0.4);
-  cursor: pointer;
-  transition: width 0.25s ease, background 0.25s ease;
-}
-
-.hub-board-carousel__dot.is-active {
-  width: 28px;
-  background: var(--hub-accent);
-}
-
 .hub-board-carousel__counter {
-  min-width: 3.5rem;
+  margin: 0;
   text-align: center;
   font-size: 0.85rem;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--hub-text-muted);
+  letter-spacing: 0.04em;
 }
 
 /* —— Tarjeta noticia: horizontal imagen | texto —— */
@@ -556,25 +498,6 @@
     width: calc(100vw - 0.75rem);
     padding-top: max(48px, env(safe-area-inset-top, 0px));
   }
-
-  .hub-board-carousel__main {
-    grid-template-columns: 1fr;
-    position: relative;
-  }
-
-  .hub-board-carousel__arrow:not(.hub-board-carousel__arrow--hidden) {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    z-index: 10;
-    width: 40px;
-    height: 40px;
-    background: rgba(15, 22, 35, 0.95);
-  }
-
-  .hub-board-carousel__arrow--prev { left: 8px; }
-  .hub-board-carousel__arrow--next { right: 8px; }
-  .hub-board-carousel__arrow--hidden { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {

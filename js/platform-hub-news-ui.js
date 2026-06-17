@@ -116,7 +116,6 @@
 
   function setActiveSlide(feed, index, total) {
     var slides = feed.querySelectorAll('.hub-board-slide');
-    var dots = feed.querySelectorAll('.hub-board-carousel__dot');
     var counter = feed.querySelector('.hub-board-carousel__counter');
     carouselIndex = ((index % total) + total) % total;
 
@@ -124,12 +123,6 @@
       var active = i === carouselIndex;
       slide.classList.toggle('is-active', active);
       slide.setAttribute('aria-hidden', active ? 'false' : 'true');
-    });
-
-    dots.forEach(function (dot, i) {
-      var active = i === carouselIndex;
-      dot.classList.toggle('is-active', active);
-      dot.setAttribute('aria-selected', active ? 'true' : 'false');
     });
 
     if (counter) counter.textContent = (carouselIndex + 1) + ' / ' + total;
@@ -155,40 +148,9 @@
   }
 
   function bindCarousel(feed, total) {
-    var multi = total > 1;
-
-    feed.querySelectorAll('.hub-board-carousel__dot').forEach(function (dot) {
-      dot.addEventListener('click', function () {
-        var idx = parseInt(dot.getAttribute('data-index'), 10);
-        if (!isNaN(idx)) {
-          setActiveSlide(feed, idx, total);
-          resetCarouselTimer();
-        }
-      });
-    });
-
-    var prev = feed.querySelector('.hub-board-carousel__arrow--prev');
-    var next = feed.querySelector('.hub-board-carousel__arrow--next');
-
-    if (prev && multi) {
-      prev.addEventListener('click', function () {
-        setActiveSlide(feed, carouselIndex - 1, total);
-        resetCarouselTimer();
-      });
-    }
-    if (next && multi) {
-      next.addEventListener('click', function () {
-        setActiveSlide(feed, carouselIndex + 1, total);
-        resetCarouselTimer();
-      });
-    }
-
-    if (multi) {
-      feed.addEventListener('mouseenter', function () { carouselPaused = true; });
-      feed.addEventListener('mouseleave', function () { carouselPaused = false; });
-      feed.addEventListener('focusin', function () { carouselPaused = true; });
-      feed.addEventListener('focusout', function () { carouselPaused = false; });
-    }
+    if (total <= 1) return;
+    feed.addEventListener('mouseenter', function () { carouselPaused = true; });
+    feed.addEventListener('mouseleave', function () { carouselPaused = false; });
   }
 
   function renderBoard(items) {
@@ -223,29 +185,18 @@
     showEmpty(false);
 
     var multi = list.length > 1;
-    var arrowHidden = multi ? '' : ' hub-board-carousel__arrow--hidden';
-    var html = '<div class="hub-board-carousel" role="region" aria-label="Noticias del almacén" aria-roledescription="carrusel">';
+    var html = '<div class="hub-board-carousel" role="region" aria-label="Noticias del almacén" aria-roledescription="carrusel" aria-live="polite">';
     html += '<div class="hub-board-carousel__main">';
-    html += '<button type="button" class="hub-board-carousel__arrow hub-board-carousel__arrow--prev' + arrowHidden + '" aria-label="Noticia anterior">‹</button>';
     html += '<div class="hub-board-carousel__viewport"><div class="hub-board-carousel__track">';
 
     list.forEach(function (item, i) {
       html += renderItemHtml(item, i === 0);
     });
 
-    html += '</div></div>';
-    html += '<button type="button" class="hub-board-carousel__arrow hub-board-carousel__arrow--next' + arrowHidden + '" aria-label="Siguiente noticia">›</button>';
-    html += '</div>';
+    html += '</div></div></div>';
 
     if (multi) {
-      html += '<div class="hub-board-carousel__controls">';
-      html += '<div class="hub-board-carousel__dots" role="tablist" aria-label="Indicadores de noticias">';
-      list.forEach(function (item, i) {
-        html += '<button type="button" class="hub-board-carousel__dot' + (i === 0 ? ' is-active' : '') + '" data-index="' + i + '" role="tab" aria-label="' + esc(item.title) + '" aria-selected="' + (i === 0 ? 'true' : 'false') + '"></button>';
-      });
-      html += '</div>';
-      html += '<span class="hub-board-carousel__counter" aria-live="polite">1 / ' + list.length + '</span>';
-      html += '</div>';
+      html += '<p class="hub-board-carousel__counter" aria-live="polite">1 / ' + list.length + '</p>';
     }
 
     html += '</div>';
