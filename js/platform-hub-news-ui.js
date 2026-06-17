@@ -115,6 +115,7 @@
       var active = i === carouselIndex;
       slide.classList.toggle('is-active', active);
       slide.setAttribute('aria-hidden', active ? 'false' : 'true');
+      slide.style.visibility = active ? 'visible' : 'hidden';
     });
     dots.forEach(function (dot, i) {
       var active = i === carouselIndex;
