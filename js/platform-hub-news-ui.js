@@ -22,7 +22,7 @@
     inventario: 'Inventario RF'
   };
 
-  var ROTATE_MS = 6500;
+  var ROTATE_MS = 20000;
   var carouselTimer = null;
   var carouselIndex = 0;
   var carouselPaused = false;
