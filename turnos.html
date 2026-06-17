@@ -3,15 +3,18 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="description" content="Control de turnos de despacho por lectura QR — Almacén Central DC">
+  <meta name="description" content="Control de turnos de despacho — chofer y administración — Almacén Central DC">
   <meta name="theme-color" content="#111827">
   <meta name="referrer" content="strict-origin-when-cross-origin">
   <meta http-equiv="X-Content-Type-Options" content="nosniff">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://cdn.sheetjs.com; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' http://localhost:* http://127.0.0.1:*; img-src 'self' data: blob:; media-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://cdn.sheetjs.com https://challenges.cloudflare.com; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' http://localhost:* http://127.0.0.1:* https://*.supabase.co wss://*.supabase.co https://challenges.cloudflare.com; img-src 'self' data: blob: https://challenges.cloudflare.com; media-src 'self'; frame-src https://challenges.cloudflare.com; object-src 'none'; base-uri 'self'; form-action 'self'">
   <title>Control de Turnos de Despacho — Almacén Central DC</title>
   <script src="js/relay-bootstrap.js?v=1"></script>
   <link rel="icon" type="image/png" href="assets/img/jc-logo-64.png?v=5">
-  <link rel="stylesheet" href="css/turnos-portal.css?v=1">
+  <link rel="stylesheet" href="css/auth-cinematic.css?v=19">
+  <link rel="stylesheet" href="css/auth-security.css?v=3">
+  <link rel="stylesheet" href="css/dc-brand.css?v=11">
+  <link rel="stylesheet" href="css/turnos-portal.css?v=2">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
@@ -19,63 +22,104 @@
 <body class="turnos-body">
   <noscript><p class="turnos-noscript">Activa JavaScript para usar el control de turnos.</p></noscript>
 
-  <div class="turnos-app">
-    <aside class="turnos-sidebar" aria-label="Menú principal">
+  <!-- Vista Chofer (sin login) -->
+  <div id="turnosChoferRoot" class="turnos-chofer-root">
+    <header class="turnos-chofer-header">
+      <img src="assets/img/jc-logo-64.png" alt="AC" width="44" height="44">
+      <div>
+        <p class="turnos-brand-eyebrow">Almacén Central DC</p>
+        <h1 class="turnos-chofer-title">Control de Turnos</h1>
+      </div>
+      <div class="turnos-chofer-clock">
+        <p id="turnosChoferClockTime" class="turnos-clock-time">--:--</p>
+      </div>
+    </header>
+    <main id="turnosChoferMain" class="turnos-chofer-main"></main>
+    <footer class="turnos-chofer-foot">
+      <button type="button" class="turnos-admin-link" id="turnosAdminLink">Acceso administrativo →</button>
+      <a href="index.html" class="turnos-back-link">← Volver al mando</a>
+    </footer>
+  </div>
+
+  <!-- Login administrativo -->
+  <div class="turnos-auth-overlay is-hidden" id="turnosAuthOverlay" role="dialog" aria-labelledby="turnosAuthTitle">
+    <div class="turnos-auth-card">
+      <h2 id="turnosAuthTitle">Acceso administrativo</h2>
+      <p class="turnos-auth-sub">Gestión de turnos y cambio de estados</p>
+      <form id="turnosAuthForm" class="turnos-auth-form" novalidate action="#" method="post">
+        <label class="turnos-field"><span>Usuario</span>
+          <input id="turnosAuthUsername" class="turnos-input" type="text" autocomplete="username" maxlength="64" required></label>
+        <label class="turnos-remember" for="turnosAuthRememberUser">
+          <input type="checkbox" id="turnosAuthRememberUser" checked> Guardar usuario</label>
+        <label class="turnos-field turnos-field-password"><span>Contraseña</span>
+          <input id="turnosAuthPassword" class="turnos-input" type="password" autocomplete="current-password" maxlength="128" required>
+          <button type="button" class="turnos-pwd-toggle" id="turnosBtnTogglePassword">Ver</button></label>
+        <button type="submit" class="turnos-btn turnos-btn--primary turnos-btn--xl" id="turnosAuthSubmit">Entrar</button>
+        <p id="turnosAuthError" class="turnos-form-error" role="alert" hidden></p>
+      </form>
+      <button type="button" class="turnos-back-btn turnos-back-btn--center" data-chofer-back>Volver al registro de chofer</button>
+    </div>
+  </div>
+
+  <!-- Vista Admin -->
+  <div id="turnosAdminRoot" class="turnos-app is-hidden">
+    <aside class="turnos-sidebar" aria-label="Administración">
       <div class="turnos-brand">
         <img src="assets/img/jc-logo-64.png" alt="AC" width="40" height="40">
         <div>
-          <p class="turnos-brand-eyebrow">Almacén Central DC</p>
+          <p class="turnos-brand-eyebrow">Administración</p>
           <h1 class="turnos-brand-title">Control de Turnos</h1>
         </div>
       </div>
       <nav class="turnos-nav">
         <button type="button" class="turnos-nav-item active" data-turnos-nav="dashboard">📊 Dashboard</button>
-        <button type="button" class="turnos-nav-item" data-turnos-nav="scan">📷 Escanear QR</button>
-        <button type="button" class="turnos-nav-item" data-turnos-nav="history">📋 Historial</button>
+        <button type="button" class="turnos-nav-item" data-turnos-nav="manage">📋 Gestionar turnos</button>
         <button type="button" class="turnos-nav-item" data-turnos-nav="export">📤 Exportar</button>
         <button type="button" class="turnos-nav-item" data-turnos-nav="config">⚙ Configuración</button>
       </nav>
       <div class="turnos-sidebar-foot">
-        <p class="turnos-operator-label">Operador</p>
-        <p class="turnos-operator-name" id="turnosOperatorLabel">Operador DC</p>
-        <a href="index.html" class="turnos-back-link">← Volver al mando</a>
+        <p class="turnos-operator-label">Sesión</p>
+        <p class="turnos-operator-name" id="turnosAdminUserLabel">—</p>
+        <button type="button" class="turnos-admin-link" id="turnosBackChoferLink">← Vista chofer</button>
       </div>
     </aside>
 
     <div class="turnos-main-wrap">
       <header class="turnos-topbar">
         <div>
-          <p class="turnos-top-eyebrow">Despacho de almacén</p>
-          <h2 class="turnos-top-title">Control de Turnos de Despacho</h2>
+          <p class="turnos-top-eyebrow">Panel administrativo</p>
+          <h2 class="turnos-top-title">Gestión de turnos de despacho</h2>
         </div>
         <div class="turnos-clock">
           <p id="turnosClockTime" class="turnos-clock-time">--:--:--</p>
           <p id="turnosClockDate" class="turnos-clock-date">—</p>
         </div>
       </header>
-
       <main class="turnos-main">
         <div class="turnos-view" id="turnosViewDashboard" data-module="dashboard"></div>
-        <div class="turnos-view" id="turnosViewScan" data-module="scan" hidden></div>
-        <div class="turnos-view" id="turnosViewHistory" data-module="history" hidden></div>
+        <div class="turnos-view" id="turnosViewManage" data-module="manage" hidden></div>
         <div class="turnos-view" id="turnosViewExport" data-module="export" hidden></div>
         <div class="turnos-view" id="turnosViewConfig" data-module="config" hidden></div>
       </main>
     </div>
 
-    <nav class="turnos-mobile-nav" aria-label="Navegación móvil">
+    <nav class="turnos-mobile-nav" aria-label="Navegación móvil admin">
       <button type="button" class="turnos-nav-item active" data-turnos-nav="dashboard">📊</button>
-      <button type="button" class="turnos-nav-item" data-turnos-nav="scan">📷</button>
-      <button type="button" class="turnos-nav-item" data-turnos-nav="history">📋</button>
+      <button type="button" class="turnos-nav-item" data-turnos-nav="manage">📋</button>
       <button type="button" class="turnos-nav-item" data-turnos-nav="export">📤</button>
       <button type="button" class="turnos-nav-item" data-turnos-nav="config">⚙</button>
     </nav>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <script src="js/panel-core.js?v=17"></script>
+  <script src="js/platform-security.js?v=5"></script>
+  <script src="js/platform-web-users.js?v=18"></script>
+  <script src="js/platform-admin.js?v=14"></script>
   <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
-  <script src="js/platform-turnos-core.js?v=1"></script>
-  <script src="js/platform-turnos-ui.js?v=1"></script>
-  <script src="js/platform-turnos-app.js?v=1"></script>
+  <script src="js/platform-turnos-core.js?v=2"></script>
+  <script src="js/platform-turnos-store.js?v=1"></script>
+  <script src="js/platform-turnos-chofer.js?v=1"></script>
+  <script src="js/platform-turnos-admin.js?v=1"></script>
+  <script src="js/platform-turnos-app.js?v=2"></script>
 </body>
 </html>

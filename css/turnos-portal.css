@@ -499,3 +499,229 @@ html, body.turnos-body {
   .turnos-clock { text-align: left; }
   .turnos-main { padding: 1rem; }
 }
+
+.is-hidden { display: none !important; }
+
+/* ——— Vista Chofer ——— */
+.turnos-chofer-root {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 0 1rem 1.5rem;
+}
+
+.turnos-chofer-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 0;
+  border-bottom: 1px solid var(--turnos-border);
+}
+
+.turnos-chofer-title {
+  margin: 0.15rem 0 0;
+  font-size: 1.15rem;
+  font-weight: 800;
+}
+
+.turnos-chofer-clock { margin-left: auto; }
+
+.turnos-chofer-main {
+  flex: 1;
+  padding: 1.25rem 0;
+}
+
+.turnos-chofer-foot {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--turnos-border);
+}
+
+.turnos-chofer-lead {
+  margin: 0 0 1rem;
+  color: var(--turnos-muted);
+  font-size: 0.95rem;
+}
+
+.turnos-service-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.turnos-service-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.35rem;
+  width: 100%;
+  min-height: 88px;
+  padding: 1.1rem 1.15rem;
+  border: 2px solid var(--turnos-border);
+  border-radius: 16px;
+  background: var(--turnos-panel);
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s, transform 0.12s;
+}
+
+.turnos-service-card:active { transform: scale(0.98); }
+.turnos-service-card:hover { border-color: rgba(96, 165, 250, 0.45); }
+
+.turnos-service-icon { font-size: 1.75rem; }
+.turnos-service-title { font-size: 1.05rem; font-weight: 800; }
+.turnos-service-desc { font-size: 0.85rem; color: var(--turnos-muted); }
+
+.turnos-form-panel { animation: turnosFade 0.2s ease; }
+.turnos-form-title { margin: 0.5rem 0 1.25rem; font-size: 1.35rem; }
+
+.turnos-input--lg {
+  min-height: 56px;
+  font-size: 1.05rem;
+}
+
+.turnos-btn--hero {
+  margin-top: 0.75rem;
+  min-height: 58px;
+  font-size: 1.05rem;
+}
+
+.turnos-back-btn {
+  border: none;
+  background: none;
+  color: #93c5fd;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+}
+
+.turnos-back-btn--center {
+  display: block;
+  margin: 1rem auto 0;
+}
+
+.turnos-form-error {
+  margin: 0.75rem 0;
+  padding: 0.75rem;
+  border-radius: 10px;
+  background: rgba(220, 38, 38, 0.15);
+  color: #fca5a5;
+  font-size: 0.88rem;
+}
+
+.turnos-hint--info {
+  padding: 0.75rem;
+  border-radius: 10px;
+  background: rgba(37, 99, 235, 0.12);
+  color: #bfdbfe;
+}
+
+.turnos-success-screen { text-align: center; padding: 1rem 0; }
+
+.turnos-admin-link {
+  border: none;
+  background: none;
+  color: #93c5fd;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+  padding: 0;
+}
+
+/* ——— Auth admin ——— */
+.turnos-auth-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(8px);
+}
+
+.turnos-auth-card {
+  width: min(100%, 420px);
+  padding: 1.5rem;
+  border-radius: 18px;
+  border: 1px solid var(--turnos-border);
+  background: var(--turnos-panel);
+}
+
+.turnos-auth-card h2 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.turnos-auth-sub {
+  margin: 0.35rem 0 1.25rem;
+  color: var(--turnos-muted);
+  font-size: 0.88rem;
+}
+
+.turnos-auth-form .turnos-field { margin-bottom: 0.85rem; }
+
+.turnos-remember {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.85rem;
+  font-size: 0.85rem;
+  color: var(--turnos-muted);
+}
+
+.turnos-field-password { position: relative; }
+
+.turnos-pwd-toggle {
+  position: absolute;
+  right: 0.65rem;
+  bottom: 0.55rem;
+  border: none;
+  background: none;
+  color: #93c5fd;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.turnos-badge--process { background: rgba(37, 99, 235, 0.2); color: #93c5fd; }
+
+.turnos-kpi--process { background: linear-gradient(135deg, #1e3a8a, #2563eb); }
+
+.turnos-kpi-grid--admin {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.turnos-status-select {
+  min-height: 40px;
+  padding: 0.35rem 0.5rem;
+  border-radius: 10px;
+  border: 1px solid var(--turnos-border);
+  background: rgba(0, 0, 0, 0.35);
+  color: #fff;
+  font: inherit;
+  font-size: 0.78rem;
+  max-width: 140px;
+}
+
+body.turnos-admin-mode .turnos-chofer-root { display: none !important; }
+
+.turnos-mobile-nav { grid-template-columns: repeat(4, 1fr); }
+
+@keyframes turnosFade {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (max-width: 960px) {
+  .turnos-kpi-grid--admin { grid-template-columns: repeat(2, 1fr); }
+}
