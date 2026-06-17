@@ -125,12 +125,13 @@
             <p class="auth-brand-tag auth-brand-tag--inline">300-001</p>
             <p class="news-board-sub">Comunicados y avisos para todo el almacén</p>
           </header>
-          <div class="news-board-empty">
+          <div class="news-board-empty" id="hubNewsEmpty">
             <div class="news-board-empty-icon" aria-hidden="true">📰</div>
             <p class="news-board-empty-title">Sin noticias publicadas</p>
             <p class="news-board-empty-desc">La web principal está lista para mostrar avisos. Por ahora no hay comunicados activos.</p>
           </div>
-          <div class="news-board-template" aria-label="Plantilla de noticias">
+          <div id="hubNewsFeed" class="hub-news-feed" aria-live="polite"></div>
+          <div class="news-board-template" id="hubNewsTemplate" aria-label="Plantilla de noticias">
             <article class="news-slot news-slot--ghost"><span class="news-slot-label">Espacio para aviso 1</span></article>
             <article class="news-slot news-slot--ghost"><span class="news-slot-label">Espacio para aviso 2</span></article>
             <article class="news-slot news-slot--ghost"><span class="news-slot-label">Espacio para aviso 3</span></article>
@@ -323,6 +324,7 @@
           <button type="button" class="admin-tab-btn active" data-tab="excel" data-perm="data.import">Datos Excel</button>
           <button type="button" class="admin-tab-btn" data-tab="accessRequest" data-perm="access.request">Mi solicitud</button>
           <button type="button" class="admin-tab-btn" data-tab="requests" data-perm="requests.manage">Solicitudes<span class="admin-tab-badge" id="adminRequestsBadge" hidden></span></button>
+          <button type="button" class="admin-tab-btn" data-tab="news" data-perm="news.manage">Tablón / Noticias</button>
           <button type="button" class="admin-tab-btn" data-tab="sistema" data-perm="admin.panel">Sistema</button>
           <button type="button" class="admin-tab-btn" data-tab="herramientas" data-perm="admin.panel">Herramientas</button>
           <button type="button" class="admin-tab-btn" data-tab="users" data-perm="users.manage">Usuarios</button>
@@ -372,6 +374,9 @@
           </div>
           <div class="admin-tab-pane" id="adminPaneRequests">
             <div id="requestsQueueHost"></div>
+          </div>
+          <div class="admin-tab-pane" id="adminPaneNews">
+            <div id="adminNewsHost"></div>
           </div>
           <div class="admin-tab-pane" id="adminPaneSistema">
             <p class="admin-hint">Diagnóstico en tiempo real: módulos cargados, bibliotecas, almacenamiento y estado de datos.</p>
@@ -603,7 +608,7 @@
   <script defer src="js/platform-tv-dashboard.js?v=9"></script>
   <script defer src="js/platform-gestures.js"></script>
   <script defer src="js/platform-operaciones-ui.js"></script>
-  <script defer src="js/platform-admin.js?v=14"></script>
+  <script defer src="js/platform-admin.js?v=15"></script>
   <script defer src="js/platform-admin-tools.js?v=5"></script>
   <script defer src="js/platform-admin-ui.js?v=3"></script>
   <script defer src="js/platform-modules.js?v=2"></script>
@@ -612,7 +617,11 @@
   <script defer src="js/platform-shortcuts.js"></script>
   <script defer src="js/platform-web-users.js?v=18"></script>
   <script defer src="js/platform-wake-lock.js?v=1"></script>
-  <script defer src="js/platform-app.js?v=56"></script>
+  <script defer src="js/platform-hub-news-core.js?v=1"></script>
+  <script defer src="js/platform-hub-news-sync.js?v=1"></script>
+  <script defer src="js/platform-hub-news-ui.js?v=1"></script>
+  <script defer src="js/platform-hub-news-app.js?v=1"></script>
+  <script defer src="js/platform-app.js?v=57"></script>
   <script defer src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js" crossorigin="anonymous"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js" crossorigin="anonymous"></script>
 </body>

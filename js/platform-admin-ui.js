@@ -18,7 +18,8 @@
     logs: 'adminPaneLogs',
     ai: 'adminPaneAi',
     accessRequest: 'adminPaneAccessRequest',
-    requests: 'adminPaneRequests'
+    requests: 'adminPaneRequests',
+    news: 'adminPaneNews'
   };
 
   function statusTag(ok, text) {

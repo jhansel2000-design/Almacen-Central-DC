@@ -901,6 +901,9 @@
     updateRequestsBadge();
     if (global.PlatformUtils) global.PlatformUtils.applyRoleUi(state.user);
     if (global.PlatformNetworkRelay) global.PlatformNetworkRelay.syncAdminToggleUi();
+    if (global.PlatformHubNewsApp && global.PlatformHubNewsApp.initAdmin) {
+      global.PlatformHubNewsApp.initAdmin(state.user);
+    }
   }
 
   function updateRequestsBadge() {
@@ -1500,6 +1503,9 @@
     }
     loadConfigForm();
     refreshAccessRequestPanels();
+    if (global.PlatformHubNewsApp && global.PlatformHubNewsApp.refreshAdmin) {
+      global.PlatformHubNewsApp.refreshAdmin(state.user);
+    }
   }
 
   function setAdminToolsStatus(msg, isErr) {
@@ -2805,6 +2811,9 @@
         }
         if (tab === 'accessRequest') refreshAccessRequestPanels();
         if (tab === 'requests') refreshAccessRequestPanels();
+        if (tab === 'news' && global.PlatformHubNewsApp) {
+          global.PlatformHubNewsApp.refreshAdmin(state.user);
+        }
       });
     });
 

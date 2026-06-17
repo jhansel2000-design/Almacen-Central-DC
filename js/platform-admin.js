@@ -27,12 +27,13 @@
     'despacho.use': 'Módulo Despacho (preparador)',
     'despacho.validate': 'Validador de despacho',
     'access.request': 'Solicitar acceso a configuración',
-    'requests.manage': 'Gestionar solicitudes de acceso'
+    'requests.manage': 'Gestionar solicitudes de acceso',
+    'news.manage': 'Publicar noticias del tablón'
   };
 
   var SECONDARY_ADMIN_PERMISSIONS = [
     'dashboard.view', 'filter.apply', 'data.import', 'export.data', 'reportes.view',
-    'ai.use', 'tv.mode', 'despacho.use', 'despacho.validate', 'logs.view'
+    'ai.use', 'tv.mode', 'despacho.use', 'despacho.validate', 'logs.view', 'news.manage'
   ];
 
   var PRIMARY_ONLY_PERMISSIONS = [
