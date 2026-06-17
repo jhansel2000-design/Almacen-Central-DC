@@ -1,5 +1,5 @@
 /**
- * Screen Wake Lock — evita suspensión/apagado de pantalla mientras Modo TV o share activo
+ * Screen Wake Lock — evita suspensión/apagado mientras Modo TV, tablón o share activo
  */
 (function (global) {
   'use strict';

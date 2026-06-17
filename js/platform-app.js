@@ -507,6 +507,16 @@
     }
   }
 
+  function syncHubNewsWakeLock() {
+    if (!global.PlatformWakeLock) return;
+    var layout = $('authHubLayout') || document.querySelector('.auth-layout--hub');
+    var hold = document.body.classList.contains('auth-locked') &&
+      layout &&
+      layout.classList.contains('auth-layout--hub-news') &&
+      !layout.classList.contains('auth-layout--login-open');
+    global.PlatformWakeLock.setHeld('hub-news-board', hold);
+  }
+
   function setAuthHubLoginOpen(open) {
     var layout = $('authHubLayout') || document.querySelector('.auth-layout--hub');
     var panel = $('authLoginPanel');
@@ -543,6 +553,7 @@
       var pwd = $('authPassword');
       if (pwd) pwd.value = '';
     }
+    syncHubNewsWakeLock();
   }
 
   function initAuthHub() {
@@ -564,6 +575,15 @@
       bindOnce(backBtn, 'click', function () {
         setAuthHubLoginOpen(false);
       });
+    }
+    syncHubNewsWakeLock();
+    if (!initAuthHub._wakeRetryBound) {
+      initAuthHub._wakeRetryBound = true;
+      var authOverlay = $('authOverlay');
+      if (authOverlay) {
+        var retryHubWake = function () { syncHubNewsWakeLock(); };
+        authOverlay.addEventListener('pointerdown', retryHubWake, { passive: true });
+      }
     }
   }
 
@@ -595,6 +615,7 @@
       }
     }
     document.body.classList.toggle('auth-locked', visible);
+    syncHubNewsWakeLock();
   }
 
   function showAuthRoleFeedback(card) {
@@ -843,6 +864,7 @@
         if (document.body.classList.contains('auth-locked')) {
           clearModuleViewClasses();
           resetAuthLayout();
+          syncHubNewsWakeLock();
         }
       });
     }
