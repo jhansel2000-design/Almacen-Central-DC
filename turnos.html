@@ -14,7 +14,7 @@
   <link rel="stylesheet" href="css/auth-cinematic.css?v=19">
   <link rel="stylesheet" href="css/auth-security.css?v=3">
   <link rel="stylesheet" href="css/dc-brand.css?v=11">
-  <link rel="stylesheet" href="css/turnos-portal.css?v=4">
+  <link rel="stylesheet" href="css/turnos-portal.css?v=5">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
@@ -103,6 +103,7 @@
           <h2 class="turnos-top-title">Gestión de turnos de despacho</h2>
         </div>
         <div class="turnos-clock">
+          <p id="turnosAdminLiveBadge" class="turnos-admin-live is-off" aria-live="polite">○ LOCAL</p>
           <p id="turnosClockTime" class="turnos-clock-time">--:--:--</p>
           <p id="turnosClockDate" class="turnos-clock-date">—</p>
         </div>
@@ -131,11 +132,14 @@
   <script src="js/platform-security.js?v=5"></script>
   <script src="js/platform-web-users.js?v=18"></script>
   <script src="js/platform-admin.js?v=14"></script>
+  <script src="js/platform-supabase.js?v=4"></script>
+  <script src="js/platform-supabase-realtime.js?v=1"></script>
   <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
-  <script src="js/platform-turnos-core.js?v=2"></script>
-  <script src="js/platform-turnos-store.js?v=1"></script>
-  <script src="js/platform-turnos-chofer.js?v=2"></script>
-  <script src="js/platform-turnos-admin.js?v=2"></script>
-  <script src="js/platform-turnos-app.js?v=2"></script>
+  <script src="js/platform-turnos-core.js?v=3"></script>
+  <script src="js/platform-turnos-sync.js?v=2"></script>
+  <script src="js/platform-turnos-store.js?v=2"></script>
+  <script src="js/platform-turnos-chofer.js?v=3"></script>
+  <script src="js/platform-turnos-admin.js?v=3"></script>
+  <script src="js/platform-turnos-app.js?v=3"></script>
 </body>
 </html>

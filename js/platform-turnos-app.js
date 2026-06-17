@@ -172,7 +172,6 @@
 
   function boot() {
     initAuth();
-    if (global.PlatformTurnosStore) global.PlatformTurnosStore.load();
     var params = new URLSearchParams(global.location.search);
     if (params.get('admin') === '1' && tryRestoreAdmin()) return;
     if (params.get('admin') === '1') {

@@ -777,3 +777,179 @@ body.turnos-admin-mode .turnos-chofer-root { display: none !important; }
 @media (max-width: 960px) {
   .turnos-kpi-grid--admin { grid-template-columns: repeat(2, 1fr); }
 }
+
+/* ——— Turno persistente chofer ——— */
+.turnos-my-turn-banner {
+  margin-bottom: 1.25rem;
+  padding: 1rem 1.1rem;
+  border-radius: 14px;
+  border: 1px solid rgba(22, 163, 74, 0.35);
+  background: rgba(22, 163, 74, 0.12);
+}
+
+.turnos-my-turn-label {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #86efac;
+}
+
+.turnos-my-turn-number {
+  margin: 0.35rem 0 0.85rem;
+  font-size: 2rem;
+  font-weight: 800;
+}
+
+.turnos-success-status {
+  margin: 0.75rem 0;
+  font-weight: 700;
+  color: #fde68a;
+}
+
+.turnos-live-badge {
+  margin: 0.75rem 0;
+  font-size: 0.82rem;
+}
+
+.turnos-live-badge--on {
+  color: #86efac;
+  font-weight: 700;
+}
+
+/* ——— Convocatoria chofer ——— */
+.turnos-call-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  background: rgba(0, 0, 0, 0.88);
+  backdrop-filter: blur(6px);
+}
+
+.turnos-call-overlay.is-hidden { display: none; }
+
+.turnos-call-card {
+  width: min(100%, 420px);
+  padding: 1.75rem 1.25rem;
+  border-radius: 20px;
+  border: 2px solid #16a34a;
+  background: linear-gradient(180deg, #14532d, #111827);
+  text-align: center;
+  animation: turnosPulse 1.2s ease-in-out infinite;
+}
+
+.turnos-call-eyebrow {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #86efac;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.turnos-call-turno {
+  margin: 0.5rem 0;
+  font-size: 2.5rem;
+  font-weight: 800;
+}
+
+.turnos-call-ventana {
+  margin: 0.75rem 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #fde68a;
+}
+
+.turnos-call-detail {
+  margin: 0 0 1.25rem;
+  color: var(--turnos-muted);
+  font-size: 0.9rem;
+}
+
+.turnos-call-inline {
+  margin: 1rem 0;
+  padding: 0.85rem;
+  border-radius: 12px;
+  background: rgba(22, 163, 74, 0.2);
+  color: #bbf7d0;
+  font-weight: 600;
+}
+
+@keyframes turnosPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.45); }
+  50% { box-shadow: 0 0 0 12px rgba(22, 163, 74, 0); }
+}
+
+/* ——— Admin en vivo ——— */
+.turnos-admin-live {
+  margin: 0 0 0.25rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.turnos-admin-live.is-live { color: #86efac; }
+.turnos-admin-live.is-off { color: var(--turnos-muted); }
+
+.turnos-live-banner {
+  margin: 0 0 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  font-size: 0.88rem;
+}
+
+.turnos-live-banner--on {
+  background: rgba(22, 163, 74, 0.15);
+  border: 1px solid rgba(22, 163, 74, 0.35);
+  color: #bbf7d0;
+}
+
+.turnos-live-banner--warn {
+  background: rgba(234, 179, 8, 0.12);
+  border: 1px solid rgba(234, 179, 8, 0.35);
+  color: #fde68a;
+}
+
+.turnos-live-dot { color: #86efac; }
+
+.turnos-btn--call {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  margin-bottom: 0.35rem;
+  padding: 0.35rem 0.65rem;
+  border: none;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #15803d, #16a34a);
+  color: #fff;
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.turnos-btn--call:disabled { opacity: 0.6; cursor: wait; }
+
+.turnos-actions-cell {
+  min-width: 150px;
+  vertical-align: top;
+}
+
+.turnos-badge--mini {
+  display: inline-block;
+  margin-bottom: 0.25rem;
+  font-size: 0.65rem;
+}
+
+.turnos-muted-inline {
+  color: var(--turnos-muted);
+  font-size: 0.85rem;
+}

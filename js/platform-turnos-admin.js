@@ -6,12 +6,38 @@
 
   var C = function () { return global.PlatformTurnosCore; };
   var S = function () { return global.PlatformTurnosStore; };
+  var Sync = function () { return global.PlatformTurnosSync; };
   var state = { module: 'dashboard', adminUser: null };
 
   function $(id) { return document.getElementById(id); }
 
   function esc(s) {
     return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  function liveBannerHtml() {
+    var shared = S().getState();
+    if (shared.live) {
+      return '<p class="turnos-live-banner turnos-live-banner--on"><span class="turnos-live-dot">●</span> Datos en vivo — los turnos de choferes aparecen aquí al instante</p>';
+    }
+    if (shared.setupRequired || (Sync() && Sync().isSetupRequired())) {
+      return '<p class="turnos-live-banner turnos-live-banner--warn">⚠ Sin conexión en vivo. Ejecute <strong>SETUP-TURNOS-SUPABASE.bat</strong> para ver turnos de todos los dispositivos.</p>';
+    }
+    return '<p class="turnos-live-banner turnos-live-banner--warn">Modo local — solo turnos de este navegador. Configure Supabase para datos en vivo.</p>';
+  }
+
+  function canConvocar(entry) {
+    if (!entry) return false;
+    if (entry.tipo === C().TIPOS.NOTA_CREDITO) {
+      return entry.estado === 'PENDIENTE' || entry.estado === 'CONFIRMADO';
+    }
+    return entry.estado === 'PENDIENTE';
+  }
+
+  function convocarBtn(entry) {
+    if (!canConvocar(entry)) return '<span class="turnos-muted-inline">—</span>';
+    return '<button type="button" class="turnos-btn turnos-btn--call" data-convocar-id="' + esc(entry.id) + '" title="Avisar al chofer con vibración">' +
+      'Convocar → ventana</button>';
   }
 
   function statusBadge(estado) {
@@ -32,14 +58,17 @@
       return '<p class="turnos-empty">No hay turnos registrados.</p>';
     }
     var rows = entries.map(function (e) {
+      var convocado = e.convocadoAt
+        ? '<span class="turnos-badge turnos-badge--process turnos-badge--mini">Convocado</span> '
+        : '';
       return '<tr>' +
         '<td class="turnos-mono turnos-turno">' + esc(e.turno) + '</td>' +
         '<td>' + esc(C().TIPO_LABELS[e.tipo] || e.tipo) + '</td>' +
         '<td>' + esc(e.choferNombre || '—') + '</td>' +
         '<td class="turnos-qr-cell" title="' + esc(e.detalle) + '">' + esc(e.detalle) + '</td>' +
         '<td class="turnos-mono">' + esc(e.hora) + '</td>' +
-        '<td>' + statusBadge(e.estado) + '</td>' +
-        (compact ? '' : '<td>' + statusSelect(e) + '</td>') +
+        '<td>' + convocado + statusBadge(e.estado) + '</td>' +
+        (compact ? '' : '<td class="turnos-actions-cell">' + convocarBtn(e) + ' ' + statusSelect(e) + '</td>') +
         '</tr>';
     }).join('');
 
@@ -70,6 +99,7 @@
     var last = data.counter > 0 ? C().formatTurno(data.counter) : '—';
 
     host.innerHTML =
+      liveBannerHtml() +
       '<div class="turnos-kpi-grid turnos-kpi-grid--admin">' +
       kpi('Total hoy', stats.totalHoy, 'blue') +
       kpi('Pendientes', stats.pendientes, 'red') +
@@ -100,9 +130,10 @@
     if (!host) return;
     var data = S().getState();
     host.innerHTML =
+      liveBannerHtml() +
       '<section class="turnos-panel">' +
       '<h2>Gestión de turnos</h2>' +
-      '<p class="turnos-sub">Solo personal autorizado puede cambiar estados. Notas de crédito: Pendiente → Confirmado → Asentado.</p>' +
+      '<p class="turnos-sub">Use <strong>Convocar → ventana</strong> para avisar al chofer (vibración en celular). Notas de crédito: Pendiente → Confirmado → Asentado.</p>' +
       adminTableHtml(data.entries, false) +
       '</section>';
   }
@@ -129,7 +160,7 @@
       '<h2>Configuración</h2>' +
       '<p class="turnos-sub">Usuario: <strong>' + esc(state.adminUser && (state.adminUser.name || state.adminUser.username)) + '</strong></p>' +
       '<button type="button" class="turnos-btn turnos-btn--danger turnos-btn--xl" data-admin-action="reset">Reiniciar numeración</button>' +
-      '<p class="turnos-hint">Conserva el historial. El próximo turno volverá a T-0001.</p>' +
+      '<p class="turnos-hint">Conserva el historial. El próximo turno volverá a T-0001 (solo en modo local).</p>' +
       '<button type="button" class="turnos-btn turnos-btn--secondary" data-admin-action="logout">Cerrar sesión admin</button>' +
       '</section>';
   }
@@ -143,7 +174,8 @@
         Trámite: C().TIPO_LABELS[e.tipo] || e.tipo,
         Chofer: e.choferNombre,
         Detalle: e.detalle,
-        Estado: e.estado
+        Estado: e.estado,
+        Convocado: e.convocadoAt ? new Date(e.convocadoAt).toLocaleString('es-ES') : ''
       };
     });
   }
@@ -191,6 +223,22 @@
         setModule(nav.getAttribute('data-turnos-nav'));
         return;
       }
+      var convBtn = ev.target.closest('[data-convocar-id]');
+      if (convBtn) {
+        var cid = convBtn.getAttribute('data-convocar-id');
+        var userName = state.adminUser && (state.adminUser.name || state.adminUser.username);
+        convBtn.disabled = true;
+        S().convocarChofer(cid, userName).then(function (result) {
+          convBtn.disabled = false;
+          if (!result.ok) {
+            alert(result.msg || 'No se pudo convocar.');
+            refresh();
+            return;
+          }
+          refresh();
+        });
+        return;
+      }
       var btn = ev.target.closest('[data-admin-action]');
       if (!btn) return;
       var action = btn.getAttribute('data-admin-action');
@@ -213,13 +261,14 @@
       var id = sel.getAttribute('data-turno-id');
       var estado = sel.value;
       var userName = state.adminUser && (state.adminUser.name || state.adminUser.username);
-      var result = S().setEstado(id, estado, userName);
-      if (!result.ok) {
-        alert(result.msg);
+      S().setEstado(id, estado, userName).then(function (result) {
+        if (!result.ok) {
+          alert(result.msg);
+          refresh();
+          return;
+        }
         refresh();
-        return;
-      }
-      refresh();
+      });
     });
   }
 
@@ -229,6 +278,12 @@
     var dateEl = $('turnosClockDate');
     if (timeEl) timeEl.textContent = now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     if (dateEl) dateEl.textContent = now.toLocaleDateString('es-ES', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
+    var liveEl = $('turnosAdminLiveBadge');
+    if (liveEl) {
+      var live = S().getState().live;
+      liveEl.className = 'turnos-admin-live ' + (live ? 'is-live' : 'is-off');
+      liveEl.textContent = live ? '● LIVE' : '○ LOCAL';
+    }
   }
 
   function refresh() {
@@ -237,8 +292,10 @@
 
   function start(user) {
     state.adminUser = user || null;
-    S().load();
     bind();
+    S().init().then(function () {
+      refresh();
+    });
     if (state._unsub) state._unsub();
     state._unsub = S().subscribe(function () { refresh(); });
     updateClock();

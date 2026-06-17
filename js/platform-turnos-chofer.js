@@ -8,11 +8,28 @@
   var S = function () { return global.PlatformTurnosStore; };
   var screen = 'menu';
   var selectedTipo = null;
+  var lastEntry = null;
+  var unsub = null;
+  var vibrateTimer = null;
 
   function $(id) { return document.getElementById(id); }
 
   function esc(s) {
     return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  var ICONS = {
+    despacho_facturas: 'assets/img/icon-turnos-despacho.svg',
+    liquidacion_facturas: 'assets/img/icon-turnos-liquidacion.svg',
+    nota_credito: 'assets/img/icon-turnos-nota-credito.svg'
+  };
+
+  function estadoLabel(entry) {
+    if (!entry) return '';
+    if (entry.convocadoAt && C().isTurnActive(entry)) {
+      return 'Convocado — pase a ' + C().ventanaLabel(entry.tipo);
+    }
+    return 'Estado: ' + entry.estado.replace(/_/g, ' ');
   }
 
   function render() {
@@ -21,18 +38,22 @@
     if (screen === 'menu') host.innerHTML = renderMenu();
     else if (screen === 'form') host.innerHTML = renderForm(selectedTipo);
     else if (screen === 'success') host.innerHTML = renderSuccess(lastEntry);
+    ensureCallOverlay();
   }
 
-  var lastEntry = null;
-
-  var ICONS = {
-    despacho_facturas: 'assets/img/icon-turnos-despacho.svg',
-    liquidacion_facturas: 'assets/img/icon-turnos-liquidacion.svg',
-    nota_credito: 'assets/img/icon-turnos-nota-credito.svg'
-  };
-
   function renderMenu() {
+    var ref = C().getMyTurnRef();
+    var resume = '';
+    if (ref && ref.turno) {
+      resume =
+        '<div class="turnos-my-turn-banner">' +
+        '<p class="turnos-my-turn-label">Su turno activo</p>' +
+        '<p class="turnos-my-turn-number turnos-mono">' + esc(ref.turno) + '</p>' +
+        '<button type="button" class="turnos-btn turnos-btn--secondary turnos-btn--xl" data-chofer-resume>Ver mi turno</button>' +
+        '</div>';
+    }
     return (
+      resume +
       '<section class="turnos-chofer-section">' +
       '<p class="turnos-chofer-lead">Seleccione el trámite que necesita hoy:</p>' +
       '<div class="turnos-service-grid">' +
@@ -86,22 +107,108 @@
 
   function renderSuccess(entry) {
     if (!entry) return renderMenu();
+    var live = S().getState().live;
+    var liveBadge = live
+      ? '<p class="turnos-live-badge turnos-live-badge--on">● En vivo — su turno se mantiene aunque cierre la página</p>'
+      : '<p class="turnos-hint turnos-hint--info">Modo local: solo en este dispositivo hasta activar Supabase.</p>';
+    var convocado = entry.convocadoAt
+      ? '<div class="turnos-call-inline"><strong>¡Es su turno!</strong> Pase a <span>' + esc(C().ventanaLabel(entry.tipo)) + '</span></div>'
+      : '';
     var notaHint = entry.tipo === C().TIPOS.NOTA_CREDITO
-      ? '<p class="turnos-hint turnos-hint--info">Estado inicial: <strong>Pendiente</strong>. Un supervisor lo confirmará y asentará.</p>'
-      : '<p class="turnos-hint">Estado inicial: <strong>Pendiente</strong>. Espere su llamado en pantalla.</p>';
+      ? '<p class="turnos-hint turnos-hint--info">Flujo: Pendiente → Confirmado → Asentado.</p>'
+      : '<p class="turnos-hint">Espere la convocatoria del administrador en pantalla o vibración del celular.</p>';
 
     return (
       '<section class="turnos-chofer-section turnos-success-screen">' +
       '<div class="turnos-success-icon">✓</div>' +
-      '<p class="turnos-success-title">¡Turno generado correctamente!</p>' +
+      '<p class="turnos-success-title">Su turno está registrado</p>' +
       '<p class="turnos-success-turno turnos-mono">' + esc(entry.turno) + '</p>' +
       '<p class="turnos-success-meta">' + esc(C().TIPO_LABELS[entry.tipo]) + '</p>' +
       '<p class="turnos-success-detail">' + esc(entry.detalle) + '</p>' +
       '<p class="turnos-success-time">' + esc(entry.fecha) + ' · ' + esc(entry.hora) + '</p>' +
+      '<p class="turnos-success-status">' + esc(estadoLabel(entry)) + '</p>' +
+      convocado +
+      liveBadge +
       notaHint +
-      '<button type="button" class="turnos-btn turnos-btn--primary turnos-btn--xl" data-chofer-new>Nuevo turno</button>' +
+      '<p class="turnos-hint">Puede cerrar esta página; al volver verá el mismo turno.</p>' +
       '</section>'
     );
+  }
+
+  function ensureCallOverlay() {
+    var root = $('turnosChoferRoot');
+    if (!root) return;
+    var overlay = $('turnosCallOverlay');
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.id = 'turnosCallOverlay';
+      overlay.className = 'turnos-call-overlay is-hidden';
+      overlay.setAttribute('role', 'alertdialog');
+      overlay.setAttribute('aria-live', 'assertive');
+      overlay.innerHTML =
+        '<div class="turnos-call-card">' +
+        '<p class="turnos-call-eyebrow">¡Es su turno!</p>' +
+        '<p class="turnos-call-turno turnos-mono" id="turnosCallTurno">T-0000</p>' +
+        '<p class="turnos-call-ventana" id="turnosCallVentana">Pase a la ventana</p>' +
+        '<p class="turnos-call-detail" id="turnosCallDetail"></p>' +
+        '<button type="button" class="turnos-btn turnos-btn--primary turnos-btn--xl" data-call-dismiss>Entendido — voy a la ventana</button>' +
+        '</div>';
+      root.appendChild(overlay);
+    }
+  }
+
+  function showCallOverlay(entry) {
+    if (!entry || !entry.convocadoAt) return;
+    var seen = C().getConvocadoSeen(entry.id);
+    if (seen >= entry.convocadoAt) return;
+    C().markConvocadoSeen(entry.id, entry.convocadoAt);
+    ensureCallOverlay();
+    var overlay = $('turnosCallOverlay');
+    var turnoEl = $('turnosCallTurno');
+    var ventanaEl = $('turnosCallVentana');
+    var detailEl = $('turnosCallDetail');
+    if (turnoEl) turnoEl.textContent = entry.turno;
+    if (ventanaEl) ventanaEl.textContent = 'Pase a ' + C().ventanaLabel(entry.tipo);
+    if (detailEl) detailEl.textContent = entry.detalle || '';
+    if (overlay) overlay.classList.remove('is-hidden');
+    C().vibrateCall();
+    if (vibrateTimer) clearInterval(vibrateTimer);
+    vibrateTimer = setInterval(function () {
+      if (overlay && overlay.classList.contains('is-hidden')) {
+        clearInterval(vibrateTimer);
+        vibrateTimer = null;
+        return;
+      }
+      C().vibrateCall();
+    }, 4000);
+  }
+
+  function hideCallOverlay() {
+    var overlay = $('turnosCallOverlay');
+    if (overlay) overlay.classList.add('is-hidden');
+    if (vibrateTimer) {
+      clearInterval(vibrateTimer);
+      vibrateTimer = null;
+    }
+  }
+
+  function syncMyTurnFromStore() {
+    var ref = C().getMyTurnRef();
+    if (!ref || !ref.id) return;
+    var entry = S().findById(ref.id);
+    if (!entry) return;
+    if (!C().isTurnActive(entry)) {
+      C().clearMyTurn();
+      if (screen === 'success' && lastEntry && lastEntry.id === ref.id) {
+        screen = 'menu';
+        lastEntry = null;
+      }
+      return;
+    }
+    lastEntry = entry;
+    screen = 'success';
+    showCallOverlay(entry);
+    render();
   }
 
   function showError(msg) {
@@ -114,6 +221,14 @@
   function submitForm(ev) {
     ev.preventDefault();
     showError('');
+    var ref = C().getMyTurnRef();
+    if (ref && ref.id) {
+      var active = S().findById(ref.id);
+      if (active && C().isTurnActive(active)) {
+        showError('Ya tiene un turno activo (' + active.turno + '). Use "Ver mi turno".');
+        return;
+      }
+    }
     var chofer = ($('turnosFieldChofer') && $('turnosFieldChofer').value || '').trim();
     if (!chofer) {
       showError('Escriba su nombre.');
@@ -137,14 +252,19 @@
       payload.cantidadViajes = viajes;
     }
 
-    var result = S().addTurn(payload);
-    if (!result.ok) {
-      showError(result.msg);
-      return;
-    }
-    lastEntry = result.entry;
-    screen = 'success';
-    render();
+    var btn = ev.target.querySelector('[type="submit"]');
+    if (btn) btn.disabled = true;
+
+    S().addTurn(payload).then(function (result) {
+      if (btn) btn.disabled = false;
+      if (!result.ok) {
+        showError(result.msg);
+        return;
+      }
+      lastEntry = result.entry;
+      screen = 'success';
+      render();
+    });
   }
 
   function bind() {
@@ -153,8 +273,27 @@
     root.dataset.bound = '1';
 
     root.addEventListener('click', function (ev) {
+      if (ev.target.closest('[data-call-dismiss]')) {
+        hideCallOverlay();
+        return;
+      }
+      var resumeBtn = ev.target.closest('[data-chofer-resume]');
+      if (resumeBtn) {
+        syncMyTurnFromStore();
+        return;
+      }
       var tipoBtn = ev.target.closest('[data-chofer-tipo]');
       if (tipoBtn) {
+        var ref = C().getMyTurnRef();
+        if (ref && ref.id) {
+          var active = S().findById(ref.id);
+          if (active && C().isTurnActive(active)) {
+            lastEntry = active;
+            screen = 'success';
+            render();
+            return;
+          }
+        }
         selectedTipo = tipoBtn.getAttribute('data-chofer-tipo');
         screen = 'form';
         render();
@@ -163,13 +302,6 @@
       if (ev.target.closest('[data-chofer-back]')) {
         screen = 'menu';
         selectedTipo = null;
-        render();
-        return;
-      }
-      if (ev.target.closest('[data-chofer-new]')) {
-        screen = 'menu';
-        selectedTipo = null;
-        lastEntry = null;
         render();
       }
     });
@@ -180,10 +312,16 @@
   }
 
   function start() {
-    S().load();
     bind();
-    screen = 'menu';
     render();
+    S().init().then(function () {
+      syncMyTurnFromStore();
+      if (screen === 'menu') render();
+    });
+    if (unsub) unsub();
+    unsub = S().subscribe(function () {
+      syncMyTurnFromStore();
+    });
     setInterval(function () {
       var el = $('turnosChoferClockTime');
       if (!el) return;

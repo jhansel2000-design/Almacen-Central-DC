@@ -6,6 +6,8 @@
 
   var STORAGE_KEY = 'dc_turnos_despacho_v2';
   var CHOFER_NAME_KEY = 'dc_turnos_chofer_name';
+  var MY_TURN_KEY = 'dc_turnos_my_active';
+  var CONVOCADO_SEEN_PREFIX = 'dc_turnos_convocado_seen_';
   var DEDUP_MS = 8000;
 
   var TIPOS = {
@@ -18,6 +20,12 @@
     despacho_facturas: 'Despacho de facturas',
     liquidacion_facturas: 'Liquidación de facturas',
     nota_credito: 'Nota de crédito'
+  };
+
+  var VENTANA_LABELS = {
+    despacho_facturas: 'Ventana de Despacho de facturas',
+    liquidacion_facturas: 'Ventana de Liquidación de facturas',
+    nota_credito: 'Ventana de Nota de crédito'
   };
 
   function todayKey(d) {
@@ -51,8 +59,67 @@
       idsCarga: String(raw.idsCarga || raw.qrContent || '').trim(),
       cantidadViajes: raw.cantidadViajes != null ? Number(raw.cantidadViajes) : null,
       detalle: String(raw.detalle || '').trim(),
-      estado: estado
+      estado: estado,
+      convocadoAt: raw.convocadoAt != null ? Number(raw.convocadoAt) : null,
+      updatedAt: raw.updatedAt != null ? Number(raw.updatedAt) : null,
+      updatedBy: String(raw.updatedBy || '').trim()
     };
+  }
+
+  function ventanaLabel(tipo) {
+    return VENTANA_LABELS[tipo] || 'Ventana de atención';
+  }
+
+  function isTurnActive(entry) {
+    if (!entry) return false;
+    if (entry.estado === 'COMPLETADO' || entry.estado === 'ASENTADO') return false;
+    return true;
+  }
+
+  function saveMyTurn(entry) {
+    if (!entry || !entry.id) return;
+    try {
+      localStorage.setItem(MY_TURN_KEY, JSON.stringify({
+        id: entry.id,
+        turno: entry.turno,
+        tipo: entry.tipo
+      }));
+    } catch (e) { /* noop */ }
+  }
+
+  function getMyTurnRef() {
+    try {
+      var raw = localStorage.getItem(MY_TURN_KEY);
+      if (!raw) return null;
+      return JSON.parse(raw);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function clearMyTurn() {
+    try { localStorage.removeItem(MY_TURN_KEY); } catch (e) { /* noop */ }
+  }
+
+  function getConvocadoSeen(id) {
+    try {
+      return Number(localStorage.getItem(CONVOCADO_SEEN_PREFIX + id)) || 0;
+    } catch (e) {
+      return 0;
+    }
+  }
+
+  function markConvocadoSeen(id, ts) {
+    try {
+      localStorage.setItem(CONVOCADO_SEEN_PREFIX + id, String(ts || Date.now()));
+    } catch (e) { /* noop */ }
+  }
+
+  function vibrateCall() {
+    try {
+      if (navigator.vibrate) navigator.vibrate([300, 120, 300, 120, 500, 120, 500]);
+    } catch (e) { /* noop */ }
+    playBeep();
   }
 
   function migrateState(parsed) {
@@ -211,6 +278,15 @@
     rememberChoferName: rememberChoferName,
     getRememberedChoferName: getRememberedChoferName,
     statusClass: statusClass,
-    normalizeEntry: normalizeEntry
+    normalizeEntry: normalizeEntry,
+    ventanaLabel: ventanaLabel,
+    isTurnActive: isTurnActive,
+    saveMyTurn: saveMyTurn,
+    getMyTurnRef: getMyTurnRef,
+    clearMyTurn: clearMyTurn,
+    getConvocadoSeen: getConvocadoSeen,
+    markConvocadoSeen: markConvocadoSeen,
+    vibrateCall: vibrateCall,
+    VENTANA_LABELS: VENTANA_LABELS
   };
 })(typeof window !== 'undefined' ? window : this);
