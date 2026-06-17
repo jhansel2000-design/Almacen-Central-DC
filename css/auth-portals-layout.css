@@ -912,8 +912,8 @@ html[data-theme="light"] .auth-hub-link {
 }
 
 .auth-layout--hub.auth-layout--portals-only.auth-layout--hub-news {
-  width: min(100%, 1120px);
-  max-width: min(1120px, calc(100vw - 2rem));
+  width: min(100%, 1220px);
+  max-width: min(1220px, calc(100vw - 2rem));
   min-height: calc(100vh - 1.5rem);
   min-height: calc(100dvh - 1.5rem);
   max-height: calc(100vh - 1.5rem);

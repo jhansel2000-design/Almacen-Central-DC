@@ -14,10 +14,10 @@
   --hub-text-body: #e2e8f0;
   --hub-text-muted: #94a3b8;
   --hub-radius: 16px;
-  --hub-card-h: clamp(480px, 52vh, 570px);
+  --hub-card-h: clamp(520px, 54vh, 620px);
 
   width: 100%;
-  max-height: min(calc(100dvh - 2.5rem), 880px);
+  max-height: min(calc(100dvh - 2rem), 940px);
   min-height: 0;
   flex: 0 1 auto;
   display: flex;
@@ -44,8 +44,8 @@
 
 .hub-board__logo {
   flex-shrink: 0;
-  width: 60px;
-  height: 60px;
+  width: 64px;
+  height: 64px;
   border-radius: 12px;
 }
 
@@ -72,7 +72,7 @@
 
 .hub-board__title {
   margin: 0;
-  font-size: clamp(1.5rem, 2.5vw, 2.1rem);
+  font-size: clamp(1.55rem, 2.6vw, 2.2rem);
   font-weight: 800;
   color: var(--hub-text);
   line-height: 1.15;
@@ -190,15 +190,15 @@
   max-height: var(--hub-card-h);
   min-height: 0;
   display: grid;
-  grid-template-columns: 52px minmax(0, 1fr) 52px;
+  grid-template-columns: 56px minmax(0, 1fr) 56px;
   align-items: stretch;
   gap: 10px;
   overflow: hidden;
 }
 
 .hub-board-carousel__arrow {
-  width: 52px;
-  height: 52px;
+  width: 56px;
+  height: 56px;
   align-self: center;
   border: 1px solid var(--hub-border);
   border-radius: 999px;
@@ -356,7 +356,7 @@
 
 .hub-board-card__title {
   margin: 0 0 10px;
-  font-size: clamp(1.4rem, 2.5vw, 1.95rem);
+  font-size: clamp(1.45rem, 2.6vw, 2.05rem);
   font-weight: 800;
   color: var(--hub-text);
   line-height: 1.2;
@@ -501,8 +501,8 @@
 
 /* —— Contenedor externo —— */
 .auth-layout--hub.auth-layout--portals-only.auth-layout--hub-news {
-  width: min(100%, 1120px);
-  max-width: min(1120px, calc(100vw - 2rem));
+  width: min(100%, 1220px);
+  max-width: min(1220px, calc(100vw - 2rem));
   min-width: 0;
   padding: clamp(0.5rem, 1vw, 0.85rem);
 }
@@ -519,8 +519,8 @@
 
 @media (min-width: 1200px) {
   .auth-layout--hub.auth-layout--portals-only.auth-layout--hub-news {
-    width: min(100%, 1180px);
-    max-width: min(1180px, calc(100vw - 2rem));
+    width: min(100%, 1280px);
+    max-width: min(1280px, calc(100vw - 2rem));
   }
 }
 
