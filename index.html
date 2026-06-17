@@ -32,7 +32,7 @@
   <link rel="stylesheet" href="css/executive-comfort.css">
   <link rel="stylesheet" href="css/auth-cinematic.css?v=18">
   <link rel="stylesheet" href="css/auth-security.css?v=3">
-  <link rel="stylesheet" href="css/auth-portals-layout.css?v=17">
+  <link rel="stylesheet" href="css/auth-portals-layout.css?v=18">
   <link rel="stylesheet" href="css/perf-lite.css?v=17">
   <link rel="stylesheet" href="css/despacho-auth.css?v=30">
   <link rel="stylesheet" href="css/averias-auth.css?v=3">
@@ -60,9 +60,10 @@
       </video>
       <div class="auth-video-scrim"></div>
     </div>
-    <button type="button" class="hub-corner-menu" id="hubMenuBtn" aria-label="Abrir portales" aria-expanded="false" aria-controls="hubDrawer">☰</button>
-    <div class="hub-drawer-overlay" id="hubDrawerOverlay" aria-hidden="true"></div>
-    <aside class="hub-drawer" id="hubDrawer" aria-label="Portales del almacén" aria-hidden="true">
+    <div class="hub-chrome" id="hubChrome">
+      <button type="button" class="hub-corner-menu" id="hubMenuBtn" aria-label="Abrir portales" aria-expanded="false" aria-controls="hubDrawer">☰</button>
+      <div class="hub-drawer-overlay" id="hubDrawerOverlay" aria-hidden="true"></div>
+      <aside class="hub-drawer" id="hubDrawer" aria-label="Portales del almacén" aria-hidden="true">
         <div class="hub-drawer-panel auth-hero-panel">
           <header class="auth-hero-head auth-hero-head--hub">
             <img class="jc-logo-img jc-logo-img--portal" src="assets/img/jc-logo.png?v=5" alt="AC" width="40" height="40">
@@ -110,7 +111,8 @@
             </div>
           </section>
         </div>
-    </aside>
+      </aside>
+    </div>
     <div class="auth-layout auth-layout--hub auth-layout--portals-only auth-layout--hub-news" id="authHubLayout">
       <main class="hub-main-web" id="hubMainWeb" aria-label="Tablón informativo">
         <div class="hub-news-board news-board">
@@ -610,7 +612,7 @@
   <script defer src="js/platform-shortcuts.js"></script>
   <script defer src="js/platform-web-users.js?v=18"></script>
   <script defer src="js/platform-wake-lock.js?v=1"></script>
-  <script defer src="js/platform-app.js?v=55"></script>
+  <script defer src="js/platform-app.js?v=56"></script>
   <script defer src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js" crossorigin="anonymous"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js" crossorigin="anonymous"></script>
 </body>

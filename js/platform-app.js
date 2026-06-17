@@ -481,9 +481,11 @@
     var drawer = $('hubDrawer');
     var overlay = $('hubDrawerOverlay');
     var btn = $('hubMenuBtn');
+    var chrome = $('hubChrome');
     if (!drawer) return;
     var isOpen = !!open;
     drawer.classList.toggle('open', isOpen);
+    if (chrome) chrome.classList.toggle('is-drawer-open', isOpen);
     if (overlay) {
       overlay.classList.toggle('show', isOpen);
       overlay.setAttribute('aria-hidden', isOpen ? 'false' : 'true');
