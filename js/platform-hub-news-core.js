@@ -5,7 +5,25 @@
   'use strict';
 
   var LS_KEY = 'almacen_hub_news';
-  var SEED_VERSION = 2;
+  var SEED_VERSION = 3;
+
+  function refreshSeedCopy(items) {
+    var seeds = defaultSeedItems();
+    return (items || []).map(function (item) {
+      var seed = seeds.find(function (s) {
+        return s.id === item.id || (s.theme === item.theme && s.title === item.title);
+      });
+      if (seed) {
+        return Object.assign({}, item, {
+          body: seed.body,
+          imageUrl: seed.imageUrl,
+          linkUrl: seed.linkUrl,
+          theme: seed.theme
+        });
+      }
+      return item;
+    });
+  }
 
   function ensurePortalSeeds(items) {
     var merged = (items || []).slice();
@@ -23,7 +41,7 @@
       {
         id: 'seed_portal_despacho',
         title: 'Portal de Despacho',
-        body: 'Prepara y valida pedidos en tiempo real desde el almacén central.\n\nQué puedes hacer:\n• Preparar órdenes como preparador de despacho\n• Validar pedidos y liberar carga como validador\n• Ver listas, estados y avance en vivo\n• Sincronizar el equipo en la misma información',
+        body: 'Qué puedes hacer:\n• Preparar y validar pedidos en vivo\n• Ver listas, estados y avance del despacho\n• Trabajar sincronizado con todo el equipo',
         publishedAt: '2026-06-17T12:00:00.000Z',
         publishedBy: 'Almacén Central DC',
         active: true,
@@ -35,7 +53,7 @@
       {
         id: 'seed_portal_ops',
         title: 'Operaciones de Piso',
-        body: 'Gestiona averías, 5S, seguridad y equipos del almacén desde un solo portal.\n\nQué puedes hacer:\n• Registrar y dar seguimiento a averías de piso\n• Ejecutar auditorías 5S y controles de seguridad\n• Administrar equipos y áreas operativas\n• Consultar monitoreo de temperatura y módulos en vivo',
+        body: 'Qué puedes hacer:\n• Registrar y seguir averías de piso\n• Auditorías 5S, seguridad y equipos\n• Monitoreo de temperatura y módulos en vivo',
         publishedAt: '2026-06-17T11:00:00.000Z',
         publishedBy: 'Almacén Central DC',
         active: true,
@@ -106,14 +124,12 @@
       var items = activeItems((parsed || []).map(mapRow).filter(Boolean));
       var seeded = global.localStorage.getItem(LS_KEY + '_seed_v');
       if (String(seeded) !== String(SEED_VERSION) || !items.length) {
-        items = ensurePortalSeeds(items);
+        items = refreshSeedCopy(ensurePortalSeeds(items));
         writeLocal(items);
         global.localStorage.setItem(LS_KEY + '_seed_v', String(SEED_VERSION));
       } else {
-        items = ensurePortalSeeds(items);
-        if (items.length !== activeItems((parsed || []).map(mapRow).filter(Boolean)).length) {
-          writeLocal(items);
-        }
+        items = refreshSeedCopy(ensurePortalSeeds(items));
+        writeLocal(items);
       }
       return items;
     } catch (e) {
@@ -145,7 +161,9 @@
 
   global.PlatformHubNewsCore = {
     LS_KEY: LS_KEY,
+    SEED_VERSION: SEED_VERSION,
     defaultSeedItems: defaultSeedItems,
+    refreshSeedCopy: refreshSeedCopy,
     mapRow: mapRow,
     sortItems: sortItems,
     activeItems: activeItems,

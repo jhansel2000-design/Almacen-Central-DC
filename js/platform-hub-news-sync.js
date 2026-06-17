@@ -42,7 +42,7 @@
 
   function mergeRows(rows) {
     var C = core();
-    items = C.activeItems((rows || []).map(C.mapRow).filter(Boolean));
+    items = C.activeItems(C.refreshSeedCopy((rows || []).map(C.mapRow).filter(Boolean)));
     C.writeLocal(items);
     notify('items', items);
     return items;

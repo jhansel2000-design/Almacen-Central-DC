@@ -9,10 +9,10 @@
   };
 
   var CTA_BY_THEME = {
-    despacho: 'Entrar a despacho →',
-    ops: 'Entrar a operaciones →',
-    mando: 'Entrar al mando →',
-    inventario: 'Entrar a inventario →'
+    despacho: 'Entrar a despacho',
+    ops: 'Entrar a operaciones',
+    mando: 'Entrar al mando',
+    inventario: 'Entrar a inventario'
   };
 
   var TAG_BY_THEME = {
@@ -21,6 +21,13 @@
     mando: 'Control de Mando',
     inventario: 'Inventario RF'
   };
+
+  var ROTATE_MS = 6000;
+  var carouselTimer = null;
+  var carouselIndex = 0;
+  var carouselPaused = false;
+  var carouselFeed = null;
+  var carouselTotal = 0;
 
   function formatDate(iso) {
     if (!iso) return '';
@@ -35,6 +42,8 @@
     var lines = String(body || '').split('\n');
     var html = '';
     var inList = false;
+    var hasIntro = false;
+
     lines.forEach(function (line) {
       var trimmed = line.trim();
       if (!trimmed) {
@@ -42,15 +51,16 @@
         return;
       }
       if (trimmed.indexOf('•') === 0) {
-        if (!inList) { html += '<ul class="hub-news-item-list">'; inList = true; }
+        if (!inList) { html += '<ul class="hub-board-card__list">'; inList = true; }
         html += '<li>' + esc(trimmed.replace(/^•\s*/, '')) + '</li>';
         return;
       }
       if (inList) { html += '</ul>'; inList = false; }
       if (/^qué puedes hacer:/i.test(trimmed)) {
-        html += '<p class="hub-news-item-lead"><strong>' + esc(trimmed) + '</strong></p>';
-      } else {
-        html += '<p class="hub-news-item-intro">' + esc(trimmed) + '</p>';
+        html += '<p class="hub-board-card__lead">' + esc(trimmed) + '</p>';
+      } else if (!hasIntro) {
+        html += '<p class="hub-board-card__intro">' + esc(trimmed) + '</p>';
+        hasIntro = true;
       }
     });
     if (inList) html += '</ul>';
@@ -59,44 +69,40 @@
 
   function renderItemHtml(item, isActive) {
     var theme = item.theme || '';
-    var classes = 'hub-news-item hub-news-slide';
+    var classes = 'hub-board-slide hub-board-card';
     if (isActive) classes += ' is-active';
-    if (item.pinned) classes += ' hub-news-item--pinned';
-    if (theme) classes += ' hub-news-item--portal hub-news-item--' + theme;
-    if (item.imageUrl) classes += ' hub-news-item--has-media';
+    if (theme) classes += ' hub-board-card--' + theme;
 
     var html = '<article class="' + classes + '" aria-hidden="' + (isActive ? 'false' : 'true') + '">';
-    if (item.pinned) html += '<span class="hub-news-pin" aria-hidden="true">📌</span>';
 
     if (item.imageUrl) {
-      html += '<div class="hub-news-item-media">';
+      html += '<div class="hub-board-card__media">';
       html += '<img src="' + esc(item.imageUrl) + '" alt="" loading="lazy" decoding="async">';
       html += '</div>';
     }
 
-    html += '<div class="hub-news-item-content">';
+    html += '<div class="hub-board-card__body">';
     if (theme && TAG_BY_THEME[theme]) {
-      html += '<span class="hub-news-item-tag">' + esc(TAG_BY_THEME[theme]) + '</span>';
+      html += '<span class="hub-board-card__badge">' + esc(TAG_BY_THEME[theme]) + '</span>';
     }
-    html += '<h3 class="hub-news-item-title">' + esc(item.title) + '</h3>';
-    if (item.body) html += '<div class="hub-news-item-body">' + renderBodyHtml(item.body) + '</div>';
+    html += '<h3 class="hub-board-card__title">' + esc(item.title) + '</h3>';
+    if (item.body) html += '<div class="hub-board-card__text">' + renderBodyHtml(item.body) + '</div>';
 
+    html += '<div class="hub-board-card__footer">';
     if (item.linkUrl) {
-      var cta = CTA_BY_THEME[theme] || 'Abrir portal →';
-      html += '<a class="hub-news-item-cta" href="' + esc(item.linkUrl) + '">' + esc(cta) + '</a>';
+      var cta = CTA_BY_THEME[theme] || 'Ver más';
+      html += '<a class="hub-board-card__btn" href="' + esc(item.linkUrl) + '">' + esc(cta) + ' →</a>';
     }
-
-    html += '<footer class="hub-news-item-meta">';
-    html += '<time datetime="' + esc(item.publishedAt) + '">' + esc(formatDate(item.publishedAt)) + '</time>';
-    if (item.publishedBy) html += '<span class="hub-news-item-by">' + esc(item.publishedBy) + '</span>';
-    html += '</footer></div></article>';
+    html += '<div class="hub-board-card__meta">';
+    if (item.publishedAt) {
+      html += '<time datetime="' + esc(item.publishedAt) + '">' + esc(formatDate(item.publishedAt)) + '</time>';
+    }
+    if (item.publishedBy) {
+      html += '<span> · ' + esc(item.publishedBy) + '</span>';
+    }
+    html += '</div></div></div></article>';
     return html;
   }
-
-  var carouselTimer = null;
-  var carouselIndex = 0;
-  var carouselPaused = false;
-  var ROTATE_MS = 9000;
 
   function stopCarousel() {
     if (carouselTimer) {
@@ -106,105 +112,136 @@
   }
 
   function setActiveSlide(feed, index, total) {
-    var slides = feed.querySelectorAll('.hub-news-slide');
-    var dots = feed.querySelectorAll('.hub-news-carousel-dot');
-    var counter = feed.querySelector('.hub-news-carousel-counter');
+    var slides = feed.querySelectorAll('.hub-board-slide');
+    var dots = feed.querySelectorAll('.hub-board-carousel__dot');
+    var counter = feed.querySelector('.hub-board-carousel__counter');
     carouselIndex = ((index % total) + total) % total;
 
     slides.forEach(function (slide, i) {
       var active = i === carouselIndex;
       slide.classList.toggle('is-active', active);
       slide.setAttribute('aria-hidden', active ? 'false' : 'true');
-      slide.style.visibility = active ? 'visible' : 'hidden';
     });
+
     dots.forEach(function (dot, i) {
       var active = i === carouselIndex;
       dot.classList.toggle('is-active', active);
       dot.setAttribute('aria-selected', active ? 'true' : 'false');
     });
+
     if (counter) counter.textContent = (carouselIndex + 1) + ' / ' + total;
+  }
+
+  function advanceSlide() {
+    if (!carouselFeed || carouselTotal <= 1 || carouselPaused) return;
+    setActiveSlide(carouselFeed, carouselIndex + 1, carouselTotal);
   }
 
   function startCarousel(feed, total) {
     stopCarousel();
+    carouselFeed = feed;
+    carouselTotal = total;
     if (total <= 1) return;
     if (global.matchMedia && global.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    carouselTimer = setInterval(advanceSlide, ROTATE_MS);
+  }
 
-    carouselTimer = setInterval(function () {
-      if (carouselPaused) return;
-      setActiveSlide(feed, carouselIndex + 1, total);
-    }, ROTATE_MS);
+  function resetCarouselTimer() {
+    if (!carouselFeed || carouselTotal <= 1) return;
+    startCarousel(carouselFeed, carouselTotal);
   }
 
   function bindCarousel(feed, total) {
-    if (total <= 1) return;
+    var multi = total > 1;
 
-    feed.querySelectorAll('.hub-news-carousel-dot').forEach(function (dot) {
+    feed.querySelectorAll('.hub-board-carousel__dot').forEach(function (dot) {
       dot.addEventListener('click', function () {
         var idx = parseInt(dot.getAttribute('data-index'), 10);
         if (!isNaN(idx)) {
           setActiveSlide(feed, idx, total);
-          startCarousel(feed, total);
+          resetCarouselTimer();
         }
       });
     });
 
-    var prev = feed.querySelector('.hub-news-carousel-prev');
-    var next = feed.querySelector('.hub-news-carousel-next');
-    if (prev) {
+    var prev = feed.querySelector('.hub-board-carousel__arrow--prev');
+    var next = feed.querySelector('.hub-board-carousel__arrow--next');
+
+    if (prev && multi) {
       prev.addEventListener('click', function () {
         setActiveSlide(feed, carouselIndex - 1, total);
-        startCarousel(feed, total);
+        resetCarouselTimer();
       });
     }
-    if (next) {
+    if (next && multi) {
       next.addEventListener('click', function () {
         setActiveSlide(feed, carouselIndex + 1, total);
-        startCarousel(feed, total);
+        resetCarouselTimer();
       });
     }
 
-    feed.addEventListener('mouseenter', function () { carouselPaused = true; });
-    feed.addEventListener('mouseleave', function () { carouselPaused = false; });
-    feed.addEventListener('focusin', function () { carouselPaused = true; });
-    feed.addEventListener('focusout', function () { carouselPaused = false; });
+    if (multi) {
+      feed.addEventListener('mouseenter', function () { carouselPaused = true; });
+      feed.addEventListener('mouseleave', function () { carouselPaused = false; });
+      feed.addEventListener('focusin', function () { carouselPaused = true; });
+      feed.addEventListener('focusout', function () { carouselPaused = false; });
+    }
   }
 
   function renderBoard(items) {
     var feed = document.getElementById('hubNewsFeed');
     var empty = document.getElementById('hubNewsEmpty');
+    var zone = document.getElementById('hubNewsRotator');
     if (!feed) return;
 
     stopCarousel();
+    carouselFeed = null;
+    carouselTotal = 0;
     var list = items || [];
+
+    function showEmpty(show) {
+      if (empty) {
+        empty.hidden = !show;
+        empty.setAttribute('aria-hidden', show ? 'false' : 'true');
+      }
+      if (feed) {
+        feed.hidden = show;
+        feed.setAttribute('aria-hidden', show ? 'true' : 'false');
+      }
+      if (zone) zone.classList.toggle('hub-board__carousel-zone--empty', show);
+    }
 
     if (!list.length) {
       feed.innerHTML = '';
-      if (empty) empty.hidden = false;
+      showEmpty(true);
       return;
     }
 
-    if (empty) empty.hidden = true;
+    showEmpty(false);
 
-    var html = '<div class="hub-news-carousel" role="region" aria-label="Noticias del almacén" aria-live="polite">';
-    html += '<div class="hub-news-carousel-track">';
+    var multi = list.length > 1;
+    var arrowHidden = multi ? '' : ' hub-board-carousel__arrow--hidden';
+    var html = '<div class="hub-board-carousel" role="region" aria-label="Noticias del almacén" aria-roledescription="carrusel">';
+    html += '<div class="hub-board-carousel__main">';
+    html += '<button type="button" class="hub-board-carousel__arrow hub-board-carousel__arrow--prev' + arrowHidden + '" aria-label="Noticia anterior">‹</button>';
+    html += '<div class="hub-board-carousel__viewport"><div class="hub-board-carousel__track">';
 
     list.forEach(function (item, i) {
       html += renderItemHtml(item, i === 0);
     });
 
+    html += '</div></div>';
+    html += '<button type="button" class="hub-board-carousel__arrow hub-board-carousel__arrow--next' + arrowHidden + '" aria-label="Siguiente noticia">›</button>';
     html += '</div>';
 
-    if (list.length > 1) {
-      html += '<div class="hub-news-carousel-nav">';
-      html += '<button type="button" class="hub-news-carousel-arrow hub-news-carousel-prev" aria-label="Noticia anterior">‹</button>';
-      html += '<div class="hub-news-carousel-dots" role="tablist" aria-label="Elegir noticia">';
+    if (multi) {
+      html += '<div class="hub-board-carousel__controls">';
+      html += '<div class="hub-board-carousel__dots" role="tablist" aria-label="Indicadores de noticias">';
       list.forEach(function (item, i) {
-        html += '<button type="button" class="hub-news-carousel-dot' + (i === 0 ? ' is-active' : '') + '" data-index="' + i + '" role="tab" aria-label="' + esc(item.title) + '" aria-selected="' + (i === 0 ? 'true' : 'false') + '"></button>';
+        html += '<button type="button" class="hub-board-carousel__dot' + (i === 0 ? ' is-active' : '') + '" data-index="' + i + '" role="tab" aria-label="' + esc(item.title) + '" aria-selected="' + (i === 0 ? 'true' : 'false') + '"></button>';
       });
       html += '</div>';
-      html += '<span class="hub-news-carousel-counter" aria-live="off">1 / ' + list.length + '</span>';
-      html += '<button type="button" class="hub-news-carousel-arrow hub-news-carousel-next" aria-label="Siguiente noticia">›</button>';
+      html += '<span class="hub-board-carousel__counter" aria-live="polite">1 / ' + list.length + '</span>';
       html += '</div>';
     }
 
@@ -235,7 +272,7 @@
     html += '<label for="hubNewsTitle">Título del aviso</label>';
     html += '<input id="hubNewsTitle" maxlength="120" placeholder="Ej.: Portal de Despacho" required>';
     html += '<label for="hubNewsBody">Detalle</label>';
-    html += '<textarea id="hubNewsBody" rows="6" maxlength="2000" placeholder="Descripción y lista con • para cada punto…"></textarea>';
+    html += '<textarea id="hubNewsBody" rows="6" maxlength="2000" placeholder="Descripción corta y lista con • para cada punto…"></textarea>';
     html += '<div class="admin-form-row">';
     html += '<div><label for="hubNewsImage">Imagen (ruta)</label>';
     html += '<input id="hubNewsImage" maxlength="240" placeholder="assets/img/login-dispatch-poster.jpg"></div>';
@@ -243,7 +280,7 @@
     html += '<input id="hubNewsLink" maxlength="240" placeholder="despacho.html"></div></div>';
     html += '<label for="hubNewsTheme">Estilo / portal</label>';
     html += '<select id="hubNewsTheme"><option value="">General</option>';
-    html += '<option value="despacho">Despacho (ámbar)</option>';
+    html += '<option value="despacho">Despacho (naranja)</option>';
     html += '<option value="ops">Operaciones (verde)</option>';
     html += '<option value="mando">Mando (azul)</option>';
     html += '<option value="inventario">Inventario (dorado)</option></select>';

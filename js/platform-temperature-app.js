@@ -155,14 +155,18 @@
     global.toggleDrawer = function () {
       var drawer = $('tempDrawer');
       var overlay = $('tempDrawerOverlay');
-      if (drawer) drawer.classList.toggle('open');
-      if (overlay) overlay.classList.toggle('open');
+      if (!drawer || !overlay) return;
+      var open = !drawer.classList.contains('open');
+      drawer.classList.toggle('open', open);
+      overlay.classList.toggle('show', open);
+      document.body.classList.toggle('temp-drawer-open', open);
     };
     global.closeDrawer = function () {
       var drawer = $('tempDrawer');
       var overlay = $('tempDrawerOverlay');
       if (drawer) drawer.classList.remove('open');
-      if (overlay) overlay.classList.remove('open');
+      if (overlay) overlay.classList.remove('show');
+      document.body.classList.remove('temp-drawer-open');
     };
   }
 

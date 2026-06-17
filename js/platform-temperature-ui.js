@@ -6,7 +6,7 @@
 
   var state = {
     user: null,
-    module: 'dashboard',
+    module: 'home',
     chart: null,
     chartAreaId: 'almacen',
     historyAreaId: '',
@@ -48,6 +48,26 @@
     if (status === 'warn') return 'temp-status--warn';
     if (status === 'critical') return 'temp-status--critical';
     return 'temp-status--unknown';
+  }
+
+  function renderHome() {
+    var host = $('tempViewHome');
+    if (!host) return;
+    host.innerHTML =
+      '<div class="news-board temp-news-board">' +
+      '<header class="news-board-head">' +
+      '<p class="news-board-eyebrow">Monitoreo de temperatura · DC</p>' +
+      '<h2 class="news-board-title">Tablón informativo</h2>' +
+      '<p class="news-board-sub">Comunicados del área de temperatura y almacén</p></header>' +
+      '<div class="news-board-empty">' +
+      '<div class="news-board-empty-icon" aria-hidden="true">📰</div>' +
+      '<p class="news-board-empty-title">Sin noticias publicadas</p>' +
+      '<p class="news-board-empty-desc">Pantalla principal vacía lista para avisos. Use el menú ☰ para abrir el dashboard de temperatura.</p></div>' +
+      '<div class="news-board-template" aria-label="Plantilla de noticias">' +
+      '<article class="news-slot news-slot--ghost"><span class="news-slot-label">Espacio para aviso 1</span></article>' +
+      '<article class="news-slot news-slot--ghost"><span class="news-slot-label">Espacio para aviso 2</span></article>' +
+      '<article class="news-slot news-slot--ghost"><span class="news-slot-label">Espacio para aviso 3</span></article></div>' +
+      '<p class="news-board-hint">Pulse <strong>☰</strong> en la esquina para ver temperatura, historial y alertas.</p></div>';
   }
 
   function renderDashboard() {
@@ -312,7 +332,7 @@
   }
 
   function showModule(mod) {
-    state.module = mod || 'dashboard';
+    state.module = mod || 'home';
     document.querySelectorAll('.temp-view').forEach(function (el) {
       el.hidden = el.id !== 'tempView' + mod.charAt(0).toUpperCase() + mod.slice(1);
     });
@@ -320,6 +340,7 @@
       btn.classList.toggle('active', btn.dataset.module === mod);
     });
     var titles = {
+      home: 'Tablón informativo',
       dashboard: 'Dashboard de Temperatura',
       register: 'Registrar temperatura',
       history: 'Historial',
@@ -328,8 +349,10 @@
     };
     var titleEl = $('tempPageTitle');
     if (titleEl) titleEl.textContent = titles[mod] || 'Temperatura';
+    document.body.classList.toggle('temp-view-home', mod === 'home');
 
-    if (mod === 'dashboard') renderDashboard();
+    if (mod === 'home') renderHome();
+    else if (mod === 'dashboard') renderDashboard();
     else if (mod === 'register') renderRegister();
     else if (mod === 'history') renderHistory();
     else if (mod === 'alerts') renderAlerts();
@@ -428,6 +451,7 @@
 
   function onSyncChange(kind) {
     if (state.module === 'dashboard') renderDashboard();
+    else if (state.module === 'home') renderHome();
     else if (state.module === 'alerts') renderAlerts();
     else if (state.module === 'history' && kind === 'reading') loadHistoryTable();
   }
@@ -448,9 +472,9 @@
     state.offSync = sync().onChange(onSyncChange);
 
     sync().ready().then(function () {
-      showModule('dashboard');
+      showModule('home');
     }).catch(function () {
-      showModule('dashboard');
+      showModule('home');
       if (sync().isSetupRequired && sync().isSetupRequired()) {
         toast('Activa Supabase con SETUP-TEMPERATURA-SUPABASE.bat para guardar lecturas.', 'warn');
       } else {
