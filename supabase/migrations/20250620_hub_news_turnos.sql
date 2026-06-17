@@ -1,17 +1,21 @@
--- Tablón — noticia Control de Turnos (choferes)
+-- Tablón — Control de Turnos (texto corto + imagen)
+update public.hub_news
+set
+  body = 'Llegas, pides tu turno en segundos y listo.
+Sin filas. Sin confusión. Choferes entran más rápido — despacho más fuerte.',
+  image_url = 'assets/img/turnos-hub-poster.jpg'
+where theme = 'turnos' and title = 'Próximamente: Control de Turnos';
+
 insert into public.hub_news (title, body, published_at, published_by, active, pinned, image_url, link_url, theme)
 select
   'Próximamente: Control de Turnos',
-  'Cómo nos ayuda con los choferes:
-• Turno único al llegar — sin filas ni confusión
-• Despacho, liquidación y nota de crédito en segundos desde el celular
-• Pantalla en vivo para saber cuándo les toca entrar
-• Menos espera en muelle, más entregas al día',
+  'Llegas, pides tu turno en segundos y listo.
+Sin filas. Sin confusión. Choferes entran más rápido — despacho más fuerte.',
   now(),
   'Almacén Central DC',
   true,
   true,
-  'assets/img/turnos-hub-banner.svg',
+  'assets/img/turnos-hub-poster.jpg',
   'turnos.html',
   'turnos'
 where not exists (

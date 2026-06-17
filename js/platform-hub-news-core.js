@@ -5,7 +5,7 @@
   'use strict';
 
   var LS_KEY = 'almacen_hub_news';
-  var SEED_VERSION = 4;
+  var SEED_VERSION = 5;
 
   function refreshSeedCopy(items) {
     var seeds = defaultSeedItems();
@@ -65,12 +65,12 @@
       {
         id: 'seed_portal_turnos',
         title: 'Próximamente: Control de Turnos',
-        body: 'Cómo nos ayuda con los choferes:\n• Turno único al llegar — sin filas ni confusión\n• Despacho, liquidación y nota de crédito en segundos desde el celular\n• Pantalla en vivo para saber cuándo les toca entrar\n• Menos espera en muelle, más entregas al día',
+        body: 'Llegas, pides tu turno en segundos y listo.\nSin filas. Sin confusión. Choferes entran más rápido — despacho más fuerte.',
         publishedAt: '2026-06-17T15:00:00.000Z',
         publishedBy: 'Almacén Central DC',
         active: true,
         pinned: true,
-        imageUrl: 'assets/img/turnos-hub-banner.svg',
+        imageUrl: 'assets/img/turnos-hub-poster.jpg',
         linkUrl: 'turnos.html',
         theme: 'turnos'
       }
