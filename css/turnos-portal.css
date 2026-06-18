@@ -1,14 +1,22 @@
-/* Portal Control de Turnos — Despacho QR (modo oscuro corporativo) */
+/* Portal Control de Turnos — estilo Banco Popular (blanco y azul) */
 :root {
-  --turnos-bg: #0f1419;
-  --turnos-panel: #111827;
-  --turnos-border: rgba(255, 255, 255, 0.08);
-  --turnos-text: #f3f4f6;
-  --turnos-muted: #9ca3af;
-  --turnos-blue: #2563eb;
-  --turnos-green: #16a34a;
-  --turnos-red: #dc2626;
+  --bp-blue: #003882;
+  --bp-blue-dark: #002a5c;
+  --bp-blue-mid: #0050b3;
+  --bp-blue-light: #e8f1fa;
+  --bp-blue-pale: #f5f8fc;
+  --turnos-bg: #eef2f7;
+  --turnos-panel: #ffffff;
+  --turnos-border: #d4dfea;
+  --turnos-text: #1a2d4a;
+  --turnos-muted: #5c6f85;
+  --turnos-blue: #003882;
+  --turnos-blue-link: #0050b3;
+  --turnos-green: #0d7a3e;
+  --turnos-red: #c41e3a;
   --turnos-gray: #64748b;
+  --turnos-shadow: 0 2px 12px rgba(0, 56, 130, 0.08);
+  --turnos-shadow-lg: 0 8px 24px rgba(0, 56, 130, 0.12);
 }
 
 * { box-sizing: border-box; }
@@ -19,6 +27,11 @@ html, body.turnos-body {
   background: var(--turnos-bg);
   color: var(--turnos-text);
   font-family: 'DM Sans', 'Segoe UI', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+body.turnos-body.turnos-auth-open {
+  overflow: hidden;
 }
 
 .turnos-noscript {
@@ -35,11 +48,13 @@ html, body.turnos-body {
 .turnos-sidebar {
   width: 260px;
   flex-shrink: 0;
-  background: #0a0f14;
-  border-right: 1px solid var(--turnos-border);
+  background: linear-gradient(180deg, var(--bp-blue) 0%, var(--bp-blue-dark) 100%);
+  border-right: none;
   display: flex;
   flex-direction: column;
   padding: 1.25rem 1rem;
+  color: #fff;
+  box-shadow: 4px 0 20px rgba(0, 56, 130, 0.15);
 }
 
 .turnos-brand {
@@ -55,13 +70,14 @@ html, body.turnos-body {
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--turnos-green);
+  color: rgba(255, 255, 255, 0.75);
 }
 
 .turnos-brand-title {
   margin: 0.15rem 0 0;
   font-size: 1rem;
   font-weight: 800;
+  color: #fff;
 }
 
 .turnos-nav {
@@ -79,9 +95,9 @@ html, body.turnos-body {
   min-height: 48px;
   padding: 0.75rem 1rem;
   border: none;
-  border-radius: 12px;
+  border-radius: 10px;
   background: transparent;
-  color: var(--turnos-muted);
+  color: rgba(255, 255, 255, 0.78);
   font: inherit;
   font-size: 0.92rem;
   font-weight: 600;
@@ -91,20 +107,25 @@ html, body.turnos-body {
 }
 
 .turnos-nav-item:hover {
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--turnos-text);
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
 }
 
 .turnos-nav-item.active {
-  background: rgba(37, 99, 235, 0.2);
+  background: rgba(255, 255, 255, 0.18);
   color: #fff;
-  box-shadow: inset 3px 0 0 var(--turnos-blue);
+  box-shadow: inset 4px 0 0 #fff;
+}
+
+.turnos-sidebar .turnos-nav-icon {
+  filter: brightness(0) invert(1);
+  opacity: 0.9;
 }
 
 .turnos-sidebar-foot {
   margin-top: auto;
   padding-top: 1rem;
-  border-top: 1px solid var(--turnos-border);
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .turnos-operator-label {
@@ -112,18 +133,26 @@ html, body.turnos-body {
   font-size: 0.7rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--turnos-muted);
+  color: rgba(255, 255, 255, 0.65);
 }
 
 .turnos-operator-name {
   margin: 0.2rem 0 0.75rem;
   font-weight: 700;
+  color: #fff;
 }
 
+.turnos-sidebar .turnos-admin-link,
 .turnos-back-link {
-  color: #93c5fd;
+  color: rgba(255, 255, 255, 0.9);
   font-size: 0.85rem;
   text-decoration: none;
+}
+
+.turnos-sidebar .turnos-admin-link:hover,
+.turnos-back-link:hover {
+  color: #fff;
+  text-decoration: underline;
 }
 
 .turnos-main-wrap {
@@ -141,7 +170,8 @@ html, body.turnos-body {
   gap: 1rem;
   padding: 1.25rem 1.5rem;
   border-bottom: 1px solid var(--turnos-border);
-  background: rgba(17, 24, 39, 0.6);
+  background: #fff;
+  box-shadow: var(--turnos-shadow);
 }
 
 .turnos-top-eyebrow {
@@ -157,16 +187,15 @@ html, body.turnos-body {
   margin: 0.25rem 0 0;
   font-size: clamp(1.1rem, 2.5vw, 1.5rem);
   font-weight: 800;
+  color: var(--bp-blue);
 }
-
-.turnos-clock { text-align: right; }
 
 .turnos-clock-time {
   margin: 0;
   font-family: ui-monospace, monospace;
   font-size: 1.35rem;
   font-weight: 700;
-  color: #93c5fd;
+  color: var(--turnos-blue);
 }
 
 .turnos-clock-date {
@@ -208,10 +237,13 @@ html, body.turnos-body {
   line-height: 1;
 }
 
-.turnos-kpi--blue { background: linear-gradient(135deg, #1d4ed8, #2563eb); }
-.turnos-kpi--green { background: linear-gradient(135deg, #15803d, #16a34a); }
-.turnos-kpi--red { background: linear-gradient(135deg, #b91c1c, #dc2626); }
-.turnos-kpi--gray { background: linear-gradient(135deg, #475569, #64748b); }
+.turnos-kpi--blue { background: linear-gradient(135deg, var(--bp-blue-dark), var(--bp-blue)); }
+.turnos-kpi--green { background: linear-gradient(135deg, #0a5c32, var(--turnos-green)); }
+.turnos-kpi--red { background: linear-gradient(135deg, #9b1830, var(--turnos-red)); }
+.turnos-kpi--gray { background: linear-gradient(135deg, #4a5568, var(--turnos-gray)); }
+.turnos-kpi--process { background: linear-gradient(135deg, #004080, var(--bp-blue-mid)); }
+.turnos-kpi--cancel { background: linear-gradient(135deg, #7f1d1d, #b91c1c); }
+.turnos-kpi--priority { background: linear-gradient(135deg, #b45309, #d97706); }
 
 .turnos-split {
   display: grid;
@@ -220,17 +252,21 @@ html, body.turnos-body {
   align-items: start;
 }
 
+.turnos-clock { text-align: right; }
+
 .turnos-panel {
   background: var(--turnos-panel);
   border: 1px solid var(--turnos-border);
-  border-radius: 16px;
+  border-radius: 12px;
   padding: 1.1rem 1.2rem;
+  box-shadow: var(--turnos-shadow);
 }
 
 .turnos-panel h2 {
   margin: 0 0 1rem;
   font-size: 1.05rem;
   font-weight: 700;
+  color: var(--bp-blue);
 }
 
 .turnos-quick {
@@ -274,18 +310,28 @@ html, body.turnos-body {
   font-size: 0.78rem;
 }
 
-.turnos-btn--primary { background: var(--turnos-blue); color: #fff; }
-.turnos-btn--secondary {
-  background: rgba(255, 255, 255, 0.06);
+.turnos-btn--primary {
+  background: linear-gradient(180deg, var(--bp-blue-mid) 0%, var(--bp-blue) 100%);
   color: #fff;
-  border: 1px solid var(--turnos-border);
+  box-shadow: 0 2px 8px rgba(0, 56, 130, 0.25);
+}
+.turnos-btn--primary:hover { filter: brightness(1.05); }
+
+.turnos-btn--secondary {
+  background: #fff;
+  color: var(--turnos-blue);
+  border: 2px solid var(--turnos-blue);
 }
 .turnos-btn--green { background: var(--turnos-green); color: #fff; }
-.turnos-btn--danger { background: rgba(220, 38, 38, 0.15); color: #fca5a5; border: 1px solid rgba(220, 38, 38, 0.35); }
+.turnos-btn--danger {
+  background: #fff;
+  color: var(--turnos-red);
+  border: 2px solid rgba(196, 30, 58, 0.45);
+}
 
 .turnos-success-screen .turnos-btn--danger {
   margin-top: 1rem;
-  background: linear-gradient(135deg, #991b1b, #dc2626);
+  background: linear-gradient(180deg, #c41e3a, #9b1830);
   color: #fff;
   border: none;
 }
@@ -310,10 +356,15 @@ html, body.turnos-body {
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--turnos-muted);
+  background: var(--bp-blue-pale);
+}
+
+.turnos-table tbody tr:hover {
+  background: var(--bp-blue-pale);
 }
 
 .turnos-mono { font-family: ui-monospace, monospace; }
-.turnos-turno { color: #93c5fd; font-weight: 700; }
+.turnos-turno { color: var(--turnos-blue); font-weight: 700; }
 
 .turnos-qr-cell {
   max-width: 160px;
@@ -333,8 +384,10 @@ html, body.turnos-body {
   letter-spacing: 0.04em;
 }
 
-.turnos-badge--pending { background: rgba(220, 38, 38, 0.2); color: #fca5a5; }
-.turnos-badge--ok { background: rgba(22, 163, 74, 0.2); color: #86efac; }
+.turnos-badge--pending { background: #fde8ec; color: #b91c1c; }
+.turnos-badge--ok { background: #e6f7ed; color: #0d7a3e; }
+.turnos-badge--process { background: var(--bp-blue-light); color: var(--bp-blue); }
+.turnos-badge--cancel { background: #fde8ec; color: #b91c1c; }
 
 .turnos-empty {
   color: var(--turnos-muted);
@@ -370,50 +423,16 @@ html, body.turnos-body {
   font-size: 0.88rem;
 }
 
-.turnos-scan-status--info { background: rgba(37, 99, 235, 0.15); color: #bfdbfe; }
-.turnos-scan-status--err { background: rgba(220, 38, 38, 0.15); color: #fca5a5; }
+.turnos-scan-status--info { background: var(--bp-blue-light); color: var(--bp-blue-dark); border: 1px solid rgba(0, 56, 130, 0.12); }
+.turnos-scan-status--err { background: #fde8ec; color: #b91c1c; border: 1px solid rgba(196, 30, 58, 0.2); }
 
 .turnos-scan-success {
   margin-top: 1.25rem;
   padding: 1.5rem;
-  border-radius: 16px;
+  border-radius: 12px;
   border: 2px solid var(--turnos-green);
-  background: rgba(22, 163, 74, 0.1);
+  background: #e6f7ed;
   text-align: center;
-}
-
-.turnos-success-icon {
-  width: 56px;
-  height: 56px;
-  margin: 0 auto 0.75rem;
-  border-radius: 50%;
-  background: var(--turnos-green);
-  color: #fff;
-  font-size: 1.75rem;
-  line-height: 56px;
-  font-weight: 800;
-}
-
-.turnos-success-title {
-  margin: 0;
-  font-size: 1.1rem;
-  font-weight: 800;
-  color: #86efac;
-}
-
-.turnos-success-turno {
-  margin: 0.75rem 0 0.35rem;
-  font-size: 2.5rem;
-  font-weight: 800;
-  color: #fff;
-}
-
-.turnos-success-qr,
-.turnos-success-meta {
-  margin: 0.35rem 0;
-  color: var(--turnos-muted);
-  font-size: 0.88rem;
-  word-break: break-all;
 }
 
 .turnos-export-cards {
@@ -431,12 +450,19 @@ html, body.turnos-body {
   min-height: 72px;
   padding: 1rem 1.15rem;
   border: 1px solid var(--turnos-border);
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.04);
+  border-radius: 12px;
+  background: #fff;
   color: inherit;
   font: inherit;
   cursor: pointer;
   text-align: left;
+  box-shadow: var(--turnos-shadow);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.turnos-export-card:hover {
+  border-color: var(--bp-blue);
+  box-shadow: var(--turnos-shadow-lg);
 }
 
 .turnos-export-card strong { display: block; font-size: 1rem; }
@@ -459,11 +485,18 @@ html, body.turnos-body {
   width: 100%;
   min-height: 48px;
   padding: 0.65rem 0.85rem;
-  border-radius: 12px;
+  border-radius: 10px;
   border: 1px solid var(--turnos-border);
-  background: rgba(0, 0, 0, 0.25);
-  color: #fff;
+  background: #fff;
+  color: var(--turnos-text);
   font: inherit;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.turnos-input:focus {
+  outline: none;
+  border-color: var(--turnos-blue);
+  box-shadow: 0 0 0 3px rgba(0, 56, 130, 0.12);
 }
 
 .turnos-hint {
@@ -482,9 +515,9 @@ html, body.turnos-body {
   gap: 0.25rem;
   padding: 0.5rem;
   padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
-  background: rgba(10, 15, 20, 0.96);
-  border-top: 1px solid var(--turnos-border);
-  backdrop-filter: blur(12px);
+  background: #fff;
+  border-top: 2px solid var(--bp-blue);
+  box-shadow: 0 -4px 20px rgba(0, 56, 130, 0.1);
 }
 
 .turnos-mobile-nav .turnos-nav-item {
@@ -492,6 +525,24 @@ html, body.turnos-body {
   font-size: 1.25rem;
   min-height: 52px;
   padding: 0.5rem;
+  color: var(--turnos-muted);
+}
+
+.turnos-mobile-nav .turnos-nav-item:hover {
+  background: var(--bp-blue-pale);
+  color: var(--turnos-blue);
+}
+
+.turnos-mobile-nav .turnos-nav-item.active {
+  background: var(--bp-blue-light);
+  color: var(--turnos-blue);
+  box-shadow: none;
+  border-radius: 10px;
+}
+
+.turnos-mobile-nav .turnos-nav-icon {
+  filter: none;
+  opacity: 1;
 }
 
 @media (max-width: 960px) {
@@ -518,27 +569,33 @@ html, body.turnos-body {
   max-width: 520px;
   margin: 0 auto;
   padding: 0 1rem 1.5rem;
+  background: var(--turnos-bg);
 }
 
 .turnos-portal-logo {
-  border-radius: 12px;
+  border-radius: 10px;
   object-fit: cover;
-  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
-  border: 1px solid rgba(96, 165, 250, 0.35);
+  box-shadow: var(--turnos-shadow);
+  border: 2px solid var(--bp-blue-light);
 }
 
 .turnos-chofer-header {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  padding: 1rem 0;
-  border-bottom: 1px solid var(--turnos-border);
+  padding: 1rem 1rem;
+  margin: 0 -1rem;
+  background: #fff;
+  border-bottom: 3px solid var(--bp-blue);
+  box-shadow: var(--turnos-shadow);
 }
 
-.turnos-chofer-title {
-  margin: 0.15rem 0 0;
-  font-size: 1.15rem;
-  font-weight: 800;
+.turnos-chofer-header .turnos-brand-eyebrow {
+  color: var(--turnos-muted);
+}
+
+.turnos-chofer-header .turnos-chofer-title {
+  color: var(--bp-blue);
 }
 
 .turnos-chofer-clock { margin-left: auto; }
@@ -554,6 +611,13 @@ html, body.turnos-body {
   gap: 0.65rem;
   padding-top: 1rem;
   border-top: 1px solid var(--turnos-border);
+  background: transparent;
+}
+
+.turnos-chofer-title {
+  margin: 0.15rem 0 0;
+  font-size: 1.15rem;
+  font-weight: 800;
 }
 
 .turnos-chofer-lead {
@@ -577,16 +641,20 @@ html, body.turnos-body {
   min-height: 88px;
   padding: 1.1rem 1.15rem;
   border: 2px solid var(--turnos-border);
-  border-radius: 16px;
-  background: var(--turnos-panel);
+  border-radius: 12px;
+  background: #fff;
   color: inherit;
   text-align: left;
   cursor: pointer;
-  transition: border-color 0.15s, transform 0.12s;
+  transition: border-color 0.15s, transform 0.12s, box-shadow 0.15s;
+  box-shadow: var(--turnos-shadow);
 }
 
 .turnos-service-card:active { transform: scale(0.98); }
-.turnos-service-card:hover { border-color: rgba(96, 165, 250, 0.45); }
+.turnos-service-card:hover {
+  border-color: var(--bp-blue);
+  box-shadow: var(--turnos-shadow-lg);
+}
 
 .turnos-service-icon {
   flex-shrink: 0;
@@ -595,8 +663,8 @@ html, body.turnos-body {
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  background: var(--bp-blue-light);
 }
 
 .turnos-service-icon img {
@@ -634,11 +702,19 @@ html, body.turnos-body {
 }
 
 .turnos-service-icon { font-size: 1.75rem; }
-.turnos-service-title { font-size: 1.05rem; font-weight: 800; }
+.turnos-service-title { font-size: 1.05rem; font-weight: 800; color: var(--bp-blue); }
 .turnos-service-desc { font-size: 0.85rem; color: var(--turnos-muted); }
 
-.turnos-form-panel { animation: turnosFade 0.2s ease; }
-.turnos-form-title { margin: 0.5rem 0 1.25rem; font-size: 1.35rem; }
+.turnos-form-panel {
+  animation: turnosFade 0.2s ease;
+  background: #fff;
+  border-radius: 12px;
+  padding: 1.25rem;
+  border: 1px solid var(--turnos-border);
+  box-shadow: var(--turnos-shadow);
+}
+
+.turnos-form-title { margin: 0.5rem 0 1.25rem; font-size: 1.35rem; color: var(--bp-blue); }
 
 .turnos-input--lg {
   min-height: 56px;
@@ -654,46 +730,97 @@ html, body.turnos-body {
 .turnos-back-btn {
   border: none;
   background: none;
-  color: #93c5fd;
+  color: var(--turnos-blue-link);
   font: inherit;
   font-weight: 600;
   cursor: pointer;
   padding: 0;
-}
-
-.turnos-back-btn--center {
-  display: block;
-  margin: 1rem auto 0;
 }
 
 .turnos-form-error {
   margin: 0.75rem 0;
   padding: 0.75rem;
   border-radius: 10px;
-  background: rgba(220, 38, 38, 0.15);
-  color: #fca5a5;
+  background: #fde8ec;
+  color: #b91c1c;
   font-size: 0.88rem;
+  border: 1px solid rgba(196, 30, 58, 0.2);
 }
 
 .turnos-hint--info {
   padding: 0.75rem;
   border-radius: 10px;
-  background: rgba(37, 99, 235, 0.12);
-  color: #bfdbfe;
+  background: var(--bp-blue-light);
+  color: var(--bp-blue-dark);
+  border: 1px solid rgba(0, 56, 130, 0.15);
 }
 
-.turnos-success-screen { text-align: center; padding: 1rem 0; }
+.turnos-success-screen {
+  text-align: center;
+  padding: 1.5rem 1rem;
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid var(--turnos-border);
+  box-shadow: var(--turnos-shadow-lg);
+}
+
+.turnos-success-icon {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 0.75rem;
+  border-radius: 50%;
+  background: var(--turnos-green);
+  color: #fff;
+  font-size: 1.75rem;
+  line-height: 56px;
+  font-weight: 800;
+}
+
+.turnos-success-title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--turnos-green);
+}
+
+.turnos-success-turno {
+  margin: 0.75rem 0 0.35rem;
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: var(--bp-blue);
+}
+
+.turnos-success-qr,
+.turnos-success-meta,
+.turnos-success-detail,
+.turnos-success-time {
+  margin: 0.35rem 0;
+  color: var(--turnos-muted);
+  font-size: 0.88rem;
+}
+
+.turnos-success-status {
+  margin: 0.75rem 0;
+  font-weight: 700;
+  color: var(--bp-blue-mid);
+}
 
 .turnos-admin-link {
   border: none;
   background: none;
-  color: #93c5fd;
+  color: var(--turnos-blue-link);
   font: inherit;
   font-size: 0.88rem;
   font-weight: 600;
   cursor: pointer;
   text-align: left;
   padding: 0;
+}
+
+.turnos-chofer-foot .turnos-back-link {
+  color: var(--turnos-muted);
+  font-size: 0.85rem;
+  text-decoration: none;
 }
 
 /* ——— Auth admin ——— */
@@ -705,21 +832,34 @@ html, body.turnos-body {
   align-items: center;
   justify-content: center;
   padding: 1.25rem;
-  background: rgba(0, 0, 0, 0.75);
-  backdrop-filter: blur(8px);
+  background: rgba(0, 42, 92, 0.45);
+  backdrop-filter: blur(6px);
 }
 
 .turnos-auth-card {
   width: min(100%, 420px);
   padding: 1.5rem;
-  border-radius: 18px;
+  border-radius: 14px;
   border: 1px solid var(--turnos-border);
-  background: var(--turnos-panel);
+  background: #fff;
+  box-shadow: var(--turnos-shadow-lg);
 }
 
 .turnos-auth-card h2 {
   margin: 0;
   font-size: 1.25rem;
+  color: var(--bp-blue);
+}
+
+.turnos-pwd-toggle {
+  position: absolute;
+  right: 0.65rem;
+  bottom: 0.55rem;
+  border: none;
+  background: none;
+  color: var(--turnos-blue-link);
+  font-size: 0.78rem;
+  cursor: pointer;
 }
 
 .turnos-auth-sub {
@@ -741,71 +881,56 @@ html, body.turnos-body {
 
 .turnos-field-password { position: relative; }
 
-.turnos-pwd-toggle {
-  position: absolute;
-  right: 0.65rem;
-  bottom: 0.55rem;
-  border: none;
-  background: none;
-  color: #93c5fd;
-  font-size: 0.78rem;
-  cursor: pointer;
+.turnos-back-btn--center {
+  display: block;
+  margin: 1rem auto 0;
+  color: var(--turnos-muted);
 }
-
-.turnos-badge--process { background: rgba(37, 99, 235, 0.2); color: #93c5fd; }
-
-.turnos-kpi--process { background: linear-gradient(135deg, #1e3a8a, #2563eb); }
 
 .turnos-kpi-grid--admin {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
-.turnos-kpi--cancel { background: linear-gradient(135deg, #7f1d1d, #991b1b); }
-
-.turnos-badge--cancel { background: rgba(220, 38, 38, 0.2); color: #fca5a5; }
-
 .turnos-offline-banner {
   margin: 0 0 1rem;
   padding: 0.75rem 1rem;
-  border-radius: 12px;
-  background: rgba(220, 38, 38, 0.15);
-  border: 1px solid rgba(220, 38, 38, 0.35);
-  color: #fca5a5;
+  border-radius: 10px;
+  background: #fde8ec;
+  border: 1px solid rgba(196, 30, 58, 0.25);
+  color: #b91c1c;
   font-size: 0.88rem;
 }
-
-.turnos-kpi--priority { background: linear-gradient(135deg, #b45309, #f59e0b); }
 
 .turnos-badge--priority {
   display: inline-block;
   margin-top: 0.25rem;
-  background: rgba(245, 158, 11, 0.25);
-  color: #fde68a;
+  background: #fef3c7;
+  color: #92400e;
   font-size: 0.65rem;
   font-weight: 800;
   letter-spacing: 0.06em;
 }
 
 .turnos-badge--priority-warn {
-  background: rgba(220, 38, 38, 0.2);
-  color: #fca5a5;
+  background: #fde8ec;
+  color: #b91c1c;
   font-size: 0.65rem;
 }
 
 .turnos-badge--priority-limit {
-  background: rgba(37, 99, 235, 0.2);
-  color: #93c5fd;
+  background: var(--bp-blue-light);
+  color: var(--bp-blue);
   font-size: 0.65rem;
 }
 
-.turnos-row--priority { background: rgba(245, 158, 11, 0.06); }
+.turnos-row--priority { background: #fffbeb; }
 
 .turnos-priority-block {
   margin: 1rem 0;
   padding: 0.85rem;
-  border-radius: 12px;
-  border: 1px solid rgba(245, 158, 11, 0.35);
-  background: rgba(245, 158, 11, 0.08);
+  border-radius: 10px;
+  border: 1px solid rgba(217, 119, 6, 0.35);
+  background: #fffbeb;
 }
 
 .turnos-priority-toggle {
@@ -819,9 +944,9 @@ html, body.turnos-body {
 .turnos-priority-pin { margin-top: 0.75rem; }
 
 .turnos-call-inline--priority {
-  background: rgba(245, 158, 11, 0.2);
-  color: #fde68a;
-  border: 1px solid rgba(245, 158, 11, 0.4);
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid rgba(217, 119, 6, 0.35);
 }
 
 .turnos-limite-cell { min-width: 130px; vertical-align: top; }
@@ -834,13 +959,19 @@ html, body.turnos-body {
   padding: 0.35rem 0.5rem;
   border-radius: 8px;
   border: 1px solid var(--turnos-border);
-  background: rgba(0, 0, 0, 0.35);
-  color: #fff;
+  background: #fff;
+  color: var(--turnos-text);
   font: inherit;
   font-size: 0.82rem;
 }
 
-.turnos-limite-ok { color: #fde68a; font-weight: 700; }
+.turnos-limite-input:focus {
+  outline: none;
+  border-color: var(--turnos-blue);
+  box-shadow: 0 0 0 2px rgba(0, 56, 130, 0.1);
+}
+
+.turnos-limite-ok { color: #92400e; font-weight: 700; }
 
 .turnos-btn--sm {
   min-height: 32px;
@@ -872,19 +1003,28 @@ html, body.turnos-body {
   width: 100%;
   min-height: 72px;
   padding: 0.85rem 1rem;
-  border-radius: 14px;
+  border-radius: 12px;
   border: 1px solid var(--turnos-border);
-  background: rgba(255, 255, 255, 0.03);
+  background: #fff;
   color: inherit;
   font: inherit;
   text-align: left;
   cursor: pointer;
+  box-shadow: var(--turnos-shadow);
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
 
-.turnos-tramite-card:hover { border-color: rgba(37, 99, 235, 0.45); background: rgba(37, 99, 235, 0.08); }
+.turnos-tramite-card:hover {
+  border-color: var(--bp-blue);
+  box-shadow: var(--turnos-shadow-lg);
+  background: var(--bp-blue-pale);
+}
 
-.turnos-tramite-card--muted { border-color: rgba(220, 38, 38, 0.25); }
-.turnos-tramite-card--muted:hover { border-color: rgba(220, 38, 38, 0.45); background: rgba(220, 38, 38, 0.08); }
+.turnos-tramite-card--muted { border-color: rgba(196, 30, 58, 0.3); }
+.turnos-tramite-card--muted:hover {
+  border-color: var(--turnos-red);
+  background: #fff5f7;
+}
 
 .turnos-tramite-card-text { display: flex; flex-direction: column; gap: 0.2rem; }
 .turnos-tramite-card-text strong { font-size: 0.92rem; }
@@ -896,8 +1036,8 @@ html, body.turnos-body {
   display: grid;
   place-items: center;
   border-radius: 10px;
-  background: rgba(220, 38, 38, 0.15);
-  color: #fca5a5;
+  background: #fde8ec;
+  color: var(--turnos-red);
   font-weight: 800;
 }
 
@@ -919,9 +1059,10 @@ html, body.turnos-body {
 
 .turnos-mini-kpi {
   padding: 0.65rem 0.75rem;
-  border-radius: 12px;
+  border-radius: 10px;
   border: 1px solid var(--turnos-border);
-  background: rgba(0, 0, 0, 0.25);
+  background: #fff;
+  box-shadow: var(--turnos-shadow);
 }
 
 .turnos-mini-kpi span {
@@ -931,7 +1072,7 @@ html, body.turnos-body {
   margin-bottom: 0.2rem;
 }
 
-.turnos-mini-kpi strong { font-size: 1.15rem; }
+.turnos-mini-kpi strong { font-size: 1.15rem; color: var(--bp-blue); }
 
 .turnos-nav { max-height: calc(100vh - 220px); overflow-y: auto; }
 
@@ -945,11 +1086,17 @@ html, body.turnos-body {
   padding: 0.35rem 0.5rem;
   border-radius: 10px;
   border: 1px solid var(--turnos-border);
-  background: rgba(0, 0, 0, 0.35);
-  color: #fff;
+  background: #fff;
+  color: var(--turnos-text);
   font: inherit;
   font-size: 0.78rem;
   max-width: 140px;
+}
+
+.turnos-status-select:focus {
+  outline: none;
+  border-color: var(--turnos-blue);
+  box-shadow: 0 0 0 2px rgba(0, 56, 130, 0.1);
 }
 
 body.turnos-admin-mode .turnos-chofer-root { display: none !important; }
@@ -970,9 +1117,9 @@ body.turnos-admin-mode .turnos-chofer-root { display: none !important; }
 .turnos-my-turn-banner {
   margin-bottom: 1.25rem;
   padding: 1rem 1.1rem;
-  border-radius: 14px;
-  border: 1px solid rgba(22, 163, 74, 0.35);
-  background: rgba(22, 163, 74, 0.12);
+  border-radius: 12px;
+  border: 1px solid rgba(13, 122, 62, 0.3);
+  background: #e6f7ed;
 }
 
 .turnos-my-turn-label {
@@ -981,19 +1128,14 @@ body.turnos-admin-mode .turnos-chofer-root { display: none !important; }
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #86efac;
+  color: var(--turnos-green);
 }
 
 .turnos-my-turn-number {
   margin: 0.35rem 0 0.85rem;
   font-size: 2rem;
   font-weight: 800;
-}
-
-.turnos-success-status {
-  margin: 0.75rem 0;
-  font-weight: 700;
-  color: #fde68a;
+  color: var(--bp-blue);
 }
 
 /* ——— Convocatoria chofer ——— */
@@ -1005,8 +1147,8 @@ body.turnos-admin-mode .turnos-chofer-root { display: none !important; }
   align-items: center;
   justify-content: center;
   padding: 1.25rem;
-  background: rgba(0, 0, 0, 0.88);
-  backdrop-filter: blur(6px);
+  background: rgba(0, 42, 92, 0.72);
+  backdrop-filter: blur(8px);
 }
 
 .turnos-call-overlay.is-hidden { display: none; }
@@ -1014,10 +1156,11 @@ body.turnos-admin-mode .turnos-chofer-root { display: none !important; }
 .turnos-call-card {
   width: min(100%, 420px);
   padding: 1.75rem 1.25rem;
-  border-radius: 20px;
-  border: 2px solid #16a34a;
-  background: linear-gradient(180deg, #14532d, #111827);
+  border-radius: 16px;
+  border: 3px solid var(--bp-blue);
+  background: #fff;
   text-align: center;
+  box-shadow: var(--turnos-shadow-lg);
   animation: turnosPulse 1.2s ease-in-out infinite;
 }
 
@@ -1025,7 +1168,7 @@ body.turnos-admin-mode .turnos-chofer-root { display: none !important; }
   margin: 0;
   font-size: 1.1rem;
   font-weight: 800;
-  color: #86efac;
+  color: var(--turnos-green);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
@@ -1034,13 +1177,14 @@ body.turnos-admin-mode .turnos-chofer-root { display: none !important; }
   margin: 0.5rem 0;
   font-size: 2.5rem;
   font-weight: 800;
+  color: var(--bp-blue);
 }
 
 .turnos-call-ventana {
   margin: 0.75rem 0;
   font-size: 1.15rem;
   font-weight: 700;
-  color: #fde68a;
+  color: #92400e;
 }
 
 .turnos-call-detail {
@@ -1052,15 +1196,16 @@ body.turnos-admin-mode .turnos-chofer-root { display: none !important; }
 .turnos-call-inline {
   margin: 1rem 0;
   padding: 0.85rem;
-  border-radius: 12px;
-  background: rgba(22, 163, 74, 0.2);
-  color: #bbf7d0;
+  border-radius: 10px;
+  background: #e6f7ed;
+  color: #0a5c32;
   font-weight: 600;
+  border: 1px solid rgba(13, 122, 62, 0.25);
 }
 
 @keyframes turnosPulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.45); }
-  50% { box-shadow: 0 0 0 12px rgba(22, 163, 74, 0); }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(0, 56, 130, 0.35); }
+  50% { box-shadow: 0 0 0 14px rgba(0, 56, 130, 0); }
 }
 
 .turnos-btn--call {
@@ -1072,7 +1217,7 @@ body.turnos-admin-mode .turnos-chofer-root { display: none !important; }
   padding: 0.35rem 0.65rem;
   border: none;
   border-radius: 10px;
-  background: linear-gradient(135deg, #15803d, #16a34a);
+  background: linear-gradient(180deg, var(--bp-blue-mid) 0%, var(--bp-blue) 100%);
   color: #fff;
   font: inherit;
   font-size: 0.72rem;
