@@ -299,31 +299,105 @@
     }
   }
 
-  function validacionCardHtml(e) {
+  function tramiteIconFile(tipo) {
+    if (tipo === C().TIPOS.DESPACHO) return 'icon-turnos-despacho.svg';
+    if (tipo === C().TIPOS.LIQUIDACION) return 'icon-turnos-liquidacion.svg';
+    if (tipo === C().TIPOS.NOTA_CREDITO) return 'icon-turnos-nota-credito.svg';
+    return 'icon-turnos-portal.svg';
+  }
+
+  function tramiteCardClass(tipo) {
+    if (tipo === C().TIPOS.DESPACHO) return 'turnos-val-card--despacho';
+    if (tipo === C().TIPOS.LIQUIDACION) return 'turnos-val-card--liquidacion';
+    if (tipo === C().TIPOS.NOTA_CREDITO) return 'turnos-val-card--nota';
+    return '';
+  }
+
+  function validacionEmptyHtml(lite) {
+    if (lite) {
+      return (
+        '<div class="turnos-val-empty turnos-val-empty--lite">' +
+        '<div class="turnos-val-empty__icon" aria-hidden="true">' +
+        '<img src="assets/img/icon-turnos-validacion.svg' + ICON_V + '" alt="" width="72" height="72">' +
+        '</div>' +
+        '<h3 class="turnos-val-empty__title">Todo al día</h3>' +
+        '<p class="turnos-val-empty__text">No hay choferes esperando validación. Cuando alguien envíe una solicitud desde la app chofer, aparecerá aquí al instante.</p>' +
+        '<ol class="turnos-val-empty__steps">' +
+        '<li>El chofer envía solicitud desde su celular</li>' +
+        '<li>Usted confirma que está en el almacén</li>' +
+        '<li>Se asigna el número T-XXXX y entra a la cola</li>' +
+        '</ol></div>'
+      );
+    }
+    return '<p class="turnos-empty">No hay solicitudes pendientes de validación.</p>';
+  }
+
+  function validacionLiteHeroHtml(count, userName) {
+    var label = count === 1 ? 'solicitud pendiente' : 'solicitudes pendientes';
     return (
-      '<article class="turnos-val-card" data-val-id="' + esc(e.id) + '">' +
-      '<div class="turnos-val-card__head">' +
-      '<span class="turnos-val-card__time turnos-mono">' + esc(C().formatFechaDisplay(e.fecha)) + ' · ' + esc(e.hora) + '</span>' +
-      statusBadge(e.estado) +
+      '<div class="turnos-lite-hero">' +
+      '<div class="turnos-lite-hero__main">' +
+      '<p class="turnos-lite-hero__greet">Hola, <strong>' + esc(userName || 'Supervisor') + '</strong></p>' +
+      '<div class="turnos-lite-hero__stat' + (count > 0 ? ' turnos-lite-hero__stat--alert' : '') + '">' +
+      '<span class="turnos-lite-hero__num">' + count + '</span>' +
+      '<span class="turnos-lite-hero__label">' + label + '</span></div></div>' +
+      '<div class="turnos-lite-hero__clock">' +
+      '<span class="turnos-lite-hero__clock-time turnos-mono" id="turnosLiteClockTime">--:--</span>' +
+      '<span class="turnos-lite-hero__clock-date" id="turnosLiteClockDate">—</span>' +
+      '</div></div>' +
+      '<div class="turnos-lite-guide">' +
+      '<p class="turnos-lite-guide__title">Cómo validar</p>' +
+      '<ol class="turnos-lite-guide__steps">' +
+      '<li><strong>Verifique</strong> que el chofer está en el almacén</li>' +
+      '<li><strong>Prioritario</strong> solo si debe adelantar en cola</li>' +
+      '<li>Toque <strong>Validar presencia</strong> para asignar T-XXXX</li>' +
+      '</ol></div>'
+    );
+  }
+
+  function validacionCardHtml(e, idx) {
+    var pos = (idx || 0) + 1;
+    var tipoLabel = C().TIPO_LABELS[e.tipo] || e.tipo;
+    var icon = tramiteIconFile(e.tipo);
+    var tipoCls = tramiteCardClass(e.tipo);
+    return (
+      '<article class="turnos-val-card ' + tipoCls + '" data-val-id="' + esc(e.id) + '">' +
+      '<div class="turnos-val-card__top">' +
+      '<span class="turnos-val-card__queue">#' + pos + ' en espera</span>' +
+      '<span class="turnos-val-card__time turnos-mono">' + esc((e.hora || '').slice(0, 8)) + '</span>' +
       '</div>' +
-      '<p class="turnos-val-card__chofer"><strong>' + esc(e.choferNombre || '—') + '</strong></p>' +
-      '<p class="turnos-val-card__meta">' + esc(e.choferCompania || '—') + '</p>' +
-      '<p class="turnos-val-card__tramite">' + esc(C().TIPO_LABELS[e.tipo] || e.tipo) + '</p>' +
-      '<p class="turnos-val-card__detalle">' + esc(e.detalle) + '</p>' +
+      '<div class="turnos-val-card__tipo">' +
+      '<img src="assets/img/' + icon + ICON_V + '" alt="" width="36" height="36">' +
+      '<div><span class="turnos-val-card__tipo-label">Trámite</span>' +
+      '<strong>' + esc(tipoLabel) + '</strong></div></div>' +
+      '<div class="turnos-val-card__grid">' +
+      '<div class="turnos-val-field turnos-val-field--chofer">' +
+      '<span class="turnos-val-label">Chofer</span>' +
+      '<strong class="turnos-val-value">' + esc(e.choferNombre || '—') + '</strong></div>' +
+      '<div class="turnos-val-field">' +
+      '<span class="turnos-val-label">Compañía</span>' +
+      '<strong class="turnos-val-value">' + esc(e.choferCompania || '—') + '</strong></div>' +
+      (e.detalle
+        ? '<div class="turnos-val-field turnos-val-field--full">' +
+          '<span class="turnos-val-label">Detalle</span>' +
+          '<span class="turnos-val-value turnos-val-value--detalle">' + esc(e.detalle) + '</span></div>'
+        : '') +
+      '</div>' +
       '<label class="turnos-val-card__priority">' +
-      '<input type="checkbox" class="turnos-val-priority-check" data-prioridad-for="' + esc(e.id) + '"> ' +
-      '<span>Turno <strong>prioritario</strong> (adelanta en cola)</span></label>' +
+      '<input type="checkbox" class="turnos-val-priority-check" data-prioridad-for="' + esc(e.id) + '">' +
+      '<span class="turnos-val-card__priority-text">' +
+      '<strong>Turno prioritario</strong>' +
+      '<small>Marque solo si debe pasar primero en la cola</small></span></label>' +
       '<div class="turnos-val-card__actions">' +
-      '<button type="button" class="turnos-btn turnos-btn--primary turnos-btn--xl" data-validate-id="' + esc(e.id) + '">Validar presencia</button>' +
-      '<button type="button" class="turnos-btn turnos-btn--danger turnos-btn--xl" data-reject-id="' + esc(e.id) + '">Rechazar</button>' +
+      '<button type="button" class="turnos-btn turnos-btn--primary turnos-btn--xl turnos-btn--validate" data-validate-id="' + esc(e.id) + '">' +
+      '<span class="turnos-btn__icon" aria-hidden="true">✓</span> Validar presencia</button>' +
+      '<button type="button" class="turnos-btn turnos-btn--danger turnos-btn--xl" data-reject-id="' + esc(e.id) + '">Rechazar solicitud</button>' +
       '</div></article>'
     );
   }
 
   function validacionCardsHtml(entries) {
-    if (!entries.length) {
-      return '<p class="turnos-empty">No hay solicitudes pendientes de validación.</p>';
-    }
+    if (!entries.length) return validacionEmptyHtml(true);
     return '<div class="turnos-val-cards">' + entries.map(validacionCardHtml).join('') + '</div>';
   }
 
@@ -368,23 +442,26 @@
     if (!host) return;
     var pending = C().sortByArrivalOrder(C().filterPendingValidation(S().getState().entries));
     var lite = isSupervisorLite();
+    var userName = state.adminUser && (state.adminUser.name || state.adminUser.username);
     host.innerHTML =
-      '<section class="turnos-panel turnos-panel--validacion">' +
-      '<div class="turnos-tramite-head">' +
-      '<img src="assets/img/icon-turnos-validacion.svg' + ICON_V + '" alt="" width="48" height="48">' +
-      '<div><h2>Validar turnos</h2>' +
-      '<p class="turnos-sub' + (lite ? '' : ' turnos-sub-long') + '">' +
-      (lite
-        ? 'Confirme presencia del chofer en el almacén. Puede marcar turno prioritario antes de validar.'
-        : 'Confirme que el chofer está en el almacén antes de asignar el número T-XXXX. Sin validación no se genera ticket ni entra a la cola.') +
-      '</p></div></div>' +
-      '<p class="turnos-validacion-count"><strong>' + pending.length + '</strong> solicitud(es) pendiente(s)</p>' +
-      (!lite && global.PlatformTurnosPwa && !global.PlatformTurnosPwa.isStandalone()
-        ? '<p class="turnos-hint turnos-hint--info turnos-validacion-install-hint">Instale la <strong>app supervisor</strong> en el celular para validar con un toque. En PC verá el panel completo.</p>'
-        : '') +
+      (lite ? validacionLiteHeroHtml(pending.length, userName) : '') +
+      '<section class="turnos-panel turnos-panel--validacion' + (lite ? ' turnos-panel--validacion-lite' : '') + '">' +
+      (!lite
+        ? '<div class="turnos-tramite-head">' +
+          '<img src="assets/img/icon-turnos-validacion.svg' + ICON_V + '" alt="" width="48" height="48">' +
+          '<div><h2>Validar turnos</h2>' +
+          '<p class="turnos-sub turnos-sub-long">Confirme que el chofer está en el almacén antes de asignar el número T-XXXX. Sin validación no se genera ticket ni entra a la cola.</p></div></div>' +
+          '<p class="turnos-validacion-count"><strong>' + pending.length + '</strong> solicitud(es) pendiente(s)</p>' +
+          (global.PlatformTurnosPwa && !global.PlatformTurnosPwa.isStandalone()
+            ? '<p class="turnos-hint turnos-hint--info turnos-validacion-install-hint">Instale la <strong>app supervisor</strong> en el celular para validar con un toque. En PC verá el panel completo.</p>'
+            : '')
+        : (pending.length
+          ? '<h2 class="turnos-lite-list-title">Solicitudes por validar</h2>'
+          : '')) +
       validacionListHtml(pending) +
       '</section>';
     updateNavBadges();
+    updateClock();
   }
 
   function setModule(mod) {
@@ -751,8 +828,11 @@
             refresh();
           });
         }
-      } else if (action === 'logout' && global.PlatformTurnosApp) {
+      }       else if (action === 'logout' && global.PlatformTurnosApp) {
         global.PlatformTurnosApp.logoutAdmin();
+      }
+      else if (action === 'refresh-validacion') {
+        refresh();
       }
     });
 
@@ -782,8 +862,14 @@
   function updateClock() {
     var timeEl = $('turnosClockTime');
     var dateEl = $('turnosClockDate');
-    if (timeEl) timeEl.textContent = C().formatClockTime();
-    if (dateEl) dateEl.textContent = C().formatClockDate();
+    var liteTime = $('turnosLiteClockTime');
+    var liteDate = $('turnosLiteClockDate');
+    var timeStr = C().formatClockTime();
+    var dateStr = C().formatClockDate();
+    if (timeEl) timeEl.textContent = timeStr;
+    if (dateEl) dateEl.textContent = dateStr;
+    if (liteTime) liteTime.textContent = timeStr.slice(0, 5);
+    if (liteDate) liteDate.textContent = dateStr;
   }
 
   function refresh() {

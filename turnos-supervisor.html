@@ -20,7 +20,7 @@
   <link rel="stylesheet" href="css/auth-cinematic.css?v=19">
   <link rel="stylesheet" href="css/auth-security.css?v=3">
   <link rel="stylesheet" href="css/dc-brand.css?v=11">
-  <link rel="stylesheet" href="css/turnos-portal.css?v=31">
+  <link rel="stylesheet" href="css/turnos-portal.css?v=32">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
@@ -133,14 +133,15 @@
     </aside>
 
     <div class="turnos-main-wrap">
-      <header class="turnos-topbar">
+      <header class="turnos-topbar turnos-topbar--supervisor">
         <div class="turnos-topbar__main">
-          <p class="turnos-top-eyebrow turnos-top-eyebrow--lite">App supervisor</p>
+          <p class="turnos-top-eyebrow turnos-top-eyebrow--lite">Turnos · Supervisor</p>
           <p class="turnos-top-eyebrow turnos-top-eyebrow--full">Panel supervisor</p>
           <h2 class="turnos-top-title" id="turnosTopTitle">Validar turnos</h2>
           <span class="turnos-lite-pending-badge" id="turnosLitePendingBadge" hidden>0</span>
         </div>
         <div class="turnos-topbar__actions">
+          <button type="button" class="turnos-btn turnos-btn--ghost turnos-btn--sm turnos-lite-refresh" data-admin-action="refresh-validacion" title="Actualizar lista">↻</button>
           <button type="button" class="turnos-btn turnos-btn--secondary turnos-btn--sm turnos-lite-logout" id="turnosLiteLogoutBtn" data-admin-action="logout">Salir</button>
           <div class="turnos-clock turnos-clock--full">
             <p id="turnosClockTime" class="turnos-clock-time">--:--:--</p>
@@ -194,7 +195,7 @@
   <script src="js/platform-turnos-sync.js?v=13"></script>
   <script src="js/platform-turnos-store.js?v=15"></script>
   <script src="js/platform-turnos-alerts.js?v=5"></script>
-  <script src="js/platform-turnos-admin.js?v=26"></script>
+  <script src="js/platform-turnos-admin.js?v=27"></script>
   <script src="js/platform-turnos-pwa.js?v=6"></script>
   <script src="js/platform-turnos-app.js?v=9"></script>
 </body>
