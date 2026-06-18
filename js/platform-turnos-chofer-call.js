@@ -285,7 +285,6 @@
       speechSynthesis.addEventListener('voiceschanged', preloadVoices, { once: true });
       preloadVoices();
     }
-    requestPermission();
   }
 
   global.PlatformTurnosChoferCall = {

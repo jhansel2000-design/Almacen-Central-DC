@@ -12,6 +12,7 @@
   var unsub = null;
   var vibrateTimer = null;
   var Call = function () { return global.PlatformTurnosChoferCall; };
+  var Perms = function () { return global.PlatformTurnosChoferPerms; };
 
   function $(id) { return document.getElementById(id); }
 
@@ -139,7 +140,14 @@
       : '';
     var notaHint = entry.tipo === C().TIPOS.NOTA_CREDITO
       ? '<p class="turnos-hint turnos-hint--info">Flujo: Pendiente → Confirmado → Asentado.</p>'
-      : '<p class="turnos-hint">Cuando lo convoquen escuchará un mensaje de voz y una alarma. Mantenga esta página abierta en el celular o active las notificaciones.</p>';
+      : '<p class="turnos-hint">Cuando lo convoquen escuchará voz y alarma. Mantenga el volumen alto.</p>';
+    var permStatus = Perms() ? Perms().getStatus() : { ready: false };
+    var notifBlock = permStatus.ready
+      ? '<div class="turnos-chofer-notif-prompt turnos-chofer-notif-prompt--ok" id="turnosChoferNotifPrompt">' +
+        '<p class="turnos-hint turnos-hint--info">Alertas activas. Sonará aunque cambie de aplicación.</p></div>'
+      : '<div class="turnos-chofer-notif-prompt turnos-chofer-notif-prompt--warn" id="turnosChoferNotifPrompt">' +
+        '<p class="turnos-hint turnos-hint--warn"><strong>Obligatorio:</strong> active notificaciones y sonido para escuchar cuando lo convoquen.</p>' +
+        '<button type="button" class="turnos-btn turnos-btn--primary turnos-btn--xl" id="turnosChoferNotifBtn">Autorizar alertas ahora</button></div>';
     var prio = entry.prioridad
       ? '<div class="turnos-call-inline turnos-call-inline--priority"><strong>Turno prioritario</strong>' +
         (entry.horaLimite ? ' · Hora límite ' + esc(entry.horaLimite) + ' (hora RD)' : '') +
@@ -162,9 +170,7 @@
       convocado +
       prio +
       notaHint +
-      '<div class="turnos-chofer-notif-prompt" id="turnosChoferNotifPrompt">' +
-      '<p class="turnos-hint turnos-hint--info">Para que suene fuerte aunque cambie de aplicación, active las notificaciones del navegador.</p>' +
-      '<button type="button" class="turnos-btn turnos-btn--secondary turnos-btn--xl" id="turnosChoferNotifBtn">Activar alertas en el celular</button></div>' +
+      notifBlock +
       '<p class="turnos-hint">Puede cerrar esta página; al volver verá el mismo turno.</p>' +
       cancelBtn +
       '</section>'
@@ -296,6 +302,10 @@
   function submitForm(ev) {
     ev.preventDefault();
     showError('');
+    if (Perms() && !Perms().requireBeforeAction()) {
+      showError('Debe autorizar notificaciones y sonido antes de generar su turno.');
+      return;
+    }
     if (!S().getState().live) {
       showError('Sin conexión con la nube. Verifique internet e intente de nuevo.');
       return;
@@ -404,12 +414,10 @@
 
     root.addEventListener('click', function (ev) {
       if (ev.target.closest('#turnosChoferNotifBtn')) {
-        if (Call()) {
-          Call().requestPermission().then(function (ok) {
-            var prompt = $('turnosChoferNotifPrompt');
-            if (ok && prompt) prompt.innerHTML = '<p class="turnos-hint turnos-hint--info">Alertas activadas. Sonará cuando lo convoquen.</p>';
-            else alert('No se pudieron activar. En el navegador permita notificaciones para este sitio.');
-          });
+        if (Perms()) {
+          Perms().requestAll().then(function () { Perms().refreshGate(); render(); });
+        } else if (Call()) {
+          Call().requestPermission();
         }
         return;
       }
@@ -424,6 +432,7 @@
       }
       var tipoBtn = ev.target.closest('[data-chofer-tipo]');
       if (tipoBtn) {
+        if (Perms() && !Perms().requireBeforeAction()) return;
         var ref = C().getMyTurnRef();
         if (ref && ref.id) {
           var active = S().findById(ref.id);
@@ -458,6 +467,7 @@
   function start() {
     bind();
     if (Call()) Call().init();
+    if (Perms()) Perms().init();
     render();
     S().init().then(function () {
       syncMyTurnFromStore();

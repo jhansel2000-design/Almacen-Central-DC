@@ -1465,6 +1465,136 @@ body.turnos-admin-mode .turnos-chofer-root { display: none !important; }
   border: 1px solid var(--turnos-border);
 }
 
+.turnos-chofer-notif-prompt--ok {
+  background: #e8f6ee;
+  border-color: #9fd4b8;
+}
+
+.turnos-chofer-notif-prompt--warn {
+  background: #fff8e6;
+  border: 2px solid #e6a800;
+}
+
+.turnos-hint--warn {
+  color: #8a5a00;
+  font-weight: 600;
+}
+
+.turnos-perm-gate {
+  position: fixed;
+  inset: 0;
+  z-index: 12000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(0, 42, 92, 0.72);
+  backdrop-filter: blur(4px);
+}
+
+.turnos-perm-gate.is-hidden { display: none; }
+
+body.turnos-perm-open { overflow: hidden; }
+
+.turnos-perm-card {
+  width: min(100%, 420px);
+  padding: 1.35rem 1.25rem 1.25rem;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 16px 48px rgba(0, 40, 90, 0.28);
+  text-align: center;
+}
+
+.turnos-perm-eyebrow {
+  margin: 0 0 0.35rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--turnos-red);
+}
+
+.turnos-perm-card h2 {
+  margin: 0 0 0.65rem;
+  font-size: 1.35rem;
+  color: var(--turnos-blue);
+  line-height: 1.25;
+}
+
+.turnos-perm-lead {
+  margin: 0 0 1rem;
+  font-size: 0.95rem;
+  line-height: 1.45;
+  color: var(--turnos-muted);
+}
+
+.turnos-perm-list {
+  list-style: none;
+  margin: 0 0 1rem;
+  padding: 0;
+  text-align: left;
+}
+
+.turnos-perm-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.65rem 0.75rem;
+  margin-bottom: 0.45rem;
+  border-radius: 10px;
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+.turnos-perm-item--pending {
+  background: #fff8e6;
+  color: #8a5a00;
+  border: 1px solid #f0d080;
+}
+
+.turnos-perm-item--ok {
+  background: #e8f6ee;
+  color: #0a4d28;
+  border: 1px solid #9fd4b8;
+}
+
+.turnos-perm-item--fail {
+  background: #fde8ec;
+  color: #9b1c31;
+  border: 1px solid #f5a8b8;
+}
+
+.turnos-perm-icon {
+  width: 1.65rem;
+  height: 1.65rem;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.82rem;
+  font-weight: 800;
+  background: rgba(0, 0, 0, 0.08);
+  flex-shrink: 0;
+}
+
+.turnos-perm-btn { width: 100%; margin-bottom: 0.65rem; }
+
+.turnos-perm-hint,
+.turnos-perm-denied {
+  margin: 0;
+  font-size: 0.84rem;
+  line-height: 1.45;
+  color: var(--turnos-muted);
+}
+
+.turnos-perm-denied {
+  margin-top: 0.65rem;
+  padding: 0.65rem;
+  border-radius: 8px;
+  background: #fde8ec;
+  color: #9b1c31;
+}
+
 .turnos-call-card {
   width: min(100%, 420px);
   padding: 1.75rem 1.25rem;
