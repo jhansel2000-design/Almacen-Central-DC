@@ -107,10 +107,6 @@
 
   function renderSuccess(entry) {
     if (!entry) return renderMenu();
-    var live = S().getState().live;
-    var liveBadge = live
-      ? '<p class="turnos-live-badge turnos-live-badge--on">● En vivo — su turno se mantiene aunque cierre la página</p>'
-      : '<p class="turnos-hint turnos-hint--info">Modo local: solo en este dispositivo hasta activar Supabase.</p>';
     var convocado = entry.convocadoAt
       ? '<div class="turnos-call-inline"><strong>¡Es su turno!</strong> Pase a <span>' + esc(C().ventanaLabel(entry.tipo)) + '</span></div>'
       : '';
@@ -128,7 +124,6 @@
       '<p class="turnos-success-time">' + esc(entry.fecha) + ' · ' + esc(entry.hora) + '</p>' +
       '<p class="turnos-success-status">' + esc(estadoLabel(entry)) + '</p>' +
       convocado +
-      liveBadge +
       notaHint +
       '<p class="turnos-hint">Puede cerrar esta página; al volver verá el mismo turno.</p>' +
       '</section>'

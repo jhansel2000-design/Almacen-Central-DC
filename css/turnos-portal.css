@@ -808,16 +808,6 @@ body.turnos-admin-mode .turnos-chofer-root { display: none !important; }
   color: #fde68a;
 }
 
-.turnos-live-badge {
-  margin: 0.75rem 0;
-  font-size: 0.82rem;
-}
-
-.turnos-live-badge--on {
-  color: #86efac;
-  font-weight: 700;
-}
-
 /* ——— Convocatoria chofer ——— */
 .turnos-call-overlay {
   position: fixed;
@@ -884,39 +874,6 @@ body.turnos-admin-mode .turnos-chofer-root { display: none !important; }
   0%, 100% { box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.45); }
   50% { box-shadow: 0 0 0 12px rgba(22, 163, 74, 0); }
 }
-
-/* ——— Admin en vivo ——— */
-.turnos-admin-live {
-  margin: 0 0 0.25rem;
-  font-size: 0.72rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.turnos-admin-live.is-live { color: #86efac; }
-.turnos-admin-live.is-off { color: var(--turnos-muted); }
-
-.turnos-live-banner {
-  margin: 0 0 1rem;
-  padding: 0.75rem 1rem;
-  border-radius: 12px;
-  font-size: 0.88rem;
-}
-
-.turnos-live-banner--on {
-  background: rgba(22, 163, 74, 0.15);
-  border: 1px solid rgba(22, 163, 74, 0.35);
-  color: #bbf7d0;
-}
-
-.turnos-live-banner--warn {
-  background: rgba(234, 179, 8, 0.12);
-  border: 1px solid rgba(234, 179, 8, 0.35);
-  color: #fde68a;
-}
-
-.turnos-live-dot { color: #86efac; }
 
 .turnos-btn--call {
   display: inline-flex;

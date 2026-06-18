@@ -6,24 +6,12 @@
 
   var C = function () { return global.PlatformTurnosCore; };
   var S = function () { return global.PlatformTurnosStore; };
-  var Sync = function () { return global.PlatformTurnosSync; };
   var state = { module: 'dashboard', adminUser: null };
 
   function $(id) { return document.getElementById(id); }
 
   function esc(s) {
     return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  }
-
-  function liveBannerHtml() {
-    var shared = S().getState();
-    if (shared.live) {
-      return '<p class="turnos-live-banner turnos-live-banner--on"><span class="turnos-live-dot">●</span> Datos en vivo — los turnos de choferes aparecen aquí al instante</p>';
-    }
-    if (shared.setupRequired || (Sync() && Sync().isSetupRequired())) {
-      return '<p class="turnos-live-banner turnos-live-banner--warn">⚠ Sin conexión en vivo. Ejecute <strong>SETUP-TURNOS-SUPABASE.bat</strong> para ver turnos de todos los dispositivos.</p>';
-    }
-    return '<p class="turnos-live-banner turnos-live-banner--warn">Modo local — solo turnos de este navegador. Configure Supabase para datos en vivo.</p>';
   }
 
   function canConvocar(entry) {
@@ -99,7 +87,6 @@
     var last = data.counter > 0 ? C().formatTurno(data.counter) : '—';
 
     host.innerHTML =
-      liveBannerHtml() +
       '<div class="turnos-kpi-grid turnos-kpi-grid--admin">' +
       kpi('Total hoy', stats.totalHoy, 'blue') +
       kpi('Pendientes', stats.pendientes, 'red') +
@@ -130,7 +117,6 @@
     if (!host) return;
     var data = S().getState();
     host.innerHTML =
-      liveBannerHtml() +
       '<section class="turnos-panel">' +
       '<h2>Gestión de turnos</h2>' +
       '<p class="turnos-sub">Use <strong>Convocar → ventana</strong> para avisar al chofer (vibración en celular). Notas de crédito: Pendiente → Confirmado → Asentado.</p>' +
@@ -160,7 +146,7 @@
       '<h2>Configuración</h2>' +
       '<p class="turnos-sub">Usuario: <strong>' + esc(state.adminUser && (state.adminUser.name || state.adminUser.username)) + '</strong></p>' +
       '<button type="button" class="turnos-btn turnos-btn--danger turnos-btn--xl" data-admin-action="reset">Reiniciar numeración</button>' +
-      '<p class="turnos-hint">Conserva el historial. El próximo turno volverá a T-0001 (solo en modo local).</p>' +
+      '<p class="turnos-hint">Conserva el historial. El próximo turno volverá a T-0001.</p>' +
       '<button type="button" class="turnos-btn turnos-btn--secondary" data-admin-action="logout">Cerrar sesión admin</button>' +
       '</section>';
   }
@@ -278,12 +264,6 @@
     var dateEl = $('turnosClockDate');
     if (timeEl) timeEl.textContent = now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     if (dateEl) dateEl.textContent = now.toLocaleDateString('es-ES', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
-    var liveEl = $('turnosAdminLiveBadge');
-    if (liveEl) {
-      var live = S().getState().live;
-      liveEl.className = 'turnos-admin-live ' + (live ? 'is-live' : 'is-off');
-      liveEl.textContent = live ? '● LIVE' : '○ LOCAL';
-    }
   }
 
   function refresh() {
