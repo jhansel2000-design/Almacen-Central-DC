@@ -69,25 +69,24 @@
     };
   }
 
-  function priorityPinForDate(d) {
-    d = d || new Date();
-    var day = String(d.getDate()).padStart(2, '0');
-    var month = String(d.getMonth() + 1).padStart(2, '0');
-    var year = String(d.getFullYear());
-    return day + month + year;
+  /** PIN turnos prioritarios: nacimiento Juan Pablo Duarte — 26/01/1813 */
+  var PRIORITY_PIN = '26011813';
+  var PRIORITY_PIN_HINT = '26/01/1813';
+
+  function priorityPinValue() {
+    return PRIORITY_PIN;
   }
 
   function normalizePriorityPin(pin) {
     return String(pin || '').replace(/\D/g, '');
   }
 
-  function priorityPinHint(d) {
-    var raw = priorityPinForDate(d);
-    return raw.slice(0, 2) + '/' + raw.slice(2, 4) + '/' + raw.slice(4);
+  function priorityPinHint() {
+    return PRIORITY_PIN_HINT;
   }
 
   function verifyAdminPin(pin) {
-    return normalizePriorityPin(pin) === priorityPinForDate(new Date());
+    return normalizePriorityPin(pin) === PRIORITY_PIN;
   }
 
   function sortEntries(entries) {
@@ -411,7 +410,7 @@
     markConvocadoSeen: markConvocadoSeen,
     vibrateCall: vibrateCall,
     verifyAdminPin: verifyAdminPin,
-    priorityPinForDate: priorityPinForDate,
+    priorityPinValue: priorityPinValue,
     priorityPinHint: priorityPinHint,
     sortEntries: sortEntries,
     priorityBadgeHtml: priorityBadgeHtml,

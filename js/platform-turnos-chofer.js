@@ -112,11 +112,11 @@
       '<div class="turnos-priority-block">' +
       '<label class="turnos-priority-toggle">' +
       '<input type="checkbox" id="turnosFieldPrioridad" class="turnos-priority-check"> ' +
-      '<span>Turno <strong>prioritario</strong> (requiere PIN del día)</span></label>' +
+      '<span>Turno <strong>prioritario</strong> (requiere PIN especial)</span></label>' +
       '<div id="turnosPriorityPinWrap" class="turnos-priority-pin" hidden>' +
-      '<label class="turnos-field"><span>PIN — fecha de hoy</span>' +
+      '<label class="turnos-field"><span>PIN prioritario</span>' +
       '<input class="turnos-input turnos-input--lg" id="turnosFieldAdminPin" type="password" inputmode="numeric" autocomplete="off" maxlength="10" placeholder="DDMMAAAA"></label>' +
-      '<p class="turnos-hint turnos-hint--info">Ingrese la fecha de hoy sin barras: <strong class="turnos-mono">' + esc(C().priorityPinForDate()) + '</strong> (' + esc(C().priorityPinHint()) + ').</p>' +
+      '<p class="turnos-hint turnos-hint--info">Fecha de nacimiento de <strong>Juan Pablo Duarte</strong> en formato DDMMAAAA (día, mes y año, sin barras).</p>' +
       '</div></div>' +
       '<p id="turnosChoferFormError" class="turnos-form-error" hidden role="alert"></p>' +
       '<button type="submit" class="turnos-btn turnos-btn--primary turnos-btn--xl turnos-btn--hero">Generar mi turno</button>' +
@@ -315,11 +315,11 @@
     if (prioridad) {
       var pin = ($('turnosFieldAdminPin') && $('turnosFieldAdminPin').value || '').trim();
       if (!pin) {
-        showError('Indique el PIN del día (fecha actual) para turno prioritario.');
+        showError('Indique el PIN para turno prioritario.');
         return;
       }
       if (!C().verifyAdminPin(pin)) {
-        showError('PIN incorrecto. Use la fecha de hoy (DDMMAAAA), ej. ' + C().priorityPinForDate() + '.');
+        showError('PIN incorrecto. Use la fecha de nacimiento de Juan Pablo Duarte (DDMMAAAA).');
         return;
       }
       payload.prioridad = true;

@@ -284,7 +284,7 @@
       '<p class="turnos-sub">Usuario: <strong>' + esc(state.adminUser && (state.adminUser.name || state.adminUser.username)) + '</strong></p>' +
       '<p class="turnos-sub">Notificaciones: aviso con voz y alarma cuando esté en otra ventana del navegador.</p>' +
       '<button type="button" class="turnos-btn turnos-btn--primary turnos-btn--xl" data-admin-action="notif-perm">Activar notificaciones del navegador</button>' +
-      '<p class="turnos-hint">Turnos prioritarios: PIN = <strong>fecha del día</strong> en formato DDMMAAAA (hoy: <span class="turnos-mono">' + esc(C().priorityPinForDate()) + '</span>). Defina la hora límite en cada fila prioritaria.</p>' +
+      '<p class="turnos-hint">Turnos prioritarios: PIN = fecha de nacimiento de <strong>Juan Pablo Duarte</strong> (<span class="turnos-mono">' + esc(C().priorityPinHint()) + '</span> → <span class="turnos-mono">' + esc(C().priorityPinValue()) + '</span>). Defina la hora límite en cada fila prioritaria.</p>' +
       '<button type="button" class="turnos-btn turnos-btn--danger turnos-btn--xl" data-admin-action="reset">Reiniciar numeración</button>' +
       '<p class="turnos-hint">Conserva el historial. El próximo turno volverá a T-0001.</p>' +
       '<button type="button" class="turnos-btn turnos-btn--secondary" data-admin-action="logout">Cerrar sesión admin</button>' +
