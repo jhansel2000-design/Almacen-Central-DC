@@ -164,11 +164,11 @@
     );
   }
 
-  function adminTableHtml(entries, compact, readonly) {
+  function adminTableHtml(entries, compact, readonly, showOrder) {
     if (!entries.length) {
       return '<p class="turnos-empty">No hay registros en esta sección.</p>';
     }
-    var rows = entries.map(function (e) {
+    var rows = entries.map(function (e, idx) {
       var convocado = e.convocadoAt
         ? '<span class="turnos-badge turnos-badge--process turnos-badge--mini">Convocado</span> '
         : '';
@@ -182,7 +182,11 @@
           '<button type="button" class="turnos-btn turnos-btn--secondary turnos-btn--sm" data-seguimiento-id="' + esc(e.id) + '">Seguimiento</button> ' +
           convocarBtn(e) + ' ' + statusSelect(e) + '</td>';
       }
+      var orderCol = showOrder
+        ? '<td class="turnos-order-num" title="Orden de llegada">' + (idx + 1) + '</td>'
+        : '';
       return '<tr class="' + (e.prioridad ? 'turnos-row--priority' : '') + '">' +
+        orderCol +
         '<td class="turnos-mono turnos-turno">' + esc(e.turno) +
         (e.prioridad ? '<br>' + C().priorityBadgeHtml(e) : '') + '</td>' +
         (compact ? '<td>' + esc(C().TIPO_LABELS[e.tipo] || e.tipo) + '</td>' : '') +
@@ -197,6 +201,7 @@
     }).join('');
 
     var head =
+      (showOrder ? '<th>#</th>' : '') +
       '<th>Turno</th>' +
       (compact ? '<th>Trámite</th>' : '') +
       '<th>Fecha</th><th>Chofer</th><th>Compañía</th><th>Detalle</th><th>Estado</th>' +
@@ -205,6 +210,51 @@
       (!compact && !readonly ? '<th>Actualizado</th><th>Gestionar</th>' : '');
 
     return '<div class="turnos-table-wrap"><table class="turnos-table"><thead><tr>' + head + '</tr></thead><tbody>' + rows + '</tbody></table></div>';
+  }
+
+  function lastTurnSummary(entry) {
+    if (!entry) return 'Sin turnos aún';
+    return 'Último: <span class="turnos-mono">' + esc(entry.turno) + '</span> · ' +
+      esc(entry.choferNombre || '—') + ' · ' + esc((entry.hora || '').slice(0, 5));
+  }
+
+  function lastTurnCard(title, iconSrc, entry, navKey) {
+    var estado = entry ? statusBadge(entry.estado) : '';
+    return (
+      '<button type="button" class="turnos-last-turn-card" data-turnos-nav="' + esc(navKey) + '">' +
+      '<img src="' + esc(iconSrc) + '" alt="" width="36" height="36">' +
+      '<div class="turnos-last-turn-card-body">' +
+      '<strong>' + esc(title) + '</strong>' +
+      '<span class="turnos-last-turn-line">' + lastTurnSummary(entry) + '</span>' +
+      (entry ? '<span class="turnos-last-turn-meta">' + estado + '</span>' : '') +
+      '</div></button>'
+    );
+  }
+
+  function arrivalOrderTableHtml(entries) {
+    if (!entries.length) {
+      return '<p class="turnos-empty">No hay choferes en cola hoy.</p>';
+    }
+    var rows = entries.map(function (e, idx) {
+      return (
+        '<tr class="' + (e.prioridad ? 'turnos-row--priority' : '') + '">' +
+        '<td class="turnos-order-num">' + (idx + 1) + '</td>' +
+        '<td class="turnos-mono turnos-turno">' + esc(e.turno) +
+        (e.prioridad ? '<br>' + C().priorityBadgeHtml(e) : '') + '</td>' +
+        '<td class="turnos-mono">' + esc((e.hora || '').slice(0, 8)) + '</td>' +
+        '<td>' + esc(e.choferNombre || '—') + '</td>' +
+        '<td>' + esc(e.choferCompania || '—') + '</td>' +
+        '<td>' + esc(C().TIPO_LABELS[e.tipo] || e.tipo) + '</td>' +
+        '<td>' + statusBadge(e.estado) + '</td>' +
+        '</tr>'
+      );
+    }).join('');
+    return (
+      '<div class="turnos-table-wrap turnos-table-wrap--arrival">' +
+      '<table class="turnos-table turnos-table--arrival">' +
+      '<thead><tr><th>#</th><th>Turno</th><th>Hora llegada</th><th>Chofer</th><th>Compañía</th><th>Trámite</th><th>Estado</th></tr></thead>' +
+      '<tbody>' + rows + '</tbody></table></div>'
+    );
   }
 
   function tramiteStats(tipo) {
@@ -263,18 +313,31 @@
         return n > bn ? e : best;
       }).turno
       : (data.counter > 0 ? C().formatTurno(data.counter) : '—');
+    var allEntries = data.entries;
     var cards = Object.keys(TRAMITE_MODULES).map(function (key) {
       var cfg = TRAMITE_MODULES[key];
       var ts = tramiteStats(cfg.tipo);
+      var lastEntry = C().latestEntry(allEntries, function (e) { return e.tipo === cfg.tipo; });
       return (
         '<button type="button" class="turnos-tramite-card" data-turnos-nav="' + key + '">' +
         '<img src="' + esc(cfg.icon) + '" alt="" width="40" height="40">' +
         '<span class="turnos-tramite-card-text">' +
         '<strong>' + esc(cfg.title) + '</strong>' +
         '<span>' + ts.pendientes + ' en cola · ' + ts.totalHoy + ' hoy</span>' +
+        '<span class="turnos-tramite-last">' + lastTurnSummary(lastEntry) + '</span>' +
         '</span></button>'
       );
     }).join('');
+    var lastCancel = C().latestEntry(allEntries, function (e) { return e.estado === 'CANCELADO'; });
+    var arrivalToday = C().sortByArrivalOrder(today.filter(function (e) { return e.estado !== 'CANCELADO'; }));
+    var lastByArea =
+      lastTurnCard('Despacho de facturas', TRAMITE_MODULES.despacho.icon,
+        C().latestEntry(allEntries, function (e) { return e.tipo === C().TIPOS.DESPACHO; }), 'despacho') +
+      lastTurnCard('Liquidación de facturas', TRAMITE_MODULES.liquidacion.icon,
+        C().latestEntry(allEntries, function (e) { return e.tipo === C().TIPOS.LIQUIDACION; }), 'liquidacion') +
+      lastTurnCard('Nota de crédito', TRAMITE_MODULES.nota_credito.icon,
+        C().latestEntry(allEntries, function (e) { return e.tipo === C().TIPOS.NOTA_CREDITO; }), 'nota_credito') +
+      lastTurnCard('Cancelados', 'assets/img/icon-turnos-gestion.svg' + ICON_V, lastCancel, 'cancelados');
 
     host.innerHTML =
       (data.live ? '' : '<p class="turnos-offline-banner">Sin conexión con la nube. Los datos de turnos están en Supabase — verifique internet.</p>') +
@@ -286,14 +349,23 @@
       kpi('Completados', stats.completados + stats.asentados, 'green') +
       kpi('Cancelados', stats.cancelados, 'cancel') +
       kpi('Prioritarios', stats.prioridades, 'priority') +
-      kpi('Último turno', last, 'gray', true) +
+      kpi('Último turno hoy', last, 'gray', true) +
       '</div>' +
+      '<section class="turnos-panel"><h2>Últimos turnos por área</h2>' +
+      '<p class="turnos-sub">El turno más reciente registrado en cada trámite (todos los días).</p>' +
+      '<div class="turnos-last-turns-grid">' + lastByArea + '</div></section>' +
+      '<section class="turnos-panel"><h2>Orden de llegada — choferes de hoy</h2>' +
+      '<p class="turnos-sub">Posición 1 = llegó primero. Los <strong>prioritarios</strong> aparecen adelante aunque hayan llegado después.</p>' +
+      arrivalOrderTableHtml(arrivalToday) +
+      '</section>' +
       '<section class="turnos-panel"><h2>Áreas de seguimiento</h2>' +
       '<p class="turnos-sub">Seleccione un trámite para gestionar su cola por separado.</p>' +
       '<div class="turnos-tramite-grid">' + cards +
       '<button type="button" class="turnos-tramite-card turnos-tramite-card--muted" data-turnos-nav="cancelados">' +
       '<span class="turnos-tramite-card-icon"><img src="assets/img/icon-turnos-gestion.svg' + ICON_V + '" alt="" width="40" height="40"></span>' +
-      '<span class="turnos-tramite-card-text"><strong>Cancelados</strong><span>' + stats.cancelados + ' hoy</span></span></button>' +
+      '<span class="turnos-tramite-card-text"><strong>Cancelados</strong><span>' + stats.cancelados + ' hoy</span>' +
+      (lastCancel ? '<span class="turnos-tramite-last">' + lastTurnSummary(lastCancel) + '</span>' : '') +
+      '</span></button>' +
       '</div></section>' +
       '<section class="turnos-panel"><h2>Actividad reciente de hoy</h2>' +
       (today.filter(function (e) { return e.estado !== 'CANCELADO'; }).length
@@ -311,20 +383,20 @@
     var host = $(MODULE_VIEW_IDS[modKey]);
     if (!host) return;
     var cfg = TRAMITE_MODULES[modKey];
-    var entries = C().filterByTipo(S().getState().entries, cfg.tipo, false);
+    var entries = C().sortByArrivalOrder(C().filterByTipo(S().getState().entries, cfg.tipo, false));
     var ts = tramiteStats(cfg.tipo);
     host.innerHTML =
       '<section class="turnos-panel turnos-panel--tramite">' +
       '<div class="turnos-tramite-head">' +
       '<img src="' + esc(cfg.icon) + '" alt="" width="48" height="48">' +
-      '<div><h2>' + esc(cfg.title) + '</h2><p class="turnos-sub">' + esc(cfg.hint) + '</p></div></div>' +
+      '<div><h2>' + esc(cfg.title) + '</h2><p class="turnos-sub">' + esc(cfg.hint) + ' · Columna <strong>#</strong> = orden de llegada.</p></div></div>' +
       '<div class="turnos-tramite-kpis">' +
       miniKpi('En cola', ts.pendientes) +
       miniKpi('En curso', ts.enCurso) +
       miniKpi('Cerrados hoy', ts.cerrados) +
       miniKpi('Registrados hoy', ts.totalHoy) +
       '</div>' +
-      adminTableHtml(entries, false, false) +
+      adminTableHtml(entries, false, false, true) +
       '</section>';
   }
 

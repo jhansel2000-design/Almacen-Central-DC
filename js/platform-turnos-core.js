@@ -363,6 +363,25 @@
     });
   }
 
+  /** Orden de llegada: prioritarios primero, luego el que llegó antes. */
+  function sortByArrivalOrder(entries) {
+    return (entries || []).slice().sort(function (a, b) {
+      if (!!a.prioridad !== !!b.prioridad) return a.prioridad ? -1 : 1;
+      var ta = Number(a.createdAt) || 0;
+      var tb = Number(b.createdAt) || 0;
+      if (ta !== tb) return ta - tb;
+      return String(a.turno || '').localeCompare(String(b.turno || ''));
+    });
+  }
+
+  function latestEntry(entries, filterFn) {
+    var list = (entries || []).filter(filterFn || function () { return true; });
+    if (!list.length) return null;
+    return list.reduce(function (best, e) {
+      return (Number(e.createdAt) || 0) > (Number(best.createdAt) || 0) ? e : best;
+    });
+  }
+
   function ventanaLabel(tipo) {
     return VENTANA_LABELS[tipo] || 'Ventana de atención';
   }
@@ -749,6 +768,8 @@
     priorityPinValue: priorityPinValue,
     priorityPinHint: priorityPinHint,
     sortEntries: sortEntries,
+    sortByArrivalOrder: sortByArrivalOrder,
+    latestEntry: latestEntry,
     priorityBadgeHtml: priorityBadgeHtml,
     VENTANA_LABELS: VENTANA_LABELS
   };
