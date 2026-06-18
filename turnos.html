@@ -14,7 +14,7 @@
   <link rel="stylesheet" href="css/auth-cinematic.css?v=19">
   <link rel="stylesheet" href="css/auth-security.css?v=3">
   <link rel="stylesheet" href="css/dc-brand.css?v=11">
-  <link rel="stylesheet" href="css/turnos-portal.css?v=6">
+  <link rel="stylesheet" href="css/turnos-portal.css?v=7">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
@@ -76,9 +76,21 @@
           <img class="turnos-nav-icon" src="assets/img/icon-turnos-dashboard.svg" alt="" width="22" height="22">
           <span>Dashboard</span>
         </button>
-        <button type="button" class="turnos-nav-item" data-turnos-nav="manage">
+        <button type="button" class="turnos-nav-item" data-turnos-nav="despacho">
+          <img class="turnos-nav-icon" src="assets/img/icon-turnos-despacho.svg" alt="" width="22" height="22">
+          <span>Despacho</span>
+        </button>
+        <button type="button" class="turnos-nav-item" data-turnos-nav="liquidacion">
+          <img class="turnos-nav-icon" src="assets/img/icon-turnos-liquidacion.svg" alt="" width="22" height="22">
+          <span>Liquidación</span>
+        </button>
+        <button type="button" class="turnos-nav-item" data-turnos-nav="nota_credito">
+          <img class="turnos-nav-icon" src="assets/img/icon-turnos-nota-credito.svg" alt="" width="22" height="22">
+          <span>Nota crédito</span>
+        </button>
+        <button type="button" class="turnos-nav-item" data-turnos-nav="cancelados">
           <img class="turnos-nav-icon" src="assets/img/icon-turnos-gestion.svg" alt="" width="22" height="22">
-          <span>Gestionar turnos</span>
+          <span>Cancelados</span>
         </button>
         <button type="button" class="turnos-nav-item" data-turnos-nav="export">
           <img class="turnos-nav-icon" src="assets/img/icon-turnos-export.svg" alt="" width="22" height="22">
@@ -100,7 +112,7 @@
       <header class="turnos-topbar">
         <div>
           <p class="turnos-top-eyebrow">Panel administrativo</p>
-          <h2 class="turnos-top-title">Gestión de turnos de despacho</h2>
+          <h2 class="turnos-top-title" id="turnosTopTitle">Resumen del día</h2>
         </div>
         <div class="turnos-clock">
           <p id="turnosClockTime" class="turnos-clock-time">--:--:--</p>
@@ -109,7 +121,10 @@
       </header>
       <main class="turnos-main">
         <div class="turnos-view" id="turnosViewDashboard" data-module="dashboard"></div>
-        <div class="turnos-view" id="turnosViewManage" data-module="manage" hidden></div>
+        <div class="turnos-view" id="turnosViewDespacho" data-module="despacho" hidden></div>
+        <div class="turnos-view" id="turnosViewLiquidacion" data-module="liquidacion" hidden></div>
+        <div class="turnos-view" id="turnosViewNota_credito" data-module="nota_credito" hidden></div>
+        <div class="turnos-view" id="turnosViewCancelados" data-module="cancelados" hidden></div>
         <div class="turnos-view" id="turnosViewExport" data-module="export" hidden></div>
         <div class="turnos-view" id="turnosViewConfig" data-module="config" hidden></div>
       </main>
@@ -118,12 +133,14 @@
     <nav class="turnos-mobile-nav" aria-label="Navegación móvil admin">
       <button type="button" class="turnos-nav-item active" data-turnos-nav="dashboard" title="Dashboard">
         <img class="turnos-nav-icon" src="assets/img/icon-turnos-dashboard.svg" alt="" width="24" height="24"></button>
-      <button type="button" class="turnos-nav-item" data-turnos-nav="manage" title="Gestionar">
+      <button type="button" class="turnos-nav-item" data-turnos-nav="despacho" title="Despacho">
+        <img class="turnos-nav-icon" src="assets/img/icon-turnos-despacho.svg" alt="" width="24" height="24"></button>
+      <button type="button" class="turnos-nav-item" data-turnos-nav="liquidacion" title="Liquidación">
+        <img class="turnos-nav-icon" src="assets/img/icon-turnos-liquidacion.svg" alt="" width="24" height="24"></button>
+      <button type="button" class="turnos-nav-item" data-turnos-nav="nota_credito" title="Nota crédito">
+        <img class="turnos-nav-icon" src="assets/img/icon-turnos-nota-credito.svg" alt="" width="24" height="24"></button>
+      <button type="button" class="turnos-nav-item" data-turnos-nav="cancelados" title="Cancelados">
         <img class="turnos-nav-icon" src="assets/img/icon-turnos-gestion.svg" alt="" width="24" height="24"></button>
-      <button type="button" class="turnos-nav-item" data-turnos-nav="export" title="Exportar">
-        <img class="turnos-nav-icon" src="assets/img/icon-turnos-export.svg" alt="" width="24" height="24"></button>
-      <button type="button" class="turnos-nav-item" data-turnos-nav="config" title="Configuración">
-        <img class="turnos-nav-icon" src="assets/img/icon-turnos-config.svg" alt="" width="24" height="24"></button>
     </nav>
   </div>
 
@@ -135,11 +152,11 @@
   <script src="js/platform-supabase.js?v=4"></script>
   <script src="js/platform-supabase-realtime.js?v=1"></script>
   <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
-  <script src="js/platform-turnos-core.js?v=3"></script>
+  <script src="js/platform-turnos-core.js?v=4"></script>
   <script src="js/platform-turnos-sync.js?v=3"></script>
-  <script src="js/platform-turnos-store.js?v=3"></script>
-  <script src="js/platform-turnos-chofer.js?v=4"></script>
-  <script src="js/platform-turnos-admin.js?v=5"></script>
+  <script src="js/platform-turnos-store.js?v=4"></script>
+  <script src="js/platform-turnos-chofer.js?v=5"></script>
+  <script src="js/platform-turnos-admin.js?v=6"></script>
   <script src="js/platform-turnos-app.js?v=4"></script>
 </body>
 </html>

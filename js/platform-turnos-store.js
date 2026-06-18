@@ -160,6 +160,21 @@
     return Promise.resolve(localConvocar(id, adminUser));
   }
 
+  function cancelTurn(id, cancelledBy) {
+    return init().then(function () {
+      var entry = findById(id);
+      if (!entry) return { ok: false, msg: 'Turno no encontrado.' };
+      var by = cancelledBy || 'chofer';
+      if (by === 'chofer' && !C().canCancelByChofer(entry)) {
+        return { ok: false, msg: 'Este turno ya no puede cancelarse.' };
+      }
+      if (!C().isValidTransition(entry, 'CANCELADO')) {
+        return { ok: false, msg: 'No se pudo cancelar el turno.' };
+      }
+      return setEstado(id, 'CANCELADO', by);
+    });
+  }
+
   function resetCounter() {
     shared.counter = 0;
     persistLocal();
@@ -213,6 +228,7 @@
     addTurn: addTurn,
     setEstado: setEstado,
     convocarChofer: convocarChofer,
+    cancelTurn: cancelTurn,
     resetCounter: resetCounter,
     getState: getState,
     findById: findById

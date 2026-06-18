@@ -113,6 +113,10 @@
     var notaHint = entry.tipo === C().TIPOS.NOTA_CREDITO
       ? '<p class="turnos-hint turnos-hint--info">Flujo: Pendiente → Confirmado → Asentado.</p>'
       : '<p class="turnos-hint">Espere la convocatoria del administrador en pantalla o vibración del celular.</p>';
+    var cancelBtn = C().canCancelByChofer(entry)
+      ? '<button type="button" class="turnos-btn turnos-btn--danger turnos-btn--xl" data-chofer-cancel>Cancelar mi turno</button>' +
+        '<p class="turnos-hint">Al cancelar podrá solicitar un turno nuevo. El registro quedará en administración.</p>'
+      : '';
 
     return (
       '<section class="turnos-chofer-section turnos-success-screen">' +
@@ -126,8 +130,29 @@
       convocado +
       notaHint +
       '<p class="turnos-hint">Puede cerrar esta página; al volver verá el mismo turno.</p>' +
+      cancelBtn +
       '</section>'
     );
+  }
+
+  function cancelMyTurn() {
+    var ref = C().getMyTurnRef();
+    if (!ref || !ref.id) return;
+    var entry = S().findById(ref.id);
+    if (!entry || !C().canCancelByChofer(entry)) return;
+    if (!confirm('¿Cancelar el turno ' + entry.turno + '? Podrá generar uno nuevo después.')) return;
+    var choferName = entry.choferNombre || C().getRememberedChoferName() || 'chofer';
+    S().cancelTurn(ref.id, choferName).then(function (result) {
+      if (!result.ok) {
+        alert(result.msg || 'No se pudo cancelar.');
+        return;
+      }
+      hideCallOverlay();
+      C().clearMyTurn();
+      lastEntry = null;
+      screen = 'menu';
+      render();
+    });
   }
 
   function ensureCallOverlay() {
@@ -298,6 +323,10 @@
         screen = 'menu';
         selectedTipo = null;
         render();
+        return;
+      }
+      if (ev.target.closest('[data-chofer-cancel]')) {
+        cancelMyTurn();
       }
     });
 

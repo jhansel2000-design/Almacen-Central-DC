@@ -72,8 +72,13 @@
 
   function isTurnActive(entry) {
     if (!entry) return false;
-    if (entry.estado === 'COMPLETADO' || entry.estado === 'ASENTADO') return false;
+    if (entry.estado === 'COMPLETADO' || entry.estado === 'ASENTADO' || entry.estado === 'CANCELADO') return false;
     return true;
+  }
+
+  function canCancelByChofer(entry) {
+    if (!entry || !isTurnActive(entry)) return false;
+    return entry.estado === 'PENDIENTE' || entry.estado === 'EN_PROCESO' || entry.estado === 'CONFIRMADO';
   }
 
   function saveMyTurn(entry) {
@@ -182,12 +187,16 @@
 
   function allowedStates(tipo) {
     if (tipo === TIPOS.NOTA_CREDITO) {
-      return ['PENDIENTE', 'CONFIRMADO', 'ASENTADO'];
+      return ['PENDIENTE', 'CONFIRMADO', 'ASENTADO', 'CANCELADO'];
     }
-    return ['PENDIENTE', 'EN_PROCESO', 'COMPLETADO'];
+    return ['PENDIENTE', 'EN_PROCESO', 'COMPLETADO', 'CANCELADO'];
   }
 
   function isValidTransition(entry, nextEstado) {
+    if (nextEstado === 'CANCELADO') {
+      return isTurnActive(entry);
+    }
+    if (entry.estado === 'CANCELADO') return false;
     var allowed = allowedStates(entry.tipo);
     return allowed.indexOf(nextEstado) >= 0;
   }
@@ -197,7 +206,7 @@
     var nombre = String(payload.choferNombre || '').trim().toLowerCase();
     var tipo = payload.tipo;
     return entries.some(function (e) {
-      if (e.createdAt < cutoff || e.tipo !== tipo) return false;
+      if (!isTurnActive(e) || e.createdAt < cutoff || e.tipo !== tipo) return false;
       if (e.choferNombre.toLowerCase() !== nombre) return false;
       if (tipo === TIPOS.DESPACHO) {
         return String(e.idsCarga).trim() === String(payload.idsCarga || '').trim();
@@ -221,8 +230,26 @@
         return e.tipo === TIPOS.NOTA_CREDITO && e.estado === 'PENDIENTE';
       }).length,
       confirmados: today.filter(function (e) { return e.estado === 'CONFIRMADO'; }).length,
-      asentados: today.filter(function (e) { return e.estado === 'ASENTADO'; }).length
+      asentados: today.filter(function (e) { return e.estado === 'ASENTADO'; }).length,
+      cancelados: today.filter(function (e) { return e.estado === 'CANCELADO'; }).length
     };
+  }
+
+  function entriesToday(entries) {
+    var day = todayKey();
+    return entries.filter(function (e) { return e.fecha === day; });
+  }
+
+  function filterByTipo(entries, tipo, includeCancelados) {
+    return entries.filter(function (e) {
+      if (e.tipo !== tipo) return false;
+      if (!includeCancelados && e.estado === 'CANCELADO') return false;
+      return true;
+    });
+  }
+
+  function filterCancelados(entries) {
+    return entries.filter(function (e) { return e.estado === 'CANCELADO'; });
   }
 
   function rememberChoferName(name) {
@@ -256,6 +283,7 @@
   }
 
   function statusClass(estado) {
+    if (estado === 'CANCELADO') return 'cancel';
     if (estado === 'COMPLETADO' || estado === 'ASENTADO') return 'ok';
     if (estado === 'EN_PROCESO' || estado === 'CONFIRMADO') return 'process';
     return 'pending';
@@ -281,6 +309,10 @@
     normalizeEntry: normalizeEntry,
     ventanaLabel: ventanaLabel,
     isTurnActive: isTurnActive,
+    canCancelByChofer: canCancelByChofer,
+    entriesToday: entriesToday,
+    filterByTipo: filterByTipo,
+    filterCancelados: filterCancelados,
     saveMyTurn: saveMyTurn,
     getMyTurnRef: getMyTurnRef,
     clearMyTurn: clearMyTurn,
