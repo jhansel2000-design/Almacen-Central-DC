@@ -183,64 +183,31 @@
     }, 0);
   }
 
-  /** Al cambiar el día (hora RD), limpia turnos viejos y reinicia el tablero. */
-  function applyDayRollover(state) {
-    state = state || { counter: 0, entries: [], operatingDay: '' };
+  /** Solo actualiza la fecha de vista del dashboard — nunca borra turnos ni reinicia numeración. */
+  function syncDashboardMeta(state) {
+    state = state || { counter: 0, entries: [], dashboardDay: '', autoResetDashboard: true };
     var day = todayKey();
-    var prevDay = String(state.operatingDay || '').trim();
-    var all = state.entries || [];
-    var todayOnly = all.filter(function (e) { return e.fecha === day; });
-    var hasOld = all.some(function (e) { return e.fecha !== day; });
+    var auto = state.autoResetDashboard !== false;
+    var dashDay = String(state.dashboardDay || state.operatingDay || '').trim();
+    var next = Object.assign({}, state, {
+      autoResetDashboard: auto,
+      dashboardDay: dashDay || day,
+      operatingDay: dashDay || day
+    });
 
-    if (prevDay && prevDay !== day) {
-      return {
-        changed: true,
-        freshDay: true,
-        state: { counter: 0, entries: [], operatingDay: day }
-      };
+    if (auto && dashDay && dashDay !== day) {
+      next.dashboardDay = day;
+      next.operatingDay = day;
+      return { changed: true, freshDay: true, state: next };
     }
 
-    if (!prevDay && hasOld && !todayOnly.length) {
-      return {
-        changed: true,
-        freshDay: true,
-        state: { counter: 0, entries: [], operatingDay: day }
-      };
+    if (!dashDay) {
+      next.dashboardDay = day;
+      next.operatingDay = day;
+      return { changed: true, freshDay: true, state: next };
     }
 
-    if (hasOld) {
-      return {
-        changed: true,
-        freshDay: false,
-        state: {
-          counter: recalcCounterFromEntries(todayOnly),
-          entries: todayOnly,
-          operatingDay: day
-        }
-      };
-    }
-
-    if (!prevDay) {
-      return {
-        changed: true,
-        freshDay: todayOnly.length === 0,
-        state: {
-          counter: Number(state.counter) || recalcCounterFromEntries(todayOnly),
-          entries: todayOnly,
-          operatingDay: day
-        }
-      };
-    }
-
-    return {
-      changed: false,
-      freshDay: false,
-      state: {
-        counter: Number(state.counter) || recalcCounterFromEntries(todayOnly),
-        entries: todayOnly,
-        operatingDay: day
-      }
-    };
+    return { changed: false, freshDay: auto && dashDay === day, state: next };
   }
 
   function formatFechaHora(entry) {
@@ -448,17 +415,15 @@
   }
 
   function findActiveTurnForChofer(entries, nombre) {
-    var day = todayKey();
     var ref = getMyTurnRef();
     if (ref && ref.id) {
       var byId = (entries || []).find(function (e) { return e.id === ref.id; });
-      if (byId && byId.fecha === day && isTurnActive(byId)) return byId;
-      if (byId && byId.fecha !== day) clearMyTurn();
+      if (byId && isTurnActive(byId)) return byId;
     }
     var key = String(nombre || ref && ref.choferNombre || getRememberedChoferName() || '').trim().toLowerCase();
     if (!key) return null;
     return (entries || []).find(function (e) {
-      return e.fecha === day && isTurnActive(e) && e.choferNombre.toLowerCase() === key;
+      return isTurnActive(e) && e.choferNombre.toLowerCase() === key;
     }) || null;
   }
 
@@ -757,7 +722,7 @@
     getRememberedChoferCompania: getRememberedChoferCompania,
     formatFechaDisplay: formatFechaDisplay,
     formatFechaLongRD: formatFechaLongRD,
-    applyDayRollover: applyDayRollover,
+    syncDashboardMeta: syncDashboardMeta,
     recalcCounterFromEntries: recalcCounterFromEntries,
     formatFechaHora: formatFechaHora,
     pasoLabel: pasoLabel,

@@ -477,15 +477,7 @@
       var d = C().todayKey();
       if (choferDay === d) return;
       choferDay = d;
-      C().clearMyTurn();
-      lastEntry = null;
-      if (screen === 'success') screen = 'menu';
-      var sync = global.PlatformTurnosSync;
-      if (sync && sync.ensureDayCurrent) {
-        sync.ensureDayCurrent().then(function () { render(); syncMyTurnFromStore(); });
-      } else {
-        render();
-      }
+      render();
     }, 30000);
   }
 

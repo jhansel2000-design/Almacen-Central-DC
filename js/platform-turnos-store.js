@@ -6,7 +6,14 @@
 
   var C = function () { return global.PlatformTurnosCore; };
   var Sync = function () { return global.PlatformTurnosSync; };
-  var shared = { counter: 0, entries: [], live: false, error: '', operatingDay: '' };
+  var shared = {
+    counter: 0,
+    entries: [],
+    live: false,
+    error: '',
+    dashboardDay: '',
+    autoResetDashboard: true
+  };
   var listeners = [];
   var initPromise = null;
 
@@ -16,14 +23,10 @@
 
   function applyRemote(data) {
     if (!data) return;
-    var rolled = C().applyDayRollover({
-      counter: Number(data.counter) || 0,
-      entries: data.entries || [],
-      operatingDay: data.operatingDay || ''
-    });
-    shared.entries = C().sortEntries(rolled.state.entries || []);
-    shared.counter = Number(rolled.state.counter) || 0;
-    shared.operatingDay = rolled.state.operatingDay || C().todayKey();
+    shared.entries = C().sortEntries(data.entries || []);
+    shared.counter = Number(data.counter) || 0;
+    shared.dashboardDay = String(data.dashboardDay || data.operatingDay || '').trim();
+    shared.autoResetDashboard = data.autoResetDashboard !== false;
     if (!shared.counter && shared.entries.length) {
       shared.counter = C().recalcCounterFromEntries(shared.entries);
     }
@@ -168,6 +171,19 @@
     });
   }
 
+  function saveConfig(patch) {
+    return init().then(function () {
+      var sync = Sync();
+      if (!sync || !shared.live) return cloudError(shared.error);
+      return sync.saveConfig(patch || {}).then(function (state) {
+        applyRemote(state);
+        return { ok: true };
+      }).catch(function (err) {
+        return cloudError((err && err.message) || 'No se pudo guardar la configuración.');
+      });
+    });
+  }
+
   function resetCounter() {
     return init().then(function () {
       var sync = Sync();
@@ -237,6 +253,7 @@
     cancelTurn: cancelTurn,
     setHoraLimite: setHoraLimite,
     setCompania: setCompania,
+    saveConfig: saveConfig,
     resetCounter: resetCounter,
     getState: getState,
     findById: findById,

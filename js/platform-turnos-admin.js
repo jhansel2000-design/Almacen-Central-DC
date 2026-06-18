@@ -141,19 +141,25 @@
 
   function dayBannerHtml(stats) {
     var dayLabel = C().formatFechaLongRD();
+    var data = S().getState();
+    var auto = data.autoResetDashboard !== false;
     if (stats.totalHoy === 0) {
       return (
         '<div class="turnos-day-banner turnos-day-banner--fresh">' +
-        '<p class="turnos-day-banner__eyebrow">Nuevo día · Hora República Dominicana</p>' +
+        '<p class="turnos-day-banner__eyebrow">Vista del dashboard · Hora República Dominicana</p>' +
         '<h2 class="turnos-day-banner__title">' + esc(dayLabel) + '</h2>' +
-        '<p class="turnos-day-banner__sub">El tablero inició vacío. Los registros de ayer se borraron automáticamente al comenzar este día.</p>' +
-        '</div>'
+        '<p class="turnos-day-banner__sub">' +
+        (auto
+          ? 'El seguimiento del dashboard inició vacío para hoy. Los turnos anteriores se conservan en cada área de trámite.'
+          : 'Sin turnos registrados hoy en el dashboard. Los turnos activos siguen en las áreas de trámite.') +
+        '</p></div>'
       );
     }
     return (
       '<div class="turnos-day-banner">' +
-      '<p class="turnos-day-banner__eyebrow">Operaciones de hoy</p>' +
+      '<p class="turnos-day-banner__eyebrow">Operaciones de hoy (dashboard)</p>' +
       '<h2 class="turnos-day-banner__title">' + esc(dayLabel) + '</h2>' +
+      '<p class="turnos-day-banner__sub">Los turnos de días anteriores permanecen en Despacho, Liquidación y Nota de crédito.</p>' +
       '</div>'
     );
   }
@@ -202,14 +208,16 @@
   }
 
   function tramiteStats(tipo) {
-    var list = C().filterByTipo(todayEntries(), tipo, false);
+    var all = C().filterByTipo(S().getState().entries, tipo, false);
+    var today = C().filterByTipo(todayEntries(), tipo, false);
     return {
-      total: list.length,
-      pendientes: list.filter(function (e) { return e.estado === 'PENDIENTE'; }).length,
-      enCurso: list.filter(function (e) {
+      total: all.length,
+      totalHoy: today.length,
+      pendientes: all.filter(function (e) { return e.estado === 'PENDIENTE'; }).length,
+      enCurso: all.filter(function (e) {
         return e.estado === 'EN_PROCESO' || e.estado === 'CONFIRMADO';
       }).length,
-      cerrados: list.filter(function (e) {
+      cerrados: today.filter(function (e) {
         return e.estado === 'COMPLETADO' || e.estado === 'ASENTADO';
       }).length
     };
@@ -263,7 +271,7 @@
         '<img src="' + esc(cfg.icon) + '" alt="" width="40" height="40">' +
         '<span class="turnos-tramite-card-text">' +
         '<strong>' + esc(cfg.title) + '</strong>' +
-        '<span>' + ts.pendientes + ' pendientes · ' + ts.total + ' hoy</span>' +
+        '<span>' + ts.pendientes + ' en cola · ' + ts.totalHoy + ' hoy</span>' +
         '</span></button>'
       );
     }).join('');
@@ -303,7 +311,7 @@
     var host = $(MODULE_VIEW_IDS[modKey]);
     if (!host) return;
     var cfg = TRAMITE_MODULES[modKey];
-    var entries = C().filterByTipo(todayEntries(), cfg.tipo, false);
+    var entries = C().filterByTipo(S().getState().entries, cfg.tipo, false);
     var ts = tramiteStats(cfg.tipo);
     host.innerHTML =
       '<section class="turnos-panel turnos-panel--tramite">' +
@@ -314,7 +322,7 @@
       miniKpi('En cola', ts.pendientes) +
       miniKpi('En curso', ts.enCurso) +
       miniKpi('Cerrados hoy', ts.cerrados) +
-      miniKpi('Total', ts.total) +
+      miniKpi('Registrados hoy', ts.totalHoy) +
       '</div>' +
       adminTableHtml(entries, false, false) +
       '</section>';
@@ -327,11 +335,11 @@
   function renderCancelados() {
     var host = $('turnosViewCancelados');
     if (!host) return;
-    var entries = C().filterCancelados(todayEntries());
+    var entries = C().filterCancelados(S().getState().entries);
     host.innerHTML =
       '<section class="turnos-panel">' +
-      '<h2>Turnos cancelados hoy</h2>' +
-      '<p class="turnos-sub">Registro de turnos que el chofer o el administrador canceló. Se conservan para auditoría.</p>' +
+      '<h2>Turnos cancelados</h2>' +
+      '<p class="turnos-sub">Historial de cancelaciones. Los turnos cancelados se conservan para auditoría.</p>' +
       adminTableHtml(entries, false, true) +
       '</section>';
   }
@@ -339,10 +347,11 @@
   function renderExport() {
     var host = $('turnosViewExport');
     if (!host) return;
-    var n = todayEntries().length;
+    var all = S().getState().entries;
+    var nToday = todayEntries().length;
     host.innerHTML =
       '<section class="turnos-panel turnos-export-cards">' +
-      '<h2>Exportar</h2><p class="turnos-sub">' + n + ' registros de hoy (hora RD).</p>' +
+      '<h2>Exportar</h2><p class="turnos-sub">' + all.length + ' registros en total · ' + nToday + ' de hoy (hora RD).</p>' +
       '<button type="button" class="turnos-export-card" data-admin-action="export-xlsx">' +
       '<span class="turnos-export-icon"><img src="assets/img/icon-turnos-export.svg' + ICON_V + '" alt="" width="44" height="44"></span><strong>Excel (.xlsx)</strong></button>' +
       '<button type="button" class="turnos-export-card" data-admin-action="export-csv">' +
@@ -353,21 +362,32 @@
   function renderConfig() {
     var host = $('turnosViewConfig');
     if (!host) return;
+    var data = S().getState();
+    var autoOn = data.autoResetDashboard !== false;
     host.innerHTML =
       '<section class="turnos-panel">' +
       '<h2>Configuración</h2>' +
       '<p class="turnos-sub">Usuario: <strong>' + esc(state.adminUser && (state.adminUser.name || state.adminUser.username)) + '</strong></p>' +
       '<p class="turnos-sub">Notificaciones: aviso en el navegador cuando está en otra pestaña (sin sonido en el panel).</p>' +
       '<button type="button" class="turnos-btn turnos-btn--primary turnos-btn--xl" data-admin-action="notif-perm">Activar notificaciones del navegador</button>' +
-      '<p class="turnos-hint">Hora oficial: <strong>República Dominicana</strong>. Cada día nuevo el dashboard se limpia solo (turnos y numeración). Turnos prioritarios: PIN Duarte (<span class="turnos-mono">' + esc(C().priorityPinHint()) + '</span>) asigna hora límite automática. La <strong>compañía</strong> la escribe el chofer en un solo campo.</p>' +
-      '<button type="button" class="turnos-btn turnos-btn--danger turnos-btn--xl" data-admin-action="reset">Reiniciar numeración</button>' +
-      '<p class="turnos-hint">Conserva el historial. El próximo turno volverá a T-0001.</p>' +
+      '<div class="turnos-config-block">' +
+      '<h3 class="turnos-config-title">Dashboard — seguimiento del día</h3>' +
+      '<p class="turnos-hint">El dashboard muestra solo la actividad de <strong>hoy</strong>. Los turnos <strong>no se borran</strong>; siguen en Despacho, Liquidación y Nota de crédito.</p>' +
+      '<label class="turnos-config-check">' +
+      '<input type="checkbox" id="turnosAutoResetDashboard"' + (autoOn ? ' checked' : '') + '> ' +
+      'Reiniciar vista del dashboard automáticamente cada día nuevo (hora RD)</label>' +
+      '<button type="button" class="turnos-btn turnos-btn--secondary turnos-btn--xl" data-admin-action="reset-dashboard">Reiniciar vista del dashboard ahora</button>' +
+      '<p class="turnos-hint">Use el botón si desea limpiar el seguimiento del dashboard sin borrar turnos.</p>' +
+      '</div>' +
+      '<p class="turnos-hint">Hora oficial: <strong>República Dominicana</strong>. Turnos prioritarios: PIN Duarte (<span class="turnos-mono">' + esc(C().priorityPinHint()) + '</span>) asigna hora límite automática. La compañía la escribe el chofer en un solo campo.</p>' +
+      '<button type="button" class="turnos-btn turnos-btn--danger turnos-btn--xl" data-admin-action="reset">Reiniciar numeración de turnos</button>' +
+      '<p class="turnos-hint">Solo cambia el contador T-0001, T-0002… <strong>No borra</strong> el historial de turnos.</p>' +
       '<button type="button" class="turnos-btn turnos-btn--secondary" data-admin-action="logout">Cerrar sesión admin</button>' +
       '</section>';
   }
 
   function rowsForExport() {
-    return todayEntries().map(function (e) {
+    return S().getState().entries.map(function (e) {
       return {
         Turno: e.turno,
         Fecha: C().formatFechaDisplay(e.fecha),
@@ -388,7 +408,7 @@
   }
 
   function exportCsv() {
-    var entries = todayEntries();
+    var entries = S().getState().entries;
     if (!entries.length) { alert('No hay datos.'); return; }
     var XLSX = global.XLSX;
     if (!XLSX) return;
@@ -399,7 +419,7 @@
   }
 
   function exportXlsx() {
-    var entries = todayEntries();
+    var entries = S().getState().entries;
     if (!entries.length) { alert('No hay datos.'); return; }
     var XLSX = global.XLSX;
     if (!XLSX) return;
@@ -485,6 +505,16 @@
           alert(ok ? 'Notificaciones activadas.' : 'No se pudieron activar. Revise permisos del navegador.');
         });
       }
+      else if (action === 'reset-dashboard') {
+        S().saveConfig({ resetDashboardView: true }).then(function (result) {
+          if (!result.ok) {
+            alert(result.msg || 'No se pudo reiniciar la vista.');
+            return;
+          }
+          alert('Vista del dashboard reiniciada. Los turnos se conservaron.');
+          setModule('dashboard');
+        });
+      }
       else if (action === 'reset') {
         if (confirm('¿Reiniciar numeración de turnos?')) {
           S().resetCounter().then(function (result) {
@@ -498,6 +528,12 @@
     });
 
     root.addEventListener('change', function (ev) {
+      if (ev.target.id === 'turnosAutoResetDashboard') {
+        S().saveConfig({ autoResetDashboard: !!ev.target.checked }).then(function (result) {
+          if (!result.ok) alert(result.msg || 'No se pudo guardar.');
+        });
+        return;
+      }
       var sel = ev.target.closest('[data-turno-id]');
       if (!sel) return;
       var id = sel.getAttribute('data-turno-id');
@@ -547,6 +583,11 @@
       var d = C().todayKey();
       if (state._dashboardDay === d) return;
       state._dashboardDay = d;
+      var data = S().getState();
+      if (data.autoResetDashboard === false) {
+        refresh();
+        return;
+      }
       var sync = global.PlatformTurnosSync;
       if (sync && sync.ensureDayCurrent) {
         sync.ensureDayCurrent().then(function () { refresh(); });

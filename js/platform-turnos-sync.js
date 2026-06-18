@@ -27,7 +27,9 @@
   }
 
   function normalizeSnapshot(raw) {
-    if (!raw || typeof raw !== 'object') return { counter: 0, entries: [], operatingDay: '' };
+    if (!raw || typeof raw !== 'object') {
+      return { counter: 0, entries: [], dashboardDay: '', autoResetDashboard: true };
+    }
     var entries = (raw.entries || []).map(function (e) { return C().normalizeEntry(e); }).filter(Boolean);
     var counter = Number(raw.counter) || 0;
     if (!counter && entries.length) {
@@ -36,21 +38,21 @@
     return {
       counter: counter,
       entries: entries,
-      operatingDay: String(raw.operatingDay || '').trim()
+      dashboardDay: String(raw.dashboardDay || raw.operatingDay || '').trim(),
+      autoResetDashboard: raw.autoResetDashboard !== false
     };
   }
 
   function finalizeState(rawState) {
-    var rolled = C().applyDayRollover(rawState);
-    return rolled;
+    return C().syncDashboardMeta(rawState);
   }
 
-  function syncRolloverState(state, pushIfChanged) {
-    var rolled = finalizeState(state);
-    if (rolled.changed && pushIfChanged) {
-      return pushState(rolled.state).then(function () { return rolled; });
+  function syncDashboardState(state, pushIfChanged) {
+    var synced = finalizeState(state);
+    if (synced.changed && pushIfChanged) {
+      return pushState(synced.state).then(function () { return synced; });
     }
-    return Promise.resolve(rolled);
+    return Promise.resolve(synced);
   }
 
   function pullState() {
@@ -59,8 +61,8 @@
     return B.pull(MODULE).then(function (data) {
       live = true;
       setupRequired = false;
-      return syncRolloverState(normalizeSnapshot(data), true).then(function (rolled) {
-        return rolled.state;
+      return syncDashboardState(normalizeSnapshot(data), true).then(function (synced) {
+        return synced.state;
       });
     });
   }
@@ -71,7 +73,9 @@
     var payload = {
       counter: Number(state.counter) || 0,
       entries: (state.entries || []).map(function (e) { return C().normalizeEntry(e); }).filter(Boolean),
-      operatingDay: String(state.operatingDay || C().todayKey()).trim(),
+      operatingDay: String(state.dashboardDay || state.operatingDay || C().todayKey()).trim(),
+      dashboardDay: String(state.dashboardDay || state.operatingDay || C().todayKey()).trim(),
+      autoResetDashboard: state.autoResetDashboard !== false,
       updatedAt: new Date().toISOString()
     };
     return B.push(MODULE, payload).then(function (ok) {
@@ -90,8 +94,8 @@
       if (!remote) return;
       live = true;
       setupRequired = false;
-      syncRolloverState(normalizeSnapshot(remote), true).then(function (rolled) {
-        notify('sync', rolled.state);
+      syncDashboardState(normalizeSnapshot(remote), true).then(function (synced) {
+        notify('sync', synced.state);
       });
     });
   }
@@ -243,6 +247,26 @@
     return pullState();
   }
 
+  function saveConfig(patch) {
+    return pullState().then(function (remote) {
+      var next = Object.assign({}, remote, patch || {});
+      if (patch && patch.autoResetDashboard !== undefined) {
+        next.autoResetDashboard = !!patch.autoResetDashboard;
+      }
+      if (patch && patch.resetDashboardView) {
+        next.dashboardDay = C().todayKey();
+        next.operatingDay = next.dashboardDay;
+      }
+      var synced = C().syncDashboardMeta(next);
+      if (patch && patch.resetDashboardView) {
+        synced.state.dashboardDay = C().todayKey();
+        synced.state.operatingDay = synced.state.dashboardDay;
+        synced.changed = true;
+      }
+      return pushState(synced.state).then(function () { return synced.state; });
+    });
+  }
+
   global.PlatformTurnosSync = {
     ready: ready,
     fetchAll: fetchAll,
@@ -254,6 +278,7 @@
     resetCounter: resetCounter,
     pushState: pushState,
     ensureDayCurrent: ensureDayCurrent,
+    saveConfig: saveConfig,
     onChange: onChange,
     isLive: isLive,
     isSetupRequired: isSetupRequired,
