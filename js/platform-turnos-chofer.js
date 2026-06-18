@@ -88,6 +88,7 @@
   function renderForm(tipo) {
     var label = C().TIPO_LABELS[tipo] || 'Trámite';
     var remembered = esc(C().getRememberedChoferName());
+    var rememberedCompania = esc(C().getRememberedChoferCompania());
     var extra = '';
 
     if (tipo === C().TIPOS.DESPACHO) {
@@ -107,6 +108,8 @@
       '<button type="button" class="turnos-back-btn" data-chofer-back>Volver</button>' +
       '<h2 class="turnos-form-title">' + esc(label) + '</h2>' +
       '<form id="turnosChoferForm" class="turnos-chofer-form" novalidate>' +
+      '<label class="turnos-field"><span>Compañía de transporte</span>' +
+      '<input class="turnos-input turnos-input--lg" id="turnosFieldCompania" type="text" required maxlength="80" autocomplete="organization" value="' + rememberedCompania + '" placeholder="Escriba el nombre de su compañía"></label>' +
       '<label class="turnos-field"><span>Nombre del chofer</span>' +
       '<input class="turnos-input turnos-input--lg" id="turnosFieldChofer" type="text" required maxlength="80" autocomplete="name" value="' + remembered + '" placeholder="Su nombre completo"></label>' +
       extra +
@@ -152,8 +155,7 @@
       '<div class="turnos-success-icon">✓</div>' +
       '<p class="turnos-success-title">Su turno está registrado</p>' +
       '<p class="turnos-success-turno turnos-mono">' + esc(entry.turno) + '</p>' +
-      '<p class="turnos-success-meta">' + esc(C().TIPO_LABELS[entry.tipo]) +
-      (entry.choferCompania ? ' · <strong>' + esc(entry.choferCompania) + '</strong>' : ' · <span class="turnos-muted-inline">Compañía: asigna el supervisor</span>') + '</p>' +
+      '<p class="turnos-success-meta"><strong>' + esc(entry.choferCompania || '—') + '</strong> · ' + esc(C().TIPO_LABELS[entry.tipo]) + '</p>' +
       '<p class="turnos-success-detail">' + esc(entry.detalle) + '</p>' +
       '<p class="turnos-success-time">' + esc(C().formatFechaHora(entry)) + '</p>' +
       '<p class="turnos-success-status">' + esc(estadoLabel(entry)) + '</p>' +
@@ -311,8 +313,13 @@
       showError('Escriba su nombre.');
       return;
     }
+    var compania = ($('turnosFieldCompania') && $('turnosFieldCompania').value || '').trim();
+    if (!compania) {
+      showError('Escriba el nombre de su compañía de transporte.');
+      return;
+    }
 
-    var payload = { tipo: selectedTipo, choferNombre: chofer, choferCompania: '' };
+    var payload = { tipo: selectedTipo, choferNombre: chofer, choferCompania: compania };
 
     if (selectedTipo === C().TIPOS.DESPACHO) {
       payload.idsCarga = ($('turnosFieldCarga') && $('turnosFieldCarga').value || '').trim();
@@ -465,6 +472,21 @@
       if (!el) return;
       el.textContent = C().formatClockTime().slice(0, 5);
     }, 1000);
+    var choferDay = C().todayKey();
+    setInterval(function () {
+      var d = C().todayKey();
+      if (choferDay === d) return;
+      choferDay = d;
+      C().clearMyTurn();
+      lastEntry = null;
+      if (screen === 'success') screen = 'menu';
+      var sync = global.PlatformTurnosSync;
+      if (sync && sync.ensureDayCurrent) {
+        sync.ensureDayCurrent().then(function () { render(); syncMyTurnFromStore(); });
+      } else {
+        render();
+      }
+    }, 30000);
   }
 
   function show() {

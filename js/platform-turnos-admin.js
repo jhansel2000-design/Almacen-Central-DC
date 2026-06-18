@@ -136,13 +136,26 @@
   }
 
   function companiaCell(e, compact, readonly) {
-    if (compact || readonly) {
-      return '<td>' + esc(e.choferCompania || '—') + '</td>';
+    return '<td>' + esc(e.choferCompania || '—') + '</td>';
+  }
+
+  function dayBannerHtml(stats) {
+    var dayLabel = C().formatFechaLongRD();
+    if (stats.totalHoy === 0) {
+      return (
+        '<div class="turnos-day-banner turnos-day-banner--fresh">' +
+        '<p class="turnos-day-banner__eyebrow">Nuevo día · Hora República Dominicana</p>' +
+        '<h2 class="turnos-day-banner__title">' + esc(dayLabel) + '</h2>' +
+        '<p class="turnos-day-banner__sub">El tablero inició vacío. Los registros de ayer se borraron automáticamente al comenzar este día.</p>' +
+        '</div>'
+      );
     }
-    return '<td class="turnos-compania-cell">' +
-      '<label class="turnos-sr-only" for="compania-' + esc(e.id) + '">Compañía</label>' +
-      '<input type="text" class="turnos-compania-input" id="compania-' + esc(e.id) + '" data-compania-id="' + esc(e.id) + '" value="' + esc(e.choferCompania || '') + '" maxlength="80" placeholder="Supervisor escribe la compañía">' +
-      '<button type="button" class="turnos-btn turnos-btn--secondary turnos-btn--sm" data-set-compania="' + esc(e.id) + '">Guardar</button></td>';
+    return (
+      '<div class="turnos-day-banner">' +
+      '<p class="turnos-day-banner__eyebrow">Operaciones de hoy</p>' +
+      '<h2 class="turnos-day-banner__title">' + esc(dayLabel) + '</h2>' +
+      '</div>'
+    );
   }
 
   function adminTableHtml(entries, compact, readonly) {
@@ -211,7 +224,7 @@
       btn.classList.toggle('active', btn.getAttribute('data-turnos-nav') === mod);
     });
     var titles = {
-      dashboard: 'Resumen del día',
+      dashboard: 'Resumen — ' + C().formatFechaDisplay(C().todayKey()),
       despacho: 'Despacho de facturas',
       liquidacion: 'Liquidación de facturas',
       nota_credito: 'Nota de crédito',
@@ -233,8 +246,15 @@
     var host = $('turnosViewDashboard');
     if (!host) return;
     var data = S().getState();
+    var today = todayEntries();
     var stats = C().statsToday(data.entries);
-    var last = data.counter > 0 ? C().formatTurno(data.counter) : '—';
+    var last = today.length
+      ? today.reduce(function (best, e) {
+        var n = parseInt(String(e.turno || '').replace(/\D/g, ''), 10) || 0;
+        var bn = parseInt(String(best.turno || '').replace(/\D/g, ''), 10) || 0;
+        return n > bn ? e : best;
+      }).turno
+      : (data.counter > 0 ? C().formatTurno(data.counter) : '—');
     var cards = Object.keys(TRAMITE_MODULES).map(function (key) {
       var cfg = TRAMITE_MODULES[key];
       var ts = tramiteStats(cfg.tipo);
@@ -250,6 +270,7 @@
 
     host.innerHTML =
       (data.live ? '' : '<p class="turnos-offline-banner">Sin conexión con la nube. Los datos de turnos están en Supabase — verifique internet.</p>') +
+      dayBannerHtml(stats) +
       '<div class="turnos-kpi-grid turnos-kpi-grid--admin">' +
       kpi('Total hoy', stats.totalHoy, 'blue') +
       kpi('Pendientes', stats.pendientes, 'red') +
@@ -266,8 +287,10 @@
       '<span class="turnos-tramite-card-icon"><img src="assets/img/icon-turnos-gestion.svg' + ICON_V + '" alt="" width="40" height="40"></span>' +
       '<span class="turnos-tramite-card-text"><strong>Cancelados</strong><span>' + stats.cancelados + ' hoy</span></span></button>' +
       '</div></section>' +
-      '<section class="turnos-panel"><h2>Actividad reciente</h2>' +
-      adminTableHtml(data.entries.filter(function (e) { return e.estado !== 'CANCELADO'; }).slice(0, 8), true) +
+      '<section class="turnos-panel"><h2>Actividad reciente de hoy</h2>' +
+      (today.filter(function (e) { return e.estado !== 'CANCELADO'; }).length
+        ? adminTableHtml(today.filter(function (e) { return e.estado !== 'CANCELADO'; }).slice(0, 8), true)
+        : '<p class="turnos-empty">Aún no hay turnos registrados hoy. El tablero está listo para recibir choferes.</p>') +
       '</section>';
   }
 
@@ -316,10 +339,10 @@
   function renderExport() {
     var host = $('turnosViewExport');
     if (!host) return;
-    var n = S().getState().entries.length;
+    var n = todayEntries().length;
     host.innerHTML =
       '<section class="turnos-panel turnos-export-cards">' +
-      '<h2>Exportar</h2><p class="turnos-sub">' + n + ' registros en total.</p>' +
+      '<h2>Exportar</h2><p class="turnos-sub">' + n + ' registros de hoy (hora RD).</p>' +
       '<button type="button" class="turnos-export-card" data-admin-action="export-xlsx">' +
       '<span class="turnos-export-icon"><img src="assets/img/icon-turnos-export.svg' + ICON_V + '" alt="" width="44" height="44"></span><strong>Excel (.xlsx)</strong></button>' +
       '<button type="button" class="turnos-export-card" data-admin-action="export-csv">' +
@@ -336,7 +359,7 @@
       '<p class="turnos-sub">Usuario: <strong>' + esc(state.adminUser && (state.adminUser.name || state.adminUser.username)) + '</strong></p>' +
       '<p class="turnos-sub">Notificaciones: aviso en el navegador cuando está en otra pestaña (sin sonido en el panel).</p>' +
       '<button type="button" class="turnos-btn turnos-btn--primary turnos-btn--xl" data-admin-action="notif-perm">Activar notificaciones del navegador</button>' +
-      '<p class="turnos-hint">Hora oficial: <strong>República Dominicana</strong> (America/Santo_Domingo). Turnos prioritarios: PIN = fecha de nacimiento de <strong>Juan Pablo Duarte</strong> (<span class="turnos-mono">' + esc(C().priorityPinHint()) + '</span>). Al ingresar el PIN se asigna la hora límite automáticamente. La <strong>compañía</strong> la escribe el supervisor en cada fila.</p>' +
+      '<p class="turnos-hint">Hora oficial: <strong>República Dominicana</strong>. Cada día nuevo el dashboard se limpia solo (turnos y numeración). Turnos prioritarios: PIN Duarte (<span class="turnos-mono">' + esc(C().priorityPinHint()) + '</span>) asigna hora límite automática. La <strong>compañía</strong> la escribe el chofer en un solo campo.</p>' +
       '<button type="button" class="turnos-btn turnos-btn--danger turnos-btn--xl" data-admin-action="reset">Reiniciar numeración</button>' +
       '<p class="turnos-hint">Conserva el historial. El próximo turno volverá a T-0001.</p>' +
       '<button type="button" class="turnos-btn turnos-btn--secondary" data-admin-action="logout">Cerrar sesión admin</button>' +
@@ -344,7 +367,7 @@
   }
 
   function rowsForExport() {
-    return S().getState().entries.map(function (e) {
+    return todayEntries().map(function (e) {
       return {
         Turno: e.turno,
         Fecha: C().formatFechaDisplay(e.fecha),
@@ -365,7 +388,7 @@
   }
 
   function exportCsv() {
-    var entries = S().getState().entries;
+    var entries = todayEntries();
     if (!entries.length) { alert('No hay datos.'); return; }
     var XLSX = global.XLSX;
     if (!XLSX) return;
@@ -376,7 +399,7 @@
   }
 
   function exportXlsx() {
-    var entries = S().getState().entries;
+    var entries = todayEntries();
     if (!entries.length) { alert('No hay datos.'); return; }
     var XLSX = global.XLSX;
     if (!XLSX) return;
@@ -422,28 +445,6 @@
           limBtn.disabled = false;
           if (!result.ok) {
             alert(result.msg || 'No se pudo guardar.');
-            refresh();
-            return;
-          }
-          refresh();
-        });
-        return;
-      }
-      var compBtn = ev.target.closest('[data-set-compania]');
-      if (compBtn) {
-        var cid = compBtn.getAttribute('data-set-compania');
-        var cinp = root.querySelector('[data-compania-id="' + cid + '"]');
-        var compania = cinp && cinp.value.trim();
-        if (!compania) {
-          alert('Escriba el nombre de la compañía.');
-          return;
-        }
-        var userName2 = state.adminUser && (state.adminUser.name || state.adminUser.username);
-        compBtn.disabled = true;
-        S().setCompania(cid, compania, userName2).then(function (result) {
-          compBtn.disabled = false;
-          if (!result.ok) {
-            alert(result.msg || 'No se pudo guardar la compañía.');
             refresh();
             return;
           }
@@ -541,6 +542,18 @@
     }
     updateClock();
     setInterval(updateClock, 1000);
+    state._dashboardDay = C().todayKey();
+    setInterval(function () {
+      var d = C().todayKey();
+      if (state._dashboardDay === d) return;
+      state._dashboardDay = d;
+      var sync = global.PlatformTurnosSync;
+      if (sync && sync.ensureDayCurrent) {
+        sync.ensureDayCurrent().then(function () { refresh(); });
+      } else {
+        refresh();
+      }
+    }, 30000);
     var label = $('turnosAdminUserLabel');
     if (label && user) label.textContent = (user.name || user.username || 'Admin') + ' (' + (user.role || 'admin') + ')';
     if (global.PanelCore && global.PanelCore.touchAveriasSession) {

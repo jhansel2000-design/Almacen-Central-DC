@@ -27,16 +27,30 @@
   }
 
   function normalizeSnapshot(raw) {
-    if (!raw || typeof raw !== 'object') return { counter: 0, entries: [] };
+    if (!raw || typeof raw !== 'object') return { counter: 0, entries: [], operatingDay: '' };
     var entries = (raw.entries || []).map(function (e) { return C().normalizeEntry(e); }).filter(Boolean);
     var counter = Number(raw.counter) || 0;
     if (!counter && entries.length) {
-      counter = entries.reduce(function (max, e) {
-        var n = parseInt(String(e.turno || '').replace(/\D/g, ''), 10) || 0;
-        return Math.max(max, n);
-      }, 0);
+      counter = C().recalcCounterFromEntries(entries);
     }
-    return { counter: counter, entries: entries };
+    return {
+      counter: counter,
+      entries: entries,
+      operatingDay: String(raw.operatingDay || '').trim()
+    };
+  }
+
+  function finalizeState(rawState) {
+    var rolled = C().applyDayRollover(rawState);
+    return rolled;
+  }
+
+  function syncRolloverState(state, pushIfChanged) {
+    var rolled = finalizeState(state);
+    if (rolled.changed && pushIfChanged) {
+      return pushState(rolled.state).then(function () { return rolled; });
+    }
+    return Promise.resolve(rolled);
   }
 
   function pullState() {
@@ -45,7 +59,9 @@
     return B.pull(MODULE).then(function (data) {
       live = true;
       setupRequired = false;
-      return normalizeSnapshot(data);
+      return syncRolloverState(normalizeSnapshot(data), true).then(function (rolled) {
+        return rolled.state;
+      });
     });
   }
 
@@ -55,6 +71,7 @@
     var payload = {
       counter: Number(state.counter) || 0,
       entries: (state.entries || []).map(function (e) { return C().normalizeEntry(e); }).filter(Boolean),
+      operatingDay: String(state.operatingDay || C().todayKey()).trim(),
       updatedAt: new Date().toISOString()
     };
     return B.push(MODULE, payload).then(function (ok) {
@@ -73,7 +90,9 @@
       if (!remote) return;
       live = true;
       setupRequired = false;
-      notify('sync', normalizeSnapshot(remote));
+      syncRolloverState(normalizeSnapshot(remote), true).then(function (rolled) {
+        notify('sync', rolled.state);
+      });
     });
   }
 
@@ -220,6 +239,10 @@
     unsub = null;
   }
 
+  function ensureDayCurrent() {
+    return pullState();
+  }
+
   global.PlatformTurnosSync = {
     ready: ready,
     fetchAll: fetchAll,
@@ -230,6 +253,7 @@
     setCompania: setCompania,
     resetCounter: resetCounter,
     pushState: pushState,
+    ensureDayCurrent: ensureDayCurrent,
     onChange: onChange,
     isLive: isLive,
     isSetupRequired: isSetupRequired,

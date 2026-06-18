@@ -6,7 +6,7 @@
 
   var C = function () { return global.PlatformTurnosCore; };
   var Sync = function () { return global.PlatformTurnosSync; };
-  var shared = { counter: 0, entries: [], live: false, error: '' };
+  var shared = { counter: 0, entries: [], live: false, error: '', operatingDay: '' };
   var listeners = [];
   var initPromise = null;
 
@@ -16,13 +16,16 @@
 
   function applyRemote(data) {
     if (!data) return;
-    shared.entries = C().sortEntries(data.entries || []);
-    shared.counter = Number(data.counter) || shared.counter;
+    var rolled = C().applyDayRollover({
+      counter: Number(data.counter) || 0,
+      entries: data.entries || [],
+      operatingDay: data.operatingDay || ''
+    });
+    shared.entries = C().sortEntries(rolled.state.entries || []);
+    shared.counter = Number(rolled.state.counter) || 0;
+    shared.operatingDay = rolled.state.operatingDay || C().todayKey();
     if (!shared.counter && shared.entries.length) {
-      shared.counter = shared.entries.reduce(function (max, e) {
-        var n = parseInt(String(e.turno || '').replace(/\D/g, ''), 10) || 0;
-        return Math.max(max, n);
-      }, 0);
+      shared.counter = C().recalcCounterFromEntries(shared.entries);
     }
     notify();
   }

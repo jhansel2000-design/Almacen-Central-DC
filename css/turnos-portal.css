@@ -1121,6 +1121,44 @@ body.turnos-body.turnos-auth-open {
   border: 1px solid rgba(217, 119, 6, 0.35);
 }
 
+.turnos-day-banner {
+  margin: 0 0 1.25rem;
+  padding: 1.1rem 1.35rem;
+  border-radius: 14px;
+  background: linear-gradient(135deg, var(--bp-blue-light) 0%, #fff 100%);
+  border: 1px solid var(--turnos-border);
+  box-shadow: var(--turnos-shadow);
+}
+
+.turnos-day-banner--fresh {
+  background: linear-gradient(135deg, #e8f6ee 0%, #fff 55%);
+  border-color: #9fd4b8;
+}
+
+.turnos-day-banner__eyebrow {
+  margin: 0 0 0.35rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--turnos-muted);
+}
+
+.turnos-day-banner__title {
+  margin: 0;
+  font-size: 1.35rem;
+  line-height: 1.25;
+  color: var(--turnos-blue);
+  text-transform: capitalize;
+}
+
+.turnos-day-banner__sub {
+  margin: 0.55rem 0 0;
+  font-size: 0.92rem;
+  line-height: 1.45;
+  color: var(--turnos-muted);
+}
+
 .turnos-limite-cell { min-width: 130px; vertical-align: top; }
 
 .turnos-compania-cell {
