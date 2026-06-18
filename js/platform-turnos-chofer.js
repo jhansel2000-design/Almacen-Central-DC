@@ -486,7 +486,7 @@
     });
 
     root.addEventListener('click', function (ev) {
-      if (ev.target.closest('#turnosAdminLink') || ev.target.closest('.turnos-back-link')) return;
+      if (ev.target.closest('.turnos-back-link')) return;
       if (ev.target.closest('#turnosPermGate') || ev.target.closest('#turnosPermBtn') ||
           ev.target.closest('#turnosPermIosBtn')) return;
       if (!guardPerms()) {

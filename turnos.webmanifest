@@ -1,8 +1,8 @@
 {
   "id": "./turnos.html",
-  "name": "Control de Turnos — Almacén Central DC",
-  "short_name": "Turnos DC",
-  "description": "Solicite su turno, reciba alertas y valide presencia en el almacén.",
+  "name": "Turnos Chofer — Almacén Central DC",
+  "short_name": "Turnos Chofer",
+  "description": "Solicite su turno y reciba alertas cuando lo convoquen.",
   "start_url": "./turnos.html?source=pwa",
   "scope": "./",
   "display": "standalone",

@@ -45,17 +45,16 @@
   }
 
   function isAdminContext() {
+    if (document.documentElement.getAttribute('data-turnos-portal') === 'supervisor') return true;
     if (document.body.classList.contains('turnos-admin-mode')) return true;
     if (document.body.classList.contains('turnos-auth-open')) return true;
-    try {
-      return new URLSearchParams(global.location.search).get('admin') === '1';
-    } catch (e) {
-      return false;
-    }
+    return false;
   }
 
   function getRole() {
-    return activeRole === 'supervisor' || isAdminContext() ? 'supervisor' : 'chofer';
+    if (document.documentElement.getAttribute('data-turnos-portal') === 'supervisor') return 'supervisor';
+    if (document.documentElement.getAttribute('data-turnos-portal') === 'chofer') return 'chofer';
+    return activeRole === 'supervisor' ? 'supervisor' : 'chofer';
   }
 
   function setRole(role) {
@@ -89,13 +88,8 @@
   function getDirectLink(role) {
     role = role || getRole();
     try {
-      var url = new URL('turnos.html', global.location.href);
-      if (role === 'supervisor') {
-        url.searchParams.set('admin', '1');
-      } else {
-        url.searchParams.delete('admin');
-      }
-      return url.href.split('#')[0];
+      var file = role === 'supervisor' ? 'turnos-supervisor.html' : 'turnos.html';
+      return new URL(file, global.location.href).href.split('#')[0];
     } catch (e) {
       return global.location.href.split('#')[0];
     }
@@ -226,13 +220,12 @@
         setRole('chofer');
         openInstallModal('chofer');
       });
-      var adminLink = $('turnosAdminLink');
-      if (adminLink && adminLink.parentNode === foot) foot.insertBefore(footBtn, adminLink);
-      else foot.insertBefore(footBtn, foot.firstChild);
+      foot.insertBefore(footBtn, foot.firstChild);
     }
   }
 
   function ensureSupervisorBanner() {
+    if (document.documentElement.getAttribute('data-turnos-portal') !== 'supervisor') return;
     var main = document.querySelector('.turnos-main');
     if (!main || $('turnosPwaBannerSupervisor')) return;
     var banner = document.createElement('div');
@@ -539,8 +532,10 @@
       document.addEventListener('visibilitychange', updateBanner);
     }
     try {
-      if (new URLSearchParams(global.location.search).get('admin') === '1') {
+      if (document.documentElement.getAttribute('data-turnos-portal') === 'supervisor') {
         activeRole = 'supervisor';
+      } else if (document.documentElement.getAttribute('data-turnos-portal') === 'chofer') {
+        activeRole = 'chofer';
       }
     } catch (e) { /* noop */ }
     registerServiceWorker();

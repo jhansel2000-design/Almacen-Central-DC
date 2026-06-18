@@ -1664,7 +1664,6 @@ body.turnos-perm-open .turnos-chofer-header {
   filter: blur(1px);
 }
 
-body.turnos-perm-open .turnos-chofer-foot .turnos-admin-link,
 body.turnos-perm-open .turnos-chofer-foot .turnos-back-link {
   pointer-events: auto;
   opacity: 1;

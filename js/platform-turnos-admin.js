@@ -505,15 +505,10 @@
       '<button type="button" class="turnos-btn turnos-btn--primary turnos-btn--xl" data-admin-action="notif-perm">Activar notificaciones del navegador</button>' +
       '<div class="turnos-config-block">' +
       '<h3 class="turnos-config-title">App supervisor en el teléfono</h3>' +
-      '<p class="turnos-hint">Instale <strong>Turnos Supervisor</strong> en la pantalla de inicio para validar solicitudes al instante. ' +
-      'Enlace directo: <span class="turnos-mono">turnos.html?admin=1</span></p>' +
+      '<p class="turnos-hint">Instale <strong>Turnos Supervisor</strong> como app independiente. ' +
+      'Enlace: <span class="turnos-mono">turnos-supervisor.html</span></p>' +
       '<button type="button" class="turnos-btn turnos-btn--primary turnos-btn--xl" data-admin-action="pwa-install">Instalar app supervisor</button>' +
       '<button type="button" class="turnos-btn turnos-btn--secondary turnos-btn--xl" data-admin-action="pwa-copy-supervisor">Copiar enlace supervisor</button>' +
-      '</div>' +
-      '<div class="turnos-config-block">' +
-      '<h3 class="turnos-config-title">App choferes (compartir)</h3>' +
-      '<p class="turnos-hint">Enlace para que choferes instalen su app y soliciten turno.</p>' +
-      '<button type="button" class="turnos-btn turnos-btn--secondary turnos-btn--xl" data-admin-action="pwa-install-chofer">Ver enlace app chofer</button>' +
       '</div>' +
       '<div class="turnos-config-block">' +
       '<h3 class="turnos-config-title">Dashboard — seguimiento del día</h3>' +
@@ -670,10 +665,6 @@
       else if (action === 'pwa-copy-supervisor' && global.PlatformTurnosPwa) {
         global.PlatformTurnosPwa.setRole('supervisor');
         global.PlatformTurnosPwa.copyDirectLink(null, 'supervisor');
-      }
-      else if (action === 'pwa-install-chofer' && global.PlatformTurnosPwa) {
-        global.PlatformTurnosPwa.setRole('chofer');
-        global.PlatformTurnosPwa.openInstallModal('chofer');
       }
       else if (action === 'reset-dashboard') {
         S().saveConfig({ resetDashboardView: true }).then(function (result) {

@@ -1,9 +1,9 @@
 {
-  "id": "./turnos.html?admin=1",
+  "id": "./turnos-supervisor.html",
   "name": "Control de Turnos — Supervisor",
   "short_name": "Turnos Supervisor",
   "description": "Valide turnos de choferes y gestione la cola de atención en el almacén.",
-  "start_url": "./turnos.html?admin=1&source=pwa-supervisor",
+  "start_url": "./turnos-supervisor.html?source=pwa-supervisor",
   "scope": "./",
   "display": "standalone",
   "display_override": ["standalone", "minimal-ui", "browser"],

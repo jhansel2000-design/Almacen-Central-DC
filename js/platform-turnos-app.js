@@ -1,26 +1,24 @@
 /**
- * Portal Control de Turnos — arranque chofer + admin
+ * Portal Control de Turnos — arranque separado chofer / supervisor
  */
 (function (global) {
   'use strict';
 
   var PC = global.PanelCore;
   var Auth = global.PlatformAdmin;
-  var ADMIN_VIEW_KEY = 'dc_turnos_admin_view';
 
-  function markAdminView(active) {
-    try {
-      if (active) sessionStorage.setItem(ADMIN_VIEW_KEY, '1');
-      else sessionStorage.removeItem(ADMIN_VIEW_KEY);
-    } catch (e) { /* noop */ }
+  function portalMode() {
+    var mode = document.documentElement.getAttribute('data-turnos-portal');
+    if (mode === 'supervisor' || mode === 'chofer') return mode;
+    return 'chofer';
   }
 
-  function wantsAdminView() {
-    try {
-      return sessionStorage.getItem(ADMIN_VIEW_KEY) === '1';
-    } catch (e) {
-      return false;
-    }
+  function isSupervisorPortal() {
+    return portalMode() === 'supervisor';
+  }
+
+  function isChoferPortal() {
+    return portalMode() === 'chofer';
   }
 
   function $(id) { return document.getElementById(id); }
@@ -32,7 +30,7 @@
   }
 
   function showChofer() {
-    markAdminView(false);
+    if (!isChoferPortal()) return;
     if (global.PlatformTurnosPwa && global.PlatformTurnosPwa.setRole) {
       global.PlatformTurnosPwa.setRole('chofer');
     }
@@ -40,18 +38,15 @@
       global.PlatformTurnosChofer.show();
       global.PlatformTurnosChofer.start();
     }
-    if (global.PlatformTurnosAdmin) global.PlatformTurnosAdmin.hide();
-    hideAuth();
-    document.body.classList.remove('turnos-admin-mode');
+    document.body.classList.remove('turnos-admin-mode', 'turnos-auth-open');
     refreshPwaUi();
   }
 
   function showAdminApp(user) {
-    markAdminView(true);
+    if (!isSupervisorPortal()) return;
     if (global.PlatformTurnosPwa && global.PlatformTurnosPwa.setRole) {
       global.PlatformTurnosPwa.setRole('supervisor');
     }
-    if (global.PlatformTurnosChofer) global.PlatformTurnosChofer.hide();
     hideAuth();
     if (global.PlatformTurnosAdmin) {
       global.PlatformTurnosAdmin.show();
@@ -59,19 +54,24 @@
     }
     if (PC && PC.touchAveriasSession) PC.touchAveriasSession(user);
     document.body.classList.add('turnos-admin-mode');
+    document.body.classList.remove('turnos-auth-open');
     refreshPwaUi();
   }
 
   function showAuth() {
+    if (!isSupervisorPortal()) return;
     if (global.PlatformTurnosPwa && global.PlatformTurnosPwa.setRole) {
       global.PlatformTurnosPwa.setRole('supervisor');
     }
+    if (global.PlatformTurnosAdmin) global.PlatformTurnosAdmin.hide();
     var overlay = $('turnosAuthOverlay');
     if (overlay) {
       overlay.classList.remove('is-hidden');
       overlay.setAttribute('aria-hidden', 'false');
     }
     document.body.classList.add('turnos-auth-open');
+    document.body.classList.remove('turnos-admin-mode');
+    refreshPwaUi();
   }
 
   function hideAuth() {
@@ -144,7 +144,7 @@
   }
 
   function tryRestoreAdmin() {
-    if (!PC || !Auth) return false;
+    if (!isSupervisorPortal() || !PC || !Auth) return false;
     var session = PC.getAveriasSession();
     if (!session) return false;
     var user = Auth.findUserById(session.userId);
@@ -158,6 +158,10 @@
 
   function logoutAdmin() {
     if (PC) PC.clearAveriasSession();
+    if (isSupervisorPortal()) {
+      showAuth();
+      return;
+    }
     showChofer();
   }
 
@@ -181,44 +185,21 @@
         toggle.textContent = show ? 'Ocultar' : 'Ver';
       });
     }
-    var adminLink = $('turnosAdminLink');
-    if (adminLink) {
-      adminLink.addEventListener('click', function (ev) {
-        ev.preventDefault();
-        if (tryRestoreAdmin()) return;
-        showAuth();
-      });
-    }
-    var backChofer = $('turnosBackChoferLink');
-    if (backChofer) {
-      backChofer.addEventListener('click', function (ev) {
+    var logoutBtn = $('turnosBackChoferLink');
+    if (logoutBtn) {
+      logoutBtn.addEventListener('click', function (ev) {
         ev.preventDefault();
         logoutAdmin();
-      });
-    }
-    var overlay = $('turnosAuthOverlay');
-    if (overlay) {
-      overlay.addEventListener('click', function (ev) {
-        if (ev.target.closest('[data-chofer-back]')) {
-          ev.preventDefault();
-          hideAuth();
-        }
       });
     }
   }
 
   function boot() {
     initAuth();
-    var params = new URLSearchParams(global.location.search);
     if (global.PlatformTurnosPwa && global.PlatformTurnosPwa.setRole) {
-      if (params.get('admin') === '1' || wantsAdminView()) {
-        global.PlatformTurnosPwa.setRole('supervisor');
-      } else {
-        global.PlatformTurnosPwa.setRole('chofer');
-      }
+      global.PlatformTurnosPwa.setRole(isSupervisorPortal() ? 'supervisor' : 'chofer');
     }
-    if (wantsAdminView() && tryRestoreAdmin()) return;
-    if (params.get('admin') === '1') {
+    if (isSupervisorPortal()) {
       if (tryRestoreAdmin()) return;
       showAuth();
       return;
@@ -231,7 +212,7 @@
     if (global.PlatformTurnosPwa && global.PlatformTurnosPwa.init) {
       global.PlatformTurnosPwa.init();
     }
-    if (global.PlatformWebUsers && global.PlatformWebUsers.ready) {
+    if (isSupervisorPortal() && global.PlatformWebUsers && global.PlatformWebUsers.ready) {
       global.PlatformWebUsers.ready().then(start).catch(start);
     } else {
       start();
@@ -239,6 +220,7 @@
   });
 
   global.PlatformTurnosApp = {
+    portalMode: portalMode,
     showChofer: showChofer,
     showAdminApp: showAdminApp,
     showAuth: showAuth,
