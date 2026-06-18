@@ -83,6 +83,7 @@
       return sync.insertTurn(payload).then(function (entry) {
         upsertEntry(entry);
         C().rememberChoferName(payload.choferNombre);
+        C().rememberChoferCompania(payload.choferCompania);
         C().saveMyTurn(entry);
         C().playBeep();
         notify();

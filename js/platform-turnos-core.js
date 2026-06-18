@@ -6,6 +6,7 @@
 
   var STORAGE_KEY = 'dc_turnos_despacho_v2';
   var CHOFER_NAME_KEY = 'dc_turnos_chofer_name';
+  var CHOFER_COMPANIA_KEY = 'dc_turnos_chofer_compania';
   var MY_TURN_KEY = 'dc_turnos_my_active';
   var CONVOCADO_SEEN_PREFIX = 'dc_turnos_convocado_seen_';
   var DEDUP_MS = 8000;
@@ -28,6 +29,28 @@
     nota_credito: 'Ventana de Nota de crédito'
   };
 
+  var COMPANIAS_CHOFER = [
+    'Almacén Central DC',
+    'Transportes del Centro',
+    'Logística Nacional',
+    'Ruta Norte',
+    'Ruta Sur',
+    'Transporte tercero',
+    'Otra'
+  ];
+
+  var PASO_LABELS = {
+    REGISTRO: 'Registro del turno',
+    PENDIENTE: 'Pendiente',
+    EN_PROCESO: 'En proceso',
+    CONFIRMADO: 'Confirmado',
+    COMPLETADO: 'Completado',
+    ASENTADO: 'Asentado',
+    CANCELADO: 'Cancelado',
+    CONVOCADO: 'Convocado a ventana',
+    HORA_LIMITE: 'Hora límite'
+  };
+
   function todayKey(d) {
     d = d || new Date();
     return d.toISOString().slice(0, 10);
@@ -42,13 +65,104 @@
     return 'T-' + String(Math.max(0, n)).padStart(4, '0');
   }
 
+  function formatFechaDisplay(fecha) {
+    if (!fecha) return '—';
+    var p = String(fecha).split('-');
+    if (p.length !== 3) return fecha;
+    return p[2] + '/' + p[1] + '/' + p[0];
+  }
+
+  function formatFechaHora(entry) {
+    if (!entry) return '—';
+    return formatFechaDisplay(entry.fecha) + ' · ' + (entry.hora || '—');
+  }
+
+  function pasoLabel(paso) {
+    return PASO_LABELS[paso] || String(paso || '').replace(/_/g, ' ');
+  }
+
+  function createSeguimientoItem(ev, compania) {
+    ev = ev || {};
+    var at = Number(ev.at) || Date.now();
+    var d = ev.fecha ? null : new Date(at);
+    return {
+      at: at,
+      fecha: ev.fecha || (d ? todayKey(d) : todayKey()),
+      hora: ev.hora || (d ? formatTime(d) : formatTime()),
+      paso: ev.paso || 'REGISTRO',
+      estado: ev.estado || 'PENDIENTE',
+      nota: String(ev.nota || '').trim(),
+      por: String(ev.por || '').trim(),
+      compania: String(ev.compania || compania || '').trim()
+    };
+  }
+
+  function appendSeguimiento(historial, ev, compania) {
+    var hist = (historial || []).slice();
+    hist.push(createSeguimientoItem(ev, compania));
+    return hist;
+  }
+
+  function ensureSeguimiento(entry) {
+    if (!entry) return [];
+    if (entry.historial && entry.historial.length) return entry.historial;
+    return [createSeguimientoItem({
+      at: entry.createdAt,
+      fecha: entry.fecha,
+      hora: entry.hora,
+      paso: 'REGISTRO',
+      estado: entry.estado || 'PENDIENTE',
+      nota: entry.detalle || 'Registro inicial',
+      por: entry.choferNombre
+    }, entry.choferCompania)];
+  }
+
+  function mergeSeguimientoOnPatch(old, patch, updatedBy) {
+    var hist = (old.historial || []).slice();
+    var compania = old.choferCompania || '';
+    var por = updatedBy || patch.updatedBy || 'admin';
+    if (patch.estado && patch.estado !== old.estado) {
+      hist = appendSeguimiento(hist, {
+        paso: patch.estado,
+        estado: patch.estado,
+        nota: 'Estado actualizado',
+        por: por,
+        compania: compania
+      }, compania);
+    }
+    if (patch.convocadoAt && Number(patch.convocadoAt) !== Number(old.convocadoAt || 0)) {
+      hist = appendSeguimiento(hist, {
+        paso: 'CONVOCADO',
+        estado: patch.estado || old.estado,
+        nota: 'Convocado a ventana de atención',
+        por: por,
+        compania: compania
+      }, compania);
+    }
+    if (patch.horaLimite && patch.horaLimite !== old.horaLimite) {
+      hist = appendSeguimiento(hist, {
+        paso: 'HORA_LIMITE',
+        estado: old.estado,
+        nota: 'Hora límite: ' + patch.horaLimite,
+        por: por,
+        compania: compania
+      }, compania);
+    }
+    return hist;
+  }
+
+  function normalizeHistorialItem(raw) {
+    if (!raw || typeof raw !== 'object') return null;
+    return createSeguimientoItem(raw, raw.compania);
+  }
+
   function normalizeEntry(raw) {
     if (!raw || typeof raw !== 'object') return null;
     var estado = String(raw.estado || 'PENDIENTE').toUpperCase();
     if (estado === 'VALIDADO') estado = 'COMPLETADO';
     var tipo = raw.tipo || TIPOS.DESPACHO;
     if (!TIPO_LABELS[tipo]) tipo = TIPOS.DESPACHO;
-    return {
+    var entry = {
       id: raw.id || (Date.now() + '-' + Math.random().toString(36).slice(2, 7)),
       turno: raw.turno || formatTurno(0),
       fecha: raw.fecha || todayKey(),
@@ -56,6 +170,7 @@
       createdAt: Number(raw.createdAt) || Date.now(),
       tipo: tipo,
       choferNombre: String(raw.choferNombre || '').trim(),
+      choferCompania: String(raw.choferCompania || '').trim(),
       idsCarga: String(raw.idsCarga || raw.qrContent || '').trim(),
       cantidadViajes: raw.cantidadViajes != null ? Number(raw.cantidadViajes) : null,
       detalle: String(raw.detalle || '').trim(),
@@ -65,8 +180,13 @@
       updatedBy: String(raw.updatedBy || '').trim(),
       prioridad: !!raw.prioridad,
       horaLimite: String(raw.horaLimite || '').trim(),
-      prioridadAutorizadaPor: String(raw.prioridadAutorizadaPor || '').trim()
+      prioridadAutorizadaPor: String(raw.prioridadAutorizadaPor || '').trim(),
+      historial: Array.isArray(raw.historial)
+        ? raw.historial.map(normalizeHistorialItem).filter(Boolean)
+        : []
     };
+    entry.historial = ensureSeguimiento(entry);
+    return entry;
   }
 
   /** PIN turnos prioritarios: nacimiento Juan Pablo Duarte — 26/01/1813 */
@@ -222,24 +342,34 @@
 
   function buildDetalle(payload) {
     var nombre = String(payload.choferNombre || '').trim();
+    var compania = String(payload.choferCompania || '').trim();
     var base = '';
+    if (compania) base = 'Compañía: ' + compania + ' · ';
     if (payload.tipo === TIPOS.DESPACHO) {
-      base = 'Chofer: ' + nombre + ' · ID carga: ' + String(payload.idsCarga || '').trim();
+      base += 'Chofer: ' + nombre + ' · ID carga: ' + String(payload.idsCarga || '').trim();
     } else if (payload.tipo === TIPOS.LIQUIDACION) {
-      base = 'Chofer: ' + nombre + ' · Viajes: ' + String(payload.cantidadViajes || '');
+      base += 'Chofer: ' + nombre + ' · Viajes: ' + String(payload.cantidadViajes || '');
     } else if (payload.tipo === TIPOS.NOTA_CREDITO) {
-      base = 'Chofer: ' + nombre + ' · Nota de crédito';
+      base += 'Chofer: ' + nombre + ' · Nota de crédito';
     } else {
-      base = nombre;
+      base += nombre;
     }
     if (payload.prioridad) base += ' · PRIORIDAD';
     if (payload.horaLimite) base += ' · Límite ' + payload.horaLimite;
     return base;
   }
 
+  function seguimientoResumen(entry) {
+    return ensureSeguimiento(entry).map(function (h) {
+      return formatFechaDisplay(h.fecha) + ' ' + h.hora + ' — ' + pasoLabel(h.paso) +
+        (h.compania ? ' (' + h.compania + ')' : '');
+    }).join(' | ');
+  }
+
   function createTurn(counter, payload) {
     var now = new Date();
     payload = payload || {};
+    var compania = String(payload.choferCompania || '').trim();
     return normalizeEntry({
       id: String(now.getTime()) + '-' + Math.random().toString(36).slice(2, 7),
       turno: formatTurno(counter),
@@ -248,13 +378,21 @@
       createdAt: now.getTime(),
       tipo: payload.tipo || TIPOS.DESPACHO,
       choferNombre: payload.choferNombre,
+      choferCompania: compania,
       idsCarga: payload.idsCarga,
       cantidadViajes: payload.cantidadViajes,
       detalle: buildDetalle(payload),
       estado: 'PENDIENTE',
       prioridad: !!payload.prioridad,
       horaLimite: String(payload.horaLimite || '').trim(),
-      prioridadAutorizadaPor: payload.prioridad ? String(payload.prioridadAutorizadaPor || 'admin').trim() : ''
+      prioridadAutorizadaPor: payload.prioridad ? String(payload.prioridadAutorizadaPor || 'admin').trim() : '',
+      historial: [createSeguimientoItem({
+        paso: 'REGISTRO',
+        estado: 'PENDIENTE',
+        nota: 'Turno registrado por el chofer',
+        por: payload.choferNombre,
+        compania: compania
+      }, compania)]
     });
   }
 
@@ -334,11 +472,29 @@
     } catch (e) { /* noop */ }
   }
 
+  function rememberChoferCompania(name) {
+    var ss = sessionStore();
+    if (!ss) return;
+    try {
+      ss.setItem(CHOFER_COMPANIA_KEY, String(name || '').trim());
+    } catch (e) { /* noop */ }
+  }
+
   function getRememberedChoferName() {
     var ss = sessionStore();
     if (!ss) return '';
     try {
       return ss.getItem(CHOFER_NAME_KEY) || '';
+    } catch (e) {
+      return '';
+    }
+  }
+
+  function getRememberedChoferCompania() {
+    var ss = sessionStore();
+    if (!ss) return '';
+    try {
+      return ss.getItem(CHOFER_COMPANIA_KEY) || '';
     } catch (e) {
       return '';
     }
@@ -393,7 +549,16 @@
     playBeep: playBeep,
     todayKey: todayKey,
     rememberChoferName: rememberChoferName,
+    rememberChoferCompania: rememberChoferCompania,
     getRememberedChoferName: getRememberedChoferName,
+    getRememberedChoferCompania: getRememberedChoferCompania,
+    formatFechaDisplay: formatFechaDisplay,
+    formatFechaHora: formatFechaHora,
+    pasoLabel: pasoLabel,
+    ensureSeguimiento: ensureSeguimiento,
+    mergeSeguimientoOnPatch: mergeSeguimientoOnPatch,
+    seguimientoResumen: seguimientoResumen,
+    COMPANIAS_CHOFER: COMPANIAS_CHOFER,
     statusClass: statusClass,
     normalizeEntry: normalizeEntry,
     ventanaLabel: ventanaLabel,

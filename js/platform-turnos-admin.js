@@ -77,7 +77,46 @@
 
   function formatUpdated(entry) {
     if (!entry.updatedAt) return '—';
-    return new Date(entry.updatedAt).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+    var d = new Date(entry.updatedAt);
+    return C().formatFechaDisplay(C().todayKey(d)) + ' ' + d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  function closeSeguimientoModal() {
+    var el = document.getElementById('turnosSeguimientoOverlay');
+    if (el) el.remove();
+    document.body.classList.remove('turnos-seg-open');
+  }
+
+  function showSeguimientoModal(entry) {
+    if (!entry) return;
+    closeSeguimientoModal();
+    var steps = C().ensureSeguimiento(entry).map(function (h, i) {
+      return (
+        '<li class="turnos-seg-step">' +
+        '<span class="turnos-seg-step-num">' + (i + 1) + '</span>' +
+        '<div class="turnos-seg-step-body">' +
+        '<strong>' + esc(C().pasoLabel(h.paso)) + '</strong>' +
+        '<span class="turnos-seg-step-date turnos-mono">' + esc(C().formatFechaDisplay(h.fecha)) + ' · ' + esc(h.hora) + '</span>' +
+        '<span class="turnos-seg-step-meta">Compañía: <strong>' + esc(h.compania || entry.choferCompania || '—') + '</strong></span>' +
+        (h.por ? '<span class="turnos-seg-step-meta">Por: ' + esc(h.por) + '</span>' : '') +
+        (h.nota ? '<span class="turnos-seg-step-note">' + esc(h.nota) + '</span>' : '') +
+        '</div></li>'
+      );
+    }).join('');
+    var overlay = document.createElement('div');
+    overlay.id = 'turnosSeguimientoOverlay';
+    overlay.className = 'turnos-seg-overlay';
+    overlay.innerHTML =
+      '<div class="turnos-seg-card" role="dialog" aria-labelledby="turnosSegTitle">' +
+      '<h3 id="turnosSegTitle">Seguimiento ' + esc(entry.turno) + '</h3>' +
+      '<p class="turnos-sub">' + esc(entry.choferNombre) + ' · ' + esc(entry.choferCompania || '—') + '</p>' +
+      '<ol class="turnos-seg-timeline">' + steps + '</ol>' +
+      '<button type="button" class="turnos-btn turnos-btn--secondary turnos-btn--xl" data-seg-close>Cerrar</button></div>';
+    document.body.appendChild(overlay);
+    document.body.classList.add('turnos-seg-open');
+    overlay.addEventListener('click', function (ev) {
+      if (ev.target === overlay || ev.target.closest('[data-seg-close]')) closeSeguimientoModal();
+    });
   }
 
   function limiteCell(e, compact, readonly) {
@@ -110,15 +149,18 @@
       } else if (!compact) {
         tail =
           '<td class="turnos-mono turnos-muted-inline">' + esc(formatUpdated(e)) + '</td>' +
-          '<td class="turnos-actions-cell">' + convocarBtn(e) + ' ' + statusSelect(e) + '</td>';
+          '<td class="turnos-actions-cell">' +
+          '<button type="button" class="turnos-btn turnos-btn--secondary turnos-btn--sm" data-seguimiento-id="' + esc(e.id) + '">Seguimiento</button> ' +
+          convocarBtn(e) + ' ' + statusSelect(e) + '</td>';
       }
       return '<tr class="' + (e.prioridad ? 'turnos-row--priority' : '') + '">' +
         '<td class="turnos-mono turnos-turno">' + esc(e.turno) +
         (e.prioridad ? '<br>' + C().priorityBadgeHtml(e) : '') + '</td>' +
         (compact ? '<td>' + esc(C().TIPO_LABELS[e.tipo] || e.tipo) + '</td>' : '') +
+        '<td class="turnos-mono turnos-fecha-cell">' + esc(C().formatFechaDisplay(e.fecha)) + '<br><span class="turnos-muted-inline">' + esc(e.hora) + '</span></td>' +
         '<td>' + esc(e.choferNombre || '—') + '</td>' +
+        '<td>' + esc(e.choferCompania || '—') + '</td>' +
         '<td class="turnos-qr-cell" title="' + esc(e.detalle) + '">' + esc(e.detalle) + '</td>' +
-        '<td class="turnos-mono">' + esc(e.hora) + '</td>' +
         '<td>' + convocado + statusBadge(e.estado) + '</td>' +
         (!compact ? limiteCell(e, compact, readonly) : '') +
         tail +
@@ -128,7 +170,7 @@
     var head =
       '<th>Turno</th>' +
       (compact ? '<th>Trámite</th>' : '') +
-      '<th>Chofer</th><th>Detalle</th><th>Hora</th><th>Estado</th>' +
+      '<th>Fecha</th><th>Chofer</th><th>Compañía</th><th>Detalle</th><th>Estado</th>' +
       (!compact ? '<th>Hora límite</th>' : '') +
       (!compact && readonly ? '<th>Cancelado por</th>' : '') +
       (!compact && !readonly ? '<th>Actualizado</th><th>Gestionar</th>' : '');
@@ -295,14 +337,16 @@
     return S().getState().entries.map(function (e) {
       return {
         Turno: e.turno,
-        Fecha: e.fecha,
+        Fecha: C().formatFechaDisplay(e.fecha),
         Hora: e.hora,
         Trámite: C().TIPO_LABELS[e.tipo] || e.tipo,
+        Compañía: e.choferCompania || '',
         Chofer: e.choferNombre,
         Detalle: e.detalle,
         Estado: e.estado,
         Prioridad: e.prioridad ? 'Sí' : 'No',
         'Hora límite': e.horaLimite || '',
+        Seguimiento: C().seguimientoResumen(e),
         Convocado: e.convocadoAt ? new Date(e.convocadoAt).toLocaleString('es-ES') : '',
         Actualizado: e.updatedAt ? new Date(e.updatedAt).toLocaleString('es-ES') : '',
         Por: e.updatedBy || ''
@@ -373,6 +417,13 @@
           }
           refresh();
         });
+        return;
+      }
+      var segBtn = ev.target.closest('[data-seguimiento-id]');
+      if (segBtn) {
+        var sid = segBtn.getAttribute('data-seguimiento-id');
+        var entry = S().findById(sid);
+        if (entry) showSeguimientoModal(entry);
         return;
       }
       var convBtn = ev.target.closest('[data-convocar-id]');

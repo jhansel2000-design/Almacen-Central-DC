@@ -132,11 +132,16 @@
       var found = null;
       remote.entries = remote.entries.map(function (e) {
         if (e.id !== id) return e;
-        found = Object.assign({}, e, patch, {
+        var merged = Object.assign({}, e, patch, {
           updatedAt: Date.now(),
           updatedBy: updatedBy || patch.updatedBy || e.updatedBy || 'admin'
         });
-        return C().normalizeEntry(found);
+        merged.historial = C().mergeSeguimientoOnPatch(e, patch, updatedBy || patch.updatedBy || 'admin');
+        if (merged.historial.length <= (e.historial || []).length) {
+          merged.historial = e.historial || merged.historial;
+        }
+        found = C().normalizeEntry(merged);
+        return found;
       });
       if (!found) return Promise.reject(new Error('Turno no encontrado'));
       return pushState(remote).then(function () { return found; });

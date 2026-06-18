@@ -1406,11 +1406,6 @@ body.turnos-admin-mode .turnos-chofer-root { display: none !important; }
 
 .turnos-btn--call:disabled { opacity: 0.6; cursor: wait; }
 
-.turnos-actions-cell {
-  min-width: 150px;
-  vertical-align: top;
-}
-
 .turnos-badge--mini {
   display: inline-block;
   margin-bottom: 0.25rem;
@@ -1420,4 +1415,108 @@ body.turnos-admin-mode .turnos-chofer-root { display: none !important; }
 .turnos-muted-inline {
   color: var(--turnos-muted);
   font-size: 0.85rem;
+}
+
+.turnos-fecha-cell {
+  white-space: nowrap;
+  font-size: 0.82rem;
+}
+
+.turnos-actions-cell {
+  min-width: 200px;
+  vertical-align: top;
+}
+
+/* ——— Seguimiento del turno ——— */
+body.turnos-seg-open {
+  overflow: hidden;
+}
+
+.turnos-seg-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 250;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  background: rgba(0, 36, 78, 0.72);
+  backdrop-filter: blur(4px);
+}
+
+.turnos-seg-card {
+  width: min(100%, 480px);
+  max-height: min(88vh, 640px);
+  overflow: auto;
+  padding: 1.5rem;
+  border-radius: 16px;
+  border: 2px solid var(--bp-blue-light);
+  background: #fff;
+  box-shadow: 0 16px 48px rgba(0, 42, 92, 0.22);
+}
+
+.turnos-seg-card h3 {
+  margin: 0;
+  color: var(--bp-blue);
+  font-size: 1.25rem;
+}
+
+.turnos-seg-timeline {
+  list-style: none;
+  margin: 1.25rem 0;
+  padding: 0;
+}
+
+.turnos-seg-step {
+  display: flex;
+  gap: 0.85rem;
+  padding: 0.85rem 0;
+  border-bottom: 1px solid var(--turnos-border);
+}
+
+.turnos-seg-step:last-child {
+  border-bottom: none;
+}
+
+.turnos-seg-step-num {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--bp-blue-light);
+  color: var(--bp-blue);
+  font-size: 0.82rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.turnos-seg-step-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.turnos-seg-step-body strong {
+  color: var(--bp-blue-dark);
+  font-size: 0.95rem;
+}
+
+.turnos-seg-step-date {
+  font-size: 0.88rem;
+  color: var(--turnos-text);
+  font-weight: 600;
+}
+
+.turnos-seg-step-meta {
+  font-size: 0.85rem;
+  color: var(--turnos-muted);
+}
+
+.turnos-seg-step-note {
+  font-size: 0.82rem;
+  color: var(--turnos-muted);
+  font-style: italic;
 }

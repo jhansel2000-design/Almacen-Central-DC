@@ -87,6 +87,7 @@
   function renderForm(tipo) {
     var label = C().TIPO_LABELS[tipo] || 'Trámite';
     var remembered = esc(C().getRememberedChoferName());
+    var rememberedCompania = C().getRememberedChoferCompania();
     var extra = '';
 
     if (tipo === C().TIPOS.DESPACHO) {
@@ -101,11 +102,22 @@
       extra = '<p class="turnos-hint turnos-hint--info">El turno quedará pendiente hasta que personal autorizado lo confirme y asiente.</p>';
     }
 
+    var companiaOpts = C().COMPANIAS_CHOFER.map(function (c) {
+      var sel = c === rememberedCompania ? ' selected' : '';
+      return '<option value="' + esc(c) + '"' + sel + '>' + esc(c) + '</option>';
+    }).join('');
+    var companiaOtra = rememberedCompania && C().COMPANIAS_CHOFER.indexOf(rememberedCompania) < 0;
+
     return (
       '<section class="turnos-chofer-section turnos-form-panel">' +
       '<button type="button" class="turnos-back-btn" data-chofer-back>Volver</button>' +
       '<h2 class="turnos-form-title">' + esc(label) + '</h2>' +
       '<form id="turnosChoferForm" class="turnos-chofer-form" novalidate>' +
+      '<label class="turnos-field"><span>Compañía de transporte</span>' +
+      '<select class="turnos-input turnos-input--lg" id="turnosFieldCompania" required>' + companiaOpts + '</select></label>' +
+      '<div id="turnosCompaniaOtraWrap" class="turnos-field"' + (companiaOtra ? '' : ' hidden') + '>' +
+      '<span>Nombre de la compañía</span>' +
+      '<input class="turnos-input turnos-input--lg" id="turnosFieldCompaniaOtra" type="text" maxlength="80" value="' + (companiaOtra ? esc(rememberedCompania) : '') + '" placeholder="Escriba el nombre de la compañía"></div>' +
       '<label class="turnos-field"><span>Nombre del chofer</span>' +
       '<input class="turnos-input turnos-input--lg" id="turnosFieldChofer" type="text" required maxlength="80" autocomplete="name" value="' + remembered + '" placeholder="Su nombre completo"></label>' +
       extra +
@@ -147,9 +159,9 @@
       '<div class="turnos-success-icon">✓</div>' +
       '<p class="turnos-success-title">Su turno está registrado</p>' +
       '<p class="turnos-success-turno turnos-mono">' + esc(entry.turno) + '</p>' +
-      '<p class="turnos-success-meta">' + esc(C().TIPO_LABELS[entry.tipo]) + '</p>' +
+      '<p class="turnos-success-meta"><strong>' + esc(entry.choferCompania || '—') + '</strong> · ' + esc(C().TIPO_LABELS[entry.tipo]) + '</p>' +
       '<p class="turnos-success-detail">' + esc(entry.detalle) + '</p>' +
-      '<p class="turnos-success-time">' + esc(entry.fecha) + ' · ' + esc(entry.hora) + '</p>' +
+      '<p class="turnos-success-time">' + esc(C().formatFechaHora(entry)) + '</p>' +
       '<p class="turnos-success-status">' + esc(estadoLabel(entry)) + '</p>' +
       convocado +
       prio +
@@ -293,8 +305,16 @@
       showError('Escriba su nombre.');
       return;
     }
+    var companiaSel = $('turnosFieldCompania') && $('turnosFieldCompania').value;
+    var compania = companiaSel === 'Otra'
+      ? ($('turnosFieldCompaniaOtra') && $('turnosFieldCompaniaOtra').value || '').trim()
+      : String(companiaSel || '').trim();
+    if (!compania) {
+      showError('Indique la compañía de transporte.');
+      return;
+    }
 
-    var payload = { tipo: selectedTipo, choferNombre: chofer };
+    var payload = { tipo: selectedTipo, choferNombre: chofer, choferCompania: compania };
 
     if (selectedTipo === C().TIPOS.DESPACHO) {
       payload.idsCarga = ($('turnosFieldCarga') && $('turnosFieldCarga').value || '').trim();
@@ -350,6 +370,10 @@
       if (ev.target.id === 'turnosFieldPrioridad') {
         var wrap = $('turnosPriorityPinWrap');
         if (wrap) wrap.hidden = !ev.target.checked;
+      }
+      if (ev.target.id === 'turnosFieldCompania') {
+        var otraWrap = $('turnosCompaniaOtraWrap');
+        if (otraWrap) otraWrap.hidden = ev.target.value !== 'Otra';
       }
     });
 
