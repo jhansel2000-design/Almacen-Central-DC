@@ -1146,6 +1146,43 @@ body.turnos-body.turnos-auth-open {
 
 .turnos-row--priority { background: #fffbeb; }
 
+.turnos-panel--queue {
+  border-color: rgba(0, 56, 130, 0.28);
+  box-shadow: 0 4px 18px rgba(0, 56, 130, 0.08);
+}
+
+.turnos-panel--queue h2,
+.turnos-panel--queue h3 {
+  color: var(--bp-blue);
+}
+
+.turnos-panel--nested {
+  margin-top: 1rem;
+  padding: 0.85rem 1rem;
+  background: #f8fbff;
+}
+
+.turnos-panel--closed {
+  background: #fafbfc;
+}
+
+.turnos-row--next {
+  background: #e8f4ff !important;
+  box-shadow: inset 3px 0 0 var(--bp-blue);
+}
+
+.turnos-badge--next {
+  display: inline-block;
+  margin-top: 0.2rem;
+  background: var(--bp-blue);
+  color: #fff;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.turnos-table-wrap--queue { margin-top: 0.35rem; }
+
 .turnos-priority-block {
   margin: 1rem 0;
   padding: 0.85rem;

@@ -366,14 +366,34 @@
     return normalizePriorityPin(pin) === PRIORITY_PIN;
   }
 
-  function sortEntries(entries) {
+  function attendanceRank(entry) {
+    if (!entry) return 99;
+    if (entry.estado === 'PENDIENTE') return 0;
+    if (entry.estado === 'EN_PROCESO' || entry.estado === 'CONFIRMADO') return 1;
+    if (entry.estado === 'COMPLETADO' || entry.estado === 'ASENTADO') return 2;
+    if (entry.estado === 'CANCELADO') return 3;
+    return 4;
+  }
+
+  /** Cola de atención: pendientes arriba (FIFO), prioritarios adelante; cerrados abajo. */
+  function sortForAttendanceQueue(entries) {
     return (entries || []).slice().sort(function (a, b) {
-      if (a.prioridad !== b.prioridad) return a.prioridad ? -1 : 1;
-      return (b.createdAt || 0) - (a.createdAt || 0);
+      var ra = attendanceRank(a);
+      var rb = attendanceRank(b);
+      if (ra !== rb) return ra - rb;
+      if (!!a.prioridad !== !!b.prioridad) return a.prioridad ? -1 : 1;
+      var ta = Number(a.createdAt) || 0;
+      var tb = Number(b.createdAt) || 0;
+      if (ta !== tb) return ta - tb;
+      return String(a.turno || '').localeCompare(String(b.turno || ''));
     });
   }
 
-  /** Orden de llegada: prioritarios primero, luego el que llegó antes. */
+  function sortEntries(entries) {
+    return sortForAttendanceQueue(entries);
+  }
+
+  /** Orden de llegada cronológico (prioritarios adelante). */
   function sortByArrivalOrder(entries) {
     return (entries || []).slice().sort(function (a, b) {
       if (!!a.prioridad !== !!b.prioridad) return a.prioridad ? -1 : 1;
@@ -771,6 +791,7 @@
     priorityPinHint: priorityPinHint,
     sortEntries: sortEntries,
     sortByArrivalOrder: sortByArrivalOrder,
+    sortForAttendanceQueue: sortForAttendanceQueue,
     latestEntry: latestEntry,
     priorityBadgeHtml: priorityBadgeHtml,
     VENTANA_LABELS: VENTANA_LABELS

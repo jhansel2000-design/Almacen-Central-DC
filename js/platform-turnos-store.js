@@ -23,7 +23,7 @@
 
   function applyRemote(data) {
     if (!data) return;
-    shared.entries = C().sortEntries(data.entries || []);
+    shared.entries = C().sortForAttendanceQueue(data.entries || []);
     shared.counter = Number(data.counter) || 0;
     shared.dashboardDay = String(data.dashboardDay || data.operatingDay || '').trim();
     shared.autoResetDashboard = data.autoResetDashboard !== false;
@@ -37,7 +37,7 @@
     var idx = shared.entries.findIndex(function (e) { return e.id === entry.id; });
     if (idx >= 0) shared.entries[idx] = entry;
     else shared.entries.unshift(entry);
-    shared.entries = C().sortEntries(shared.entries);
+    shared.entries = C().sortForAttendanceQueue(shared.entries);
     shared.counter = Math.max(
       shared.counter,
       parseInt(String(entry.turno || '').replace(/\D/g, ''), 10) || 0
