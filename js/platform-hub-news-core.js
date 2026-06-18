@@ -5,7 +5,7 @@
   'use strict';
 
   var LS_KEY = 'almacen_hub_news';
-  var SEED_VERSION = 5;
+  var SEED_VERSION = 6;
 
   function refreshSeedCopy(items) {
     var seeds = defaultSeedItems();
@@ -64,9 +64,9 @@
       },
       {
         id: 'seed_portal_turnos',
-        title: 'Próximamente: Control de Turnos',
-        body: 'Llegas, pides tu turno en segundos y listo.\nSin filas. Sin confusión. Choferes entran más rápido — despacho más fuerte.',
-        publishedAt: '2026-06-17T15:00:00.000Z',
+        title: 'Control de Turnos de Despacho',
+        body: 'Qué puedes hacer:\n• Elegir trámite: despacho, liquidación o nota de crédito\n• Pedir turno desde el celular sin hacer fila\n• Recibir aviso con voz y alarma cuando sea su turno\n\nCarteles para imprimir (código QR y pasos): carpeta «Turnos-Imprimir-DC» en el Escritorio de esta PC — no están publicados en la web.',
+        publishedAt: '2026-06-16T10:00:00.000Z',
         publishedBy: 'Almacén Central DC',
         active: true,
         pinned: true,
