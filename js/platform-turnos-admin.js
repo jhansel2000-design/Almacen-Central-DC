@@ -334,8 +334,25 @@
 
   function validacionLiteHeroHtml(count, userName) {
     var label = count === 1 ? 'solicitud pendiente' : 'solicitudes pendientes';
+    var guide = count > 0
+      ? '<div class="turnos-lite-guide">' +
+        '<p class="turnos-lite-guide__title">Cómo validar</p>' +
+        '<ol class="turnos-lite-guide__steps">' +
+        '<li><strong>Verifique</strong> que el chofer está en el almacén</li>' +
+        '<li><strong>Prioritario</strong> solo si debe adelantar en cola</li>' +
+        '<li>Toque <strong>Validar presencia</strong> para asignar T-XXXX</li>' +
+        '</ol></div>'
+      : '';
     return (
+      '<div class="turnos-lite-shell">' +
       '<div class="turnos-lite-hero">' +
+      '<div class="turnos-lite-hero__bar">' +
+      '<span class="turnos-lite-hero__brand">Turnos Supervisor</span>' +
+      '<div class="turnos-lite-hero__tools">' +
+      '<button type="button" class="turnos-lite-tool-btn" data-admin-action="refresh-validacion" title="Actualizar">↻</button>' +
+      '<button type="button" class="turnos-lite-tool-btn turnos-lite-tool-btn--logout" data-admin-action="logout">Salir</button>' +
+      '</div></div>' +
+      '<div class="turnos-lite-hero__body">' +
       '<div class="turnos-lite-hero__main">' +
       '<p class="turnos-lite-hero__greet">Hola, <strong>' + esc(userName || 'Supervisor') + '</strong></p>' +
       '<div class="turnos-lite-hero__stat' + (count > 0 ? ' turnos-lite-hero__stat--alert' : '') + '">' +
@@ -344,14 +361,9 @@
       '<div class="turnos-lite-hero__clock">' +
       '<span class="turnos-lite-hero__clock-time turnos-mono" id="turnosLiteClockTime">--:--</span>' +
       '<span class="turnos-lite-hero__clock-date" id="turnosLiteClockDate">—</span>' +
-      '</div></div>' +
-      '<div class="turnos-lite-guide">' +
-      '<p class="turnos-lite-guide__title">Cómo validar</p>' +
-      '<ol class="turnos-lite-guide__steps">' +
-      '<li><strong>Verifique</strong> que el chofer está en el almacén</li>' +
-      '<li><strong>Prioritario</strong> solo si debe adelantar en cola</li>' +
-      '<li>Toque <strong>Validar presencia</strong> para asignar T-XXXX</li>' +
-      '</ol></div>'
+      '</div></div></div>' +
+      guide +
+      '</div>'
     );
   }
 
@@ -475,7 +487,7 @@
     });
     var titles = {
       dashboard: 'Resumen — ' + C().formatFechaDisplay(C().todayKey()),
-      validacion: 'Validar turnos — presencia en almacén',
+      validacion: isSupervisorLite() ? 'Validar turnos' : 'Validar turnos — presencia en almacén',
       despacho: 'Despacho de facturas',
       liquidacion: 'Liquidación de facturas',
       nota_credito: 'Nota de crédito',

@@ -20,7 +20,7 @@
   <link rel="stylesheet" href="css/auth-cinematic.css?v=19">
   <link rel="stylesheet" href="css/auth-security.css?v=3">
   <link rel="stylesheet" href="css/dc-brand.css?v=11">
-  <link rel="stylesheet" href="css/turnos-portal.css?v=32">
+  <link rel="stylesheet" href="css/turnos-portal.css?v=33">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
@@ -47,7 +47,6 @@
           <button type="button" class="turnos-btn turnos-btn--primary turnos-btn--xl" id="turnosPwaAuthInstallBtn">Descargar app supervisor</button>
           <button type="button" class="turnos-btn turnos-btn--secondary turnos-btn--xl" id="turnosPwaAuthCopyBtn">Copiar enlace</button>
         </div>
-        <a href="turnos-apps.html" class="turnos-cross-app__hub">Ver chofer + supervisor juntas →</a>
       </div>
       <form id="turnosAuthForm" class="turnos-auth-form" novalidate action="#" method="post">
         <label class="turnos-field"><span>Usuario</span>
@@ -60,23 +59,6 @@
         <button type="submit" class="turnos-btn turnos-btn--primary turnos-btn--xl" id="turnosAuthSubmit">Entrar</button>
         <p id="turnosAuthError" class="turnos-form-error" role="alert" hidden></p>
       </form>
-      <div class="turnos-cross-app turnos-cross-app--chofer" id="turnosCrossAppChofer">
-        <p class="turnos-cross-app__eyebrow">También en el mismo teléfono</p>
-        <div class="turnos-cross-app__head">
-          <img src="assets/img/icon-turnos-portal.svg?v=14" alt="" width="44" height="44">
-          <div>
-            <strong>Turnos Chofer</strong>
-            <span>Icono aparte — solicitar turno y recibir alertas</span>
-            <span class="turnos-cross-app__badge" data-pwa-cross-badge hidden>Instalada ✓</span>
-          </div>
-        </div>
-        <div class="turnos-cross-app__actions">
-          <button type="button" class="turnos-btn turnos-btn--primary turnos-btn--xl" data-pwa-cross-install>Instalar app chofer</button>
-          <a href="turnos.html" class="turnos-btn turnos-btn--secondary turnos-btn--xl">Abrir chofer</a>
-          <button type="button" class="turnos-btn turnos-btn--secondary turnos-btn--xl" data-pwa-cross-copy>Copiar enlace chofer</button>
-        </div>
-        <a href="turnos-apps.html" class="turnos-cross-app__hub">Ver las 2 apps organizadas →</a>
-      </div>
       <a href="index.html" class="turnos-back-btn turnos-back-btn--center">← Volver al mando</a>
     </div>
   </div>
@@ -195,7 +177,7 @@
   <script src="js/platform-turnos-sync.js?v=13"></script>
   <script src="js/platform-turnos-store.js?v=15"></script>
   <script src="js/platform-turnos-alerts.js?v=5"></script>
-  <script src="js/platform-turnos-admin.js?v=27"></script>
+  <script src="js/platform-turnos-admin.js?v=28"></script>
   <script src="js/platform-turnos-pwa.js?v=6"></script>
   <script src="js/platform-turnos-app.js?v=9"></script>
 </body>

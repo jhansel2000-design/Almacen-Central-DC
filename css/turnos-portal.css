@@ -2400,15 +2400,78 @@ body.turnos-seg-open {
 
 .turnos-lite-hero {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 0.75rem;
-  margin-bottom: 0.85rem;
-  padding: 1rem;
+  flex-direction: column;
+  gap: 0;
+  margin-bottom: 0.75rem;
   border-radius: 16px;
   background: linear-gradient(135deg, var(--bp-blue) 0%, var(--bp-blue-dark) 100%);
   color: #fff;
   box-shadow: var(--turnos-shadow-lg);
+  overflow: hidden;
+}
+
+.turnos-lite-shell {
+  margin: 0 0 0.5rem;
+}
+
+.turnos-lite-hero__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.55rem 0.75rem;
+  background: rgba(0, 0, 0, 0.12);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.turnos-lite-hero__brand {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.92;
+}
+
+.turnos-lite-hero__tools {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.turnos-lite-tool-btn {
+  min-width: 40px;
+  min-height: 36px;
+  padding: 0.35rem 0.65rem;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.turnos-lite-tool-btn:first-child {
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.turnos-lite-tool-btn--logout {
+  font-size: 0.78rem;
+}
+
+.turnos-lite-hero__body {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem 1rem;
+}
+
+.turnos-lite-hero__main {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .turnos-lite-hero__greet {
@@ -2459,7 +2522,7 @@ body.turnos-seg-open {
 }
 
 .turnos-lite-guide {
-  margin-bottom: 1rem;
+  margin-bottom: 0.75rem;
   padding: 0.85rem 1rem;
   border-radius: 12px;
   background: #fff;
@@ -2508,27 +2571,25 @@ body.turnos-supervisor-lite {
   background: #e8eef5;
 }
 
+body.turnos-supervisor-lite .turnos-topbar,
 body.turnos-supervisor-lite .turnos-topbar--supervisor {
-  position: sticky;
-  top: 0;
-  z-index: 50;
-  padding: max(0.65rem, env(safe-area-inset-top)) 0.85rem 0.65rem;
-  background: rgba(255, 255, 255, 0.96);
-  backdrop-filter: blur(8px);
-  border-bottom: 1px solid var(--turnos-border);
-  box-shadow: 0 2px 12px rgba(0, 56, 130, 0.06);
+  display: none !important;
 }
 
-body.turnos-supervisor-lite .turnos-top-title {
-  font-size: 1.05rem;
-}
-
-body.turnos-supervisor-lite .turnos-lite-refresh {
-  color: var(--bp-blue);
+body.turnos-supervisor-lite .turnos-main-wrap {
+  width: 100%;
+  margin: 0;
+  padding-bottom: 0;
 }
 
 body.turnos-supervisor-lite .turnos-main {
-  padding: 0.75rem max(0.75rem, env(safe-area-inset-left)) 1.25rem max(0.75rem, env(safe-area-inset-right));
+  padding: max(0.5rem, env(safe-area-inset-top)) max(0.75rem, env(safe-area-inset-right)) 1.25rem max(0.75rem, env(safe-area-inset-left));
+}
+
+body.turnos-supervisor-lite .turnos-sidebar,
+body.turnos-supervisor-lite .turnos-mobile-nav,
+body.turnos-supervisor-lite [data-turnos-nav-full-only] {
+  display: none !important;
 }
 
 body.turnos-supervisor-lite .turnos-val-card {
@@ -2542,86 +2603,8 @@ body.turnos-supervisor-lite .turnos-val-cards {
   gap: 1rem;
 }
 
-body.turnos-supervisor-lite .turnos-sidebar,
-body.turnos-supervisor-lite .turnos-mobile-nav,
-body.turnos-supervisor-lite [data-turnos-nav-full-only] {
-  display: none !important;
-}
-
-body.turnos-supervisor-lite .turnos-main-wrap {
-  width: 100%;
-  margin: 0;
-  padding-bottom: env(safe-area-inset-bottom);
-}
-
-body.turnos-supervisor-lite .turnos-main {
-  padding: 0.85rem max(0.85rem, env(safe-area-inset-left)) 1rem max(0.85rem, env(safe-area-inset-right));
-}
-
-body.turnos-supervisor-lite .turnos-topbar {
-  flex-wrap: nowrap;
-  align-items: center;
-  gap: 0.65rem;
-  padding: max(0.75rem, env(safe-area-inset-top)) 0.85rem 0.75rem;
-}
-
-body.turnos-supervisor-lite .turnos-topbar__main {
-  flex: 1 1 auto;
-  min-width: 0;
-  position: relative;
-}
-
-body.turnos-supervisor-lite .turnos-top-title {
-  font-size: 1.15rem;
-  margin: 0;
-}
-
-body.turnos-supervisor-lite .turnos-top-eyebrow--full,
-body.turnos-supervisor-full .turnos-top-eyebrow--lite,
-body.turnos-supervisor-full .turnos-lite-logout,
-body.turnos-supervisor-full .turnos-lite-pending-badge {
-  display: none !important;
-}
-
-body.turnos-supervisor-lite .turnos-top-eyebrow--lite {
-  display: block;
-}
-
-body.turnos-supervisor-lite .turnos-clock--full {
-  display: none;
-}
-
-body.turnos-supervisor-lite .turnos-lite-logout {
-  flex-shrink: 0;
-  min-height: 40px;
-}
-
-body.turnos-supervisor-lite .turnos-lite-pending-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 1.5rem;
-  margin-left: 0.35rem;
-  padding: 0.15rem 0.45rem;
-  border-radius: 999px;
-  background: var(--turnos-red);
-  color: #fff;
-  font-size: 0.75rem;
-  font-weight: 800;
-  vertical-align: middle;
-}
-
-body.turnos-supervisor-lite .turnos-lite-pending-badge[hidden] {
-  display: none !important;
-}
-
-body.turnos-supervisor-lite .turnos-panel--validacion .turnos-tramite-head img {
-  width: 40px;
-  height: 40px;
-}
-
-body.turnos-supervisor-lite .turnos-panel--validacion h2 {
-  font-size: 1.1rem;
+body.turnos-supervisor-lite .turnos-panel--validacion-lite {
+  margin-top: 0;
 }
 
 body.turnos-supervisor-full .turnos-val-cards {
