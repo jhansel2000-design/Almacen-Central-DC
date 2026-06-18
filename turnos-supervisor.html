@@ -20,12 +20,12 @@
   <link rel="stylesheet" href="css/auth-cinematic.css?v=19">
   <link rel="stylesheet" href="css/auth-security.css?v=3">
   <link rel="stylesheet" href="css/dc-brand.css?v=11">
-  <link rel="stylesheet" href="css/turnos-portal.css?v=28">
+  <link rel="stylesheet" href="css/turnos-portal.css?v=31">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
 </head>
-<body class="turnos-body">
+<body class="turnos-body turnos-auth-open">
   <noscript><p class="turnos-noscript">Activa JavaScript para usar el panel de supervisor.</p></noscript>
 
   <div class="turnos-auth-overlay" id="turnosAuthOverlay" role="dialog" aria-labelledby="turnosAuthTitle">
@@ -34,7 +34,21 @@
         <img src="assets/img/icon-turnos-validacion.svg?v=13" alt="" width="48" height="48">
       </div>
       <h2 id="turnosAuthTitle">Control de Turnos — Supervisor</h2>
-      <p class="turnos-auth-sub">Validar solicitudes y gestionar colas</p>
+      <p class="turnos-auth-sub">En celular: validar turnos · En PC: panel completo</p>
+      <div class="turnos-pwa-auth-install" id="turnosPwaAuthInstallBlock">
+        <div class="turnos-pwa-auth-install__head">
+          <img src="assets/img/icon-turnos-validacion.svg?v=14" alt="" width="48" height="48">
+          <div>
+            <strong>Descargar acceso directo</strong>
+            <span>Instale la app «Turnos Supervisor» en su pantalla de inicio</span>
+          </div>
+        </div>
+        <div class="turnos-pwa-auth-install__actions">
+          <button type="button" class="turnos-btn turnos-btn--primary turnos-btn--xl" id="turnosPwaAuthInstallBtn">Descargar app supervisor</button>
+          <button type="button" class="turnos-btn turnos-btn--secondary turnos-btn--xl" id="turnosPwaAuthCopyBtn">Copiar enlace</button>
+        </div>
+        <a href="turnos-apps.html" class="turnos-cross-app__hub">Ver chofer + supervisor juntas →</a>
+      </div>
       <form id="turnosAuthForm" class="turnos-auth-form" novalidate action="#" method="post">
         <label class="turnos-field"><span>Usuario</span>
           <input id="turnosAuthUsername" class="turnos-input" type="text" autocomplete="username" maxlength="64" required></label>
@@ -46,6 +60,23 @@
         <button type="submit" class="turnos-btn turnos-btn--primary turnos-btn--xl" id="turnosAuthSubmit">Entrar</button>
         <p id="turnosAuthError" class="turnos-form-error" role="alert" hidden></p>
       </form>
+      <div class="turnos-cross-app turnos-cross-app--chofer" id="turnosCrossAppChofer">
+        <p class="turnos-cross-app__eyebrow">También en el mismo teléfono</p>
+        <div class="turnos-cross-app__head">
+          <img src="assets/img/icon-turnos-portal.svg?v=14" alt="" width="44" height="44">
+          <div>
+            <strong>Turnos Chofer</strong>
+            <span>Icono aparte — solicitar turno y recibir alertas</span>
+            <span class="turnos-cross-app__badge" data-pwa-cross-badge hidden>Instalada ✓</span>
+          </div>
+        </div>
+        <div class="turnos-cross-app__actions">
+          <button type="button" class="turnos-btn turnos-btn--primary turnos-btn--xl" data-pwa-cross-install>Instalar app chofer</button>
+          <a href="turnos.html" class="turnos-btn turnos-btn--secondary turnos-btn--xl">Abrir chofer</a>
+          <button type="button" class="turnos-btn turnos-btn--secondary turnos-btn--xl" data-pwa-cross-copy>Copiar enlace chofer</button>
+        </div>
+        <a href="turnos-apps.html" class="turnos-cross-app__hub">Ver las 2 apps organizadas →</a>
+      </div>
       <a href="index.html" class="turnos-back-btn turnos-back-btn--center">← Volver al mando</a>
     </div>
   </div>
@@ -60,36 +91,36 @@
         </div>
       </div>
       <nav class="turnos-nav">
-        <button type="button" class="turnos-nav-item active" data-turnos-nav="dashboard">
+        <button type="button" class="turnos-nav-item" data-turnos-nav="dashboard" data-turnos-nav-full-only>
           <img class="turnos-nav-icon" src="assets/img/icon-turnos-dashboard.svg?v=13" alt="" width="26" height="26">
           <span>Dashboard</span>
         </button>
-        <button type="button" class="turnos-nav-item" data-turnos-nav="validacion">
+        <button type="button" class="turnos-nav-item active" data-turnos-nav="validacion">
           <img class="turnos-nav-icon" src="assets/img/icon-turnos-validacion.svg?v=13" alt="" width="26" height="26">
           <span>Validar turnos</span>
           <span class="turnos-nav-badge" id="turnosNavValidacionBadge" hidden>0</span>
         </button>
-        <button type="button" class="turnos-nav-item" data-turnos-nav="despacho">
+        <button type="button" class="turnos-nav-item" data-turnos-nav="despacho" data-turnos-nav-full-only>
           <img class="turnos-nav-icon" src="assets/img/icon-turnos-despacho.svg?v=13" alt="" width="26" height="26">
           <span>Despacho</span>
         </button>
-        <button type="button" class="turnos-nav-item" data-turnos-nav="liquidacion">
+        <button type="button" class="turnos-nav-item" data-turnos-nav="liquidacion" data-turnos-nav-full-only>
           <img class="turnos-nav-icon" src="assets/img/icon-turnos-liquidacion.svg?v=13" alt="" width="26" height="26">
           <span>Liquidación</span>
         </button>
-        <button type="button" class="turnos-nav-item" data-turnos-nav="nota_credito">
+        <button type="button" class="turnos-nav-item" data-turnos-nav="nota_credito" data-turnos-nav-full-only>
           <img class="turnos-nav-icon" src="assets/img/icon-turnos-nota-credito.svg?v=13" alt="" width="26" height="26">
           <span>Nota crédito</span>
         </button>
-        <button type="button" class="turnos-nav-item" data-turnos-nav="cancelados">
+        <button type="button" class="turnos-nav-item" data-turnos-nav="cancelados" data-turnos-nav-full-only>
           <img class="turnos-nav-icon" src="assets/img/icon-turnos-gestion.svg?v=13" alt="" width="26" height="26">
           <span>Cancelados</span>
         </button>
-        <button type="button" class="turnos-nav-item" data-turnos-nav="export">
+        <button type="button" class="turnos-nav-item" data-turnos-nav="export" data-turnos-nav-full-only>
           <img class="turnos-nav-icon" src="assets/img/icon-turnos-export.svg?v=13" alt="" width="26" height="26">
           <span>Exportar</span>
         </button>
-        <button type="button" class="turnos-nav-item" data-turnos-nav="config">
+        <button type="button" class="turnos-nav-item" data-turnos-nav="config" data-turnos-nav-full-only>
           <img class="turnos-nav-icon" src="assets/img/icon-turnos-config.svg?v=13" alt="" width="26" height="26">
           <span>Configuración</span>
         </button>
@@ -103,19 +134,24 @@
 
     <div class="turnos-main-wrap">
       <header class="turnos-topbar">
-        <div>
-          <p class="turnos-top-eyebrow">Panel supervisor</p>
-          <h2 class="turnos-top-title" id="turnosTopTitle">Resumen del día</h2>
+        <div class="turnos-topbar__main">
+          <p class="turnos-top-eyebrow turnos-top-eyebrow--lite">App supervisor</p>
+          <p class="turnos-top-eyebrow turnos-top-eyebrow--full">Panel supervisor</p>
+          <h2 class="turnos-top-title" id="turnosTopTitle">Validar turnos</h2>
+          <span class="turnos-lite-pending-badge" id="turnosLitePendingBadge" hidden>0</span>
         </div>
-        <div class="turnos-clock">
-          <p id="turnosClockTime" class="turnos-clock-time">--:--:--</p>
-          <p id="turnosClockDate" class="turnos-clock-date">—</p>
-          <p class="turnos-clock-tz">Hora República Dominicana</p>
+        <div class="turnos-topbar__actions">
+          <button type="button" class="turnos-btn turnos-btn--secondary turnos-btn--sm turnos-lite-logout" id="turnosLiteLogoutBtn" data-admin-action="logout">Salir</button>
+          <div class="turnos-clock turnos-clock--full">
+            <p id="turnosClockTime" class="turnos-clock-time">--:--:--</p>
+            <p id="turnosClockDate" class="turnos-clock-date">—</p>
+            <p class="turnos-clock-tz">Hora República Dominicana</p>
+          </div>
         </div>
       </header>
       <main class="turnos-main">
-        <div class="turnos-view" id="turnosViewDashboard" data-module="dashboard"></div>
-        <div class="turnos-view" id="turnosViewValidacion" data-module="validacion" hidden></div>
+        <div class="turnos-view" id="turnosViewDashboard" data-module="dashboard" hidden></div>
+        <div class="turnos-view" id="turnosViewValidacion" data-module="validacion"></div>
         <div class="turnos-view" id="turnosViewDespacho" data-module="despacho" hidden></div>
         <div class="turnos-view" id="turnosViewLiquidacion" data-module="liquidacion" hidden></div>
         <div class="turnos-view" id="turnosViewNota_credito" data-module="nota_credito" hidden></div>
@@ -125,20 +161,24 @@
       </main>
     </div>
 
-    <nav class="turnos-mobile-nav" aria-label="Navegación móvil supervisor">
-      <button type="button" class="turnos-nav-item active" data-turnos-nav="dashboard" title="Dashboard">
+    <nav class="turnos-mobile-nav turnos-mobile-nav--full" aria-label="Navegación móvil supervisor">
+      <button type="button" class="turnos-nav-item" data-turnos-nav="dashboard" data-turnos-nav-full-only title="Dashboard">
         <img class="turnos-nav-icon" src="assets/img/icon-turnos-dashboard.svg?v=13" alt="" width="28" height="28"></button>
-      <button type="button" class="turnos-nav-item" data-turnos-nav="validacion" title="Validar turnos">
+      <button type="button" class="turnos-nav-item active" data-turnos-nav="validacion" title="Validar turnos">
         <img class="turnos-nav-icon" src="assets/img/icon-turnos-validacion.svg?v=13" alt="" width="28" height="28"></button>
-      <button type="button" class="turnos-nav-item" data-turnos-nav="despacho" title="Despacho">
+      <button type="button" class="turnos-nav-item" data-turnos-nav="despacho" data-turnos-nav-full-only title="Despacho">
         <img class="turnos-nav-icon" src="assets/img/icon-turnos-despacho.svg?v=13" alt="" width="28" height="28"></button>
-      <button type="button" class="turnos-nav-item" data-turnos-nav="liquidacion" title="Liquidación">
+      <button type="button" class="turnos-nav-item" data-turnos-nav="liquidacion" data-turnos-nav-full-only title="Liquidación">
         <img class="turnos-nav-icon" src="assets/img/icon-turnos-liquidacion.svg?v=13" alt="" width="28" height="28"></button>
-      <button type="button" class="turnos-nav-item" data-turnos-nav="nota_credito" title="Nota crédito">
+      <button type="button" class="turnos-nav-item" data-turnos-nav="nota_credito" data-turnos-nav-full-only title="Nota crédito">
         <img class="turnos-nav-icon" src="assets/img/icon-turnos-nota-credito.svg?v=13" alt="" width="28" height="28"></button>
-      <button type="button" class="turnos-nav-item" data-turnos-nav="cancelados" title="Cancelados">
+      <button type="button" class="turnos-nav-item" data-turnos-nav="cancelados" data-turnos-nav-full-only title="Cancelados">
         <img class="turnos-nav-icon" src="assets/img/icon-turnos-gestion.svg?v=13" alt="" width="28" height="28"></button>
     </nav>
+  </div>
+
+  <div class="turnos-pwa-sticky-bar" id="turnosPwaSupervisorSticky" hidden>
+    <button type="button" class="turnos-btn turnos-btn--primary turnos-btn--xl" id="turnosPwaStickyInstallBtn">Instalar app supervisor</button>
   </div>
 
   <script src="js/panel-core.js?v=17"></script>
@@ -151,11 +191,11 @@
   <script src="js/platform-supabase-bridge.js?v=5"></script>
   <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
   <script src="js/platform-turnos-core.js?v=17"></script>
-  <script src="js/platform-turnos-sync.js?v=12"></script>
-  <script src="js/platform-turnos-store.js?v=14"></script>
+  <script src="js/platform-turnos-sync.js?v=13"></script>
+  <script src="js/platform-turnos-store.js?v=15"></script>
   <script src="js/platform-turnos-alerts.js?v=5"></script>
-  <script src="js/platform-turnos-admin.js?v=25"></script>
-  <script src="js/platform-turnos-pwa.js?v=4"></script>
+  <script src="js/platform-turnos-admin.js?v=26"></script>
+  <script src="js/platform-turnos-pwa.js?v=6"></script>
   <script src="js/platform-turnos-app.js?v=9"></script>
 </body>
 </html>

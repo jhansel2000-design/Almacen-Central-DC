@@ -272,6 +272,64 @@
       badge.textContent = String(pending);
       badge.hidden = pending < 1;
     }
+    var liteBadge = $('turnosLitePendingBadge');
+    if (liteBadge) {
+      liteBadge.textContent = String(pending);
+      liteBadge.hidden = pending < 1;
+    }
+  }
+
+  function isSupervisorLite() {
+    if (document.documentElement.getAttribute('data-turnos-portal') !== 'supervisor') return false;
+    try {
+      return global.matchMedia('(max-width: 960px)').matches;
+    } catch (e) {
+      return true;
+    }
+  }
+
+  function applySupervisorLayout() {
+    var lite = isSupervisorLite();
+    document.body.classList.toggle('turnos-supervisor-lite', lite);
+    document.body.classList.toggle('turnos-supervisor-full', !lite);
+    var root = $('turnosAdminRoot');
+    if (root) {
+      root.classList.toggle('turnos-app--lite', lite);
+      root.classList.toggle('turnos-app--full', !lite);
+    }
+  }
+
+  function validacionCardHtml(e) {
+    return (
+      '<article class="turnos-val-card" data-val-id="' + esc(e.id) + '">' +
+      '<div class="turnos-val-card__head">' +
+      '<span class="turnos-val-card__time turnos-mono">' + esc(C().formatFechaDisplay(e.fecha)) + ' · ' + esc(e.hora) + '</span>' +
+      statusBadge(e.estado) +
+      '</div>' +
+      '<p class="turnos-val-card__chofer"><strong>' + esc(e.choferNombre || '—') + '</strong></p>' +
+      '<p class="turnos-val-card__meta">' + esc(e.choferCompania || '—') + '</p>' +
+      '<p class="turnos-val-card__tramite">' + esc(C().TIPO_LABELS[e.tipo] || e.tipo) + '</p>' +
+      '<p class="turnos-val-card__detalle">' + esc(e.detalle) + '</p>' +
+      '<label class="turnos-val-card__priority">' +
+      '<input type="checkbox" class="turnos-val-priority-check" data-prioridad-for="' + esc(e.id) + '"> ' +
+      '<span>Turno <strong>prioritario</strong> (adelanta en cola)</span></label>' +
+      '<div class="turnos-val-card__actions">' +
+      '<button type="button" class="turnos-btn turnos-btn--primary turnos-btn--xl" data-validate-id="' + esc(e.id) + '">Validar presencia</button>' +
+      '<button type="button" class="turnos-btn turnos-btn--danger turnos-btn--xl" data-reject-id="' + esc(e.id) + '">Rechazar</button>' +
+      '</div></article>'
+    );
+  }
+
+  function validacionCardsHtml(entries) {
+    if (!entries.length) {
+      return '<p class="turnos-empty">No hay solicitudes pendientes de validación.</p>';
+    }
+    return '<div class="turnos-val-cards">' + entries.map(validacionCardHtml).join('') + '</div>';
+  }
+
+  function validacionListHtml(entries) {
+    if (isSupervisorLite()) return validacionCardsHtml(entries);
+    return validacionTableHtml(entries);
   }
 
   function validacionTableHtml(entries) {
@@ -290,6 +348,8 @@
         despachoDetalleCell(e) +
         '<td>' + statusBadge(e.estado) + '</td>' +
         '<td class="turnos-actions-cell turnos-actions-cell--validacion">' +
+        '<label class="turnos-val-inline-priority">' +
+        '<input type="checkbox" class="turnos-val-priority-check" data-prioridad-for="' + esc(e.id) + '"> Prioritario</label> ' +
         '<button type="button" class="turnos-btn turnos-btn--primary turnos-btn--sm" data-validate-id="' + esc(e.id) + '">Validar presencia</button> ' +
         '<button type="button" class="turnos-btn turnos-btn--danger turnos-btn--sm" data-reject-id="' + esc(e.id) + '">Rechazar</button>' +
         '</td></tr>'
@@ -307,23 +367,28 @@
     var host = $('turnosViewValidacion');
     if (!host) return;
     var pending = C().sortByArrivalOrder(C().filterPendingValidation(S().getState().entries));
+    var lite = isSupervisorLite();
     host.innerHTML =
       '<section class="turnos-panel turnos-panel--validacion">' +
       '<div class="turnos-tramite-head">' +
       '<img src="assets/img/icon-turnos-validacion.svg' + ICON_V + '" alt="" width="48" height="48">' +
       '<div><h2>Validar turnos</h2>' +
-      '<p class="turnos-sub">Confirme que el chofer está en el almacén antes de asignar el número T-XXXX. ' +
-      'Sin validación no se genera ticket ni entra a la cola.</p></div></div>' +
+      '<p class="turnos-sub' + (lite ? '' : ' turnos-sub-long') + '">' +
+      (lite
+        ? 'Confirme presencia del chofer en el almacén. Puede marcar turno prioritario antes de validar.'
+        : 'Confirme que el chofer está en el almacén antes de asignar el número T-XXXX. Sin validación no se genera ticket ni entra a la cola.') +
+      '</p></div></div>' +
       '<p class="turnos-validacion-count"><strong>' + pending.length + '</strong> solicitud(es) pendiente(s)</p>' +
-      (global.PlatformTurnosPwa && !global.PlatformTurnosPwa.isStandalone()
-        ? '<p class="turnos-hint turnos-hint--info turnos-validacion-install-hint">Instale la <strong>app supervisor</strong> (botón arriba o en Configuración) para validar desde el celular con un toque.</p>'
+      (!lite && global.PlatformTurnosPwa && !global.PlatformTurnosPwa.isStandalone()
+        ? '<p class="turnos-hint turnos-hint--info turnos-validacion-install-hint">Instale la <strong>app supervisor</strong> en el celular para validar con un toque. En PC verá el panel completo.</p>'
         : '') +
-      validacionTableHtml(pending) +
+      validacionListHtml(pending) +
       '</section>';
     updateNavBadges();
   }
 
   function setModule(mod) {
+    if (isSupervisorLite() && mod !== 'validacion') mod = 'validacion';
     state.module = mod;
     document.querySelectorAll('.turnos-view').forEach(function (el) {
       el.hidden = el.getAttribute('data-module') !== mod;
@@ -519,7 +584,7 @@
       '<button type="button" class="turnos-btn turnos-btn--secondary turnos-btn--xl" data-admin-action="reset-dashboard">Reiniciar vista del dashboard ahora</button>' +
       '<p class="turnos-hint">Use el botón si desea limpiar el seguimiento del dashboard sin borrar turnos.</p>' +
       '</div>' +
-      '<p class="turnos-hint">Hora oficial: <strong>República Dominicana</strong>. Turnos prioritarios: PIN Duarte (<span class="turnos-mono">' + esc(C().priorityPinHint()) + '</span>). Despacho: camión T1, T2 o T4 y cantidad de paletas.</p>' +
+      '<p class="turnos-hint">Hora oficial: <strong>República Dominicana</strong>. Prioridad la asigna el supervisor al validar. Despacho: camión T1, T2 o T4 y cantidad de paletas.</p>' +
       '<button type="button" class="turnos-btn turnos-btn--danger turnos-btn--xl" data-admin-action="reset">Reiniciar numeración de turnos</button>' +
       '<p class="turnos-hint">Solo cambia el contador T-0001, T-0002… <strong>No borra</strong> el historial de turnos.</p>' +
       '<button type="button" class="turnos-btn turnos-btn--secondary" data-admin-action="logout">Cerrar sesión admin</button>' +
@@ -602,9 +667,12 @@
       if (valBtn) {
         var vid = valBtn.getAttribute('data-validate-id');
         var vUser = state.adminUser && (state.adminUser.name || state.adminUser.username);
-        if (!confirm('¿Confirmar presencia del chofer y asignar número de turno?')) return;
+        var card = valBtn.closest('.turnos-val-card, tr');
+        var prioCheck = card && card.querySelector('[data-prioridad-for="' + vid + '"]');
+        var prioridad = !!(prioCheck && prioCheck.checked);
+        if (!confirm('¿Confirmar presencia del chofer' + (prioridad ? ' con turno PRIORITARIO' : '') + ' y asignar número de turno?')) return;
         valBtn.disabled = true;
-        S().validateTurn(vid, vUser).then(function (result) {
+        S().validateTurn(vid, vUser, { prioridad: prioridad }).then(function (result) {
           valBtn.disabled = false;
           if (!result.ok) {
             alert(result.msg || 'No se pudo validar.');
@@ -765,7 +833,18 @@
         global.PanelCore.touchAveriasSession(user);
       }, 5 * 60 * 1000);
     }
-    setModule('dashboard');
+    applySupervisorLayout();
+    if (!state._layoutBound) {
+      state._layoutBound = true;
+      try {
+        global.matchMedia('(max-width: 960px)').addEventListener('change', function () {
+          applySupervisorLayout();
+          if (isSupervisorLite() && state.module !== 'validacion') setModule('validacion');
+          else refresh();
+        });
+      } catch (e) { /* noop */ }
+    }
+    setModule(isSupervisorLite() ? 'validacion' : 'dashboard');
   }
 
   function show() {

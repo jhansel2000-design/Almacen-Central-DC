@@ -145,15 +145,6 @@
       '<label class="turnos-field"><span>Nombre del chofer</span>' +
       '<input class="turnos-input turnos-input--lg" id="turnosFieldChofer" type="text" required maxlength="80" autocomplete="name" value="' + remembered + '" placeholder="Su nombre completo"></label>' +
       extra +
-      '<div class="turnos-priority-block">' +
-      '<label class="turnos-priority-toggle">' +
-      '<input type="checkbox" id="turnosFieldPrioridad" class="turnos-priority-check"> ' +
-      '<span>Turno <strong>prioritario</strong> (supervisor ingresa PIN)</span></label>' +
-      '<div id="turnosPriorityPinWrap" class="turnos-priority-pin" hidden>' +
-      '<label class="turnos-field"><span>PIN del supervisor</span>' +
-      '<input class="turnos-input turnos-input--lg" id="turnosFieldAdminPin" type="password" inputmode="numeric" autocomplete="off" maxlength="10" placeholder="DDMMAAAA"></label>' +
-      '<p class="turnos-hint turnos-hint--info">Fecha de nacimiento de <strong>Juan Pablo Duarte</strong> (DDMMAAAA, sin barras).</p>' +
-      '</div></div>' +
       '<p id="turnosChoferFormError" class="turnos-form-error" hidden role="alert"></p>' +
       '<button type="submit" class="turnos-btn turnos-btn--primary turnos-btn--xl turnos-btn--hero">Enviar solicitud de turno</button>' +
       '</form></section>'
@@ -427,21 +418,6 @@
       payload.cantidadViajes = viajes;
     }
 
-    var prioridad = !!( $('turnosFieldPrioridad') && $('turnosFieldPrioridad').checked);
-    if (prioridad) {
-      var pin = ($('turnosFieldAdminPin') && $('turnosFieldAdminPin').value || '').trim();
-      if (!pin) {
-        showError('Indique el PIN para turno prioritario.');
-        return;
-      }
-      if (!C().verifyAdminPin(pin)) {
-        showError('PIN incorrecto. Use la fecha de nacimiento de Juan Pablo Duarte (DDMMAAAA).');
-        return;
-      }
-      payload.prioridad = true;
-      payload.prioridadAutorizadaPor = 'supervisor-pin';
-    }
-
     var btn = ev.target.querySelector('[type="submit"]');
     if (btn) btn.disabled = true;
 
@@ -459,12 +435,6 @@
     });
   }
 
-  function syncPriorityPinUi() {
-    var checked = !!( $('turnosFieldPrioridad') && $('turnosFieldPrioridad').checked);
-    var pinWrap = $('turnosPriorityPinWrap');
-    if (pinWrap) pinWrap.hidden = !checked;
-  }
-
   function guardPerms() {
     if (!Perms()) return true;
     if (Perms().isReady()) return true;
@@ -476,14 +446,6 @@
     var root = $('turnosChoferRoot');
     if (!root || root.dataset.bound) return;
     root.dataset.bound = '1';
-
-    root.addEventListener('change', function (ev) {
-      if (ev.target.id === 'turnosFieldPrioridad') syncPriorityPinUi();
-    });
-
-    root.addEventListener('input', function (ev) {
-      if (ev.target.id === 'turnosFieldAdminPin') syncPriorityPinUi();
-    });
 
     root.addEventListener('click', function (ev) {
       if (ev.target.closest('.turnos-back-link')) return;

@@ -7,7 +7,8 @@
   var DISMISS_CHOFER = 'dc_turnos_pwa_chofer_dismiss_until';
   var DISMISS_SUPERVISOR = 'dc_turnos_pwa_supervisor_dismiss_until';
   var DISMISS_MS = 7 * 24 * 60 * 60 * 1000;
-  var ICON_V = '?v=13';
+  var LAUNCH_ROLE_KEY = 'dc_turnos_pwa_launch_role';
+  var ICON_V = '?v=14';
   var deferredPrompt = null;
   var copyTimer = null;
   var listenersBound = false;
@@ -25,6 +26,49 @@
       if (global.matchMedia && global.matchMedia('(display-mode: fullscreen)').matches) return true;
     } catch (e) { /* noop */ }
     return !!global.navigator.standalone;
+  }
+
+  function getPortalRole() {
+    var portal = document.documentElement.getAttribute('data-turnos-portal');
+    if (portal === 'supervisor' || portal === 'chofer') return portal;
+    return null;
+  }
+
+  function detectLaunchRole() {
+    if (!isStandalone()) return null;
+    try {
+      var stored = sessionStorage.getItem(LAUNCH_ROLE_KEY);
+      if (stored === 'chofer' || stored === 'supervisor') return stored;
+    } catch (e) { /* noop */ }
+    var role = null;
+    try {
+      var src = new URLSearchParams(global.location.search).get('source');
+      if (src === 'pwa-supervisor') role = 'supervisor';
+      else if (src === 'pwa' || src === 'pwa-chofer') role = 'chofer';
+    } catch (e) { /* noop */ }
+    if (!role) {
+      var path = (global.location.pathname || '').split('/').pop();
+      if (path === 'turnos-supervisor.html') role = 'supervisor';
+      else if (path === 'turnos.html') role = 'chofer';
+    }
+    if (role) {
+      try { sessionStorage.setItem(LAUNCH_ROLE_KEY, role); } catch (e) { /* noop */ }
+    }
+    return role;
+  }
+
+  function isRoleInstalled(role) {
+    return detectLaunchRole() === role;
+  }
+
+  function isCrossInstallNeeded(role) {
+    var launch = detectLaunchRole();
+    return !!(launch && launch !== role);
+  }
+
+  function applyInstalledClasses() {
+    document.body.classList.toggle('turnos-pwa-installed-chofer', isRoleInstalled('chofer'));
+    document.body.classList.toggle('turnos-pwa-installed-supervisor', isRoleInstalled('supervisor'));
   }
 
   function isIOS() {
@@ -112,9 +156,10 @@
 
   function canOfferInstall(role) {
     role = role || getRole();
-    if (isStandalone() || wasDismissedRecently(role)) return false;
+    if (wasDismissedRecently(role)) return false;
+    if (isRoleInstalled(role)) return false;
     if (role === 'supervisor') return true;
-    if (isIOS() && !isStandalone()) return true;
+    if (isIOS()) return true;
     var Perms = global.PlatformTurnosChoferPerms;
     if (Perms && Perms.isReady && !Perms.isReady()) return false;
     return true;
@@ -215,6 +260,7 @@
       footBtn.type = 'button';
       footBtn.id = 'turnosPwaFootBtnChofer';
       footBtn.className = 'turnos-pwa-foot-btn';
+      footBtn.dataset.pwaRole = 'chofer';
       footBtn.textContent = 'Descargar acceso directo (app en el teléfono)';
       footBtn.addEventListener('click', function () {
         setRole('chofer');
@@ -222,6 +268,7 @@
       });
       foot.insertBefore(footBtn, foot.firstChild);
     }
+    ensureCrossAppPanels();
   }
 
   function ensureSupervisorBanner() {
@@ -264,23 +311,7 @@
     }
 
     var authCard = document.querySelector('.turnos-auth-card');
-    if (authCard && !$('turnosPwaAuthBtn')) {
-      var authBtn = document.createElement('button');
-      authBtn.type = 'button';
-      authBtn.id = 'turnosPwaAuthBtn';
-      authBtn.className = 'turnos-pwa-auth-btn';
-      authBtn.textContent = 'Instalar app supervisor en el teléfono';
-      authBtn.addEventListener('click', function () {
-        setRole('supervisor');
-        openInstallModal('supervisor');
-      });
-      var authForm = $('turnosAuthForm');
-      if (authForm && authForm.parentNode === authCard) {
-        authCard.insertBefore(authBtn, authForm.nextSibling);
-      } else {
-        authCard.appendChild(authBtn);
-      }
-    }
+    bindSupervisorAuthControls();
 
     var adminTop = document.querySelector('.turnos-topbar');
     if (adminTop && !$('turnosPwaAdminBtn')) {
@@ -298,17 +329,175 @@
       });
       adminTop.appendChild(btn);
     }
+    ensureCrossAppPanels();
+  }
+
+  function ensureCrossAppPanels() {
+    var portal = getPortalRole();
+    if (portal === 'chofer') bindCrossAppPanel('supervisor');
+    if (portal === 'supervisor') bindCrossAppPanel('chofer');
+  }
+
+  function bindCrossAppPanel(otherRole) {
+    var panelId = otherRole === 'supervisor' ? 'turnosCrossAppSupervisor' : 'turnosCrossAppChofer';
+    var panel = $(panelId);
+    if (!panel || panel.dataset.pwaBound) return;
+    panel.dataset.pwaBound = '1';
+    var installBtn = panel.querySelector('[data-pwa-cross-install]');
+    var copyBtn = panel.querySelector('[data-pwa-cross-copy]');
+    if (installBtn) {
+      installBtn.addEventListener('click', function () {
+        setRole(otherRole);
+        promptInstall(otherRole);
+      });
+    }
+    if (copyBtn) {
+      copyBtn.addEventListener('click', function (ev) {
+        setRole(otherRole);
+        copyDirectLink(ev, otherRole);
+      });
+    }
+  }
+
+  function updateCrossAppPanels() {
+    var roles = ['chofer', 'supervisor'];
+    roles.forEach(function (otherRole) {
+      var panelId = otherRole === 'supervisor' ? 'turnosCrossAppSupervisor' : 'turnosCrossAppChofer';
+      var panel = $(panelId);
+      if (!panel) return;
+      var installed = isRoleInstalled(otherRole);
+      var offer = canOfferInstall(otherRole);
+      panel.hidden = false;
+      panel.classList.toggle('turnos-cross-app--installed', installed);
+      var installBtn = panel.querySelector('[data-pwa-cross-install]');
+      var badge = panel.querySelector('[data-pwa-cross-badge]');
+      if (badge) badge.hidden = !installed;
+      if (installBtn) {
+        installBtn.hidden = !offer;
+        installBtn.textContent = primaryActionLabel() === 'Instalar app'
+          ? ('Instalar app ' + (otherRole === 'supervisor' ? 'supervisor' : 'chofer'))
+          : primaryActionLabel();
+      }
+    });
+  }
+
+  function ensureAppsHub() {
+    if (document.documentElement.getAttribute('data-turnos-portal') !== 'apps') return;
+    var roles = ['chofer', 'supervisor'];
+    roles.forEach(function (role) {
+      var linkField = $('turnosAppsLink' + (role === 'supervisor' ? 'Supervisor' : 'Chofer'));
+      if (linkField) linkField.value = getDirectLink(role);
+      var installBtn = document.querySelector('[data-pwa-install-role="' + role + '"]');
+      var copyBtn = document.querySelector('[data-pwa-copy-role="' + role + '"]');
+      if (installBtn && !installBtn.dataset.pwaBound) {
+        installBtn.dataset.pwaBound = '1';
+        installBtn.addEventListener('click', function () {
+          setRole(role);
+          promptInstall(role);
+        });
+      }
+      if (copyBtn && !copyBtn.dataset.pwaBound) {
+        copyBtn.dataset.pwaBound = '1';
+        copyBtn.addEventListener('click', function (ev) {
+          setRole(role);
+          copyDirectLink(ev, role);
+        });
+      }
+    });
+    updateAppsHub();
+  }
+
+  function updateAppsHub() {
+    if (document.documentElement.getAttribute('data-turnos-portal') !== 'apps') return;
+    ['chofer', 'supervisor'].forEach(function (role) {
+      var suffix = role === 'supervisor' ? 'Supervisor' : 'Chofer';
+      var badge = $('turnosAppsBadge' + suffix);
+      var installBtn = $('turnosAppsInstall' + suffix);
+      var card = $('turnosAppsCard' + suffix);
+      var installed = isRoleInstalled(role);
+      var offer = canOfferInstall(role);
+      if (badge) badge.hidden = !installed;
+      if (card) card.classList.toggle('turnos-apps-card--installed', installed);
+      if (installBtn) {
+        installBtn.hidden = !offer;
+        installBtn.textContent = primaryActionLabel() === 'Instalar app'
+          ? ('Instalar app ' + role)
+          : primaryActionLabel();
+      }
+    });
+    var note = $('turnosAppsCrossNote');
+    var launch = detectLaunchRole();
+    if (note) note.hidden = !launch;
+  }
+
+  function bindSupervisorAuthControls() {
+    if (document.documentElement.getAttribute('data-turnos-portal') !== 'supervisor') return;
+
+    function bindOnce(id, handler) {
+      var el = $(id);
+      if (!el || el.dataset.pwaBound) return;
+      el.dataset.pwaBound = '1';
+      el.addEventListener('click', handler);
+    }
+
+    bindOnce('turnosPwaAuthInstallBtn', function () {
+      setRole('supervisor');
+      promptInstall();
+    });
+    bindOnce('turnosPwaAuthCopyBtn', function (ev) {
+      setRole('supervisor');
+      copyDirectLink(ev, 'supervisor');
+    });
+    bindOnce('turnosPwaStickyInstallBtn', function () {
+      setRole('supervisor');
+      promptInstall();
+    });
+  }
+
+  function updateSupervisorAuthInstall() {
+    if (document.documentElement.getAttribute('data-turnos-portal') !== 'supervisor') return;
+    var authOpen = document.body.classList.contains('turnos-auth-open');
+    var adminMode = document.body.classList.contains('turnos-admin-mode');
+    var overlay = $('turnosAuthOverlay');
+    var authVisible = authOpen || (overlay && !overlay.classList.contains('is-hidden') && !adminMode);
+    var offer = canOfferInstall('supervisor');
+    var copy = copyForRole('supervisor');
+    var label = primaryActionLabel();
+
+    var block = $('turnosPwaAuthInstallBlock');
+    if (block) {
+      var showAuth = authVisible && offer;
+      block.hidden = !showAuth;
+      if (showAuth) {
+        var subEl = block.querySelector('.turnos-pwa-auth-install__head span');
+        var installBtn = $('turnosPwaAuthInstallBtn');
+        if (subEl) subEl.textContent = copy.bannerSub;
+        if (installBtn) {
+          installBtn.textContent = label === 'Instalar app' ? 'Descargar app supervisor' : label;
+        }
+      }
+    }
+
+    var sticky = $('turnosPwaSupervisorSticky');
+    var stickyBtn = $('turnosPwaStickyInstallBtn');
+    var showSticky = isMobileLayout() && (authVisible || adminMode) && offer;
+    if (sticky) {
+      sticky.hidden = !showSticky;
+      document.body.classList.toggle('turnos-pwa-sticky-open', showSticky);
+    }
+    if (stickyBtn) stickyBtn.textContent = label === 'Instalar app' ? 'Instalar app supervisor' : label;
   }
 
   function ensureBanner() {
     ensureChoferBanner();
     ensureSupervisorBanner();
+    ensureAppsHub();
   }
 
   function updateRoleBanner(bannerId, footId, role) {
     var banner = $(bannerId);
     var copy = copyForRole(role);
-    var show = canOfferInstall(role) && !isStandalone();
+    var show = canOfferInstall(role);
     if (banner) {
       banner.classList.toggle('is-hidden', !show);
       if (show) {
@@ -322,8 +511,11 @@
     }
     var footBtn = footId ? $(footId) : null;
     if (footBtn) {
-      footBtn.hidden = isStandalone();
-      footBtn.textContent = isStandalone() ? 'App instalada' : copy.footLabel;
+      var installed = isRoleInstalled(role);
+      footBtn.hidden = installed && !canOfferInstall(role);
+      footBtn.textContent = installed
+        ? ('App ' + (role === 'supervisor' ? 'supervisor' : 'chofer') + ' instalada ✓')
+        : copy.footLabel;
     }
   }
 
@@ -352,13 +544,15 @@
       hideBannerForRole('supervisor');
     }
 
+    updateSupervisorAuthInstall();
+    updateCrossAppPanels();
+    updateAppsHub();
+    applyInstalledClasses();
+
     var adminBtn = $('turnosPwaAdminBtn');
     var sideBtn = $('turnosPwaSidebarBtn');
-    var authBtn = $('turnosPwaAuthBtn');
-    var standalone = isStandalone();
-    if (adminBtn) adminBtn.hidden = standalone || !inAdmin;
-    if (sideBtn) sideBtn.hidden = standalone || !document.body.classList.contains('turnos-admin-mode');
-    if (authBtn) authBtn.hidden = standalone || !document.body.classList.contains('turnos-auth-open');
+    if (adminBtn) adminBtn.hidden = !canOfferInstall('supervisor') || !inAdmin;
+    if (sideBtn) sideBtn.hidden = !canOfferInstall('supervisor') || !document.body.classList.contains('turnos-admin-mode');
   }
 
   function closeInstallModal() {
@@ -407,6 +601,16 @@
     );
   }
 
+  function crossInstallNoteHtml(role) {
+    if (!isCrossInstallNeeded(role)) return '';
+    return (
+      '<p class="turnos-pwa-modal__cross-note">' +
+      '<strong>Segunda app en el mismo teléfono:</strong> ' +
+      'Abra el enlace en <strong>Safari</strong> o <strong>Chrome</strong> (no desde la otra app instalada) ' +
+      'y agréguelo a inicio. Tendrá <strong>2 iconos</strong>: chofer y supervisor.</p>'
+    );
+  }
+
   function openInstallModal(role) {
     role = role || getRole();
     activeRole = role;
@@ -415,6 +619,9 @@
     var link = getDirectLink(role);
     var copy = copyForRole(role);
     var steps = isIOS() ? iosStepsHtml(role) : (isAndroid() ? androidStepsHtml(role) : desktopStepsHtml(role));
+    var crossOpen = isCrossInstallNeeded(role)
+      ? '<a href="' + esc(link) + '" target="_blank" rel="noopener" class="turnos-btn turnos-btn--primary turnos-btn--xl turnos-pwa-modal__open-ext">Abrir en navegador para instalar</a>'
+      : '';
     var overlay = document.createElement('div');
     overlay.id = 'turnosPwaModal';
     overlay.className = 'turnos-pwa-modal';
@@ -428,6 +635,7 @@
       '<div><p class="turnos-pwa-modal__eyebrow">Acceso directo · ' + esc(copy.appShortName) + '</p>' +
       '<h2 id="turnosPwaModalTitle">' + esc(copy.modalTitle) + '</h2></div></div>' +
       '<p class="turnos-pwa-modal__lead">' + copy.modalLead + '</p>' +
+      crossInstallNoteHtml(role) +
       steps +
       '<div class="turnos-pwa-link-box">' +
       '<label class="turnos-pwa-link-label">' + esc(copy.linkLabel) + '</label>' +
@@ -436,9 +644,10 @@
       '<button type="button" class="turnos-btn turnos-btn--secondary turnos-btn--sm" id="turnosPwaModalCopyBtn">Copiar</button>' +
       '</div></div>' +
       '<div class="turnos-pwa-modal__actions">' +
-      (deferredPrompt && !isIOS()
-        ? '<button type="button" class="turnos-btn turnos-btn--primary turnos-btn--xl" id="turnosPwaModalInstallBtn">Instalar ahora</button>'
-        : '') +
+      crossOpen +
+      '<button type="button" class="turnos-btn turnos-btn--primary turnos-btn--xl" id="turnosPwaModalInstallBtn">' +
+      esc(deferredPrompt && !isIOS() && !isCrossInstallNeeded(role) ? 'Instalar ahora' : primaryActionLabel()) +
+      '</button>' +
       '<button type="button" class="turnos-btn turnos-btn--secondary turnos-btn--xl" data-pwa-close>Cerrar</button>' +
       '</div></div>';
     document.body.appendChild(overlay);
@@ -494,8 +703,14 @@
     fail();
   }
 
-  function promptInstall() {
+  function promptInstall(role) {
+    role = role || getRole();
+    activeRole = role;
     applyManifest();
+    if (isCrossInstallNeeded(role)) {
+      openInstallModal(role);
+      return;
+    }
     if (deferredPrompt && !isIOS()) {
       deferredPrompt.prompt();
       deferredPrompt.userChoice.then(function (choice) {
@@ -509,7 +724,7 @@
       });
       return;
     }
-    openInstallModal(getRole());
+    openInstallModal(role);
   }
 
   function init() {
@@ -538,9 +753,11 @@
         activeRole = 'chofer';
       }
     } catch (e) { /* noop */ }
+    detectLaunchRole();
     registerServiceWorker();
     ensureBanner();
     applyManifest();
+    applyInstalledClasses();
     updateBanner();
   }
 

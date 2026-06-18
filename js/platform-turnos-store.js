@@ -243,11 +243,11 @@
     return initPromise;
   }
 
-  function validateTurn(id, adminUser) {
+  function validateTurn(id, adminUser, opts) {
     return init().then(function () {
       var sync = Sync();
       if (!sync || !shared.live) return cloudError(shared.error);
-      return sync.validateTurn(id, adminUser).then(function (entry) {
+      return sync.validateTurn(id, adminUser, opts).then(function (entry) {
         upsertEntry(entry);
         C().playBeep();
         notify();

@@ -148,7 +148,8 @@
     });
   }
 
-  function validateTurn(id, adminUser) {
+  function validateTurn(id, adminUser, opts) {
+    opts = opts || {};
     return pullState().then(function (remote) {
       var idx = remote.entries.findIndex(function (e) { return e.id === id; });
       if (idx < 0) return Promise.reject(new Error('Solicitud no encontrada'));
@@ -159,13 +160,24 @@
       var n = nextCounter(remote.entries, remote.counter);
       var turno = C().formatTurno(n);
       var por = adminUser || 'supervisor';
+      var prioridad = !!opts.prioridad;
       var merged = Object.assign({}, old, {
         turno: turno,
         estado: 'PENDIENTE',
+        prioridad: prioridad,
+        prioridadAutorizadaPor: prioridad ? por : '',
         updatedAt: Date.now(),
         updatedBy: por
       });
-      merged.historial = C().mergeSeguimientoOnPatch(old, { turno: turno, estado: 'PENDIENTE' }, por);
+      merged.historial = C().mergeSeguimientoOnPatch(old, {
+        turno: turno,
+        estado: 'PENDIENTE',
+        prioridad: prioridad
+      }, por);
+      if (prioridad && merged.historial && merged.historial.length) {
+        var last = merged.historial[merged.historial.length - 1];
+        last.nota = (last.nota || '') + ' · Turno prioritario asignado por supervisor';
+      }
       var validated = C().normalizeEntry(merged);
       remote.entries[idx] = validated;
       remote.counter = n;

@@ -25,7 +25,7 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Turnos Chofer">
   <link rel="stylesheet" href="css/dc-brand.css?v=11">
-  <link rel="stylesheet" href="css/turnos-portal.css?v=28">
+  <link rel="stylesheet" href="css/turnos-portal.css?v=31">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
@@ -47,6 +47,23 @@
     </header>
     <main id="turnosChoferMain" class="turnos-chofer-main"></main>
     <footer class="turnos-chofer-foot">
+      <div class="turnos-cross-app turnos-cross-app--supervisor" id="turnosCrossAppSupervisor">
+        <p class="turnos-cross-app__eyebrow">Segunda app en el mismo teléfono</p>
+        <div class="turnos-cross-app__head">
+          <img src="assets/img/icon-turnos-validacion.svg?v=14" alt="" width="44" height="44">
+          <div>
+            <strong>Turnos Supervisor</strong>
+            <span>Icono aparte — validar solicitudes y gestionar colas</span>
+            <span class="turnos-cross-app__badge" data-pwa-cross-badge hidden>Instalada ✓</span>
+          </div>
+        </div>
+        <div class="turnos-cross-app__actions">
+          <button type="button" class="turnos-btn turnos-btn--primary turnos-btn--xl" data-pwa-cross-install>Instalar app supervisor</button>
+          <a href="turnos-supervisor.html" class="turnos-btn turnos-btn--secondary turnos-btn--xl">Abrir supervisor</a>
+          <button type="button" class="turnos-btn turnos-btn--secondary turnos-btn--xl" data-pwa-cross-copy>Copiar enlace supervisor</button>
+        </div>
+        <a href="turnos-apps.html" class="turnos-cross-app__hub">Ver las 2 apps organizadas →</a>
+      </div>
       <a href="index.html" class="turnos-back-link">← Volver al mando</a>
     </footer>
   </div>
@@ -60,8 +77,8 @@
   <script src="js/platform-turnos-store.js?v=14"></script>
   <script src="js/platform-turnos-chofer-perms.js?v=5"></script>
   <script src="js/platform-turnos-chofer-call.js?v=5"></script>
-  <script src="js/platform-turnos-chofer.js?v=23"></script>
-  <script src="js/platform-turnos-pwa.js?v=4"></script>
+  <script src="js/platform-turnos-chofer.js?v=24"></script>
+  <script src="js/platform-turnos-pwa.js?v=6"></script>
   <script src="js/platform-turnos-app.js?v=9"></script>
 </body>
 </html>
