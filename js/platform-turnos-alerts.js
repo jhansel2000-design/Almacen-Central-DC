@@ -35,7 +35,7 @@
     var title = entry.prioridad ? 'Turno PRIORITARIO — ' + entry.turno : 'Nuevo turno — ' + entry.turno;
     var body = (entry.choferNombre || 'Chofer') + ' · ' + (entry.choferCompania || '—') +
       ' · ' + (C().TIPO_LABELS[entry.tipo] || entry.tipo);
-    if (entry.prioridad && entry.horaLimite) body += ' · Límite ' + entry.horaLimite;
+    if (entry.prioridad && entry.horaLimite) body += ' · Prioritario';
     try {
       var n = new Notification(title, {
         body: body,
@@ -85,7 +85,7 @@
         return;
       }
       if (t.changed && e.prioridad && e.estado === 'PENDIENTE' && shouldNotify()) {
-        if (/prioridad|horaLimite/.test(t.prev || '') === false && e.horaLimite) {
+        if (/prioridad/.test(t.prev || '') === false && e.prioridad) {
           alertForEntry(e);
         }
       }

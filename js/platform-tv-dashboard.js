@@ -209,7 +209,7 @@
     snap.desp.hasData = true;
     snap.desp.total = despCounts.total || 0;
     snap.desp.kpis = [
-      { label: 'Pend. por cargar', value: despCounts.pendiente_carga || 0, variant: 'warn' },
+      { label: 'Pend. por validar', value: despCounts.pendiente_carga || 0, variant: 'warn' },
       { label: 'Validado', value: despCounts.en_validacion || 0, variant: 'process' },
       { label: 'Cargado', value: despCounts.listo_despacho || 0, variant: 'total' }
     ];

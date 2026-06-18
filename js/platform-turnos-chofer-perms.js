@@ -111,6 +111,7 @@
       '<p class="turnos-perm-eyebrow">Paso obligatorio</p>' +
       '<h2 id="turnosPermTitle">Active las alertas de su turno</h2>' +
       '<p class="turnos-perm-lead">Si no autoriza, <strong>no sonará</strong> cuando lo convoquen y usted no esté en esta página.</p>' +
+      '<p class="turnos-perm-ios" id="turnosPermIos" hidden><strong>iPhone:</strong> después de autorizar, use <strong>Compartir → Agregar a pantalla de inicio</strong> y abra el portal desde ese icono. Así las notificaciones suenan aunque apague la pantalla.</p>' +
       '<ul class="turnos-perm-list">' +
       '<li id="turnosPermItemNotif" class="turnos-perm-item turnos-perm-item--pending"><span class="turnos-perm-icon">1</span><span>Notificaciones del celular</span></li>' +
       '<li id="turnosPermItemAudio" class="turnos-perm-item turnos-perm-item--pending"><span class="turnos-perm-icon">2</span><span>Sonido, voz y alarma</span></li>' +
@@ -160,6 +161,11 @@
     document.body.classList.remove('turnos-perm-open');
   }
 
+  function isIOSDevice() {
+    if (/iPad|iPhone|iPod/i.test(navigator.userAgent)) return true;
+    return navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1;
+  }
+
   function refreshGate() {
     var st = getStatus();
     var Call = global.PlatformTurnosChoferCall;
@@ -176,6 +182,8 @@
       st.audioOk ? 'Sonido, voz y alarma — listos' : 'Sonido, voz y alarma — pendiente');
     var denied = document.getElementById('turnosPermDenied');
     if (denied) denied.hidden = st.notifications !== 'denied';
+    var iosHint = document.getElementById('turnosPermIos');
+    if (iosHint) iosHint.hidden = !isIOSDevice();
     if (st.ready) {
       hideGate();
     } else {

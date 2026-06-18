@@ -20,7 +20,7 @@
     despacho: {
       tipo: 'despacho_facturas',
       title: 'Despacho de facturas',
-      hint: 'Cola de choferes con ID de carga. Convocar → ventana de despacho.',
+      hint: 'Cola de choferes por tipo de camión y paletas. Convocar → ventana de despacho.',
       icon: 'assets/img/icon-turnos-despacho.svg' + ICON_V
     },
     liquidacion: {
@@ -119,20 +119,14 @@
     });
   }
 
-  function limiteCell(e, compact, readonly) {
-    if (!e.prioridad) {
-      return compact ? '' : '<td class="turnos-muted-inline">—</td>';
+  function despachoDetalleCell(e) {
+    if (e.tipo !== C().TIPOS.DESPACHO) {
+      return '<td class="turnos-qr-cell" title="' + esc(e.detalle) + '">' + esc(e.detalle) + '</td>';
     }
-    if (e.horaLimite) {
-      return '<td class="turnos-mono turnos-limite-ok">' + esc(e.horaLimite) + '<br><span class="turnos-muted-inline">hora RD</span></td>';
-    }
-    if (!compact && !readonly) {
-      return '<td class="turnos-limite-cell">' +
-        '<label class="turnos-sr-only" for="limite-' + esc(e.id) + '">Hora límite</label>' +
-        '<input type="time" class="turnos-limite-input" id="limite-' + esc(e.id) + '" data-limite-id="' + esc(e.id) + '" value="' + esc(C().formatTimeInput()) + '" required>' +
-        '<button type="button" class="turnos-btn turnos-btn--secondary turnos-btn--sm" data-set-limite="' + esc(e.id) + '">Definir</button></td>';
-    }
-    return '<td><span class="turnos-badge turnos-badge--priority-warn">Sin límite</span></td>';
+    var cam = C().normalizeTipoCamion(e.tipoCamion) || '—';
+    var pal = e.cantidadPaletas != null ? e.cantidadPaletas : '—';
+    return '<td class="turnos-qr-cell" title="' + esc(e.detalle) + '">' +
+      '<span class="turnos-mono">' + esc(cam) + '</span> · ' + esc(String(pal)) + ' paletas</td>';
   }
 
   function companiaCell(e, compact, readonly) {
@@ -193,9 +187,8 @@
         '<td class="turnos-mono turnos-fecha-cell">' + esc(C().formatFechaDisplay(e.fecha)) + '<br><span class="turnos-muted-inline">' + esc(e.hora) + '</span></td>' +
         '<td>' + esc(e.choferNombre || '—') + '</td>' +
         companiaCell(e, compact, readonly) +
-        '<td class="turnos-qr-cell" title="' + esc(e.detalle) + '">' + esc(e.detalle) + '</td>' +
+        despachoDetalleCell(e) +
         '<td>' + convocado + statusBadge(e.estado) + '</td>' +
-        (!compact ? limiteCell(e, compact, readonly) : '') +
         tail +
         '</tr>';
     }).join('');
@@ -204,30 +197,20 @@
       (showOrder ? '<th>#</th>' : '') +
       '<th>Turno</th>' +
       (compact ? '<th>Trámite</th>' : '') +
-      '<th>Fecha</th><th>Chofer</th><th>Compañía</th><th>Detalle</th><th>Estado</th>' +
-      (!compact ? '<th>Hora límite</th>' : '') +
+      '<th>Fecha</th><th>Chofer</th><th>Compañía</th><th>Camión / detalle</th><th>Estado</th>' +
       (!compact && readonly ? '<th>Cancelado por</th>' : '') +
       (!compact && !readonly ? '<th>Actualizado</th><th>Gestionar</th>' : '');
 
     return '<div class="turnos-table-wrap"><table class="turnos-table"><thead><tr>' + head + '</tr></thead><tbody>' + rows + '</tbody></table></div>';
   }
 
-  function lastTurnSummary(entry) {
-    if (!entry) return 'Sin turnos aún';
-    return 'Último: <span class="turnos-mono">' + esc(entry.turno) + '</span> · ' +
-      esc(entry.choferNombre || '—') + ' · ' + esc((entry.hora || '').slice(0, 5));
-  }
-
-  function lastTurnCard(title, iconSrc, entry, navKey) {
-    var estado = entry ? statusBadge(entry.estado) : '';
+  function lastTurnKpi(areaLabel, entry, navKey) {
+    var val = entry ? entry.turno : '—';
     return (
-      '<button type="button" class="turnos-last-turn-card" data-turnos-nav="' + esc(navKey) + '">' +
-      '<img src="' + esc(iconSrc) + '" alt="" width="36" height="36">' +
-      '<div class="turnos-last-turn-card-body">' +
-      '<strong>' + esc(title) + '</strong>' +
-      '<span class="turnos-last-turn-line">' + lastTurnSummary(entry) + '</span>' +
-      (entry ? '<span class="turnos-last-turn-meta">' + estado + '</span>' : '') +
-      '</div></button>'
+      '<button type="button" class="turnos-kpi turnos-kpi--gray turnos-kpi--nav" data-turnos-nav="' + esc(navKey) + '">' +
+      '<span class="turnos-kpi-label">Último turno · ' + esc(areaLabel) + '</span>' +
+      '<strong class="turnos-mono">' + esc(val) + '</strong>' +
+      '</button>'
     );
   }
 
@@ -306,42 +289,34 @@
     var data = S().getState();
     var today = todayEntries();
     var stats = C().statsToday(data.entries);
-    var last = today.length
-      ? today.reduce(function (best, e) {
-        var n = parseInt(String(e.turno || '').replace(/\D/g, ''), 10) || 0;
-        var bn = parseInt(String(best.turno || '').replace(/\D/g, ''), 10) || 0;
-        return n > bn ? e : best;
-      }).turno
-      : (data.counter > 0 ? C().formatTurno(data.counter) : '—');
     var allEntries = data.entries;
+    var lastCancel = C().latestEntry(allEntries, function (e) { return e.estado === 'CANCELADO'; });
+    var lastByArea =
+      lastTurnKpi('Despacho',
+        C().latestEntry(allEntries, function (e) { return e.tipo === C().TIPOS.DESPACHO; }), 'despacho') +
+      lastTurnKpi('Liquidación',
+        C().latestEntry(allEntries, function (e) { return e.tipo === C().TIPOS.LIQUIDACION; }), 'liquidacion') +
+      lastTurnKpi('Nota de crédito',
+        C().latestEntry(allEntries, function (e) { return e.tipo === C().TIPOS.NOTA_CREDITO; }), 'nota_credito') +
+      lastTurnKpi('Cancelados', lastCancel, 'cancelados');
     var cards = Object.keys(TRAMITE_MODULES).map(function (key) {
       var cfg = TRAMITE_MODULES[key];
       var ts = tramiteStats(cfg.tipo);
-      var lastEntry = C().latestEntry(allEntries, function (e) { return e.tipo === cfg.tipo; });
       return (
         '<button type="button" class="turnos-tramite-card" data-turnos-nav="' + key + '">' +
         '<img src="' + esc(cfg.icon) + '" alt="" width="40" height="40">' +
         '<span class="turnos-tramite-card-text">' +
         '<strong>' + esc(cfg.title) + '</strong>' +
         '<span>' + ts.pendientes + ' en cola · ' + ts.totalHoy + ' hoy</span>' +
-        '<span class="turnos-tramite-last">' + lastTurnSummary(lastEntry) + '</span>' +
         '</span></button>'
       );
     }).join('');
-    var lastCancel = C().latestEntry(allEntries, function (e) { return e.estado === 'CANCELADO'; });
     var arrivalToday = C().sortByArrivalOrder(today.filter(function (e) { return e.estado !== 'CANCELADO'; }));
-    var lastByArea =
-      lastTurnCard('Despacho de facturas', TRAMITE_MODULES.despacho.icon,
-        C().latestEntry(allEntries, function (e) { return e.tipo === C().TIPOS.DESPACHO; }), 'despacho') +
-      lastTurnCard('Liquidación de facturas', TRAMITE_MODULES.liquidacion.icon,
-        C().latestEntry(allEntries, function (e) { return e.tipo === C().TIPOS.LIQUIDACION; }), 'liquidacion') +
-      lastTurnCard('Nota de crédito', TRAMITE_MODULES.nota_credito.icon,
-        C().latestEntry(allEntries, function (e) { return e.tipo === C().TIPOS.NOTA_CREDITO; }), 'nota_credito') +
-      lastTurnCard('Cancelados', 'assets/img/icon-turnos-gestion.svg' + ICON_V, lastCancel, 'cancelados');
 
     host.innerHTML =
       (data.live ? '' : '<p class="turnos-offline-banner">Sin conexión con la nube. Los datos de turnos están en Supabase — verifique internet.</p>') +
       dayBannerHtml(stats) +
+      '<div class="turnos-kpi-grid turnos-kpi-grid--last-areas">' + lastByArea + '</div>' +
       '<div class="turnos-kpi-grid turnos-kpi-grid--admin">' +
       kpi('Total hoy', stats.totalHoy, 'blue') +
       kpi('Pendientes', stats.pendientes, 'red') +
@@ -349,11 +324,7 @@
       kpi('Completados', stats.completados + stats.asentados, 'green') +
       kpi('Cancelados', stats.cancelados, 'cancel') +
       kpi('Prioritarios', stats.prioridades, 'priority') +
-      kpi('Último turno hoy', last, 'gray', true) +
       '</div>' +
-      '<section class="turnos-panel"><h2>Últimos turnos por área</h2>' +
-      '<p class="turnos-sub">El turno más reciente registrado en cada trámite (todos los días).</p>' +
-      '<div class="turnos-last-turns-grid">' + lastByArea + '</div></section>' +
       '<section class="turnos-panel"><h2>Orden de llegada — choferes de hoy</h2>' +
       '<p class="turnos-sub">Posición 1 = llegó primero. Los <strong>prioritarios</strong> aparecen adelante aunque hayan llegado después.</p>' +
       arrivalOrderTableHtml(arrivalToday) +
@@ -364,7 +335,6 @@
       '<button type="button" class="turnos-tramite-card turnos-tramite-card--muted" data-turnos-nav="cancelados">' +
       '<span class="turnos-tramite-card-icon"><img src="assets/img/icon-turnos-gestion.svg' + ICON_V + '" alt="" width="40" height="40"></span>' +
       '<span class="turnos-tramite-card-text"><strong>Cancelados</strong><span>' + stats.cancelados + ' hoy</span>' +
-      (lastCancel ? '<span class="turnos-tramite-last">' + lastTurnSummary(lastCancel) + '</span>' : '') +
       '</span></button>' +
       '</div></section>' +
       '<section class="turnos-panel"><h2>Actividad reciente de hoy</h2>' +
@@ -451,7 +421,7 @@
       '<button type="button" class="turnos-btn turnos-btn--secondary turnos-btn--xl" data-admin-action="reset-dashboard">Reiniciar vista del dashboard ahora</button>' +
       '<p class="turnos-hint">Use el botón si desea limpiar el seguimiento del dashboard sin borrar turnos.</p>' +
       '</div>' +
-      '<p class="turnos-hint">Hora oficial: <strong>República Dominicana</strong>. Turnos prioritarios: PIN Duarte (<span class="turnos-mono">' + esc(C().priorityPinHint()) + '</span>) asigna hora límite automática. La compañía la escribe el chofer en un solo campo.</p>' +
+      '<p class="turnos-hint">Hora oficial: <strong>República Dominicana</strong>. Turnos prioritarios: PIN Duarte (<span class="turnos-mono">' + esc(C().priorityPinHint()) + '</span>). Despacho: camión T1, T2 o T4 y cantidad de paletas.</p>' +
       '<button type="button" class="turnos-btn turnos-btn--danger turnos-btn--xl" data-admin-action="reset">Reiniciar numeración de turnos</button>' +
       '<p class="turnos-hint">Solo cambia el contador T-0001, T-0002… <strong>No borra</strong> el historial de turnos.</p>' +
       '<button type="button" class="turnos-btn turnos-btn--secondary" data-admin-action="logout">Cerrar sesión admin</button>' +
@@ -468,9 +438,10 @@
         Compañía: e.choferCompania || '',
         Chofer: e.choferNombre,
         Detalle: e.detalle,
+        Camión: e.tipo === C().TIPOS.DESPACHO ? (C().normalizeTipoCamion(e.tipoCamion) || '') : '',
+        Paletas: e.tipo === C().TIPOS.DESPACHO && e.cantidadPaletas != null ? e.cantidadPaletas : '',
         Estado: e.estado,
         Prioridad: e.prioridad ? 'Sí' : 'No',
-        'Hora límite': e.horaLimite || '',
         Seguimiento: C().seguimientoResumen(e),
         Convocado: e.convocadoAt ? C().formatDateTimeLocale(e.convocadoAt) : '',
         Actualizado: e.updatedAt ? C().formatDateTimeLocale(e.updatedAt) : '',
@@ -520,28 +491,6 @@
       if (nav) {
         ev.preventDefault();
         setModule(nav.getAttribute('data-turnos-nav'));
-        return;
-      }
-      var limBtn = ev.target.closest('[data-set-limite]');
-      if (limBtn) {
-        var lid = limBtn.getAttribute('data-set-limite');
-        var inp = root.querySelector('[data-limite-id="' + lid + '"]');
-        var hora = inp && inp.value;
-        if (!hora) {
-          alert('Indique la hora límite de entrega.');
-          return;
-        }
-        var userName = state.adminUser && (state.adminUser.name || state.adminUser.username);
-        limBtn.disabled = true;
-        S().setHoraLimite(lid, hora, userName).then(function (result) {
-          limBtn.disabled = false;
-          if (!result.ok) {
-            alert(result.msg || 'No se pudo guardar.');
-            refresh();
-            return;
-          }
-          refresh();
-        });
         return;
       }
       var segBtn = ev.target.closest('[data-seguimiento-id]');

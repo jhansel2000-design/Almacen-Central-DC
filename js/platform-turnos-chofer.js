@@ -11,6 +11,7 @@
   var lastEntry = null;
   var unsub = null;
   var vibrateTimer = null;
+  var userPrefersMenu = false;
   var Call = function () { return global.PlatformTurnosChoferCall; };
   var Perms = function () { return global.PlatformTurnosChoferPerms; };
 
@@ -27,6 +28,21 @@
     liquidacion_facturas: 'assets/img/icon-turnos-liquidacion.svg' + ICON_V,
     nota_credito: 'assets/img/icon-turnos-nota-credito.svg' + ICON_V
   };
+
+  function isIOSDevice() {
+    if (/iPad|iPhone|iPod/i.test(navigator.userAgent)) return true;
+    return navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1;
+  }
+
+  function iosAlertHint() {
+    if (!isIOSDevice()) return '';
+    return (
+      '<div class="turnos-ios-hint">' +
+      '<p class="turnos-hint turnos-hint--warn"><strong>iPhone:</strong> para escuchar cuando cambie de app o apague la pantalla, ' +
+      'toque <strong>Compartir → Agregar a pantalla de inicio</strong> y abra el portal desde ese icono. ' +
+      'Active notificaciones y el volumen del timbre.</p></div>'
+    );
+  }
 
   function estadoLabel(entry) {
     if (!entry) return '';
@@ -69,7 +85,7 @@
       '<section class="turnos-chofer-section">' +
       '<p class="turnos-chofer-lead">Seleccione el trámite que necesita hoy:</p>' +
       '<div class="turnos-service-grid">' +
-      serviceCard(C().TIPOS.DESPACHO, ICONS.despacho_facturas, 'Despacho de facturas', 'Entrega con ID de carga') +
+      serviceCard(C().TIPOS.DESPACHO, ICONS.despacho_facturas, 'Despacho de facturas', 'Indique tipo de camión y paletas') +
       serviceCard(C().TIPOS.LIQUIDACION, ICONS.liquidacion_facturas, 'Liquidación de facturas', 'Cierre por cantidad de viajes') +
       serviceCard(C().TIPOS.NOTA_CREDITO, ICONS.nota_credito, 'Nota de crédito', 'Solicitud para autorización') +
       '</div></section>'
@@ -93,9 +109,15 @@
     var extra = '';
 
     if (tipo === C().TIPOS.DESPACHO) {
+      var camOpts = C().TIPOS_CAMION.map(function (t) {
+        return '<option value="' + esc(t) + '">' + esc(t) + '</option>';
+      }).join('');
       extra =
-        '<label class="turnos-field"><span>ID(s) de carga</span>' +
-        '<input class="turnos-input turnos-input--lg" id="turnosFieldCarga" type="text" required maxlength="120" placeholder="Ej: CARGA-88421 o varios separados por coma"></label>';
+        '<label class="turnos-field"><span>Tipo de camión</span>' +
+        '<select class="turnos-input turnos-input--lg" id="turnosFieldCamion" required>' +
+        '<option value="">Seleccione…</option>' + camOpts + '</select></label>' +
+        '<label class="turnos-field"><span>Cantidad de paletas de su camión</span>' +
+        '<input class="turnos-input turnos-input--lg" id="turnosFieldPaletas" type="number" min="1" max="99" required inputmode="numeric" placeholder="Ej: 18"></label>';
     } else if (tipo === C().TIPOS.LIQUIDACION) {
       extra =
         '<label class="turnos-field"><span>Cantidad de viajes</span>' +
@@ -122,11 +144,7 @@
       '<label class="turnos-field"><span>PIN del supervisor</span>' +
       '<input class="turnos-input turnos-input--lg" id="turnosFieldAdminPin" type="password" inputmode="numeric" autocomplete="off" maxlength="10" placeholder="DDMMAAAA"></label>' +
       '<p class="turnos-hint turnos-hint--info">Fecha de nacimiento de <strong>Juan Pablo Duarte</strong> (DDMMAAAA, sin barras).</p>' +
-      '<div id="turnosPriorityLimiteWrap" class="turnos-priority-limite" hidden>' +
-      '<label class="turnos-field"><span>Hora límite (República Dominicana)</span>' +
-      '<input class="turnos-input turnos-input--lg turnos-input--readonly" id="turnosFieldHoraLimite" type="time" readonly tabindex="-1"></label>' +
-      '<p class="turnos-hint turnos-hint--info">Se asigna automáticamente al validar el PIN prioritario.</p>' +
-      '</div></div></div>' +
+      '</div></div>' +
       '<p id="turnosChoferFormError" class="turnos-form-error" hidden role="alert"></p>' +
       '<button type="submit" class="turnos-btn turnos-btn--primary turnos-btn--xl turnos-btn--hero">Generar mi turno</button>' +
       '</form></section>'
@@ -144,19 +162,24 @@
     var permStatus = Perms() ? Perms().getStatus() : { ready: false };
     var notifBlock = permStatus.ready
       ? '<div class="turnos-chofer-notif-prompt turnos-chofer-notif-prompt--ok" id="turnosChoferNotifPrompt">' +
-        '<p class="turnos-hint turnos-hint--info">Alertas activas. Sonará aunque cambie de aplicación.</p></div>'
+        '<p class="turnos-hint turnos-hint--info">Alertas activas' +
+        (isIOSDevice() ? '. En iPhone use el acceso desde pantalla de inicio.' : '. Sonará aunque cambie de aplicación.') +
+        '</p></div>'
       : '<div class="turnos-chofer-notif-prompt turnos-chofer-notif-prompt--warn" id="turnosChoferNotifPrompt">' +
         '<p class="turnos-hint turnos-hint--warn"><strong>Obligatorio:</strong> active notificaciones y sonido para escuchar cuando lo convoquen.</p>' +
         '<button type="button" class="turnos-btn turnos-btn--primary turnos-btn--xl" id="turnosChoferNotifBtn">Autorizar alertas ahora</button></div>';
     var prio = entry.prioridad
-      ? '<div class="turnos-call-inline turnos-call-inline--priority"><strong>Turno prioritario</strong>' +
-        (entry.horaLimite ? ' · Hora límite ' + esc(entry.horaLimite) + ' (hora RD)' : '') +
-        '</div>'
+      ? '<div class="turnos-call-inline turnos-call-inline--priority"><strong>Turno prioritario</strong></div>'
       : '';
     var cancelBtn = C().canCancelByChofer(entry)
-      ? '<button type="button" class="turnos-btn turnos-btn--danger turnos-btn--xl" data-chofer-cancel>Cancelar mi turno</button>' +
-        '<p class="turnos-hint">Al cancelar podrá solicitar un turno nuevo. El registro quedará en administración.</p>'
+      ? '<button type="button" class="turnos-btn turnos-btn--danger turnos-btn--xl" data-chofer-cancel>Cancelar mi turno</button>'
       : '';
+    var actionsBlock =
+      '<div class="turnos-success-actions">' +
+      cancelBtn +
+      '<button type="button" class="turnos-btn turnos-btn--secondary turnos-btn--xl" data-chofer-new-turn>Solicitar otro turno</button>' +
+      '<p class="turnos-hint turnos-success-actions-hint">Vuelve al menú de trámites. Si aún tiene un turno activo, cancele el anterior antes de generar uno nuevo.</p>' +
+      '</div>';
 
     return (
       '<section class="turnos-chofer-section turnos-success-screen">' +
@@ -170,11 +193,18 @@
       convocado +
       prio +
       notaHint +
+      iosAlertHint() +
       notifBlock +
       '<p class="turnos-hint">Puede cerrar esta página; al volver verá el mismo turno.</p>' +
-      cancelBtn +
+      actionsBlock +
       '</section>'
     );
+  }
+
+  function requestAnotherTurn() {
+    userPrefersMenu = true;
+    screen = 'menu';
+    render();
   }
 
   function cancelMyTurn() {
@@ -192,6 +222,7 @@
       hideCallOverlay();
       C().clearMyTurn();
       lastEntry = null;
+      userPrefersMenu = false;
       screen = 'menu';
       render();
     });
@@ -287,7 +318,7 @@
     }
     C().saveMyTurn(entry);
     lastEntry = entry;
-    screen = 'success';
+    if (!userPrefersMenu) screen = 'success';
     showCallOverlay(entry);
     render();
   }
@@ -332,12 +363,19 @@
     var payload = { tipo: selectedTipo, choferNombre: chofer, choferCompania: compania };
 
     if (selectedTipo === C().TIPOS.DESPACHO) {
-      payload.idsCarga = ($('turnosFieldCarga') && $('turnosFieldCarga').value || '').trim();
-      if (!payload.idsCarga) {
-        showError('Indique el ID de carga.');
+      var camion = ($('turnosFieldCamion') && $('turnosFieldCamion').value || '').trim();
+      if (!C().normalizeTipoCamion(camion)) {
+        showError('Seleccione el tipo de camión (T1, T2 o T4).');
         return;
       }
-    } else     if (selectedTipo === C().TIPOS.LIQUIDACION) {
+      var paletas = parseInt(($('turnosFieldPaletas') && $('turnosFieldPaletas').value) || '', 10);
+      if (!paletas || paletas < 1) {
+        showError('Indique cuántas paletas coge su camión.');
+        return;
+      }
+      payload.tipoCamion = camion;
+      payload.cantidadPaletas = paletas;
+    } else if (selectedTipo === C().TIPOS.LIQUIDACION) {
       var viajes = parseInt(($('turnosFieldViajes') && $('turnosFieldViajes').value) || '', 10);
       if (!viajes || viajes < 1) {
         showError('Indique la cantidad de viajes.');
@@ -359,7 +397,6 @@
       }
       payload.prioridad = true;
       payload.prioridadAutorizadaPor = 'supervisor-pin';
-      payload.horaLimite = ($('turnosFieldHoraLimite') && $('turnosFieldHoraLimite').value) || C().formatTimeInput();
     }
 
     var btn = ev.target.querySelector('[type="submit"]');
@@ -372,6 +409,7 @@
         return;
       }
       lastEntry = result.entry;
+      userPrefersMenu = false;
       screen = 'success';
       render();
     });
@@ -380,23 +418,7 @@
   function syncPriorityPinUi() {
     var checked = !!( $('turnosFieldPrioridad') && $('turnosFieldPrioridad').checked);
     var pinWrap = $('turnosPriorityPinWrap');
-    var limWrap = $('turnosPriorityLimiteWrap');
-    var pinEl = $('turnosFieldAdminPin');
-    var limEl = $('turnosFieldHoraLimite');
     if (pinWrap) pinWrap.hidden = !checked;
-    if (!checked) {
-      if (limWrap) limWrap.hidden = true;
-      if (limEl) limEl.value = '';
-      return;
-    }
-    var pin = pinEl && pinEl.value || '';
-    if (pin && C().verifyAdminPin(pin)) {
-      if (limEl) limEl.value = C().formatTimeInput();
-      if (limWrap) limWrap.hidden = false;
-    } else if (limWrap) {
-      limWrap.hidden = true;
-      if (limEl) limEl.value = '';
-    }
   }
 
   function bind() {
@@ -427,7 +449,12 @@
       }
       var resumeBtn = ev.target.closest('[data-chofer-resume]');
       if (resumeBtn) {
+        userPrefersMenu = false;
         syncMyTurnFromStore();
+        return;
+      }
+      if (ev.target.closest('[data-chofer-new-turn]')) {
+        requestAnotherTurn();
         return;
       }
       var tipoBtn = ev.target.closest('[data-chofer-tipo]');
@@ -437,6 +464,7 @@
         if (ref && ref.id) {
           var active = S().findById(ref.id);
           if (active && C().isTurnActive(active)) {
+            userPrefersMenu = false;
             lastEntry = active;
             screen = 'success';
             render();

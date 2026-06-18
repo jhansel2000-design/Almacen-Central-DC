@@ -1,0 +1,18 @@
+{
+  "name": "Control de Turnos — Almacén Central DC",
+  "short_name": "Turnos DC",
+  "description": "Solicite y reciba alertas de su turno de despacho.",
+  "start_url": "./turnos.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#002a5c",
+  "theme_color": "#003882",
+  "icons": [
+    {
+      "src": "assets/img/icon-turnos-gestion.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

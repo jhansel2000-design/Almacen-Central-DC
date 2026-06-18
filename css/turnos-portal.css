@@ -331,10 +331,39 @@ body.turnos-body.turnos-auth-open {
 }
 
 .turnos-success-screen .turnos-btn--danger {
-  margin-top: 1rem;
+  margin-top: 0;
   background: linear-gradient(180deg, #c41e3a, #9b1830);
   color: #fff;
   border: none;
+}
+
+.turnos-success-actions {
+  margin-top: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  align-items: stretch;
+}
+
+.turnos-success-actions-hint {
+  margin: 0.15rem 0 0 !important;
+  font-size: 0.82rem !important;
+}
+
+.turnos-ios-hint {
+  margin: 0.75rem 0 0;
+  text-align: left;
+}
+
+.turnos-perm-ios {
+  margin: 0 0 1rem;
+  padding: 0.65rem 0.75rem;
+  border-radius: 8px;
+  background: #fffbeb;
+  border: 1px solid rgba(217, 119, 6, 0.35);
+  font-size: 0.85rem;
+  line-height: 1.4;
+  color: #92400e;
 }
 
 .turnos-table-wrap { overflow-x: auto; }
@@ -1063,6 +1092,26 @@ body.turnos-body.turnos-auth-open {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.turnos-kpi-grid--last-areas {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.turnos-kpi--nav {
+  border: 0;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  font: inherit;
+  transition: filter 0.15s, transform 0.15s;
+}
+
+.turnos-kpi--nav:hover { filter: brightness(1.08); }
+
+.turnos-kpi--nav:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
 .turnos-offline-banner {
   margin: 0 0 1rem;
   padding: 0.75rem 1rem;
@@ -1463,6 +1512,7 @@ body.turnos-admin-mode .turnos-chofer-root { display: none !important; }
 
 @media (max-width: 960px) {
   .turnos-kpi-grid--admin { grid-template-columns: repeat(2, 1fr); }
+  .turnos-kpi-grid--last-areas { grid-template-columns: repeat(2, 1fr); }
   .turnos-last-turns-grid { grid-template-columns: 1fr; }
   .turnos-tramite-kpis { grid-template-columns: repeat(2, 1fr); }
 }

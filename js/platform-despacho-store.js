@@ -35,9 +35,9 @@
     },
     pendiente_carga: {
       id: 'pendiente_carga',
-      label: 'Pendiente por cargar',
-      short: 'Pend. por cargar',
-      kpiLabel: 'Pendiente por cargar',
+      label: 'Pendiente por validar',
+      short: 'Pend. por validar',
+      kpiLabel: 'Pendiente por validar',
       icon: '',
       iconType: 'lupa',
       fase: 'validacion',

@@ -39,6 +39,8 @@
     'Otra'
   ];
 
+  var TIPOS_CAMION = ['T1', 'T2', 'T4'];
+
   var PASO_LABELS = {
     REGISTRO: 'Registro del turno',
     PENDIENTE: 'Pendiente',
@@ -303,6 +305,11 @@
     return createSeguimientoItem(raw, raw.compania);
   }
 
+  function normalizeTipoCamion(val) {
+    var v = String(val || '').trim().toUpperCase();
+    return TIPOS_CAMION.indexOf(v) >= 0 ? v : '';
+  }
+
   function normalizeEntry(raw) {
     if (!raw || typeof raw !== 'object') return null;
     var estado = String(raw.estado || 'PENDIENTE').toUpperCase();
@@ -319,6 +326,9 @@
       choferNombre: String(raw.choferNombre || '').trim(),
       choferCompania: String(raw.choferCompania || '').trim(),
       idsCarga: String(raw.idsCarga || raw.qrContent || '').trim(),
+      tipoCamion: normalizeTipoCamion(raw.tipoCamion),
+      cantidadPaletas: raw.cantidadPaletas != null && raw.cantidadPaletas !== ''
+        ? Number(raw.cantidadPaletas) : null,
       cantidadViajes: raw.cantidadViajes != null ? Number(raw.cantidadViajes) : null,
       detalle: String(raw.detalle || '').trim(),
       estado: estado,
@@ -512,7 +522,9 @@
     var base = '';
     if (compania) base = 'Compañía: ' + compania + ' · ';
     if (payload.tipo === TIPOS.DESPACHO) {
-      base += 'Chofer: ' + nombre + ' · ID carga: ' + String(payload.idsCarga || '').trim();
+      var cam = normalizeTipoCamion(payload.tipoCamion);
+      var pal = payload.cantidadPaletas;
+      base += 'Chofer: ' + nombre + ' · Camión ' + (cam || '—') + ' · ' + (pal != null ? pal : '—') + ' paletas';
     } else if (payload.tipo === TIPOS.LIQUIDACION) {
       base += 'Chofer: ' + nombre + ' · Viajes: ' + String(payload.cantidadViajes || '');
     } else if (payload.tipo === TIPOS.NOTA_CREDITO) {
@@ -521,7 +533,6 @@
       base += nombre;
     }
     if (payload.prioridad) base += ' · PRIORIDAD';
-    if (payload.horaLimite) base += ' · Límite ' + payload.horaLimite;
     return base;
   }
 
@@ -546,11 +557,13 @@
       choferNombre: payload.choferNombre,
       choferCompania: compania,
       idsCarga: payload.idsCarga,
+      tipoCamion: normalizeTipoCamion(payload.tipoCamion),
+      cantidadPaletas: payload.cantidadPaletas != null ? Number(payload.cantidadPaletas) : null,
       cantidadViajes: payload.cantidadViajes,
       detalle: buildDetalle(payload),
       estado: 'PENDIENTE',
       prioridad: !!payload.prioridad,
-      horaLimite: String(payload.horaLimite || '').trim(),
+      horaLimite: '',
       prioridadAutorizadaPor: payload.prioridad ? String(payload.prioridadAutorizadaPor || 'admin').trim() : '',
       historial: [createSeguimientoItem({
         paso: 'REGISTRO',
@@ -562,17 +575,6 @@
         hora: formatTime(now)
       }, compania)]
     });
-    if (payload.prioridad && entry.horaLimite) {
-      entry.historial = appendSeguimiento(entry.historial, {
-        paso: 'HORA_LIMITE',
-        estado: 'PENDIENTE',
-        nota: 'Hora límite asignada al autorizar prioridad: ' + entry.horaLimite,
-        por: payload.prioridadAutorizadaPor || 'supervisor',
-        compania: compania,
-        fecha: todayKey(now),
-        hora: formatTime(now)
-      }, compania);
-    }
     return entry;
   }
 
@@ -600,7 +602,8 @@
       if (!isTurnActive(e) || e.createdAt < cutoff || e.tipo !== tipo) return false;
       if (e.choferNombre.toLowerCase() !== nombre) return false;
       if (tipo === TIPOS.DESPACHO) {
-        return String(e.idsCarga).trim() === String(payload.idsCarga || '').trim();
+        return normalizeTipoCamion(e.tipoCamion) === normalizeTipoCamion(payload.tipoCamion) &&
+          Number(e.cantidadPaletas) === Number(payload.cantidadPaletas);
       }
       if (tipo === TIPOS.LIQUIDACION) {
         return Number(e.cantidadViajes) === Number(payload.cantidadViajes);
@@ -705,21 +708,20 @@
 
   function priorityBadgeHtml(entry) {
     if (!entry || !entry.prioridad) return '';
-    var lim = entry.horaLimite
-      ? ' <span class="turnos-badge turnos-badge--priority-limit">Límite ' + entry.horaLimite + '</span>'
-      : ' <span class="turnos-badge turnos-badge--priority-warn">Sin límite</span>';
-    return '<span class="turnos-badge turnos-badge--priority">PRIORIDAD</span>' + lim;
+    return '<span class="turnos-badge turnos-badge--priority">PRIORIDAD</span>';
   }
 
   global.PlatformTurnosCore = {
     STORAGE_KEY: STORAGE_KEY,
     TIPOS: TIPOS,
+    TIPOS_CAMION: TIPOS_CAMION,
     TIPO_LABELS: TIPO_LABELS,
     loadState: loadState,
     loadLegacyLocalState: loadLegacyLocalState,
     clearLegacyLocalState: clearLegacyLocalState,
     saveState: saveState,
     createTurn: createTurn,
+    normalizeTipoCamion: normalizeTipoCamion,
     buildDetalle: buildDetalle,
     allowedStates: allowedStates,
     isValidTransition: isValidTransition,

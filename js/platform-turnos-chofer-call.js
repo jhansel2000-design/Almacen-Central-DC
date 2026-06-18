@@ -12,6 +12,21 @@
   var speaking = false;
   var wakeLock = null;
   var voicesReady = false;
+  var swReady = null;
+  var hiddenNotifyTimer = null;
+  var keepAliveAudio = null;
+
+  function isIOS() {
+    if (/iPad|iPhone|iPod/i.test(navigator.userAgent)) return true;
+    return navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1;
+  }
+
+  function registerServiceWorker() {
+    if (!('serviceWorker' in navigator)) return;
+    swReady = navigator.serviceWorker.register('sw-turnos.js', { scope: './' }).catch(function () {
+      return null;
+    });
+  }
 
   function ventanaSpeechNatural(entry) {
     if (!entry) return 'ventana de atención';
@@ -79,6 +94,11 @@
       clearInterval(repeatTimer);
       repeatTimer = null;
     }
+    if (hiddenNotifyTimer) {
+      clearInterval(hiddenNotifyTimer);
+      hiddenNotifyTimer = null;
+    }
+    stopKeepAliveAudio();
     if (alarmCtx) {
       try { alarmCtx.close(); } catch (e) { /* noop */ }
       alarmCtx = null;
@@ -121,18 +141,89 @@
 
   function showNotification(entry) {
     if (!global.Notification || Notification.permission !== 'granted') return;
+    var ventana = ventanaSpeechNatural(entry);
+    var title = '¡Ya es su turno! ' + (entry.turno || '');
+    var body = 'Diríjase a la ' + ventana + '.';
+    var tag = 'turnos-chofer-call-' + entry.id;
+    var icon = 'assets/img/icon-turnos-gestion.svg';
+    var url = global.location ? global.location.href : './turnos.html';
+    var options = {
+      body: body,
+      tag: tag,
+      requireInteraction: true,
+      icon: icon,
+      vibrate: [400, 150, 400, 150, 600],
+      data: { url: url }
+    };
+    if (!isIOS()) options.renotify = true;
+
+    function viaWindow() {
+      try {
+        var n = new Notification(title, options);
+        n.onclick = function () {
+          try { global.focus(); } catch (e) { /* noop */ }
+          n.close();
+        };
+      } catch (e) { /* noop */ }
+    }
+
+    function viaWorker(reg) {
+      if (navigator.serviceWorker.controller) {
+        navigator.serviceWorker.controller.postMessage({
+          type: 'turnos-call',
+          title: title,
+          body: body,
+          tag: tag,
+          icon: icon,
+          url: url
+        });
+        return;
+      }
+      reg.showNotification(title, options).catch(viaWindow);
+    }
+
+    if ('serviceWorker' in navigator) {
+      var ready = swReady || navigator.serviceWorker.ready;
+      Promise.resolve(ready).then(viaWorker).catch(viaWindow);
+    } else {
+      viaWindow();
+    }
+  }
+
+  function startHiddenNotifyBurst(entry) {
+    if (hiddenNotifyTimer) clearInterval(hiddenNotifyTimer);
+    showNotification(entry);
+    hiddenNotifyTimer = setInterval(function () {
+      if (!activeEntry || activeEntry.id !== entry.id) {
+        clearInterval(hiddenNotifyTimer);
+        hiddenNotifyTimer = null;
+        return;
+      }
+      if (document.visibilityState === 'hidden') showNotification(entry);
+    }, isIOS() ? 3500 : 8000);
+  }
+
+  function stopKeepAliveAudio() {
+    if (!keepAliveAudio) return;
     try {
-      var ventana = ventanaSpeechNatural(entry);
-      var n = new Notification('¡Ya es su turno! ' + (entry.turno || ''), {
-        body: 'Diríjase a la ' + ventana + '.',
-        tag: 'turnos-chofer-call-' + entry.id,
-        renotify: true,
-        requireInteraction: true
-      });
-      n.onclick = function () {
-        try { global.focus(); } catch (e) { /* noop */ }
-        n.close();
-      };
+      keepAliveAudio.pause();
+      keepAliveAudio.removeAttribute('src');
+      keepAliveAudio.load();
+    } catch (e) { /* noop */ }
+    keepAliveAudio = null;
+  }
+
+  function startKeepAliveAudio() {
+    if (keepAliveAudio || !activeEntry) return;
+    try {
+      keepAliveAudio = document.createElement('audio');
+      keepAliveAudio.setAttribute('playsinline', '');
+      keepAliveAudio.setAttribute('webkit-playsinline', '');
+      keepAliveAudio.loop = true;
+      keepAliveAudio.volume = isIOS() ? 0.04 : 0.02;
+      keepAliveAudio.src = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEAQB8AAEAfAAABAAgAZGF0YQQAAAAAAA==';
+      var play = keepAliveAudio.play();
+      if (play && play.catch) play.catch(function () { /* noop */ });
     } catch (e) { /* noop */ }
   }
 
@@ -214,6 +305,7 @@
 
   function startRepeatAlert(entry) {
     if (repeatTimer) clearInterval(repeatTimer);
+    var intervalMs = isIOS() ? 5000 : 12000;
     repeatTimer = setInterval(function () {
       if (!activeEntry || activeEntry.id !== entry.id) {
         clearInterval(repeatTimer);
@@ -223,17 +315,20 @@
       vibrateAggressive();
       if (document.visibilityState === 'hidden') {
         showNotification(entry);
-      }
-      if (!speaking && !alarmTimer) {
+        if (!speaking && !alarmTimer) playCallSiren(isIOS() ? 4 : 6);
+      } else if (!speaking && !alarmTimer) {
         playCallSiren(6);
       }
-    }, 12000);
+    }, intervalMs);
   }
 
   function runFullAlert(entry) {
     vibrateAggressive();
     if (document.visibilityState === 'hidden') {
       showNotification(entry);
+      startHiddenNotifyBurst(entry);
+    } else {
+      startKeepAliveAudio();
     }
     speakThenAlarm(entry);
     startRepeatAlert(entry);
@@ -275,12 +370,27 @@
   function onVisibilityChange() {
     if (!activeEntry) return;
     if (document.visibilityState === 'visible') {
+      if (hiddenNotifyTimer) {
+        clearInterval(hiddenNotifyTimer);
+        hiddenNotifyTimer = null;
+      }
+      startKeepAliveAudio();
       runFullAlert(activeEntry);
+    } else {
+      stopKeepAliveAudio();
+      showNotification(activeEntry);
+      startHiddenNotifyBurst(activeEntry);
     }
   }
 
+  function onPageHide() {
+    if (activeEntry) showNotification(activeEntry);
+  }
+
   function init() {
+    registerServiceWorker();
     document.addEventListener('visibilitychange', onVisibilityChange);
+    document.addEventListener('pagehide', onPageHide);
     if (global.speechSynthesis) {
       speechSynthesis.addEventListener('voiceschanged', preloadVoices, { once: true });
       preloadVoices();

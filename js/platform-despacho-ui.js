@@ -821,7 +821,7 @@
       '<header class="desp-panel-head">' +
       '<div><span class="desp-eyebrow">Validador</span>' +
       '<h3 id="despValTitle">Seguimiento validador</h3>' +
-      '<p class="desp-panel-sub">IDC del operador entran como <strong>Pend. por cargar</strong>. Usted marca <strong>Cargado</strong> o quita del seguimiento.</p></div>' +
+      '<p class="desp-panel-sub">IDC del operador entran como <strong>Pend. por validar</strong>. Usted marca <strong>Cargado</strong> o quita del seguimiento.</p></div>' +
       '<span class="desp-live-badge" title="Sincronización activa"><span class="desp-live-dot"></span> En vivo</span>' +
       '</header>' +
       '<div class="desp-filters">' +
