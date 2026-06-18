@@ -9,6 +9,7 @@
   var MY_TURN_KEY = 'dc_turnos_my_active';
   var CONVOCADO_SEEN_PREFIX = 'dc_turnos_convocado_seen_';
   var DEDUP_MS = 8000;
+  var ADMIN_PIN = 'Central@';
 
   var TIPOS = {
     DESPACHO: 'despacho_facturas',
@@ -62,8 +63,22 @@
       estado: estado,
       convocadoAt: raw.convocadoAt != null ? Number(raw.convocadoAt) : null,
       updatedAt: raw.updatedAt != null ? Number(raw.updatedAt) : null,
-      updatedBy: String(raw.updatedBy || '').trim()
+      updatedBy: String(raw.updatedBy || '').trim(),
+      prioridad: !!raw.prioridad,
+      horaLimite: String(raw.horaLimite || '').trim(),
+      prioridadAutorizadaPor: String(raw.prioridadAutorizadaPor || '').trim()
     };
+  }
+
+  function verifyAdminPin(pin) {
+    return String(pin || '').trim() === ADMIN_PIN;
+  }
+
+  function sortEntries(entries) {
+    return (entries || []).slice().sort(function (a, b) {
+      if (a.prioridad !== b.prioridad) return a.prioridad ? -1 : 1;
+      return (b.createdAt || 0) - (a.createdAt || 0);
+    });
   }
 
   function ventanaLabel(tipo) {
@@ -192,16 +207,19 @@
 
   function buildDetalle(payload) {
     var nombre = String(payload.choferNombre || '').trim();
+    var base = '';
     if (payload.tipo === TIPOS.DESPACHO) {
-      return 'Chofer: ' + nombre + ' · ID carga: ' + String(payload.idsCarga || '').trim();
+      base = 'Chofer: ' + nombre + ' · ID carga: ' + String(payload.idsCarga || '').trim();
+    } else if (payload.tipo === TIPOS.LIQUIDACION) {
+      base = 'Chofer: ' + nombre + ' · Viajes: ' + String(payload.cantidadViajes || '');
+    } else if (payload.tipo === TIPOS.NOTA_CREDITO) {
+      base = 'Chofer: ' + nombre + ' · Nota de crédito';
+    } else {
+      base = nombre;
     }
-    if (payload.tipo === TIPOS.LIQUIDACION) {
-      return 'Chofer: ' + nombre + ' · Viajes: ' + String(payload.cantidadViajes || '');
-    }
-    if (payload.tipo === TIPOS.NOTA_CREDITO) {
-      return 'Chofer: ' + nombre + ' · Nota de crédito';
-    }
-    return nombre;
+    if (payload.prioridad) base += ' · PRIORIDAD';
+    if (payload.horaLimite) base += ' · Límite ' + payload.horaLimite;
+    return base;
   }
 
   function createTurn(counter, payload) {
@@ -218,7 +236,10 @@
       idsCarga: payload.idsCarga,
       cantidadViajes: payload.cantidadViajes,
       detalle: buildDetalle(payload),
-      estado: 'PENDIENTE'
+      estado: 'PENDIENTE',
+      prioridad: !!payload.prioridad,
+      horaLimite: String(payload.horaLimite || '').trim(),
+      prioridadAutorizadaPor: payload.prioridad ? String(payload.prioridadAutorizadaPor || 'admin').trim() : ''
     });
   }
 
@@ -268,7 +289,8 @@
       }).length,
       confirmados: today.filter(function (e) { return e.estado === 'CONFIRMADO'; }).length,
       asentados: today.filter(function (e) { return e.estado === 'ASENTADO'; }).length,
-      cancelados: today.filter(function (e) { return e.estado === 'CANCELADO'; }).length
+      cancelados: today.filter(function (e) { return e.estado === 'CANCELADO'; }).length,
+      prioridades: today.filter(function (e) { return e.prioridad && e.estado !== 'CANCELADO'; }).length
     };
   }
 
@@ -330,6 +352,14 @@
     return 'pending';
   }
 
+  function priorityBadgeHtml(entry) {
+    if (!entry || !entry.prioridad) return '';
+    var lim = entry.horaLimite
+      ? ' <span class="turnos-badge turnos-badge--priority-limit">Límite ' + entry.horaLimite + '</span>'
+      : ' <span class="turnos-badge turnos-badge--priority-warn">Sin límite</span>';
+    return '<span class="turnos-badge turnos-badge--priority">PRIORIDAD</span>' + lim;
+  }
+
   global.PlatformTurnosCore = {
     STORAGE_KEY: STORAGE_KEY,
     TIPOS: TIPOS,
@@ -339,6 +369,7 @@
     clearLegacyLocalState: clearLegacyLocalState,
     saveState: saveState,
     createTurn: createTurn,
+    buildDetalle: buildDetalle,
     allowedStates: allowedStates,
     isValidTransition: isValidTransition,
     isDuplicateSubmit: isDuplicateSubmit,
@@ -363,6 +394,10 @@
     getConvocadoSeen: getConvocadoSeen,
     markConvocadoSeen: markConvocadoSeen,
     vibrateCall: vibrateCall,
+    verifyAdminPin: verifyAdminPin,
+    sortEntries: sortEntries,
+    priorityBadgeHtml: priorityBadgeHtml,
+    ADMIN_PIN: ADMIN_PIN,
     VENTANA_LABELS: VENTANA_LABELS
   };
 })(typeof window !== 'undefined' ? window : this);

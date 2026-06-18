@@ -78,6 +78,22 @@
     return new Date(entry.updatedAt).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
   }
 
+  function limiteCell(e, compact, readonly) {
+    if (!e.prioridad) {
+      return compact ? '' : '<td class="turnos-muted-inline">—</td>';
+    }
+    if (e.horaLimite) {
+      return '<td class="turnos-mono turnos-limite-ok">' + esc(e.horaLimite) + '</td>';
+    }
+    if (!compact && !readonly) {
+      return '<td class="turnos-limite-cell">' +
+        '<label class="turnos-sr-only" for="limite-' + esc(e.id) + '">Hora límite</label>' +
+        '<input type="time" class="turnos-limite-input" id="limite-' + esc(e.id) + '" data-limite-id="' + esc(e.id) + '" required>' +
+        '<button type="button" class="turnos-btn turnos-btn--secondary turnos-btn--sm" data-set-limite="' + esc(e.id) + '">Definir</button></td>';
+    }
+    return '<td><span class="turnos-badge turnos-badge--priority-warn">Sin límite</span></td>';
+  }
+
   function adminTableHtml(entries, compact, readonly) {
     if (!entries.length) {
       return '<p class="turnos-empty">No hay registros en esta sección.</p>';
@@ -94,13 +110,15 @@
           '<td class="turnos-mono turnos-muted-inline">' + esc(formatUpdated(e)) + '</td>' +
           '<td class="turnos-actions-cell">' + convocarBtn(e) + ' ' + statusSelect(e) + '</td>';
       }
-      return '<tr>' +
-        '<td class="turnos-mono turnos-turno">' + esc(e.turno) + '</td>' +
+      return '<tr class="' + (e.prioridad ? 'turnos-row--priority' : '') + '">' +
+        '<td class="turnos-mono turnos-turno">' + esc(e.turno) +
+        (e.prioridad ? '<br>' + C().priorityBadgeHtml(e) : '') + '</td>' +
         (compact ? '<td>' + esc(C().TIPO_LABELS[e.tipo] || e.tipo) + '</td>' : '') +
         '<td>' + esc(e.choferNombre || '—') + '</td>' +
         '<td class="turnos-qr-cell" title="' + esc(e.detalle) + '">' + esc(e.detalle) + '</td>' +
         '<td class="turnos-mono">' + esc(e.hora) + '</td>' +
         '<td>' + convocado + statusBadge(e.estado) + '</td>' +
+        (!compact ? limiteCell(e, compact, readonly) : '') +
         tail +
         '</tr>';
     }).join('');
@@ -109,6 +127,7 @@
       '<th>Turno</th>' +
       (compact ? '<th>Trámite</th>' : '') +
       '<th>Chofer</th><th>Detalle</th><th>Hora</th><th>Estado</th>' +
+      (!compact ? '<th>Hora límite</th>' : '') +
       (!compact && readonly ? '<th>Cancelado por</th>' : '') +
       (!compact && !readonly ? '<th>Actualizado</th><th>Gestionar</th>' : '');
 
@@ -183,6 +202,7 @@
       kpi('En proceso', stats.enProceso + stats.confirmados, 'process') +
       kpi('Completados', stats.completados + stats.asentados, 'green') +
       kpi('Cancelados', stats.cancelados, 'cancel') +
+      kpi('Prioritarios', stats.prioridades, 'priority') +
       kpi('Último turno', last, 'gray', true) +
       '</div>' +
       '<section class="turnos-panel"><h2>Áreas de seguimiento</h2>' +
@@ -260,6 +280,9 @@
       '<section class="turnos-panel">' +
       '<h2>Configuración</h2>' +
       '<p class="turnos-sub">Usuario: <strong>' + esc(state.adminUser && (state.adminUser.name || state.adminUser.username)) + '</strong></p>' +
+      '<p class="turnos-sub">Notificaciones: aviso con voz y alarma cuando esté en otra ventana del navegador.</p>' +
+      '<button type="button" class="turnos-btn turnos-btn--primary turnos-btn--xl" data-admin-action="notif-perm">Activar notificaciones del navegador</button>' +
+      '<p class="turnos-hint">Turnos prioritarios requieren PIN administrador al crearse. Defina la hora límite en cada fila prioritaria.</p>' +
       '<button type="button" class="turnos-btn turnos-btn--danger turnos-btn--xl" data-admin-action="reset">Reiniciar numeración</button>' +
       '<p class="turnos-hint">Conserva el historial. El próximo turno volverá a T-0001.</p>' +
       '<button type="button" class="turnos-btn turnos-btn--secondary" data-admin-action="logout">Cerrar sesión admin</button>' +
@@ -276,6 +299,8 @@
         Chofer: e.choferNombre,
         Detalle: e.detalle,
         Estado: e.estado,
+        Prioridad: e.prioridad ? 'Sí' : 'No',
+        'Hora límite': e.horaLimite || '',
         Convocado: e.convocadoAt ? new Date(e.convocadoAt).toLocaleString('es-ES') : '',
         Actualizado: e.updatedAt ? new Date(e.updatedAt).toLocaleString('es-ES') : '',
         Por: e.updatedBy || ''
@@ -326,6 +351,28 @@
         setModule(nav.getAttribute('data-turnos-nav'));
         return;
       }
+      var limBtn = ev.target.closest('[data-set-limite]');
+      if (limBtn) {
+        var lid = limBtn.getAttribute('data-set-limite');
+        var inp = root.querySelector('[data-limite-id="' + lid + '"]');
+        var hora = inp && inp.value;
+        if (!hora) {
+          alert('Indique la hora límite de entrega.');
+          return;
+        }
+        var userName = state.adminUser && (state.adminUser.name || state.adminUser.username);
+        limBtn.disabled = true;
+        S().setHoraLimite(lid, hora, userName).then(function (result) {
+          limBtn.disabled = false;
+          if (!result.ok) {
+            alert(result.msg || 'No se pudo guardar.');
+            refresh();
+            return;
+          }
+          refresh();
+        });
+        return;
+      }
       var convBtn = ev.target.closest('[data-convocar-id]');
       if (convBtn) {
         var cid = convBtn.getAttribute('data-convocar-id');
@@ -347,6 +394,11 @@
       var action = btn.getAttribute('data-admin-action');
       if (action === 'export-xlsx') exportXlsx();
       else if (action === 'export-csv') exportCsv();
+      else if (action === 'notif-perm' && global.PlatformTurnosAlerts) {
+        global.PlatformTurnosAlerts.requestPermission().then(function (ok) {
+          alert(ok ? 'Notificaciones activadas.' : 'No se pudieron activar. Revise permisos del navegador.');
+        });
+      }
       else if (action === 'reset') {
         if (confirm('¿Reiniciar numeración de turnos?')) {
           S().resetCounter().then(function (result) {
@@ -395,7 +447,14 @@
       refresh();
     });
     if (state._unsub) state._unsub();
-    state._unsub = S().subscribe(function () { refresh(); });
+    state._unsub = S().subscribe(function (shared) {
+      refresh();
+      if (global.PlatformTurnosAlerts) global.PlatformTurnosAlerts.onStoreUpdate(shared);
+    });
+    if (global.PlatformTurnosAlerts) {
+      global.PlatformTurnosAlerts.start();
+      global.PlatformTurnosAlerts.requestPermission();
+    }
     updateClock();
     setInterval(updateClock, 1000);
     var label = $('turnosAdminUserLabel');
@@ -418,6 +477,7 @@
   function hide() {
     var root = $('turnosAdminRoot');
     if (root) root.classList.add('is-hidden');
+    if (global.PlatformTurnosAlerts) global.PlatformTurnosAlerts.stop();
   }
 
   global.PlatformTurnosAdmin = { start: start, show: show, hide: hide, refresh: refresh };

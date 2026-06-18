@@ -107,6 +107,15 @@
       '<label class="turnos-field"><span>Nombre del chofer</span>' +
       '<input class="turnos-input turnos-input--lg" id="turnosFieldChofer" type="text" required maxlength="80" autocomplete="name" value="' + remembered + '" placeholder="Su nombre completo"></label>' +
       extra +
+      '<div class="turnos-priority-block">' +
+      '<label class="turnos-priority-toggle">' +
+      '<input type="checkbox" id="turnosFieldPrioridad" class="turnos-priority-check"> ' +
+      '<span>Turno <strong>prioritario</strong> (requiere PIN administrador)</span></label>' +
+      '<div id="turnosPriorityPinWrap" class="turnos-priority-pin" hidden>' +
+      '<label class="turnos-field"><span>PIN del administrador</span>' +
+      '<input class="turnos-input turnos-input--lg" id="turnosFieldAdminPin" type="password" inputmode="numeric" autocomplete="off" placeholder="PIN para autorizar prioridad"></label>' +
+      '<p class="turnos-hint turnos-hint--info">Solo personal autorizado puede aprobar turnos prioritarios.</p>' +
+      '</div></div>' +
       '<p id="turnosChoferFormError" class="turnos-form-error" hidden role="alert"></p>' +
       '<button type="submit" class="turnos-btn turnos-btn--primary turnos-btn--xl turnos-btn--hero">Generar mi turno</button>' +
       '</form></section>'
@@ -121,6 +130,11 @@
     var notaHint = entry.tipo === C().TIPOS.NOTA_CREDITO
       ? '<p class="turnos-hint turnos-hint--info">Flujo: Pendiente → Confirmado → Asentado.</p>'
       : '<p class="turnos-hint">Espere la convocatoria del administrador en pantalla o vibración del celular.</p>';
+    var prio = entry.prioridad
+      ? '<div class="turnos-call-inline turnos-call-inline--priority"><strong>Turno prioritario</strong>' +
+        (entry.horaLimite ? ' · Límite ' + esc(entry.horaLimite) : ' · El administrador definirá la hora límite') +
+        '</div>'
+      : '';
     var cancelBtn = C().canCancelByChofer(entry)
       ? '<button type="button" class="turnos-btn turnos-btn--danger turnos-btn--xl" data-chofer-cancel>Cancelar mi turno</button>' +
         '<p class="turnos-hint">Al cancelar podrá solicitar un turno nuevo. El registro quedará en administración.</p>'
@@ -136,6 +150,7 @@
       '<p class="turnos-success-time">' + esc(entry.fecha) + ' · ' + esc(entry.hora) + '</p>' +
       '<p class="turnos-success-status">' + esc(estadoLabel(entry)) + '</p>' +
       convocado +
+      prio +
       notaHint +
       '<p class="turnos-hint">Puede cerrar esta página; al volver verá el mismo turno.</p>' +
       cancelBtn +
@@ -285,13 +300,28 @@
         showError('Indique el ID de carga.');
         return;
       }
-    } else if (selectedTipo === C().TIPOS.LIQUIDACION) {
+    } else     if (selectedTipo === C().TIPOS.LIQUIDACION) {
       var viajes = parseInt(($('turnosFieldViajes') && $('turnosFieldViajes').value) || '', 10);
       if (!viajes || viajes < 1) {
         showError('Indique la cantidad de viajes.');
         return;
       }
       payload.cantidadViajes = viajes;
+    }
+
+    var prioridad = !!( $('turnosFieldPrioridad') && $('turnosFieldPrioridad').checked);
+    if (prioridad) {
+      var pin = ($('turnosFieldAdminPin') && $('turnosFieldAdminPin').value || '').trim();
+      if (!pin) {
+        showError('Indique el PIN del administrador para turno prioritario.');
+        return;
+      }
+      if (!C().verifyAdminPin(pin)) {
+        showError('PIN incorrecto. Solo un administrador puede autorizar prioridad.');
+        return;
+      }
+      payload.prioridad = true;
+      payload.prioridadAutorizadaPor = 'admin-pin';
     }
 
     var btn = ev.target.querySelector('[type="submit"]');
@@ -313,6 +343,13 @@
     var root = $('turnosChoferRoot');
     if (!root || root.dataset.bound) return;
     root.dataset.bound = '1';
+
+    root.addEventListener('change', function (ev) {
+      if (ev.target.id === 'turnosFieldPrioridad') {
+        var wrap = $('turnosPriorityPinWrap');
+        if (wrap) wrap.hidden = !ev.target.checked;
+      }
+    });
 
     root.addEventListener('click', function (ev) {
       if (ev.target.closest('[data-call-dismiss]')) {

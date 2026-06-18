@@ -16,7 +16,7 @@
 
   function applyRemote(data) {
     if (!data) return;
-    shared.entries = (data.entries || []).slice();
+    shared.entries = C().sortEntries(data.entries || []);
     shared.counter = Number(data.counter) || shared.counter;
     if (!shared.counter && shared.entries.length) {
       shared.counter = shared.entries.reduce(function (max, e) {
@@ -31,6 +31,7 @@
     var idx = shared.entries.findIndex(function (e) { return e.id === entry.id; });
     if (idx >= 0) shared.entries[idx] = entry;
     else shared.entries.unshift(entry);
+    shared.entries = C().sortEntries(shared.entries);
     shared.counter = Math.max(
       shared.counter,
       parseInt(String(entry.turno || '').replace(/\D/g, ''), 10) || 0
@@ -135,6 +136,20 @@
     });
   }
 
+  function setHoraLimite(id, horaLimite, adminUser) {
+    return init().then(function () {
+      var sync = Sync();
+      if (!sync || !shared.live) return cloudError(shared.error);
+      return sync.setHoraLimite(id, horaLimite, adminUser).then(function (entry) {
+        upsertEntry(entry);
+        notify();
+        return { ok: true, entry: entry };
+      }).catch(function () {
+        return cloudError('No se pudo guardar la hora límite.');
+      });
+    });
+  }
+
   function resetCounter() {
     return init().then(function () {
       var sync = Sync();
@@ -202,6 +217,7 @@
     setEstado: setEstado,
     convocarChofer: convocarChofer,
     cancelTurn: cancelTurn,
+    setHoraLimite: setHoraLimite,
     resetCounter: resetCounter,
     getState: getState,
     findById: findById,

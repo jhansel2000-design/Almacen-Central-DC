@@ -169,6 +169,20 @@
     });
   }
 
+  function setHoraLimite(id, horaLimite, adminUser) {
+    horaLimite = String(horaLimite || '').trim();
+    if (!horaLimite) return Promise.reject(new Error('Indique la hora límite'));
+    return pullState().then(function (remote) {
+      var entry = remote.entries.find(function (e) { return e.id === id; });
+      if (!entry) return Promise.reject(new Error('Turno no encontrado'));
+      if (!entry.prioridad) return Promise.reject(new Error('Solo turnos prioritarios'));
+      return patchEntry(id, {
+        horaLimite: horaLimite,
+        detalle: C().buildDetalle(Object.assign({}, entry, { horaLimite: horaLimite }))
+      }, adminUser || 'admin');
+    });
+  }
+
   function resetCounter() {
     return pullState().then(function (remote) {
       remote.counter = 0;
@@ -194,6 +208,7 @@
     insertTurn: insertTurn,
     updateEstado: updateEstado,
     convocarChofer: convocarChofer,
+    setHoraLimite: setHoraLimite,
     resetCounter: resetCounter,
     pushState: pushState,
     onChange: onChange,
