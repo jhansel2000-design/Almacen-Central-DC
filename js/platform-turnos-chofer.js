@@ -11,6 +11,7 @@
   var lastEntry = null;
   var unsub = null;
   var vibrateTimer = null;
+  var Call = function () { return global.PlatformTurnosChoferCall; };
 
   function $(id) { return document.getElementById(id); }
 
@@ -143,7 +144,7 @@
       : '';
     var notaHint = entry.tipo === C().TIPOS.NOTA_CREDITO
       ? '<p class="turnos-hint turnos-hint--info">Flujo: Pendiente → Confirmado → Asentado.</p>'
-      : '<p class="turnos-hint">Espere la convocatoria del administrador en pantalla o vibración del celular.</p>';
+      : '<p class="turnos-hint">Cuando lo convoquen escuchará un mensaje de voz y una alarma. Mantenga esta página abierta en el celular o active las notificaciones.</p>';
     var prio = entry.prioridad
       ? '<div class="turnos-call-inline turnos-call-inline--priority"><strong>Turno prioritario</strong>' +
         (entry.horaLimite ? ' · Límite ' + esc(entry.horaLimite) : ' · El administrador definirá la hora límite') +
@@ -166,6 +167,9 @@
       convocado +
       prio +
       notaHint +
+      '<div class="turnos-chofer-notif-prompt" id="turnosChoferNotifPrompt">' +
+      '<p class="turnos-hint turnos-hint--info">Para que suene fuerte aunque cambie de aplicación, active las notificaciones del navegador.</p>' +
+      '<button type="button" class="turnos-btn turnos-btn--secondary turnos-btn--xl" id="turnosChoferNotifBtn">Activar alertas en el celular</button></div>' +
       '<p class="turnos-hint">Puede cerrar esta página; al volver verá el mismo turno.</p>' +
       cancelBtn +
       '</section>'
@@ -204,10 +208,11 @@
       overlay.setAttribute('aria-live', 'assertive');
       overlay.innerHTML =
         '<div class="turnos-call-card">' +
-        '<p class="turnos-call-eyebrow">¡Es su turno!</p>' +
+        '<p class="turnos-call-eyebrow">¡Ya es su turno!</p>' +
         '<p class="turnos-call-turno turnos-mono" id="turnosCallTurno">T-0000</p>' +
         '<p class="turnos-call-ventana" id="turnosCallVentana">Pase a la ventana</p>' +
         '<p class="turnos-call-detail" id="turnosCallDetail"></p>' +
+        '<p class="turnos-call-voice-hint">Escuche el mensaje y la alarma. Pase de inmediato.</p>' +
         '<button type="button" class="turnos-btn turnos-btn--primary turnos-btn--xl" data-call-dismiss>Entendido — voy a la ventana</button>' +
         '</div>';
       root.appendChild(overlay);
@@ -216,37 +221,45 @@
 
   function showCallOverlay(entry) {
     if (!entry || !entry.convocadoAt) return;
-    var seen = C().getConvocadoSeen(entry.id);
-    if (seen >= entry.convocadoAt) return;
-    C().markConvocadoSeen(entry.id, entry.convocadoAt);
+    if (C().getConvocadoSeen(entry.id) >= entry.convocadoAt) return;
     ensureCallOverlay();
     var overlay = $('turnosCallOverlay');
     var turnoEl = $('turnosCallTurno');
     var ventanaEl = $('turnosCallVentana');
     var detailEl = $('turnosCallDetail');
     if (turnoEl) turnoEl.textContent = entry.turno;
-    if (ventanaEl) ventanaEl.textContent = 'Pase a ' + C().ventanaLabel(entry.tipo);
+    if (ventanaEl) ventanaEl.textContent = 'Pase a la ' + C().ventanaLabel(entry.tipo);
     if (detailEl) detailEl.textContent = entry.detalle || '';
-    if (overlay) overlay.classList.remove('is-hidden');
-    C().vibrateCall();
-    if (vibrateTimer) clearInterval(vibrateTimer);
-    vibrateTimer = setInterval(function () {
-      if (overlay && overlay.classList.contains('is-hidden')) {
-        clearInterval(vibrateTimer);
-        vibrateTimer = null;
-        return;
-      }
-      C().vibrateCall();
-    }, 4000);
+    if (overlay) {
+      overlay.classList.remove('is-hidden');
+      overlay.classList.add('turnos-call-overlay--ringing');
+    }
+    if (Call() && Call().activate(entry)) {
+      if (vibrateTimer) clearInterval(vibrateTimer);
+      vibrateTimer = setInterval(function () {
+        if (!overlay || overlay.classList.contains('is-hidden')) {
+          clearInterval(vibrateTimer);
+          vibrateTimer = null;
+          return;
+        }
+        try {
+          if (navigator.vibrate) navigator.vibrate([300, 100, 300]);
+        } catch (e) { /* noop */ }
+      }, 5000);
+    }
   }
 
   function hideCallOverlay() {
     var overlay = $('turnosCallOverlay');
-    if (overlay) overlay.classList.add('is-hidden');
+    if (overlay) {
+      overlay.classList.add('is-hidden');
+      overlay.classList.remove('turnos-call-overlay--ringing');
+    }
     if (vibrateTimer) {
       clearInterval(vibrateTimer);
       vibrateTimer = null;
     }
+    if (Call()) Call().dismiss((Call().getActiveEntry && Call().getActiveEntry()) || lastEntry);
   }
 
   function syncMyTurnFromStore() {
@@ -378,6 +391,16 @@
     });
 
     root.addEventListener('click', function (ev) {
+      if (ev.target.closest('#turnosChoferNotifBtn')) {
+        if (Call()) {
+          Call().requestPermission().then(function (ok) {
+            var prompt = $('turnosChoferNotifPrompt');
+            if (ok && prompt) prompt.innerHTML = '<p class="turnos-hint turnos-hint--info">Alertas activadas. Sonará cuando lo convoquen.</p>';
+            else alert('No se pudieron activar. En el navegador permita notificaciones para este sitio.');
+          });
+        }
+        return;
+      }
       if (ev.target.closest('[data-call-dismiss]')) {
         hideCallOverlay();
         return;
@@ -422,6 +445,7 @@
 
   function start() {
     bind();
+    if (Call()) Call().init();
     render();
     S().init().then(function () {
       syncMyTurnFromStore();
