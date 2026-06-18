@@ -71,7 +71,11 @@
   }
 
   function canOfferInstall() {
-    return !isStandalone() && !wasDismissedRecently();
+    if (isStandalone() || wasDismissedRecently()) return false;
+    if (isIOS() && !isStandalone()) return true;
+    var Perms = global.PlatformTurnosChoferPerms;
+    if (Perms && Perms.isReady && !Perms.isReady()) return false;
+    return true;
   }
 
   function primaryActionLabel() {

@@ -1650,6 +1650,45 @@ body.turnos-admin-mode .turnos-chofer-root { display: none !important; }
 
 body.turnos-perm-open { overflow: hidden; }
 
+body.turnos-perm-open .turnos-chofer-header,
+body.turnos-perm-open .turnos-chofer-main,
+body.turnos-perm-open .turnos-pwa-banner,
+body.turnos-perm-open .turnos-pwa-foot-btn {
+  pointer-events: none;
+  user-select: none;
+}
+
+body.turnos-perm-open .turnos-chofer-main,
+body.turnos-perm-open .turnos-chofer-header {
+  opacity: 0.5;
+  filter: blur(1px);
+}
+
+body.turnos-perm-open .turnos-chofer-foot .turnos-admin-link,
+body.turnos-perm-open .turnos-chofer-foot .turnos-back-link {
+  pointer-events: auto;
+  opacity: 1;
+  filter: none;
+}
+
+.turnos-chofer-root--locked .turnos-service-card,
+.turnos-chofer-root--locked .turnos-btn:not(#turnosPermBtn):not(#turnosPermIosBtn) {
+  pointer-events: none;
+}
+
+.turnos-perm-btn--ios { margin-bottom: 0.65rem; }
+
+.turnos-perm-unsupported {
+  margin: 0.65rem 0 0;
+  padding: 0.65rem;
+  border-radius: 8px;
+  background: #fff8e6;
+  color: #8a5a00;
+  font-size: 0.84rem;
+  line-height: 1.45;
+  font-weight: 600;
+}
+
 .turnos-perm-card {
   width: min(100%, 420px);
   padding: 1.35rem 1.25rem 1.25rem;

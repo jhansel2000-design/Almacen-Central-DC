@@ -54,6 +54,9 @@
   }
 
   function render() {
+    if (Perms() && !Perms().isReady()) {
+      Perms().refreshGate();
+    }
     var host = $('turnosChoferMain');
     if (!host) return;
     if (screen === 'menu') host.innerHTML = renderMenu();
@@ -373,7 +376,7 @@
     ev.preventDefault();
     showError('');
     if (Perms() && !Perms().requireBeforeAction()) {
-      showError('Debe autorizar notificaciones y sonido antes de generar su turno.');
+      showError('Debe autorizar notificaciones y sonido (paso obligatorio) antes de solicitar turno.');
       return;
     }
     if (!S().getState().live) {
@@ -465,6 +468,13 @@
     if (pinWrap) pinWrap.hidden = !checked;
   }
 
+  function guardPerms() {
+    if (!Perms()) return true;
+    if (Perms().isReady()) return true;
+    Perms().refreshGate();
+    return false;
+  }
+
   function bind() {
     var root = $('turnosChoferRoot');
     if (!root || root.dataset.bound) return;
@@ -479,6 +489,14 @@
     });
 
     root.addEventListener('click', function (ev) {
+      if (ev.target.closest('#turnosAdminLink') || ev.target.closest('.turnos-back-link')) return;
+      if (ev.target.closest('#turnosPermGate') || ev.target.closest('#turnosPermBtn') ||
+          ev.target.closest('#turnosPermIosBtn')) return;
+      if (!guardPerms()) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        return;
+      }
       if (ev.target.closest('#turnosChoferNotifBtn')) {
         if (Perms()) {
           Perms().requestAll().then(function () { Perms().refreshGate(); render(); });
@@ -503,7 +521,7 @@
       }
       var tipoBtn = ev.target.closest('[data-chofer-tipo]');
       if (tipoBtn) {
-        if (Perms() && !Perms().requireBeforeAction()) return;
+        if (!guardPerms()) return;
         var ref = C().getMyTurnRef();
         if (ref && ref.id) {
           var active = S().findById(ref.id);
@@ -532,7 +550,13 @@
     });
 
     root.addEventListener('submit', function (ev) {
-      if (ev.target.id === 'turnosChoferForm') submitForm(ev);
+      if (ev.target.id === 'turnosChoferForm') {
+        if (!guardPerms()) {
+          ev.preventDefault();
+          return;
+        }
+        submitForm(ev);
+      }
     });
   }
 

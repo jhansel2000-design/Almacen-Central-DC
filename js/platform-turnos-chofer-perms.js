@@ -67,14 +67,42 @@
     }
   }
 
+  function isIOSDevice() {
+    if (/iPad|iPhone|iPod/i.test(navigator.userAgent)) return true;
+    return navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1;
+  }
+
+  function isStandalonePwa() {
+    var Pwa = global.PlatformTurnosPwa;
+    if (Pwa && Pwa.isStandalone) return Pwa.isStandalone();
+    try {
+      if (global.matchMedia && global.matchMedia('(display-mode: standalone)').matches) return true;
+    } catch (e) { /* noop */ }
+    return !!global.navigator.standalone;
+  }
+
+  function notificationsOk() {
+    if (!notificationSupported()) return false;
+    return Notification.permission === 'granted';
+  }
+
+  function iosInstallOk() {
+    if (!isIOSDevice()) return true;
+    return isStandalonePwa();
+  }
+
   function getStatus() {
     var notif = getNotificationState();
-    var notifOk = notif === 'granted' || notif === 'unsupported';
+    var notifOk = notificationsOk();
+    var iosOk = iosInstallOk();
     return {
       notifications: notif,
       notificationsOk: notifOk,
+      notificationsSupported: notificationSupported(),
       audioOk: audioUnlocked,
-      ready: notifOk && audioUnlocked
+      iosInstallOk: iosOk,
+      iosDevice: isIOSDevice(),
+      ready: notifOk && audioUnlocked && iosOk
     };
   }
 
@@ -89,9 +117,8 @@
         if (navigator.vibrate) navigator.vibrate(80);
       } catch (e) { /* noop */ }
       return requestNotifications();
-    }).then(function (notifOk) {
-      var st = getStatus();
-      return st.ready || (st.notificationsOk && st.audioOk);
+    }).then(function () {
+      return getStatus().ready;
     });
   }
 
@@ -110,15 +137,19 @@
       '<div class="turnos-perm-card">' +
       '<p class="turnos-perm-eyebrow">Paso obligatorio</p>' +
       '<h2 id="turnosPermTitle">Active las alertas de su turno</h2>' +
-      '<p class="turnos-perm-lead">Si no autoriza, <strong>no sonará</strong> cuando lo convoquen y usted no esté en esta página.</p>' +
-      '<p class="turnos-perm-ios" id="turnosPermIos" hidden><strong>iPhone:</strong> después de autorizar, use <strong>Compartir → Agregar a pantalla de inicio</strong> y abra el portal desde ese icono. Así las notificaciones suenan aunque apague la pantalla.</p>' +
+      '<p class="turnos-perm-lead"><strong>Obligatorio:</strong> no puede usar el portal ni solicitar turno sin autorizar alertas. ' +
+      'Si no acepta, <strong>no sonará</strong> cuando lo convoquen.</p>' +
+      '<p class="turnos-perm-ios" id="turnosPermIos" hidden><strong>iPhone:</strong> también debe usar <strong>Compartir → Agregar a pantalla de inicio</strong> y abrir desde ese icono.</p>' +
       '<ul class="turnos-perm-list">' +
       '<li id="turnosPermItemNotif" class="turnos-perm-item turnos-perm-item--pending"><span class="turnos-perm-icon">1</span><span>Notificaciones del celular</span></li>' +
       '<li id="turnosPermItemAudio" class="turnos-perm-item turnos-perm-item--pending"><span class="turnos-perm-icon">2</span><span>Sonido, voz y alarma</span></li>' +
+      '<li id="turnosPermItemIos" class="turnos-perm-item turnos-perm-item--pending" hidden><span class="turnos-perm-icon">3</span><span>App en pantalla de inicio (iPhone)</span></li>' +
       '</ul>' +
       '<button type="button" class="turnos-btn turnos-btn--primary turnos-btn--xl turnos-perm-btn" id="turnosPermBtn">Autorizar ahora</button>' +
+      '<button type="button" class="turnos-btn turnos-btn--secondary turnos-btn--xl turnos-perm-btn turnos-perm-btn--ios" id="turnosPermIosBtn" hidden>Agregar a pantalla de inicio</button>' +
       '<p class="turnos-perm-hint" id="turnosPermHint">Toque el botón y seleccione <strong>Permitir</strong> cuando el navegador lo pida.</p>' +
-      '<p class="turnos-perm-denied" id="turnosPermDenied" hidden>Si los bloqueó antes: abra el menú del navegador → Configuración del sitio → Notificaciones → <strong>Permitir</strong>. Luego vuelva aquí y pulse Autorizar.</p>' +
+      '<p class="turnos-perm-denied" id="turnosPermDenied" hidden>Notificaciones bloqueadas. Abra el menú del navegador → Configuración del sitio → Notificaciones → <strong>Permitir</strong>. Luego pulse Autorizar otra vez.</p>' +
+      '<p class="turnos-perm-unsupported" id="turnosPermUnsupported" hidden>Use <strong>Chrome</strong> o <strong>Safari</strong> en su celular. Este navegador no permite alertas de turno.</p>' +
       '</div>';
     root.appendChild(gate);
     gate.querySelector('#turnosPermBtn').addEventListener('click', function () {
@@ -135,14 +166,22 @@
         refreshGate();
       });
     });
+    var iosBtn = gate.querySelector('#turnosPermIosBtn');
+    if (iosBtn) {
+      iosBtn.addEventListener('click', function () {
+        if (global.PlatformTurnosPwa && global.PlatformTurnosPwa.openInstallModal) {
+          global.PlatformTurnosPwa.openInstallModal();
+        }
+      });
+    }
     return gate;
   }
 
   function setItemState(id, ok, label) {
     var el = document.getElementById(id);
     if (!el) return;
-    el.classList.toggle('turnos-perm-item--ok', !!ok);
-    el.classList.toggle('turnos-perm-item--pending', !ok);
+    el.classList.toggle('turnos-perm-item--ok', ok === true);
+    el.classList.toggle('turnos-perm-item--pending', ok !== true && ok !== false);
     el.classList.toggle('turnos-perm-item--fail', ok === false);
     var span = el.querySelector('span:last-child');
     if (span && label) span.textContent = label;
@@ -161,11 +200,6 @@
     document.body.classList.remove('turnos-perm-open');
   }
 
-  function isIOSDevice() {
-    if (/iPad|iPhone|iPod/i.test(navigator.userAgent)) return true;
-    return navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1;
-  }
-
   function refreshGate() {
     var st = getStatus();
     var Call = global.PlatformTurnosChoferCall;
@@ -173,17 +207,30 @@
       hideGate();
       return st;
     }
-    setItemState('turnosPermItemNotif', st.notificationsOk,
-      st.notifications === 'granted' ? 'Notificaciones — activadas' :
-      st.notifications === 'denied' ? 'Notificaciones — bloqueadas' :
-      st.notifications === 'unsupported' ? 'Notificaciones — no disponibles en este navegador' :
-      'Notificaciones — pendiente');
+    var notifLabel = !st.notificationsSupported
+      ? 'Notificaciones — navegador no compatible'
+      : st.notifications === 'granted' ? 'Notificaciones — activadas' :
+      st.notifications === 'denied' ? 'Notificaciones — bloqueadas (obligatorio)' :
+      'Notificaciones — pendiente (obligatorio)';
+    setItemState('turnosPermItemNotif', st.notificationsOk ? true : (st.notifications === 'denied' ? false : null), notifLabel);
     setItemState('turnosPermItemAudio', st.audioOk,
-      st.audioOk ? 'Sonido, voz y alarma — listos' : 'Sonido, voz y alarma — pendiente');
+      st.audioOk ? 'Sonido, voz y alarma — listos' : 'Sonido, voz y alarma — pendiente (obligatorio)');
+    var iosItem = document.getElementById('turnosPermItemIos');
+    var iosBtn = document.getElementById('turnosPermIosBtn');
+    if (iosItem) iosItem.hidden = !st.iosDevice;
+    if (iosBtn) iosBtn.hidden = !st.iosDevice || st.iosInstallOk;
+    if (st.iosDevice) {
+      setItemState('turnosPermItemIos', st.iosInstallOk,
+        st.iosInstallOk ? 'App en inicio — instalada' : 'App en inicio — pendiente (obligatorio en iPhone)');
+    }
     var denied = document.getElementById('turnosPermDenied');
     if (denied) denied.hidden = st.notifications !== 'denied';
+    var unsupported = document.getElementById('turnosPermUnsupported');
+    if (unsupported) unsupported.hidden = st.notificationsSupported;
     var iosHint = document.getElementById('turnosPermIos');
-    if (iosHint) iosHint.hidden = !isIOSDevice();
+    if (iosHint) iosHint.hidden = !st.iosDevice || st.iosInstallOk;
+    var root = document.getElementById('turnosChoferRoot');
+    if (root) root.classList.toggle('turnos-chofer-root--locked', !st.ready);
     if (st.ready) {
       hideGate();
     } else {
@@ -193,8 +240,8 @@
   }
 
   function requireBeforeAction() {
-    refreshGate();
-    return isReady();
+    var st = refreshGate();
+    return !!st.ready;
   }
 
   function startPolling() {
