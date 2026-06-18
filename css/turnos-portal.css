@@ -2504,6 +2504,11 @@ body.turnos-pwa-modal-open { overflow: hidden; }
 }
 
 @media (display-mode: standalone) {
+  .turnos-chofer-root,
+  .turnos-app {
+    padding-top: env(safe-area-inset-top);
+  }
+
   .turnos-pwa-banner,
   .turnos-pwa-foot-btn,
   .turnos-pwa-sidebar-btn,
