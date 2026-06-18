@@ -2449,14 +2449,66 @@ body.turnos-pwa-modal-open { overflow: hidden; }
   }
 }
 
-@media (display-mode: standalone) {
-  .turnos-chofer-root,
-  .turnos-app {
-    padding-top: env(safe-area-inset-top);
-  }
+.turnos-pwa-banner--supervisor {
+  margin: 0 0 1rem;
+  border-radius: 12px;
+  border: 2px solid rgba(13, 122, 62, 0.35);
+  background: linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%);
+}
 
+.turnos-pwa-sidebar-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  min-height: 44px;
+  margin-bottom: 0.75rem;
+  padding: 0.55rem 0.75rem;
+  border-radius: 10px;
+  border: 1px dashed rgba(255, 255, 255, 0.45);
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: left;
+}
+
+.turnos-pwa-sidebar-btn:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.turnos-pwa-sidebar-btn img {
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.turnos-pwa-auth-btn {
+  width: 100%;
+  min-height: 44px;
+  margin: 0.75rem 0;
+  padding: 0.65rem 1rem;
+  border-radius: 10px;
+  border: 2px dashed var(--bp-blue);
+  background: var(--bp-blue-pale);
+  color: var(--bp-blue);
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.turnos-pwa-auth-btn:hover {
+  background: var(--bp-blue-light);
+}
+
+@media (display-mode: standalone) {
   .turnos-pwa-banner,
-  .turnos-pwa-foot-btn {
+  .turnos-pwa-foot-btn,
+  .turnos-pwa-sidebar-btn,
+  .turnos-pwa-auth-btn,
+  .turnos-pwa-admin-btn {
     display: none !important;
   }
 }

@@ -33,6 +33,9 @@
 
   function showChofer() {
     markAdminView(false);
+    if (global.PlatformTurnosPwa && global.PlatformTurnosPwa.setRole) {
+      global.PlatformTurnosPwa.setRole('chofer');
+    }
     if (global.PlatformTurnosChofer) {
       global.PlatformTurnosChofer.show();
       global.PlatformTurnosChofer.start();
@@ -45,6 +48,9 @@
 
   function showAdminApp(user) {
     markAdminView(true);
+    if (global.PlatformTurnosPwa && global.PlatformTurnosPwa.setRole) {
+      global.PlatformTurnosPwa.setRole('supervisor');
+    }
     if (global.PlatformTurnosChofer) global.PlatformTurnosChofer.hide();
     hideAuth();
     if (global.PlatformTurnosAdmin) {
@@ -57,6 +63,9 @@
   }
 
   function showAuth() {
+    if (global.PlatformTurnosPwa && global.PlatformTurnosPwa.setRole) {
+      global.PlatformTurnosPwa.setRole('supervisor');
+    }
     var overlay = $('turnosAuthOverlay');
     if (overlay) {
       overlay.classList.remove('is-hidden');
@@ -201,6 +210,13 @@
   function boot() {
     initAuth();
     var params = new URLSearchParams(global.location.search);
+    if (global.PlatformTurnosPwa && global.PlatformTurnosPwa.setRole) {
+      if (params.get('admin') === '1' || wantsAdminView()) {
+        global.PlatformTurnosPwa.setRole('supervisor');
+      } else {
+        global.PlatformTurnosPwa.setRole('chofer');
+      }
+    }
     if (wantsAdminView() && tryRestoreAdmin()) return;
     if (params.get('admin') === '1') {
       if (tryRestoreAdmin()) return;

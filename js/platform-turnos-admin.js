@@ -315,6 +315,9 @@
       '<p class="turnos-sub">Confirme que el chofer está en el almacén antes de asignar el número T-XXXX. ' +
       'Sin validación no se genera ticket ni entra a la cola.</p></div></div>' +
       '<p class="turnos-validacion-count"><strong>' + pending.length + '</strong> solicitud(es) pendiente(s)</p>' +
+      (global.PlatformTurnosPwa && !global.PlatformTurnosPwa.isStandalone()
+        ? '<p class="turnos-hint turnos-hint--info turnos-validacion-install-hint">Instale la <strong>app supervisor</strong> (botón arriba o en Configuración) para validar desde el celular con un toque.</p>'
+        : '') +
       validacionTableHtml(pending) +
       '</section>';
     updateNavBadges();
@@ -501,9 +504,16 @@
       '<p class="turnos-sub">Notificaciones: aviso en el navegador cuando está en otra pestaña (sin sonido en el panel).</p>' +
       '<button type="button" class="turnos-btn turnos-btn--primary turnos-btn--xl" data-admin-action="notif-perm">Activar notificaciones del navegador</button>' +
       '<div class="turnos-config-block">' +
-      '<h3 class="turnos-config-title">App en el teléfono / enlace directo</h3>' +
-      '<p class="turnos-hint">Comparta el acceso directo con choferes para que instalen el icono «Turnos DC» en su pantalla de inicio (iPhone, Android o PC).</p>' +
-      '<button type="button" class="turnos-btn turnos-btn--secondary turnos-btn--xl" data-admin-action="pwa-install">Instalar app / copiar enlace</button>' +
+      '<h3 class="turnos-config-title">App supervisor en el teléfono</h3>' +
+      '<p class="turnos-hint">Instale <strong>Turnos Supervisor</strong> en la pantalla de inicio para validar solicitudes al instante. ' +
+      'Enlace directo: <span class="turnos-mono">turnos.html?admin=1</span></p>' +
+      '<button type="button" class="turnos-btn turnos-btn--primary turnos-btn--xl" data-admin-action="pwa-install">Instalar app supervisor</button>' +
+      '<button type="button" class="turnos-btn turnos-btn--secondary turnos-btn--xl" data-admin-action="pwa-copy-supervisor">Copiar enlace supervisor</button>' +
+      '</div>' +
+      '<div class="turnos-config-block">' +
+      '<h3 class="turnos-config-title">App choferes (compartir)</h3>' +
+      '<p class="turnos-hint">Enlace para que choferes instalen su app y soliciten turno.</p>' +
+      '<button type="button" class="turnos-btn turnos-btn--secondary turnos-btn--xl" data-admin-action="pwa-install-chofer">Ver enlace app chofer</button>' +
       '</div>' +
       '<div class="turnos-config-block">' +
       '<h3 class="turnos-config-title">Dashboard — seguimiento del día</h3>' +
@@ -654,7 +664,16 @@
         });
       }
       else if (action === 'pwa-install' && global.PlatformTurnosPwa) {
-        global.PlatformTurnosPwa.openInstallModal();
+        global.PlatformTurnosPwa.setRole('supervisor');
+        global.PlatformTurnosPwa.openInstallModal('supervisor');
+      }
+      else if (action === 'pwa-copy-supervisor' && global.PlatformTurnosPwa) {
+        global.PlatformTurnosPwa.setRole('supervisor');
+        global.PlatformTurnosPwa.copyDirectLink(null, 'supervisor');
+      }
+      else if (action === 'pwa-install-chofer' && global.PlatformTurnosPwa) {
+        global.PlatformTurnosPwa.setRole('chofer');
+        global.PlatformTurnosPwa.openInstallModal('chofer');
       }
       else if (action === 'reset-dashboard') {
         S().saveConfig({ resetDashboardView: true }).then(function (result) {
