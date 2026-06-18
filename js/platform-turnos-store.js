@@ -109,19 +109,21 @@
   }
 
   function setEstado(id, estado, adminUser) {
-    var sync = Sync();
-    if (sync && shared.live) {
-      return sync.updateEstado(id, estado, adminUser).then(function (entry) {
-        var idx = shared.entries.findIndex(function (e) { return e.id === id; });
-        if (idx >= 0) shared.entries[idx] = entry;
-        persistLocal();
-        notify();
-        return { ok: true, entry: entry };
-      }).catch(function () {
-        return localSetEstado(id, estado, adminUser);
-      });
-    }
-    return Promise.resolve(localSetEstado(id, estado, adminUser));
+    return init().then(function () {
+      var sync = Sync();
+      if (sync && shared.live) {
+        return sync.updateEstado(id, estado, adminUser).then(function (entry) {
+          var idx = shared.entries.findIndex(function (e) { return e.id === id; });
+          if (idx >= 0) shared.entries[idx] = entry;
+          persistLocal();
+          notify();
+          return { ok: true, entry: entry };
+        }).catch(function () {
+          return Promise.resolve(localSetEstado(id, estado, adminUser));
+        });
+      }
+      return Promise.resolve(localSetEstado(id, estado, adminUser));
+    });
   }
 
   function localConvocar(id, adminUser) {
@@ -145,19 +147,21 @@
   }
 
   function convocarChofer(id, adminUser) {
-    var sync = Sync();
-    if (sync && shared.live) {
-      return sync.convocarChofer(id, adminUser).then(function (entry) {
-        var idx = shared.entries.findIndex(function (e) { return e.id === id; });
-        if (idx >= 0) shared.entries[idx] = entry;
-        persistLocal();
-        notify();
-        return { ok: true, entry: entry };
-      }).catch(function () {
-        return localConvocar(id, adminUser);
-      });
-    }
-    return Promise.resolve(localConvocar(id, adminUser));
+    return init().then(function () {
+      var sync = Sync();
+      if (sync && shared.live) {
+        return sync.convocarChofer(id, adminUser).then(function (entry) {
+          var idx = shared.entries.findIndex(function (e) { return e.id === id; });
+          if (idx >= 0) shared.entries[idx] = entry;
+          persistLocal();
+          notify();
+          return { ok: true, entry: entry };
+        }).catch(function () {
+          return Promise.resolve(localConvocar(id, adminUser));
+        });
+      }
+      return Promise.resolve(localConvocar(id, adminUser));
+    });
   }
 
   function cancelTurn(id, cancelledBy) {

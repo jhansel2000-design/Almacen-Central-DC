@@ -1,24 +1,17 @@
 /**
- * Control de Turnos — Supabase en vivo
+ * Control de Turnos — Supabase en vivo vía web_snapshots (sin migración extra)
  */
 (function (global) {
   'use strict';
 
+  var MODULE = 'turnos';
   var C = function () { return global.PlatformTurnosCore; };
+  var Bridge = function () { return global.PlatformSupabaseBridge; };
   var listeners = [];
   var unsub = null;
   var readyPromise = null;
-  var setupRequired = false;
   var live = false;
-
-  function sb() {
-    return global.PlatformSupabase && global.PlatformSupabase.getClient();
-  }
-
-  function isMissing(err) {
-    var blob = [err && err.message, err && err.details, err && err.code].filter(Boolean).join(' ');
-    return /turnos_queue|turnos_counter|does not exist|42P01|PGRST205/i.test(blob);
-  }
+  var setupRequired = false;
 
   function notify(kind, payload) {
     listeners.forEach(function (fn) {
@@ -33,166 +26,151 @@
     };
   }
 
-  function mapRow(row) {
-    return C().normalizeEntry({
-      id: row.id,
-      turno: row.turno,
-      fecha: row.fecha,
-      hora: row.hora,
-      tipo: row.tipo,
-      choferNombre: row.chofer_nombre,
-      idsCarga: row.ids_carga,
-      cantidadViajes: row.cantidad_viajes,
-      detalle: row.detalle,
-      estado: row.estado,
-      convocadoAt: row.convocado_at ? new Date(row.convocado_at).getTime() : null,
-      createdAt: row.created_at ? new Date(row.created_at).getTime() : Date.now(),
-      updatedAt: row.updated_at ? new Date(row.updated_at).getTime() : null,
-      updatedBy: row.updated_by
+  function normalizeSnapshot(raw) {
+    if (!raw || typeof raw !== 'object') return { counter: 0, entries: [] };
+    var entries = (raw.entries || []).map(function (e) { return C().normalizeEntry(e); }).filter(Boolean);
+    var counter = Number(raw.counter) || 0;
+    if (!counter && entries.length) {
+      counter = entries.reduce(function (max, e) {
+        var n = parseInt(String(e.turno || '').replace(/\D/g, ''), 10) || 0;
+        return Math.max(max, n);
+      }, 0);
+    }
+    return { counter: counter, entries: entries };
+  }
+
+  function pullState() {
+    var B = Bridge();
+    if (!B) return Promise.reject(new Error('Sin Supabase'));
+    return B.pull(MODULE).then(function (data) {
+      live = true;
+      setupRequired = false;
+      return normalizeSnapshot(data);
     });
   }
 
-  function toDb(entry) {
-    return {
-      id: entry.id,
-      turno: entry.turno,
-      fecha: entry.fecha,
-      hora: entry.hora,
-      tipo: entry.tipo,
-      chofer_nombre: entry.choferNombre,
-      ids_carga: entry.idsCarga || '',
-      cantidad_viajes: entry.cantidadViajes,
-      detalle: entry.detalle,
-      estado: entry.estado,
-      convocado_at: entry.convocadoAt ? new Date(entry.convocadoAt).toISOString() : null,
-      updated_by: entry.updatedBy || ''
+  function pushState(state) {
+    var B = Bridge();
+    if (!B) return Promise.reject(new Error('Sin Supabase'));
+    var payload = {
+      counter: Number(state.counter) || 0,
+      entries: (state.entries || []).map(function (e) { return C().normalizeEntry(e); }).filter(Boolean),
+      updatedAt: new Date().toISOString()
     };
-  }
-
-  function fetchAll() {
-    var client = sb();
-    if (!client) return Promise.reject(new Error('Sin Supabase'));
-    return Promise.all([
-      client.from('turnos_queue').select('*').order('created_at', { ascending: false }).limit(500),
-      client.from('turnos_counter').select('counter').eq('id', 1).maybeSingle()
-    ]).then(function (res) {
-      if (res[0].error) throw res[0].error;
-      if (res[1].error && !isMissing(res[1].error)) throw res[1].error;
-      setupRequired = false;
+    return B.push(MODULE, payload).then(function (ok) {
+      if (!ok) throw new Error('No se pudo guardar en la nube');
       live = true;
-      var entries = (res[0].data || []).map(mapRow);
-      var counter = (res[1].data && res[1].data.counter) || 0;
-      if (!counter && entries.length) {
-        counter = entries.reduce(function (max, e) {
-          var n = parseInt(String(e.turno || '').replace(/\D/g, ''), 10) || 0;
-          return Math.max(max, n);
-        }, 0);
-      }
-      return { entries: entries, counter: counter };
-    }).catch(function (err) {
-      if (isMissing(err)) setupRequired = true;
-      throw err;
+      setupRequired = false;
+      return payload;
     });
   }
 
   function subscribeRealtime() {
-    var RT = global.PlatformSupabaseRealtime;
-    if (!sb() || !RT || !RT.subscribeTable) return;
+    var B = Bridge();
+    if (!B || !B.subscribe) return;
     if (unsub) unsub();
-    unsub = RT.subscribeTable({
-      id: 'turnos_queue',
-      table: 'turnos_queue',
-      events: ['INSERT', 'UPDATE', 'DELETE'],
-      onEvent: function () {
-        fetchAll().then(function (data) {
-          notify('sync', data);
-        }).catch(function () { /* noop */ });
-      },
-      pull: fetchAll,
-      pollFallbackMs: 2500,
-      onData: function (data) {
-        notify('sync', data);
-      }
+    unsub = B.subscribe(MODULE, function (remote) {
+      if (!remote) return;
+      live = true;
+      setupRequired = false;
+      notify('sync', normalizeSnapshot(remote));
     });
   }
 
   function ready() {
     if (readyPromise) return readyPromise;
-    readyPromise = (global.PlatformSupabase && global.PlatformSupabase.init
-      ? global.PlatformSupabase.init()
-      : Promise.resolve(false))
-      .then(function () {
-        if (!sb()) {
-          setupRequired = true;
-          return { ok: false, local: true };
-        }
-        return fetchAll().then(function (data) {
-          subscribeRealtime();
-          return { ok: true, data: data };
-        });
-      })
-      .catch(function () {
+    var B = Bridge();
+    if (!B) {
+      setupRequired = true;
+      return Promise.resolve({ ok: false, local: true });
+    }
+    readyPromise = B.ensureReady().then(function () {
+      if (!B.isEnabled || !B.isEnabled()) {
+        setupRequired = true;
         return { ok: false, local: true };
+      }
+      return pullState().then(function (data) {
+        subscribeRealtime();
+        return { ok: true, data: data };
+      }).catch(function () {
+        setupRequired = false;
+        live = true;
+        subscribeRealtime();
+        return { ok: true, data: { counter: 0, entries: [] } };
       });
+    }).catch(function () {
+      setupRequired = true;
+      return { ok: false, local: true };
+    });
     return readyPromise;
   }
 
-  function nextCounter() {
-    var client = sb();
-    if (!client) return Promise.reject(new Error('Sin Supabase'));
-    return client.rpc('turnos_next_counter').then(function (res) {
-      if (res.error) throw res.error;
-      return Number(res.data) || 0;
+  function nextCounter(entries, remoteCounter) {
+    var counter = Number(remoteCounter) || 0;
+    (entries || []).forEach(function (e) {
+      var n = parseInt(String(e.turno || '').replace(/\D/g, ''), 10) || 0;
+      counter = Math.max(counter, n);
     });
+    return counter + 1;
   }
 
   function insertTurn(payload) {
-    var client = sb();
-    if (!client) return Promise.reject(new Error('Sin Supabase'));
-    return nextCounter().then(function (n) {
-      var draft = C().createTurn(n, payload);
-      var row = toDb(draft);
-      delete row.id;
-      row.created_at = new Date(draft.createdAt).toISOString();
-      row.updated_at = row.created_at;
-      return client.from('turnos_queue').insert(row).select('*').single().then(function (res) {
-        if (res.error) throw res.error;
-        return mapRow(res.data);
-      });
+    return pullState().then(function (remote) {
+      if (C().isDuplicateSubmit(remote.entries, payload)) {
+        return Promise.reject(new Error('Turno duplicado'));
+      }
+      var n = nextCounter(remote.entries, remote.counter);
+      var entry = C().createTurn(n, payload);
+      remote.counter = n;
+      remote.entries.unshift(entry);
+      return pushState(remote).then(function () { return entry; });
     });
   }
 
-  function patchTurn(id, patch) {
-    var client = sb();
-    if (!client) return Promise.reject(new Error('Sin Supabase'));
-    patch.updated_at = new Date().toISOString();
-    return client.from('turnos_queue').update(patch).eq('id', id).select('*').single().then(function (res) {
-      if (res.error) throw res.error;
-      return mapRow(res.data);
+  function patchEntry(id, patch, updatedBy) {
+    return pullState().then(function (remote) {
+      var found = null;
+      remote.entries = remote.entries.map(function (e) {
+        if (e.id !== id) return e;
+        found = Object.assign({}, e, patch, {
+          updatedAt: Date.now(),
+          updatedBy: updatedBy || patch.updatedBy || e.updatedBy || 'admin'
+        });
+        return C().normalizeEntry(found);
+      });
+      if (!found) return Promise.reject(new Error('Turno no encontrado'));
+      return pushState(remote).then(function () { return found; });
     });
   }
 
   function updateEstado(id, estado, adminUser) {
-    return patchTurn(id, {
-      estado: estado,
-      updated_by: adminUser || 'admin'
+    return pullState().then(function (remote) {
+      var entry = remote.entries.find(function (e) { return e.id === id; });
+      if (!entry) return Promise.reject(new Error('Turno no encontrado'));
+      if (!C().isValidTransition(entry, estado)) {
+        return Promise.reject(new Error('Estado no permitido'));
+      }
+      return patchEntry(id, { estado: estado }, adminUser || 'admin');
     });
   }
 
   function convocarChofer(id, adminUser) {
-    var entry = null;
-    return fetchAll().then(function (data) {
-      entry = data.entries.find(function (e) { return e.id === id; });
-      if (!entry) throw new Error('Turno no encontrado');
+    return pullState().then(function (remote) {
+      var entry = remote.entries.find(function (e) { return e.id === id; });
+      if (!entry) return Promise.reject(new Error('Turno no encontrado'));
       var patch = {
-        convocado_at: new Date().toISOString(),
-        updated_by: adminUser || 'admin'
+        convocadoAt: Date.now(),
+        updatedBy: adminUser || 'admin'
       };
       if (C().allowedStates(entry.tipo).indexOf('EN_PROCESO') >= 0) {
         patch.estado = 'EN_PROCESO';
       }
-      return patchTurn(id, patch);
+      return patchEntry(id, patch, adminUser || 'admin');
     });
+  }
+
+  function fetchAll() {
+    return pullState();
   }
 
   function isLive() { return live; }
