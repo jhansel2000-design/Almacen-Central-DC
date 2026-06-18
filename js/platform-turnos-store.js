@@ -68,24 +68,26 @@
   }
 
   function addTurn(payload) {
-    var sync = Sync();
-    if (sync && shared.live) {
-      return sync.insertTurn(payload).then(function (entry) {
-        var idx = shared.entries.findIndex(function (e) { return e.id === entry.id; });
-        if (idx >= 0) shared.entries[idx] = entry;
-        else shared.entries.unshift(entry);
-        shared.counter = Math.max(shared.counter, parseInt(String(entry.turno || '').replace(/\D/g, ''), 10) || 0);
-        persistLocal();
-        C().rememberChoferName(payload.choferNombre);
-        C().playBeep();
-        C().saveMyTurn(entry);
-        notify();
-        return { ok: true, entry: entry };
-      }).catch(function () {
-        return localAddTurn(payload);
-      });
-    }
-    return Promise.resolve(localAddTurn(payload));
+    return init().then(function () {
+      var sync = Sync();
+      if (sync && shared.live) {
+        return sync.insertTurn(payload).then(function (entry) {
+          var idx = shared.entries.findIndex(function (e) { return e.id === entry.id; });
+          if (idx >= 0) shared.entries[idx] = entry;
+          else shared.entries.unshift(entry);
+          shared.counter = Math.max(shared.counter, parseInt(String(entry.turno || '').replace(/\D/g, ''), 10) || 0);
+          persistLocal();
+          C().rememberChoferName(payload.choferNombre);
+          C().playBeep();
+          C().saveMyTurn(entry);
+          notify();
+          return { ok: true, entry: entry };
+        }).catch(function () {
+          return localAddTurn(payload);
+        });
+      }
+      return localAddTurn(payload);
+    });
   }
 
   function localSetEstado(id, estado, adminUser) {

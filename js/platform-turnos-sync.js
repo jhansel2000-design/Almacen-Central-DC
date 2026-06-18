@@ -109,7 +109,7 @@
         }).catch(function () { /* noop */ });
       },
       pull: fetchAll,
-      pollFallbackMs: 5000,
+      pollFallbackMs: 2500,
       onData: function (data) {
         notify('sync', data);
       }
@@ -118,19 +118,22 @@
 
   function ready() {
     if (readyPromise) return readyPromise;
-    readyPromise = new Promise(function (resolve) {
-      if (!sb()) {
-        setupRequired = true;
-        resolve({ ok: false, local: true });
-        return;
-      }
-      fetchAll().then(function (data) {
-        subscribeRealtime();
-        resolve({ ok: true, data: data });
-      }).catch(function () {
-        resolve({ ok: false, local: true });
+    readyPromise = (global.PlatformSupabase && global.PlatformSupabase.init
+      ? global.PlatformSupabase.init()
+      : Promise.resolve(false))
+      .then(function () {
+        if (!sb()) {
+          setupRequired = true;
+          return { ok: false, local: true };
+        }
+        return fetchAll().then(function (data) {
+          subscribeRealtime();
+          return { ok: true, data: data };
+        });
+      })
+      .catch(function () {
+        return { ok: false, local: true };
       });
-    });
     return readyPromise;
   }
 

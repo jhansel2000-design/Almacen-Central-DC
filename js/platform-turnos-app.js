@@ -6,10 +6,27 @@
 
   var PC = global.PanelCore;
   var Auth = global.PlatformAdmin;
+  var ADMIN_VIEW_KEY = 'dc_turnos_admin_view';
+
+  function markAdminView(active) {
+    try {
+      if (active) sessionStorage.setItem(ADMIN_VIEW_KEY, '1');
+      else sessionStorage.removeItem(ADMIN_VIEW_KEY);
+    } catch (e) { /* noop */ }
+  }
+
+  function wantsAdminView() {
+    try {
+      return sessionStorage.getItem(ADMIN_VIEW_KEY) === '1';
+    } catch (e) {
+      return false;
+    }
+  }
 
   function $(id) { return document.getElementById(id); }
 
   function showChofer() {
+    markAdminView(false);
     if (global.PlatformTurnosChofer) {
       global.PlatformTurnosChofer.show();
       global.PlatformTurnosChofer.start();
@@ -20,12 +37,14 @@
   }
 
   function showAdminApp(user) {
+    markAdminView(true);
     if (global.PlatformTurnosChofer) global.PlatformTurnosChofer.hide();
     hideAuth();
     if (global.PlatformTurnosAdmin) {
       global.PlatformTurnosAdmin.show();
       global.PlatformTurnosAdmin.start(user);
     }
+    if (PC && PC.touchAveriasSession) PC.touchAveriasSession(user);
     document.body.classList.add('turnos-admin-mode');
   }
 
@@ -149,6 +168,7 @@
     if (adminLink) {
       adminLink.addEventListener('click', function (ev) {
         ev.preventDefault();
+        if (tryRestoreAdmin()) return;
         showAuth();
       });
     }
@@ -173,8 +193,9 @@
   function boot() {
     initAuth();
     var params = new URLSearchParams(global.location.search);
-    if (params.get('admin') === '1' && tryRestoreAdmin()) return;
+    if (wantsAdminView() && tryRestoreAdmin()) return;
     if (params.get('admin') === '1') {
+      if (tryRestoreAdmin()) return;
       showAuth();
       return;
     }

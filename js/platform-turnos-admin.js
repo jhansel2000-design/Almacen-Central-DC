@@ -282,6 +282,13 @@
     setInterval(updateClock, 1000);
     var label = $('turnosAdminUserLabel');
     if (label && user) label.textContent = (user.name || user.username || 'Admin') + ' (' + (user.role || 'admin') + ')';
+    if (global.PanelCore && global.PanelCore.touchAveriasSession) {
+      global.PanelCore.touchAveriasSession(user);
+      if (state._sessionTouch) clearInterval(state._sessionTouch);
+      state._sessionTouch = setInterval(function () {
+        global.PanelCore.touchAveriasSession(user);
+      }, 5 * 60 * 1000);
+    }
     setModule('dashboard');
   }
 
