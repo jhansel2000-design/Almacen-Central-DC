@@ -91,7 +91,7 @@
         C().rememberChoferName(payload.choferNombre);
         if (payload.choferCompania) C().rememberChoferCompania(payload.choferCompania);
         C().saveMyTurn(entry);
-        C().playBeep();
+        if (entry.estado !== C().ESTADO_PENDIENTE_VALIDACION) C().playBeep();
         notify();
         return { ok: true, entry: entry };
       }).catch(function (err) {
@@ -243,11 +243,32 @@
     return initPromise;
   }
 
+  function validateTurn(id, adminUser) {
+    return init().then(function () {
+      var sync = Sync();
+      if (!sync || !shared.live) return cloudError(shared.error);
+      return sync.validateTurn(id, adminUser).then(function (entry) {
+        upsertEntry(entry);
+        C().playBeep();
+        notify();
+        return { ok: true, entry: entry };
+      }).catch(function (err) {
+        return cloudError((err && err.message) || 'No se pudo validar la solicitud.');
+      });
+    });
+  }
+
+  function rejectSolicitud(id, adminUser) {
+    return setEstado(id, 'CANCELADO', adminUser || 'supervisor');
+  }
+
   global.PlatformTurnosStore = {
     load: load,
     init: init,
     subscribe: subscribe,
     addTurn: addTurn,
+    validateTurn: validateTurn,
+    rejectSolicitud: rejectSolicitud,
     setEstado: setEstado,
     convocarChofer: convocarChofer,
     cancelTurn: cancelTurn,

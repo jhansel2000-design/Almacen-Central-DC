@@ -12,6 +12,7 @@
   var unsub = null;
   var vibrateTimer = null;
   var userPrefersMenu = false;
+  var wasPendingValidation = false;
   var Call = function () { return global.PlatformTurnosChoferCall; };
   var Perms = function () { return global.PlatformTurnosChoferPerms; };
 
@@ -57,6 +58,7 @@
     if (!host) return;
     if (screen === 'menu') host.innerHTML = renderMenu();
     else if (screen === 'form') host.innerHTML = renderForm(selectedTipo);
+    else if (screen === 'waiting') host.innerHTML = renderWaitingValidation(lastEntry);
     else if (screen === 'success') host.innerHTML = renderSuccess(lastEntry);
     ensureCallOverlay();
   }
@@ -67,11 +69,18 @@
       : '';
     var ref = C().getMyTurnRef();
     var active = ref && ref.id ? S().findById(ref.id) : null;
-    if (!active || !C().isTurnActive(active)) {
+    if (!active || !C().isChoferSessionActive(active)) {
       active = S().findActiveByChofer(C().getRememberedChoferName());
     }
     var resume = '';
-    if (active && active.turno) {
+    if (active && C().isPendingValidation(active)) {
+      resume =
+        '<div class="turnos-my-turn-banner turnos-my-turn-banner--waiting">' +
+        '<p class="turnos-my-turn-label">Solicitud en validación</p>' +
+        '<p class="turnos-my-turn-hint">El supervisor debe confirmar su presencia en el almacén.</p>' +
+        '<button type="button" class="turnos-btn turnos-btn--secondary turnos-btn--xl" data-chofer-resume>Ver estado</button>' +
+        '</div>';
+    } else if (active && active.turno && C().isTurnActive(active)) {
       resume =
         '<div class="turnos-my-turn-banner">' +
         '<p class="turnos-my-turn-label">Su turno activo</p>' +
@@ -146,13 +155,36 @@
       '<p class="turnos-hint turnos-hint--info">Fecha de nacimiento de <strong>Juan Pablo Duarte</strong> (DDMMAAAA, sin barras).</p>' +
       '</div></div>' +
       '<p id="turnosChoferFormError" class="turnos-form-error" hidden role="alert"></p>' +
-      '<button type="submit" class="turnos-btn turnos-btn--primary turnos-btn--xl turnos-btn--hero">Generar mi turno</button>' +
+      '<button type="submit" class="turnos-btn turnos-btn--primary turnos-btn--xl turnos-btn--hero">Enviar solicitud de turno</button>' +
       '</form></section>'
+    );
+  }
+
+  function renderWaitingValidation(entry) {
+    if (!entry) return renderMenu();
+    var cancelBtn = C().canCancelByChofer(entry)
+      ? '<button type="button" class="turnos-btn turnos-btn--danger turnos-btn--xl" data-chofer-cancel>Cancelar solicitud</button>'
+      : '';
+    return (
+      '<section class="turnos-chofer-section turnos-waiting-screen">' +
+      '<div class="turnos-waiting-icon" aria-hidden="true">' +
+      '<img src="assets/img/icon-turnos-validacion.svg' + ICON_V + '" alt="" width="72" height="72">' +
+      '</div>' +
+      '<p class="turnos-waiting-title">Esperando validación del supervisor</p>' +
+      '<p class="turnos-waiting-sub">Un supervisor debe confirmar que usted está en el almacén antes de asignar su número de turno (T-XXXX).</p>' +
+      '<p class="turnos-success-meta"><strong>' + esc(entry.choferCompania || '—') + '</strong> · ' + esc(C().TIPO_LABELS[entry.tipo]) + '</p>' +
+      '<p class="turnos-success-detail">' + esc(entry.detalle) + '</p>' +
+      '<p class="turnos-success-time">Solicitud enviada: ' + esc(C().formatFechaHora(entry)) + '</p>' +
+      '<p class="turnos-hint turnos-hint--info">Mantenga esta pantalla abierta. Cuando lo validen verá su turno aquí.</p>' +
+      iosAlertHint() +
+      cancelBtn +
+      '</section>'
     );
   }
 
   function renderSuccess(entry) {
     if (!entry) return renderMenu();
+    if (!entry.turno) return renderWaitingValidation(entry);
     var convocado = entry.convocadoAt
       ? '<div class="turnos-call-inline"><strong>¡Es su turno!</strong> Pase a <span>' + esc(C().ventanaLabel(entry.tipo)) + '</span></div>'
       : '';
@@ -212,7 +244,7 @@
     if (!ref || !ref.id) return;
     var entry = S().findById(ref.id);
     if (!entry || !C().canCancelByChofer(entry)) return;
-    if (!confirm('¿Cancelar el turno ' + entry.turno + '? Podrá generar uno nuevo después.')) return;
+    if (!confirm('¿Cancelar ' + (entry.turno ? 'el turno ' + entry.turno : 'su solicitud de turno') + '? Podrá generar uno nuevo después.')) return;
     var choferName = entry.choferNombre || C().getRememberedChoferName() || 'chofer';
     S().cancelTurn(ref.id, choferName).then(function (result) {
       if (!result.ok) {
@@ -297,28 +329,35 @@
   function syncMyTurnFromStore() {
     var ref = C().getMyTurnRef();
     var entry = ref && ref.id ? S().findById(ref.id) : null;
-    if (!entry || !C().isTurnActive(entry)) {
+    if (!entry || !C().isChoferSessionActive(entry)) {
       entry = S().findActiveByChofer(C().getRememberedChoferName());
     }
     if (!entry) {
       if (ref && ref.id) C().clearMyTurn();
-      if (screen === 'success') {
+      if (screen === 'success' || screen === 'waiting') {
         screen = 'menu';
         lastEntry = null;
       }
+      wasPendingValidation = false;
       return;
     }
-    if (!C().isTurnActive(entry)) {
+    if (!C().isChoferSessionActive(entry)) {
       C().clearMyTurn();
-      if (screen === 'success' && lastEntry && lastEntry.id === entry.id) {
+      if ((screen === 'success' || screen === 'waiting') && lastEntry && lastEntry.id === entry.id) {
         screen = 'menu';
         lastEntry = null;
       }
+      wasPendingValidation = false;
       return;
     }
+    var justValidated = wasPendingValidation && !C().isPendingValidation(entry) && !!entry.turno;
+    wasPendingValidation = C().isPendingValidation(entry);
     C().saveMyTurn(entry);
     lastEntry = entry;
-    if (!userPrefersMenu) screen = 'success';
+    if (!userPrefersMenu) {
+      screen = C().isPendingValidation(entry) ? 'waiting' : 'success';
+    }
+    if (justValidated) C().playBeep();
     showCallOverlay(entry);
     render();
   }
@@ -344,8 +383,12 @@
     var ref = C().getMyTurnRef();
     if (ref && ref.id) {
       var active = S().findById(ref.id);
-      if (active && C().isTurnActive(active)) {
-        showError('Ya tiene un turno activo (' + active.turno + '). Use "Ver mi turno".');
+      if (active && C().isChoferSessionActive(active)) {
+        if (C().isPendingValidation(active)) {
+          showError('Ya tiene una solicitud en validación. Espere al supervisor o cancélela.');
+        } else {
+          showError('Ya tiene un turno activo (' + active.turno + '). Use "Ver mi turno".');
+        }
         return;
       }
     }
@@ -410,7 +453,8 @@
       }
       lastEntry = result.entry;
       userPrefersMenu = false;
-      screen = 'success';
+      wasPendingValidation = C().isPendingValidation(result.entry);
+      screen = wasPendingValidation ? 'waiting' : 'success';
       render();
     });
   }
@@ -463,10 +507,10 @@
         var ref = C().getMyTurnRef();
         if (ref && ref.id) {
           var active = S().findById(ref.id);
-          if (active && C().isTurnActive(active)) {
+          if (active && C().isChoferSessionActive(active)) {
             userPrefersMenu = false;
             lastEntry = active;
-            screen = 'success';
+            screen = C().isPendingValidation(active) ? 'waiting' : 'success';
             render();
             return;
           }

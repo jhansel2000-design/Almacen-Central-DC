@@ -51,8 +51,13 @@
     CANCELADO: 'Cancelado',
     CONVOCADO: 'Convocado a ventana',
     HORA_LIMITE: 'Hora límite',
-    COMPANIA: 'Compañía asignada'
+    COMPANIA: 'Compañía asignada',
+    SOLICITUD: 'Solicitud enviada',
+    PENDIENTE_VALIDACION: 'Pendiente validación',
+    VALIDACION_SUPERVISOR: 'Validado por supervisor'
   };
+
+  var ESTADO_PENDIENTE_VALIDACION = 'PENDIENTE_VALIDACION';
 
   var TZ_RD = 'America/Santo_Domingo';
   var LOCALE_RD = 'es-DO';
@@ -279,6 +284,15 @@
         compania: compania
       }, compania);
     }
+    if (patch.turno && patch.turno !== old.turno && old.estado === ESTADO_PENDIENTE_VALIDACION) {
+      hist = appendSeguimiento(hist, {
+        paso: 'VALIDACION_SUPERVISOR',
+        estado: 'PENDIENTE',
+        nota: 'Supervisor validó presencia — turno ' + patch.turno,
+        por: por,
+        compania: compania
+      }, compania);
+    }
     if (patch.horaLimite && patch.horaLimite !== old.horaLimite) {
       hist = appendSeguimiento(hist, {
         paso: 'HORA_LIMITE',
@@ -318,7 +332,9 @@
     if (!TIPO_LABELS[tipo]) tipo = TIPOS.DESPACHO;
     var entry = {
       id: raw.id || (Date.now() + '-' + Math.random().toString(36).slice(2, 7)),
-      turno: raw.turno || formatTurno(0),
+      turno: raw.estado === ESTADO_PENDIENTE_VALIDACION
+        ? String(raw.turno || '').trim()
+        : (raw.turno || formatTurno(0)),
       fecha: raw.fecha || todayKey(),
       hora: raw.hora || formatTime(),
       createdAt: Number(raw.createdAt) || Date.now(),
@@ -416,14 +432,26 @@
     return VENTANA_LABELS[tipo] || 'Ventana de atención';
   }
 
+  function isPendingValidation(entry) {
+    return !!entry && entry.estado === ESTADO_PENDIENTE_VALIDACION;
+  }
+
+  function isChoferSessionActive(entry) {
+    if (!entry || entry.estado === 'CANCELADO') return false;
+    if (entry.estado === ESTADO_PENDIENTE_VALIDACION) return true;
+    return isTurnActive(entry);
+  }
+
   function isTurnActive(entry) {
     if (!entry) return false;
+    if (entry.estado === ESTADO_PENDIENTE_VALIDACION) return false;
     if (entry.estado === 'COMPLETADO' || entry.estado === 'ASENTADO' || entry.estado === 'CANCELADO') return false;
     return true;
   }
 
   function canCancelByChofer(entry) {
-    if (!entry || !isTurnActive(entry)) return false;
+    if (!entry || !isChoferSessionActive(entry)) return false;
+    if (entry.estado === ESTADO_PENDIENTE_VALIDACION) return true;
     return entry.estado === 'PENDIENTE' || entry.estado === 'EN_PROCESO' || entry.estado === 'CONFIRMADO';
   }
 
@@ -467,12 +495,12 @@
     var ref = getMyTurnRef();
     if (ref && ref.id) {
       var byId = (entries || []).find(function (e) { return e.id === ref.id; });
-      if (byId && isTurnActive(byId)) return byId;
+      if (byId && isChoferSessionActive(byId)) return byId;
     }
     var key = String(nombre || ref && ref.choferNombre || getRememberedChoferName() || '').trim().toLowerCase();
     if (!key) return null;
     return (entries || []).find(function (e) {
-      return isTurnActive(e) && e.choferNombre.toLowerCase() === key;
+      return isChoferSessionActive(e) && e.choferNombre.toLowerCase() === key;
     }) || null;
   }
 
@@ -563,6 +591,40 @@
     }).join(' | ');
   }
 
+  function createSolicitudTurno(payload) {
+    var now = new Date();
+    payload = payload || {};
+    var compania = String(payload.choferCompania || '').trim();
+    return normalizeEntry({
+      id: String(now.getTime()) + '-' + Math.random().toString(36).slice(2, 7),
+      turno: '',
+      fecha: todayKey(now),
+      hora: formatTime(now),
+      createdAt: now.getTime(),
+      tipo: payload.tipo || TIPOS.DESPACHO,
+      choferNombre: payload.choferNombre,
+      choferCompania: compania,
+      idsCarga: payload.idsCarga,
+      tipoCamion: normalizeTipoCamion(payload.tipoCamion),
+      cantidadPaletas: payload.cantidadPaletas != null ? Number(payload.cantidadPaletas) : null,
+      cantidadViajes: payload.cantidadViajes,
+      detalle: buildDetalle(payload),
+      estado: ESTADO_PENDIENTE_VALIDACION,
+      prioridad: !!payload.prioridad,
+      horaLimite: '',
+      prioridadAutorizadaPor: payload.prioridad ? String(payload.prioridadAutorizadaPor || 'admin').trim() : '',
+      historial: [createSeguimientoItem({
+        paso: 'SOLICITUD',
+        estado: ESTADO_PENDIENTE_VALIDACION,
+        nota: 'Solicitud enviada — espera validación del supervisor en el almacén',
+        por: payload.choferNombre,
+        compania: compania,
+        fecha: todayKey(now),
+        hora: formatTime(now)
+      }, compania)]
+    });
+  }
+
   function createTurn(counter, payload) {
     var now = new Date();
     payload = payload || {};
@@ -606,6 +668,9 @@
   }
 
   function isValidTransition(entry, nextEstado) {
+    if (entry.estado === ESTADO_PENDIENTE_VALIDACION) {
+      return nextEstado === 'CANCELADO';
+    }
     if (nextEstado === 'CANCELADO') {
       return isTurnActive(entry);
     }
@@ -619,7 +684,7 @@
     var nombre = String(payload.choferNombre || '').trim().toLowerCase();
     var tipo = payload.tipo;
     return entries.some(function (e) {
-      if (!isTurnActive(e) || e.createdAt < cutoff || e.tipo !== tipo) return false;
+      if (!isChoferSessionActive(e) || e.createdAt < cutoff || e.tipo !== tipo) return false;
       if (e.choferNombre.toLowerCase() !== nombre) return false;
       if (tipo === TIPOS.DESPACHO) {
         return normalizeTipoCamion(e.tipoCamion) === normalizeTipoCamion(payload.tipoCamion) &&
@@ -638,6 +703,7 @@
     return {
       totalHoy: today.length,
       pendientes: today.filter(function (e) { return e.estado === 'PENDIENTE'; }).length,
+      pendientesValidacion: today.filter(function (e) { return e.estado === ESTADO_PENDIENTE_VALIDACION; }).length,
       enProceso: today.filter(function (e) { return e.estado === 'EN_PROCESO'; }).length,
       completados: today.filter(function (e) { return e.estado === 'COMPLETADO'; }).length,
       notasPendientes: today.filter(function (e) {
@@ -719,7 +785,12 @@
     } catch (e) { /* noop */ }
   }
 
+  function filterPendingValidation(entries) {
+    return (entries || []).filter(function (e) { return e.estado === ESTADO_PENDIENTE_VALIDACION; });
+  }
+
   function statusClass(estado) {
+    if (estado === ESTADO_PENDIENTE_VALIDACION) return 'warn';
     if (estado === 'CANCELADO') return 'cancel';
     if (estado === 'COMPLETADO' || estado === 'ASENTADO') return 'ok';
     if (estado === 'EN_PROCESO' || estado === 'CONFIRMADO') return 'process';
@@ -740,6 +811,7 @@
     loadLegacyLocalState: loadLegacyLocalState,
     clearLegacyLocalState: clearLegacyLocalState,
     saveState: saveState,
+    createSolicitudTurno: createSolicitudTurno,
     createTurn: createTurn,
     normalizeTipoCamion: normalizeTipoCamion,
     buildDetalle: buildDetalle,
@@ -774,7 +846,11 @@
     statusClass: statusClass,
     normalizeEntry: normalizeEntry,
     ventanaLabel: ventanaLabel,
+    filterPendingValidation: filterPendingValidation,
+    isPendingValidation: isPendingValidation,
+    isChoferSessionActive: isChoferSessionActive,
     isTurnActive: isTurnActive,
+    ESTADO_PENDIENTE_VALIDACION: ESTADO_PENDIENTE_VALIDACION,
     canCancelByChofer: canCancelByChofer,
     entriesToday: entriesToday,
     filterByTipo: filterByTipo,

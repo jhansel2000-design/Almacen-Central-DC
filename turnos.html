@@ -11,13 +11,16 @@
   <title>Control de Turnos de Despacho — Almacén Central DC</title>
   <script src="js/relay-bootstrap.js?v=1"></script>
   <link rel="icon" type="image/png" href="assets/img/jc-logo-64.png?v=5">
+  <link rel="apple-touch-icon" href="assets/img/jc-logo-64.png?v=5">
   <link rel="stylesheet" href="css/auth-cinematic.css?v=19">
   <link rel="stylesheet" href="css/auth-security.css?v=3">
   <link rel="stylesheet" href="css/dc-brand.css?v=11">
   <link rel="manifest" href="turnos.webmanifest">
   <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Turnos DC">
-  <link rel="stylesheet" href="css/turnos-portal.css?v=23">
+  <link rel="stylesheet" href="css/turnos-portal.css?v=25">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
@@ -80,11 +83,16 @@
       </div>
       <nav class="turnos-nav">
         <button type="button" class="turnos-nav-item active" data-turnos-nav="dashboard">
-          <img class="turnos-nav-icon" src="assets/img/icon-turnos-dashboard.svg?v=11" alt="" width="26" height="26">
+          <img class="turnos-nav-icon" src="assets/img/icon-turnos-dashboard.svg?v=12" alt="" width="26" height="26">
           <span>Dashboard</span>
         </button>
+        <button type="button" class="turnos-nav-item" data-turnos-nav="validacion">
+          <img class="turnos-nav-icon" src="assets/img/icon-turnos-validacion.svg?v=12" alt="" width="26" height="26">
+          <span>Validar turnos</span>
+          <span class="turnos-nav-badge" id="turnosNavValidacionBadge" hidden>0</span>
+        </button>
         <button type="button" class="turnos-nav-item" data-turnos-nav="despacho">
-          <img class="turnos-nav-icon" src="assets/img/icon-turnos-despacho.svg?v=11" alt="" width="26" height="26">
+          <img class="turnos-nav-icon" src="assets/img/icon-turnos-despacho.svg?v=12" alt="" width="26" height="26">
           <span>Despacho</span>
         </button>
         <button type="button" class="turnos-nav-item" data-turnos-nav="liquidacion">
@@ -129,6 +137,7 @@
       </header>
       <main class="turnos-main">
         <div class="turnos-view" id="turnosViewDashboard" data-module="dashboard"></div>
+        <div class="turnos-view" id="turnosViewValidacion" data-module="validacion" hidden></div>
         <div class="turnos-view" id="turnosViewDespacho" data-module="despacho" hidden></div>
         <div class="turnos-view" id="turnosViewLiquidacion" data-module="liquidacion" hidden></div>
         <div class="turnos-view" id="turnosViewNota_credito" data-module="nota_credito" hidden></div>
@@ -147,6 +156,8 @@
         <img class="turnos-nav-icon" src="assets/img/icon-turnos-liquidacion.svg?v=11" alt="" width="28" height="28"></button>
       <button type="button" class="turnos-nav-item" data-turnos-nav="nota_credito" title="Nota crédito">
         <img class="turnos-nav-icon" src="assets/img/icon-turnos-nota-credito.svg?v=11" alt="" width="28" height="28"></button>
+      <button type="button" class="turnos-nav-item" data-turnos-nav="validacion" title="Validar turnos">
+        <img class="turnos-nav-icon" src="assets/img/icon-turnos-validacion.svg?v=12" alt="" width="28" height="28"></button>
       <button type="button" class="turnos-nav-item" data-turnos-nav="cancelados" title="Cancelados">
         <img class="turnos-nav-icon" src="assets/img/icon-turnos-gestion.svg?v=11" alt="" width="28" height="28"></button>
     </nav>
@@ -161,14 +172,15 @@
   <script src="js/platform-supabase-realtime.js?v=1"></script>
   <script src="js/platform-supabase-bridge.js?v=5"></script>
   <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
-  <script src="js/platform-turnos-core.js?v=16"></script>
-  <script src="js/platform-turnos-sync.js?v=11"></script>
-  <script src="js/platform-turnos-store.js?v=13"></script>
-  <script src="js/platform-turnos-alerts.js?v=4"></script>
+  <script src="js/platform-turnos-core.js?v=17"></script>
+  <script src="js/platform-turnos-sync.js?v=12"></script>
+  <script src="js/platform-turnos-store.js?v=14"></script>
+  <script src="js/platform-turnos-alerts.js?v=5"></script>
   <script src="js/platform-turnos-chofer-perms.js?v=3"></script>
   <script src="js/platform-turnos-chofer-call.js?v=5"></script>
-  <script src="js/platform-turnos-chofer.js?v=19"></script>
-  <script src="js/platform-turnos-admin.js?v=21"></script>
-  <script src="js/platform-turnos-app.js?v=6"></script>
+  <script src="js/platform-turnos-chofer.js?v=20"></script>
+  <script src="js/platform-turnos-admin.js?v=23"></script>
+  <script src="js/platform-turnos-pwa.js?v=1"></script>
+  <script src="js/platform-turnos-app.js?v=7"></script>
 </body>
 </html>

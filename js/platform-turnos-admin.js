@@ -265,6 +265,61 @@
     };
   }
 
+  function updateNavBadges() {
+    var pending = C().filterPendingValidation(S().getState().entries).length;
+    var badge = $('turnosNavValidacionBadge');
+    if (badge) {
+      badge.textContent = String(pending);
+      badge.hidden = pending < 1;
+    }
+  }
+
+  function validacionTableHtml(entries) {
+    if (!entries.length) {
+      return '<p class="turnos-empty">No hay solicitudes pendientes de validación.</p>';
+    }
+    var rows = entries.map(function (e) {
+      var prio = e.prioridad ? '<br>' + C().priorityBadgeHtml(e) : '';
+      return (
+        '<tr class="' + (e.prioridad ? 'turnos-row--priority' : '') + '">' +
+        '<td class="turnos-mono turnos-fecha-cell">' + esc(C().formatFechaDisplay(e.fecha)) +
+        '<br><span class="turnos-muted-inline">' + esc(e.hora) + '</span></td>' +
+        '<td>' + esc(C().TIPO_LABELS[e.tipo] || e.tipo) + '</td>' +
+        '<td>' + esc(e.choferNombre || '—') + prio + '</td>' +
+        '<td>' + esc(e.choferCompania || '—') + '</td>' +
+        despachoDetalleCell(e) +
+        '<td>' + statusBadge(e.estado) + '</td>' +
+        '<td class="turnos-actions-cell turnos-actions-cell--validacion">' +
+        '<button type="button" class="turnos-btn turnos-btn--primary turnos-btn--sm" data-validate-id="' + esc(e.id) + '">Validar presencia</button> ' +
+        '<button type="button" class="turnos-btn turnos-btn--danger turnos-btn--sm" data-reject-id="' + esc(e.id) + '">Rechazar</button>' +
+        '</td></tr>'
+      );
+    }).join('');
+    return (
+      '<div class="turnos-table-wrap">' +
+      '<table class="turnos-table turnos-table--validacion">' +
+      '<thead><tr><th>Hora solicitud</th><th>Trámite</th><th>Chofer</th><th>Compañía</th><th>Camión / detalle</th><th>Estado</th><th>Acción</th></tr></thead>' +
+      '<tbody>' + rows + '</tbody></table></div>'
+    );
+  }
+
+  function renderValidacion() {
+    var host = $('turnosViewValidacion');
+    if (!host) return;
+    var pending = C().sortByArrivalOrder(C().filterPendingValidation(S().getState().entries));
+    host.innerHTML =
+      '<section class="turnos-panel turnos-panel--validacion">' +
+      '<div class="turnos-tramite-head">' +
+      '<img src="assets/img/icon-turnos-validacion.svg' + ICON_V + '" alt="" width="48" height="48">' +
+      '<div><h2>Validar turnos</h2>' +
+      '<p class="turnos-sub">Confirme que el chofer está en el almacén antes de asignar el número T-XXXX. ' +
+      'Sin validación no se genera ticket ni entra a la cola.</p></div></div>' +
+      '<p class="turnos-validacion-count"><strong>' + pending.length + '</strong> solicitud(es) pendiente(s)</p>' +
+      validacionTableHtml(pending) +
+      '</section>';
+    updateNavBadges();
+  }
+
   function setModule(mod) {
     state.module = mod;
     document.querySelectorAll('.turnos-view').forEach(function (el) {
@@ -275,6 +330,7 @@
     });
     var titles = {
       dashboard: 'Resumen — ' + C().formatFechaDisplay(C().todayKey()),
+      validacion: 'Validar turnos — presencia en almacén',
       despacho: 'Despacho de facturas',
       liquidacion: 'Liquidación de facturas',
       nota_credito: 'Nota de crédito',
@@ -286,6 +342,7 @@
     if (titleEl) titleEl.textContent = titles[mod] || 'Gestión de turnos';
 
     if (mod === 'dashboard') renderDashboard();
+    else if (mod === 'validacion') renderValidacion();
     else if (TRAMITE_MODULES[mod]) renderTramite(mod);
     else if (mod === 'cancelados') renderCancelados();
     else if (mod === 'export') renderExport();
@@ -339,6 +396,7 @@
       '<div class="turnos-kpi-grid turnos-kpi-grid--admin">' +
       kpi('Total hoy', stats.totalHoy, 'blue') +
       kpi('Pendientes', stats.pendientes, 'red') +
+      kpi('Por validar', stats.pendientesValidacion, 'warn') +
       kpi('En proceso', stats.enProceso + stats.confirmados, 'process') +
       kpi('Completados', stats.completados + stats.asentados, 'green') +
       kpi('Cancelados', stats.cancelados, 'cancel') +
@@ -357,6 +415,7 @@
         ? adminTableHtml(closedToday.slice(0, 12), true)
         : '<p class="turnos-empty">Aún no hay turnos cerrados hoy.</p>') +
       '</section>';
+    updateNavBadges();
   }
 
   function kpi(label, value, tone, mono) {
@@ -441,6 +500,11 @@
       '<p class="turnos-sub">Usuario: <strong>' + esc(state.adminUser && (state.adminUser.name || state.adminUser.username)) + '</strong></p>' +
       '<p class="turnos-sub">Notificaciones: aviso en el navegador cuando está en otra pestaña (sin sonido en el panel).</p>' +
       '<button type="button" class="turnos-btn turnos-btn--primary turnos-btn--xl" data-admin-action="notif-perm">Activar notificaciones del navegador</button>' +
+      '<div class="turnos-config-block">' +
+      '<h3 class="turnos-config-title">App en el teléfono / enlace directo</h3>' +
+      '<p class="turnos-hint">Comparta el acceso directo con choferes para que instalen el icono «Turnos DC» en su pantalla de inicio (iPhone, Android o PC).</p>' +
+      '<button type="button" class="turnos-btn turnos-btn--secondary turnos-btn--xl" data-admin-action="pwa-install">Instalar app / copiar enlace</button>' +
+      '</div>' +
       '<div class="turnos-config-block">' +
       '<h3 class="turnos-config-title">Dashboard — seguimiento del día</h3>' +
       '<p class="turnos-hint">El dashboard muestra solo la actividad de <strong>hoy</strong>. Los turnos <strong>no se borran</strong>; siguen en Despacho, Liquidación y Nota de crédito.</p>' +
@@ -529,6 +593,40 @@
         if (entry) showSeguimientoModal(entry);
         return;
       }
+      var valBtn = ev.target.closest('[data-validate-id]');
+      if (valBtn) {
+        var vid = valBtn.getAttribute('data-validate-id');
+        var vUser = state.adminUser && (state.adminUser.name || state.adminUser.username);
+        if (!confirm('¿Confirmar presencia del chofer y asignar número de turno?')) return;
+        valBtn.disabled = true;
+        S().validateTurn(vid, vUser).then(function (result) {
+          valBtn.disabled = false;
+          if (!result.ok) {
+            alert(result.msg || 'No se pudo validar.');
+            refresh();
+            return;
+          }
+          refresh();
+        });
+        return;
+      }
+      var rejBtn = ev.target.closest('[data-reject-id]');
+      if (rejBtn) {
+        var rid = rejBtn.getAttribute('data-reject-id');
+        var rUser = state.adminUser && (state.adminUser.name || state.adminUser.username);
+        if (!confirm('¿Rechazar esta solicitud? El chofer no recibirá turno.')) return;
+        rejBtn.disabled = true;
+        S().rejectSolicitud(rid, rUser).then(function (result) {
+          rejBtn.disabled = false;
+          if (!result.ok) {
+            alert(result.msg || 'No se pudo rechazar.');
+            refresh();
+            return;
+          }
+          refresh();
+        });
+        return;
+      }
       var convBtn = ev.target.closest('[data-convocar-id]');
       if (convBtn) {
         var cid = convBtn.getAttribute('data-convocar-id');
@@ -554,6 +652,9 @@
         global.PlatformTurnosAlerts.requestPermission().then(function (ok) {
           alert(ok ? 'Notificaciones activadas.' : 'No se pudieron activar. Revise permisos del navegador.');
         });
+      }
+      else if (action === 'pwa-install' && global.PlatformTurnosPwa) {
+        global.PlatformTurnosPwa.openInstallModal();
       }
       else if (action === 'reset-dashboard') {
         S().saveConfig({ resetDashboardView: true }).then(function (result) {

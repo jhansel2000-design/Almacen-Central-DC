@@ -25,6 +25,12 @@
 
   function $(id) { return document.getElementById(id); }
 
+  function refreshPwaUi() {
+    if (global.PlatformTurnosPwa && global.PlatformTurnosPwa.updateUi) {
+      global.PlatformTurnosPwa.updateUi();
+    }
+  }
+
   function showChofer() {
     markAdminView(false);
     if (global.PlatformTurnosChofer) {
@@ -34,6 +40,7 @@
     if (global.PlatformTurnosAdmin) global.PlatformTurnosAdmin.hide();
     hideAuth();
     document.body.classList.remove('turnos-admin-mode');
+    refreshPwaUi();
   }
 
   function showAdminApp(user) {
@@ -46,6 +53,7 @@
     }
     if (PC && PC.touchAveriasSession) PC.touchAveriasSession(user);
     document.body.classList.add('turnos-admin-mode');
+    refreshPwaUi();
   }
 
   function showAuth() {
@@ -204,6 +212,9 @@
 
   document.addEventListener('DOMContentLoaded', function () {
     var start = boot;
+    if (global.PlatformTurnosPwa && global.PlatformTurnosPwa.init) {
+      global.PlatformTurnosPwa.init();
+    }
     if (global.PlatformWebUsers && global.PlatformWebUsers.ready) {
       global.PlatformWebUsers.ready().then(start).catch(start);
     } else {

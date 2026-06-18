@@ -104,6 +104,7 @@ body.turnos-body.turnos-auth-open {
   text-align: left;
   cursor: pointer;
   transition: background 0.15s, color 0.15s;
+  position: relative;
 }
 
 .turnos-nav-item:hover {
@@ -542,7 +543,7 @@ body.turnos-body.turnos-auth-open {
   bottom: 0;
   inset-inline: 0;
   z-index: 50;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(6, 1fr);
   gap: 0.25rem;
   padding: 0.5rem;
   padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
@@ -1540,8 +1541,6 @@ body.turnos-body.turnos-auth-open {
 
 body.turnos-admin-mode .turnos-chofer-root { display: none !important; }
 
-.turnos-mobile-nav { grid-template-columns: repeat(4, 1fr); }
-
 @keyframes turnosFade {
   from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: none; }
@@ -1938,4 +1937,487 @@ body.turnos-seg-open {
   font-size: 0.82rem;
   color: var(--turnos-muted);
   font-style: italic;
+}
+
+.turnos-nav-badge {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  min-width: 1.25rem;
+  height: 1.25rem;
+  padding: 0 0.35rem;
+  border-radius: 999px;
+  background: var(--turnos-red);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 800;
+  line-height: 1.25rem;
+  text-align: center;
+}
+
+.turnos-mobile-nav .turnos-nav-badge {
+  top: 2px;
+  right: 2px;
+  min-width: 1rem;
+  height: 1rem;
+  font-size: 0.62rem;
+  line-height: 1rem;
+}
+
+.turnos-kpi--warn {
+  background: linear-gradient(135deg, #b45309, #f59e0b);
+}
+
+.turnos-badge--warn {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.turnos-waiting-screen {
+  text-align: center;
+  padding: 1.5rem 1rem 2rem;
+}
+
+.turnos-waiting-icon {
+  margin: 0 auto 1rem;
+  width: 5rem;
+  height: 5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #ecfdf5;
+  animation: turnos-waiting-pulse 2s ease-in-out infinite;
+}
+
+@keyframes turnos-waiting-pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.04); opacity: 0.92; }
+}
+
+.turnos-waiting-title {
+  margin: 0 0 0.5rem;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--bp-blue-dark);
+}
+
+.turnos-waiting-sub {
+  margin: 0 0 1rem;
+  color: var(--turnos-muted);
+  font-size: 0.92rem;
+  line-height: 1.45;
+  max-width: 22rem;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.turnos-my-turn-banner--waiting {
+  border-color: #f59e0b;
+  background: #fffbeb;
+}
+
+.turnos-my-turn-hint {
+  margin: 0.25rem 0 0.75rem;
+  font-size: 0.85rem;
+  color: var(--turnos-muted);
+}
+
+.turnos-panel--validacion .turnos-validacion-count {
+  margin: 0 0 1rem;
+  font-size: 1rem;
+}
+
+.turnos-actions-cell--validacion {
+  white-space: nowrap;
+}
+
+.turnos-table--validacion .turnos-btn--sm {
+  margin-bottom: 0.25rem;
+}
+
+/* ——— PWA / acceso directo ——— */
+.turnos-pwa-banner {
+  margin: 0 -1rem 1rem;
+  padding: 0.85rem 1rem;
+  background: linear-gradient(135deg, #e8f1fa 0%, #f5f8fc 100%);
+  border-bottom: 2px solid var(--bp-blue);
+  animation: turnosFade 0.35s ease;
+}
+
+.turnos-pwa-banner__inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  position: relative;
+  padding-right: 1.75rem;
+}
+
+.turnos-pwa-banner__icon {
+  flex-shrink: 0;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 56, 130, 0.12);
+}
+
+.turnos-pwa-banner__text {
+  flex: 1 1 160px;
+  min-width: 0;
+}
+
+.turnos-pwa-banner__text strong {
+  display: block;
+  font-size: 0.92rem;
+  color: var(--bp-blue-dark);
+}
+
+.turnos-pwa-banner__text span {
+  display: block;
+  margin-top: 0.2rem;
+  font-size: 0.8rem;
+  color: var(--turnos-muted);
+  line-height: 1.35;
+}
+
+.turnos-pwa-banner__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.turnos-pwa-banner__close {
+  position: absolute;
+  top: -0.15rem;
+  right: 0;
+  border: none;
+  background: none;
+  color: var(--turnos-muted);
+  font-size: 1.35rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0.25rem;
+}
+
+.turnos-pwa-foot-btn {
+  width: 100%;
+  min-height: 48px;
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  border: 2px dashed var(--bp-blue);
+  background: var(--bp-blue-pale);
+  color: var(--bp-blue);
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: center;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.turnos-pwa-foot-btn:hover {
+  background: var(--bp-blue-light);
+  border-color: var(--bp-blue-mid);
+}
+
+.turnos-pwa-admin-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-shrink: 0;
+  min-height: 40px;
+  padding: 0.45rem 0.75rem;
+  border-radius: 10px;
+  border: 1px solid var(--turnos-border);
+  background: var(--bp-blue-pale);
+  color: var(--bp-blue);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.turnos-pwa-admin-btn img {
+  border-radius: 6px;
+}
+
+.turnos-pwa-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 13000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  background: rgba(0, 42, 92, 0.72);
+  backdrop-filter: blur(6px);
+}
+
+body.turnos-pwa-modal-open { overflow: hidden; }
+
+.turnos-pwa-modal__card {
+  position: relative;
+  width: min(100%, 480px);
+  max-height: min(92vh, 720px);
+  overflow-y: auto;
+  padding: 1.35rem 1.25rem 1.25rem;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 20px 56px rgba(0, 40, 90, 0.28);
+}
+
+.turnos-pwa-modal__close {
+  position: absolute;
+  top: 0.65rem;
+  right: 0.75rem;
+  border: none;
+  background: none;
+  color: var(--turnos-muted);
+  font-size: 1.5rem;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.turnos-pwa-modal__head {
+  display: flex;
+  gap: 0.85rem;
+  align-items: center;
+  margin-bottom: 0.85rem;
+}
+
+.turnos-pwa-modal__head img {
+  border-radius: 14px;
+  box-shadow: 0 4px 12px rgba(0, 56, 130, 0.15);
+}
+
+.turnos-pwa-modal__eyebrow {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--turnos-muted);
+}
+
+.turnos-pwa-modal__head h2 {
+  margin: 0.2rem 0 0;
+  font-size: 1.2rem;
+  color: var(--bp-blue-dark);
+}
+
+.turnos-pwa-modal__lead {
+  margin: 0 0 1rem;
+  font-size: 0.9rem;
+  color: var(--turnos-text);
+  line-height: 1.45;
+}
+
+.turnos-pwa-steps {
+  margin: 0 0 1rem;
+  padding-left: 1.2rem;
+  font-size: 0.88rem;
+  color: var(--turnos-text);
+  line-height: 1.5;
+}
+
+.turnos-pwa-steps li + li { margin-top: 0.45rem; }
+
+.turnos-pwa-share-icon {
+  display: inline-block;
+  font-weight: 800;
+  color: var(--bp-blue);
+}
+
+.turnos-pwa-link-box {
+  margin: 1rem 0;
+  padding: 0.85rem;
+  border-radius: 12px;
+  background: var(--bp-blue-pale);
+  border: 1px solid var(--turnos-border);
+}
+
+.turnos-pwa-link-label {
+  display: block;
+  margin-bottom: 0.45rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--turnos-muted);
+}
+
+.turnos-pwa-link-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.turnos-pwa-link-input {
+  flex: 1 1 180px;
+  min-height: 44px;
+  font-size: 0.82rem;
+}
+
+.turnos-pwa-modal__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+/* ——— Responsive PC / tablet / móvil ——— */
+@media (min-width: 768px) {
+  body.turnos-body:not(.turnos-admin-mode):not(.turnos-auth-open) {
+    background: linear-gradient(160deg, #dce8f5 0%, var(--turnos-bg) 45%, #e8eef5 100%);
+  }
+
+  .turnos-chofer-root {
+    max-width: 440px;
+    margin: 1.5rem auto;
+    min-height: calc(100vh - 3rem);
+    min-height: calc(100dvh - 3rem);
+    border-radius: 20px;
+    box-shadow: var(--turnos-shadow-lg);
+    overflow: hidden;
+    padding-bottom: 1.25rem;
+  }
+
+  .turnos-chofer-header {
+    margin: 0;
+    border-radius: 20px 20px 0 0;
+  }
+
+  .turnos-pwa-banner {
+    margin: 0 0 1rem;
+  }
+
+  .turnos-service-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (min-width: 1024px) {
+  body.turnos-admin-mode .turnos-main {
+    padding: 1.5rem 2rem 2rem;
+  }
+
+  .turnos-kpi-grid--admin {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (max-width: 960px) {
+  .turnos-main-wrap {
+    padding-bottom: calc(72px + env(safe-area-inset-bottom));
+  }
+
+  .turnos-topbar {
+    flex-wrap: wrap;
+    align-items: center;
+    padding: 1rem 1rem 0.85rem;
+  }
+
+  .turnos-topbar > div:first-child {
+    flex: 1 1 200px;
+    min-width: 0;
+  }
+
+  .turnos-clock {
+    flex: 1 1 auto;
+    text-align: right;
+  }
+
+  .turnos-pwa-admin-btn {
+    order: 3;
+    width: 100%;
+    justify-content: center;
+    margin-top: 0.25rem;
+  }
+
+  .turnos-table-wrap {
+    margin: 0 -0.25rem;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .turnos-actions-cell--validacion {
+    white-space: normal;
+  }
+
+  .turnos-actions-cell--validacion .turnos-btn {
+    width: 100%;
+    margin-bottom: 0.35rem;
+  }
+
+  .turnos-tramite-head {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .turnos-pwa-banner__inner {
+    flex-direction: column;
+    align-items: stretch;
+    padding-right: 1.5rem;
+  }
+
+  .turnos-pwa-banner__actions {
+    width: 100%;
+  }
+
+  .turnos-pwa-banner__actions .turnos-btn {
+    flex: 1 1 auto;
+    min-height: 44px;
+  }
+}
+
+@media (max-width: 520px) {
+  .turnos-chofer-root {
+    padding-left: max(0.75rem, env(safe-area-inset-left));
+    padding-right: max(0.75rem, env(safe-area-inset-right));
+  }
+
+  .turnos-chofer-header {
+    flex-wrap: wrap;
+    padding: 0.85rem 0.75rem;
+    margin: 0 -0.75rem;
+  }
+
+  .turnos-chofer-clock {
+    width: 100%;
+    margin-left: 0;
+    margin-top: 0.35rem;
+    text-align: right;
+  }
+
+  .turnos-mobile-nav {
+    grid-template-columns: repeat(6, minmax(48px, 1fr));
+    gap: 0.15rem;
+    padding-left: max(0.35rem, env(safe-area-inset-left));
+    padding-right: max(0.35rem, env(safe-area-inset-right));
+  }
+
+  .turnos-kpi-grid,
+  .turnos-kpi-grid--admin,
+  .turnos-kpi-grid--last-areas {
+    grid-template-columns: 1fr;
+  }
+
+  .turnos-export-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .turnos-auth-card {
+    width: min(100%, calc(100vw - 1.5rem));
+    margin: 0.75rem;
+  }
+}
+
+@media (display-mode: standalone) {
+  .turnos-chofer-root,
+  .turnos-app {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .turnos-pwa-banner,
+  .turnos-pwa-foot-btn {
+    display: none !important;
+  }
 }

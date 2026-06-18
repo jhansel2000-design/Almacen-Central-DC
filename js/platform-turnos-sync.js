@@ -142,11 +142,34 @@
       if (C().isDuplicateSubmit(remote.entries, payload)) {
         return Promise.reject(new Error('Turno duplicado'));
       }
-      var n = nextCounter(remote.entries, remote.counter);
-      var entry = C().createTurn(n, payload);
-      remote.counter = n;
+      var entry = C().createSolicitudTurno(payload);
       remote.entries.unshift(entry);
       return pushState(remote).then(function () { return entry; });
+    });
+  }
+
+  function validateTurn(id, adminUser) {
+    return pullState().then(function (remote) {
+      var idx = remote.entries.findIndex(function (e) { return e.id === id; });
+      if (idx < 0) return Promise.reject(new Error('Solicitud no encontrada'));
+      var old = remote.entries[idx];
+      if (old.estado !== C().ESTADO_PENDIENTE_VALIDACION) {
+        return Promise.reject(new Error('Esta solicitud ya fue procesada'));
+      }
+      var n = nextCounter(remote.entries, remote.counter);
+      var turno = C().formatTurno(n);
+      var por = adminUser || 'supervisor';
+      var merged = Object.assign({}, old, {
+        turno: turno,
+        estado: 'PENDIENTE',
+        updatedAt: Date.now(),
+        updatedBy: por
+      });
+      merged.historial = C().mergeSeguimientoOnPatch(old, { turno: turno, estado: 'PENDIENTE' }, por);
+      var validated = C().normalizeEntry(merged);
+      remote.entries[idx] = validated;
+      remote.counter = n;
+      return pushState(remote).then(function () { return validated; });
     });
   }
 
@@ -271,6 +294,7 @@
     ready: ready,
     fetchAll: fetchAll,
     insertTurn: insertTurn,
+    validateTurn: validateTurn,
     updateEstado: updateEstado,
     convocarChofer: convocarChofer,
     setHoraLimite: setHoraLimite,

@@ -32,16 +32,23 @@
   function showBrowserNotification(entry) {
     if (!global.Notification || Notification.permission !== 'granted') return;
     if (!shouldNotify()) return;
-    var title = entry.prioridad ? 'Turno PRIORITARIO — ' + entry.turno : 'Nuevo turno — ' + entry.turno;
-    var body = (entry.choferNombre || 'Chofer') + ' · ' + (entry.choferCompania || '—') +
-      ' · ' + (C().TIPO_LABELS[entry.tipo] || entry.tipo);
-    if (entry.prioridad && entry.horaLimite) body += ' · Prioritario';
+    var isValidation = entry.estado === C().ESTADO_PENDIENTE_VALIDACION;
+    var title = isValidation
+      ? 'Solicitud por validar — ' + (C().TIPO_LABELS[entry.tipo] || entry.tipo)
+      : (entry.prioridad ? 'Turno PRIORITARIO — ' + entry.turno : 'Nuevo turno — ' + entry.turno);
+    var body = (entry.choferNombre || 'Chofer') + ' · ' + (entry.choferCompania || '—');
+    if (isValidation) {
+      body += ' — Confirme presencia en el almacén antes de asignar turno.';
+    } else {
+      body += ' · ' + (C().TIPO_LABELS[entry.tipo] || entry.tipo);
+      if (entry.prioridad && entry.horaLimite) body += ' · Prioritario';
+    }
     try {
       var n = new Notification(title, {
         body: body,
         tag: 'turnos-admin-' + entry.id,
         renotify: true,
-        requireInteraction: !!entry.prioridad
+        requireInteraction: !!(entry.prioridad || isValidation)
       });
       n.onclick = function () {
         try { global.focus(); } catch (e) { /* noop */ }
