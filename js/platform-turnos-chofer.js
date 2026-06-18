@@ -54,9 +54,6 @@
   }
 
   function render() {
-    if (Perms() && !Perms().isReady()) {
-      Perms().refreshGate();
-    }
     var host = $('turnosChoferMain');
     if (!host) return;
     if (screen === 'menu') host.innerHTML = renderMenu();
@@ -471,7 +468,7 @@
   function guardPerms() {
     if (!Perms()) return true;
     if (Perms().isReady()) return true;
-    Perms().refreshGate();
+    Perms().refreshGate(true);
     return false;
   }
 

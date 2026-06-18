@@ -4,8 +4,10 @@
 (function (global) {
   'use strict';
 
+  var STORAGE_KEY = 'dc_turnos_chofer_perms_ok';
   var audioUnlocked = false;
   var pollTimer = null;
+  var restoredOnce = false;
 
   function notificationSupported() {
     return !!global.Notification;
@@ -91,7 +93,54 @@
     return isStandalonePwa();
   }
 
+  function loadPersistedOk() {
+    try {
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return null;
+      var data = JSON.parse(raw);
+      if (!data || data.notif !== 'granted') return null;
+      return data;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function savePersistedOk(st) {
+    if (!st || !st.ready) return;
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        notif: 'granted',
+        ios: !!st.iosInstallOk,
+        audio: true,
+        at: Date.now()
+      }));
+    } catch (e) { /* noop */ }
+  }
+
+  function clearPersistedOk() {
+    try { localStorage.removeItem(STORAGE_KEY); } catch (e) { /* noop */ }
+  }
+
+  function persistedStillValid(saved) {
+    if (!saved) return false;
+    if (!notificationsOk()) return false;
+    if (isIOSDevice() && !iosInstallOk()) return false;
+    return true;
+  }
+
+  function restoreFromPersistence() {
+    if (restoredOnce && audioUnlocked) return;
+    var saved = loadPersistedOk();
+    if (!persistedStillValid(saved)) {
+      if (saved && !notificationsOk()) clearPersistedOk();
+      return;
+    }
+    audioUnlocked = true;
+    restoredOnce = true;
+  }
+
   function getStatus() {
+    if (!audioUnlocked) restoreFromPersistence();
     var notif = getNotificationState();
     var notifOk = notificationsOk();
     var iosOk = iosInstallOk();
@@ -110,6 +159,11 @@
     return getStatus().ready;
   }
 
+  function somethingMissing(st) {
+    st = st || getStatus();
+    return !st.notificationsOk || !st.audioOk || !st.iosInstallOk;
+  }
+
   function requestAll() {
     return unlockAudio().then(function () {
       preloadSpeech();
@@ -118,7 +172,9 @@
       } catch (e) { /* noop */ }
       return requestNotifications();
     }).then(function () {
-      return getStatus().ready;
+      var st = getStatus();
+      if (st.ready) savePersistedOk(st);
+      return st.ready;
     });
   }
 
@@ -129,7 +185,7 @@
     if (gate) return gate;
     gate = document.createElement('div');
     gate.id = 'turnosPermGate';
-    gate.className = 'turnos-perm-gate';
+    gate.className = 'turnos-perm-gate is-hidden';
     gate.setAttribute('role', 'dialog');
     gate.setAttribute('aria-modal', 'true');
     gate.setAttribute('aria-labelledby', 'turnosPermTitle');
@@ -163,7 +219,7 @@
           btn.disabled = false;
           btn.textContent = 'Autorizar ahora';
         }
-        refreshGate();
+        refreshGate(true);
       });
     });
     var iosBtn = gate.querySelector('#turnosPermIosBtn');
@@ -200,13 +256,7 @@
     document.body.classList.remove('turnos-perm-open');
   }
 
-  function refreshGate() {
-    var st = getStatus();
-    var Call = global.PlatformTurnosChoferCall;
-    if (Call && Call.isActive && Call.isActive()) {
-      hideGate();
-      return st;
-    }
+  function updateGateUi(st) {
     var notifLabel = !st.notificationsSupported
       ? 'Notificaciones — navegador no compatible'
       : st.notifications === 'granted' ? 'Notificaciones — activadas' :
@@ -231,29 +281,81 @@
     if (iosHint) iosHint.hidden = !st.iosDevice || st.iosInstallOk;
     var root = document.getElementById('turnosChoferRoot');
     if (root) root.classList.toggle('turnos-chofer-root--locked', !st.ready);
-    if (st.ready) {
+  }
+
+  function refreshGate(forceShow) {
+    var Call = global.PlatformTurnosChoferCall;
+    if (Call && Call.isActive && Call.isActive()) {
       hideGate();
-    } else {
-      showGate();
+      return getStatus();
     }
+
+    if (Notification.permission === 'denied') {
+      audioUnlocked = false;
+      clearPersistedOk();
+    }
+
+    var st = getStatus();
+
+    if (st.ready) {
+      savePersistedOk(st);
+      hideGate();
+      return st;
+    }
+
+    if (!forceShow && !somethingMissing(st)) {
+      hideGate();
+      return st;
+    }
+
+    updateGateUi(st);
+    showGate();
     return st;
   }
 
   function requireBeforeAction() {
-    var st = refreshGate();
-    return !!st.ready;
+    var st = getStatus();
+    if (st.ready) {
+      hideGate();
+      return true;
+    }
+    refreshGate(true);
+    return false;
+  }
+
+  function onAppVisible() {
+    if (Notification.permission === 'denied') {
+      audioUnlocked = false;
+      clearPersistedOk();
+      refreshGate(true);
+      return;
+    }
+    restoreFromPersistence();
+    if (isReady()) {
+      hideGate();
+      return;
+    }
+    refreshGate(false);
   }
 
   function startPolling() {
     if (pollTimer) clearInterval(pollTimer);
-    pollTimer = setInterval(refreshGate, 2500);
-    document.addEventListener('visibilitychange', refreshGate);
-    global.addEventListener('focus', refreshGate);
+    pollTimer = setInterval(function () {
+      if (isReady()) return;
+      refreshGate(false);
+    }, 5000);
+    document.addEventListener('visibilitychange', onAppVisible);
+    global.addEventListener('focus', onAppVisible);
   }
 
   function init() {
     ensureGateDom();
-    refreshGate();
+    restoreFromPersistence();
+    if (isReady()) {
+      hideGate();
+    } else {
+      refreshGate(false);
+    }
     startPolling();
   }
 
