@@ -88,7 +88,6 @@
   function renderForm(tipo) {
     var label = C().TIPO_LABELS[tipo] || 'Trámite';
     var remembered = esc(C().getRememberedChoferName());
-    var rememberedCompania = C().getRememberedChoferCompania();
     var extra = '';
 
     if (tipo === C().TIPOS.DESPACHO) {
@@ -103,34 +102,27 @@
       extra = '<p class="turnos-hint turnos-hint--info">El turno quedará pendiente hasta que personal autorizado lo confirme y asiente.</p>';
     }
 
-    var companiaOpts = C().COMPANIAS_CHOFER.map(function (c) {
-      var sel = c === rememberedCompania ? ' selected' : '';
-      return '<option value="' + esc(c) + '"' + sel + '>' + esc(c) + '</option>';
-    }).join('');
-    var companiaOtra = rememberedCompania && C().COMPANIAS_CHOFER.indexOf(rememberedCompania) < 0;
-
     return (
       '<section class="turnos-chofer-section turnos-form-panel">' +
       '<button type="button" class="turnos-back-btn" data-chofer-back>Volver</button>' +
       '<h2 class="turnos-form-title">' + esc(label) + '</h2>' +
       '<form id="turnosChoferForm" class="turnos-chofer-form" novalidate>' +
-      '<label class="turnos-field"><span>Compañía de transporte</span>' +
-      '<select class="turnos-input turnos-input--lg" id="turnosFieldCompania" required>' + companiaOpts + '</select></label>' +
-      '<div id="turnosCompaniaOtraWrap" class="turnos-field"' + (companiaOtra ? '' : ' hidden') + '>' +
-      '<span>Nombre de la compañía</span>' +
-      '<input class="turnos-input turnos-input--lg" id="turnosFieldCompaniaOtra" type="text" maxlength="80" value="' + (companiaOtra ? esc(rememberedCompania) : '') + '" placeholder="Escriba el nombre de la compañía"></div>' +
       '<label class="turnos-field"><span>Nombre del chofer</span>' +
       '<input class="turnos-input turnos-input--lg" id="turnosFieldChofer" type="text" required maxlength="80" autocomplete="name" value="' + remembered + '" placeholder="Su nombre completo"></label>' +
       extra +
       '<div class="turnos-priority-block">' +
       '<label class="turnos-priority-toggle">' +
       '<input type="checkbox" id="turnosFieldPrioridad" class="turnos-priority-check"> ' +
-      '<span>Turno <strong>prioritario</strong> (requiere PIN especial)</span></label>' +
+      '<span>Turno <strong>prioritario</strong> (supervisor ingresa PIN)</span></label>' +
       '<div id="turnosPriorityPinWrap" class="turnos-priority-pin" hidden>' +
-      '<label class="turnos-field"><span>PIN prioritario</span>' +
+      '<label class="turnos-field"><span>PIN del supervisor</span>' +
       '<input class="turnos-input turnos-input--lg" id="turnosFieldAdminPin" type="password" inputmode="numeric" autocomplete="off" maxlength="10" placeholder="DDMMAAAA"></label>' +
-      '<p class="turnos-hint turnos-hint--info">Fecha de nacimiento de <strong>Juan Pablo Duarte</strong> en formato DDMMAAAA (día, mes y año, sin barras).</p>' +
-      '</div></div>' +
+      '<p class="turnos-hint turnos-hint--info">Fecha de nacimiento de <strong>Juan Pablo Duarte</strong> (DDMMAAAA, sin barras).</p>' +
+      '<div id="turnosPriorityLimiteWrap" class="turnos-priority-limite" hidden>' +
+      '<label class="turnos-field"><span>Hora límite (República Dominicana)</span>' +
+      '<input class="turnos-input turnos-input--lg turnos-input--readonly" id="turnosFieldHoraLimite" type="time" readonly tabindex="-1"></label>' +
+      '<p class="turnos-hint turnos-hint--info">Se asigna automáticamente al validar el PIN prioritario.</p>' +
+      '</div></div></div>' +
       '<p id="turnosChoferFormError" class="turnos-form-error" hidden role="alert"></p>' +
       '<button type="submit" class="turnos-btn turnos-btn--primary turnos-btn--xl turnos-btn--hero">Generar mi turno</button>' +
       '</form></section>'
@@ -147,7 +139,7 @@
       : '<p class="turnos-hint">Cuando lo convoquen escuchará un mensaje de voz y una alarma. Mantenga esta página abierta en el celular o active las notificaciones.</p>';
     var prio = entry.prioridad
       ? '<div class="turnos-call-inline turnos-call-inline--priority"><strong>Turno prioritario</strong>' +
-        (entry.horaLimite ? ' · Límite ' + esc(entry.horaLimite) : ' · El administrador definirá la hora límite') +
+        (entry.horaLimite ? ' · Hora límite ' + esc(entry.horaLimite) + ' (hora RD)' : '') +
         '</div>'
       : '';
     var cancelBtn = C().canCancelByChofer(entry)
@@ -160,7 +152,8 @@
       '<div class="turnos-success-icon">✓</div>' +
       '<p class="turnos-success-title">Su turno está registrado</p>' +
       '<p class="turnos-success-turno turnos-mono">' + esc(entry.turno) + '</p>' +
-      '<p class="turnos-success-meta"><strong>' + esc(entry.choferCompania || '—') + '</strong> · ' + esc(C().TIPO_LABELS[entry.tipo]) + '</p>' +
+      '<p class="turnos-success-meta">' + esc(C().TIPO_LABELS[entry.tipo]) +
+      (entry.choferCompania ? ' · <strong>' + esc(entry.choferCompania) + '</strong>' : ' · <span class="turnos-muted-inline">Compañía: asigna el supervisor</span>') + '</p>' +
       '<p class="turnos-success-detail">' + esc(entry.detalle) + '</p>' +
       '<p class="turnos-success-time">' + esc(C().formatFechaHora(entry)) + '</p>' +
       '<p class="turnos-success-status">' + esc(estadoLabel(entry)) + '</p>' +
@@ -318,16 +311,8 @@
       showError('Escriba su nombre.');
       return;
     }
-    var companiaSel = $('turnosFieldCompania') && $('turnosFieldCompania').value;
-    var compania = companiaSel === 'Otra'
-      ? ($('turnosFieldCompaniaOtra') && $('turnosFieldCompaniaOtra').value || '').trim()
-      : String(companiaSel || '').trim();
-    if (!compania) {
-      showError('Indique la compañía de transporte.');
-      return;
-    }
 
-    var payload = { tipo: selectedTipo, choferNombre: chofer, choferCompania: compania };
+    var payload = { tipo: selectedTipo, choferNombre: chofer, choferCompania: '' };
 
     if (selectedTipo === C().TIPOS.DESPACHO) {
       payload.idsCarga = ($('turnosFieldCarga') && $('turnosFieldCarga').value || '').trim();
@@ -356,7 +341,8 @@
         return;
       }
       payload.prioridad = true;
-      payload.prioridadAutorizadaPor = 'admin-pin';
+      payload.prioridadAutorizadaPor = 'supervisor-pin';
+      payload.horaLimite = ($('turnosFieldHoraLimite') && $('turnosFieldHoraLimite').value) || C().formatTimeInput();
     }
 
     var btn = ev.target.querySelector('[type="submit"]');
@@ -374,20 +360,39 @@
     });
   }
 
+  function syncPriorityPinUi() {
+    var checked = !!( $('turnosFieldPrioridad') && $('turnosFieldPrioridad').checked);
+    var pinWrap = $('turnosPriorityPinWrap');
+    var limWrap = $('turnosPriorityLimiteWrap');
+    var pinEl = $('turnosFieldAdminPin');
+    var limEl = $('turnosFieldHoraLimite');
+    if (pinWrap) pinWrap.hidden = !checked;
+    if (!checked) {
+      if (limWrap) limWrap.hidden = true;
+      if (limEl) limEl.value = '';
+      return;
+    }
+    var pin = pinEl && pinEl.value || '';
+    if (pin && C().verifyAdminPin(pin)) {
+      if (limEl) limEl.value = C().formatTimeInput();
+      if (limWrap) limWrap.hidden = false;
+    } else if (limWrap) {
+      limWrap.hidden = true;
+      if (limEl) limEl.value = '';
+    }
+  }
+
   function bind() {
     var root = $('turnosChoferRoot');
     if (!root || root.dataset.bound) return;
     root.dataset.bound = '1';
 
     root.addEventListener('change', function (ev) {
-      if (ev.target.id === 'turnosFieldPrioridad') {
-        var wrap = $('turnosPriorityPinWrap');
-        if (wrap) wrap.hidden = !ev.target.checked;
-      }
-      if (ev.target.id === 'turnosFieldCompania') {
-        var otraWrap = $('turnosCompaniaOtraWrap');
-        if (otraWrap) otraWrap.hidden = ev.target.value !== 'Otra';
-      }
+      if (ev.target.id === 'turnosFieldPrioridad') syncPriorityPinUi();
+    });
+
+    root.addEventListener('input', function (ev) {
+      if (ev.target.id === 'turnosFieldAdminPin') syncPriorityPinUi();
     });
 
     root.addEventListener('click', function (ev) {
@@ -458,7 +463,7 @@
     setInterval(function () {
       var el = $('turnosChoferClockTime');
       if (!el) return;
-      el.textContent = new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+      el.textContent = C().formatClockTime().slice(0, 5);
     }, 1000);
   }
 

@@ -1,5 +1,5 @@
 /**
- * Control de Turnos — convocatoria al chofer (voz, alarma, notificación móvil)
+ * Control de Turnos — convocatoria al chofer (voz natural, alarma, notificación móvil)
  */
 (function (global) {
   'use strict';
@@ -11,14 +11,63 @@
   var alarmCtx = null;
   var speaking = false;
   var wakeLock = null;
+  var voicesReady = false;
 
-  function ventanaSpeech(entry) {
-    var v = C().ventanaLabel(entry.tipo);
-    return v.replace(/^Ventana de /i, 'ventana de ');
+  function ventanaSpeechNatural(entry) {
+    if (!entry) return 'ventana de atención';
+    var tipo = entry.tipo;
+    if (C() && tipo === C().TIPOS.DESPACHO) return 'ventana de despacho de facturas';
+    if (C() && tipo === C().TIPOS.LIQUIDACION) return 'ventana de liquidación de facturas';
+    if (C() && tipo === C().TIPOS.NOTA_CREDITO) return 'ventana de nota de crédito';
+    return 'ventana de atención';
+  }
+
+  function saludoNatural() {
+    var h = C() ? C().hourInTZ() : new Date().getHours();
+    if (h < 12) return 'Buenos días';
+    if (h < 19) return 'Buenas tardes';
+    return 'Buenas noches';
+  }
+
+  function primerNombre(entry) {
+    var n = String(entry && entry.choferNombre || '').trim();
+    if (!n) return '';
+    return n.split(/\s+/)[0];
   }
 
   function buildSpeechText(entry) {
-    return 'Ya es su turno ' + entry.turno + '. Pase a la ' + ventanaSpeech(entry) + '.';
+    if (!entry) return 'Ya es su turno. Por favor, pase a la ventana indicada.';
+    var saludo = saludoNatural();
+    var nombre = primerNombre(entry);
+    var turno = entry.turno || 'su turno';
+    var ventana = ventanaSpeechNatural(entry);
+    var texto = saludo;
+    if (nombre) texto += ', ' + nombre;
+    texto += '. Ya le corresponde el turno ' + turno + '. ';
+    texto += 'Por favor, diríjase a la ' + ventana + '. Gracias.';
+    return texto;
+  }
+
+  function pickSpanishVoice() {
+    if (!global.speechSynthesis) return null;
+    var voices = speechSynthesis.getVoices();
+    var es = voices.filter(function (v) { return /^es/i.test(v.lang); });
+    if (!es.length) return null;
+    function find(re) {
+      return es.find(function (v) { return re.test(v.name); });
+    }
+    return find(/natural|neural|premium|online/i) ||
+      find(/helena|sabina|paulina|elvira|monica|laura|sofia|maria/i) ||
+      find(/google.*espa|google.*spanish/i) ||
+      find(/microsoft.*spanish|microsoft.*espa/i) ||
+      find(/españa|español|spanish/i) ||
+      es.find(function (v) { return /-ES|-MX|-DO/i.test(v.lang); }) ||
+      es[0];
+  }
+
+  function preloadVoices() {
+    if (!global.speechSynthesis || voicesReady) return;
+    if (speechSynthesis.getVoices().length) voicesReady = true;
   }
 
   function stopAlarm() {
@@ -73,9 +122,9 @@
   function showNotification(entry) {
     if (!global.Notification || Notification.permission !== 'granted') return;
     try {
-      var ventana = C().ventanaLabel(entry.tipo);
-      var n = new Notification('¡Ya es su turno! ' + entry.turno, {
-        body: 'Pase a la ' + ventana,
+      var ventana = ventanaSpeechNatural(entry);
+      var n = new Notification('¡Ya es su turno! ' + (entry.turno || ''), {
+        body: 'Diríjase a la ' + ventana + '.',
         tag: 'turnos-chofer-call-' + entry.id,
         renotify: true,
         requireInteraction: true
@@ -138,14 +187,14 @@
       return;
     }
     speaking = true;
+    preloadVoices();
     var u = new SpeechSynthesisUtterance(buildSpeechText(entry));
-    u.lang = 'es-ES';
-    u.rate = 0.88;
-    u.pitch = 1.05;
+    u.lang = 'es-DO';
+    u.rate = 0.9;
+    u.pitch = 1;
     u.volume = 1;
-    var voices = speechSynthesis.getVoices();
-    var es = voices.filter(function (v) { return /es/i.test(v.lang); });
-    if (es.length) u.voice = es[0];
+    var voice = pickSpanishVoice();
+    if (voice) u.voice = voice;
     var done = function () {
       speaking = false;
       if (activeEntry && activeEntry.id === entry.id) {
@@ -232,8 +281,9 @@
 
   function init() {
     document.addEventListener('visibilitychange', onVisibilityChange);
-    if (global.speechSynthesis && speechSynthesis.getVoices().length === 0) {
-      speechSynthesis.addEventListener('voiceschanged', function () { /* preload */ }, { once: true });
+    if (global.speechSynthesis) {
+      speechSynthesis.addEventListener('voiceschanged', preloadVoices, { once: true });
+      preloadVoices();
     }
     requestPermission();
   }

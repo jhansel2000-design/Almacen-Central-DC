@@ -48,17 +48,106 @@
     ASENTADO: 'Asentado',
     CANCELADO: 'Cancelado',
     CONVOCADO: 'Convocado a ventana',
-    HORA_LIMITE: 'Hora límite'
+    HORA_LIMITE: 'Hora límite',
+    COMPANIA: 'Compañía asignada'
   };
 
-  function todayKey(d) {
+  var TZ_RD = 'America/Santo_Domingo';
+  var LOCALE_RD = 'es-DO';
+
+  function partsInTZ(d, tz) {
     d = d || new Date();
-    return d.toISOString().slice(0, 10);
+    tz = tz || TZ_RD;
+    var parts = {};
+    try {
+      new Intl.DateTimeFormat('en-US', {
+        timeZone: tz,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+      }).formatToParts(d).forEach(function (p) {
+        if (p.type !== 'literal') parts[p.type] = p.value;
+      });
+    } catch (e) {
+      parts.year = String(d.getFullYear());
+      parts.month = String(d.getMonth() + 1).padStart(2, '0');
+      parts.day = String(d.getDate()).padStart(2, '0');
+      parts.hour = String(d.getHours()).padStart(2, '0');
+      parts.minute = String(d.getMinutes()).padStart(2, '0');
+      parts.second = String(d.getSeconds()).padStart(2, '0');
+    }
+    return parts;
+  }
+
+  function todayKey(d) {
+    var p = partsInTZ(d);
+    return p.year + '-' + p.month + '-' + p.day;
   }
 
   function formatTime(d) {
+    var p = partsInTZ(d);
+    return p.hour + ':' + p.minute + ':' + p.second;
+  }
+
+  function formatTimeInput(d) {
+    var p = partsInTZ(d);
+    return p.hour + ':' + p.minute;
+  }
+
+  function hourInTZ(d) {
+    return parseInt(partsInTZ(d).hour, 10) || 0;
+  }
+
+  function formatClockTime(d) {
     d = d || new Date();
-    return d.toTimeString().slice(0, 8);
+    try {
+      return d.toLocaleTimeString(LOCALE_RD, {
+        timeZone: TZ_RD,
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      });
+    } catch (e) {
+      return formatTime(d).slice(0, 5);
+    }
+  }
+
+  function formatClockDate(d) {
+    d = d || new Date();
+    try {
+      return d.toLocaleDateString(LOCALE_RD, {
+        timeZone: TZ_RD,
+        weekday: 'long',
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric'
+      });
+    } catch (e) {
+      return formatFechaDisplay(todayKey(d));
+    }
+  }
+
+  function formatDateTimeLocale(at) {
+    if (!at) return '—';
+    var d = new Date(at);
+    if (isNaN(d.getTime())) return '—';
+    try {
+      return d.toLocaleString(LOCALE_RD, {
+        timeZone: TZ_RD,
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      });
+    } catch (e) {
+      return d.toLocaleString('es-DO');
+    }
   }
 
   function formatTurno(n) {
@@ -147,6 +236,15 @@
         por: por,
         compania: compania
       }, compania);
+    }
+    if (patch.choferCompania !== undefined && patch.choferCompania !== old.choferCompania) {
+      hist = appendSeguimiento(hist, {
+        paso: 'COMPANIA',
+        estado: old.estado,
+        nota: 'Compañía: ' + patch.choferCompania,
+        por: por,
+        compania: patch.choferCompania
+      }, patch.choferCompania);
     }
     return hist;
   }
@@ -370,7 +468,7 @@
     var now = new Date();
     payload = payload || {};
     var compania = String(payload.choferCompania || '').trim();
-    return normalizeEntry({
+    var entry = normalizeEntry({
       id: String(now.getTime()) + '-' + Math.random().toString(36).slice(2, 7),
       turno: formatTurno(counter),
       fecha: todayKey(now),
@@ -391,9 +489,23 @@
         estado: 'PENDIENTE',
         nota: 'Turno registrado por el chofer',
         por: payload.choferNombre,
-        compania: compania
+        compania: compania,
+        fecha: todayKey(now),
+        hora: formatTime(now)
       }, compania)]
     });
+    if (payload.prioridad && entry.horaLimite) {
+      entry.historial = appendSeguimiento(entry.historial, {
+        paso: 'HORA_LIMITE',
+        estado: 'PENDIENTE',
+        nota: 'Hora límite asignada al autorizar prioridad: ' + entry.horaLimite,
+        por: payload.prioridadAutorizadaPor || 'supervisor',
+        compania: compania,
+        fecha: todayKey(now),
+        hora: formatTime(now)
+      }, compania);
+    }
+    return entry;
   }
 
   function allowedStates(tipo) {
@@ -548,6 +660,13 @@
     formatTurno: formatTurno,
     playBeep: playBeep,
     todayKey: todayKey,
+    formatTime: formatTime,
+    formatTimeInput: formatTimeInput,
+    hourInTZ: hourInTZ,
+    formatClockTime: formatClockTime,
+    formatClockDate: formatClockDate,
+    formatDateTimeLocale: formatDateTimeLocale,
+    TZ_RD: TZ_RD,
     rememberChoferName: rememberChoferName,
     rememberChoferCompania: rememberChoferCompania,
     getRememberedChoferName: getRememberedChoferName,

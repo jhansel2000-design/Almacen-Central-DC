@@ -83,7 +83,7 @@
       return sync.insertTurn(payload).then(function (entry) {
         upsertEntry(entry);
         C().rememberChoferName(payload.choferNombre);
-        C().rememberChoferCompania(payload.choferCompania);
+        if (payload.choferCompania) C().rememberChoferCompania(payload.choferCompania);
         C().saveMyTurn(entry);
         C().playBeep();
         notify();
@@ -145,8 +145,22 @@
         upsertEntry(entry);
         notify();
         return { ok: true, entry: entry };
-      }).catch(function () {
-        return cloudError('No se pudo guardar la hora límite.');
+      }).catch(function (err) {
+        return cloudError((err && err.message) || 'No se pudo guardar la hora límite.');
+      });
+    });
+  }
+
+  function setCompania(id, compania, adminUser) {
+    return init().then(function () {
+      var sync = Sync();
+      if (!sync || !shared.live) return cloudError(shared.error);
+      return sync.setCompania(id, compania, adminUser).then(function (entry) {
+        upsertEntry(entry);
+        notify();
+        return { ok: true, entry: entry };
+      }).catch(function (err) {
+        return cloudError((err && err.message) || 'No se pudo guardar la compañía.');
       });
     });
   }
@@ -219,6 +233,7 @@
     convocarChofer: convocarChofer,
     cancelTurn: cancelTurn,
     setHoraLimite: setHoraLimite,
+    setCompania: setCompania,
     resetCounter: resetCounter,
     getState: getState,
     findById: findById,

@@ -1123,6 +1123,50 @@ body.turnos-body.turnos-auth-open {
 
 .turnos-limite-cell { min-width: 130px; vertical-align: top; }
 
+.turnos-compania-cell {
+  min-width: 180px;
+  vertical-align: top;
+}
+
+.turnos-compania-input {
+  display: block;
+  width: 100%;
+  min-width: 140px;
+  margin-bottom: 0.35rem;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid var(--turnos-border);
+  border-radius: 6px;
+  font-size: 0.88rem;
+}
+
+.turnos-compania-input:focus {
+  outline: none;
+  border-color: var(--turnos-blue);
+  box-shadow: 0 0 0 2px rgba(0, 56, 130, 0.15);
+}
+
+.turnos-input--readonly {
+  background: var(--bp-blue-pale);
+  color: var(--turnos-text);
+  cursor: default;
+}
+
+.turnos-priority-limite {
+  margin-top: 0.65rem;
+  padding-top: 0.65rem;
+  border-top: 1px dashed var(--turnos-border);
+}
+
+.turnos-clock-tz {
+  margin: 0;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--turnos-muted);
+  text-align: right;
+}
+
 .turnos-limite-input {
   display: block;
   width: 100%;

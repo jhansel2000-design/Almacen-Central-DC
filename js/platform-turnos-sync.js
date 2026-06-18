@@ -188,6 +188,19 @@
     });
   }
 
+  function setCompania(id, compania, adminUser) {
+    compania = String(compania || '').trim();
+    if (!compania) return Promise.reject(new Error('Indique la compañía'));
+    return pullState().then(function (remote) {
+      var entry = remote.entries.find(function (e) { return e.id === id; });
+      if (!entry) return Promise.reject(new Error('Turno no encontrado'));
+      return patchEntry(id, {
+        choferCompania: compania,
+        detalle: C().buildDetalle(Object.assign({}, entry, { choferCompania: compania }))
+      }, adminUser || 'admin');
+    });
+  }
+
   function resetCounter() {
     return pullState().then(function (remote) {
       remote.counter = 0;
@@ -214,6 +227,7 @@
     updateEstado: updateEstado,
     convocarChofer: convocarChofer,
     setHoraLimite: setHoraLimite,
+    setCompania: setCompania,
     resetCounter: resetCounter,
     pushState: pushState,
     onChange: onChange,

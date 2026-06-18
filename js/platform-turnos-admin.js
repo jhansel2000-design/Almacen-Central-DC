@@ -124,15 +124,25 @@
       return compact ? '' : '<td class="turnos-muted-inline">—</td>';
     }
     if (e.horaLimite) {
-      return '<td class="turnos-mono turnos-limite-ok">' + esc(e.horaLimite) + '</td>';
+      return '<td class="turnos-mono turnos-limite-ok">' + esc(e.horaLimite) + '<br><span class="turnos-muted-inline">hora RD</span></td>';
     }
     if (!compact && !readonly) {
       return '<td class="turnos-limite-cell">' +
         '<label class="turnos-sr-only" for="limite-' + esc(e.id) + '">Hora límite</label>' +
-        '<input type="time" class="turnos-limite-input" id="limite-' + esc(e.id) + '" data-limite-id="' + esc(e.id) + '" required>' +
+        '<input type="time" class="turnos-limite-input" id="limite-' + esc(e.id) + '" data-limite-id="' + esc(e.id) + '" value="' + esc(C().formatTimeInput()) + '" required>' +
         '<button type="button" class="turnos-btn turnos-btn--secondary turnos-btn--sm" data-set-limite="' + esc(e.id) + '">Definir</button></td>';
     }
     return '<td><span class="turnos-badge turnos-badge--priority-warn">Sin límite</span></td>';
+  }
+
+  function companiaCell(e, compact, readonly) {
+    if (compact || readonly) {
+      return '<td>' + esc(e.choferCompania || '—') + '</td>';
+    }
+    return '<td class="turnos-compania-cell">' +
+      '<label class="turnos-sr-only" for="compania-' + esc(e.id) + '">Compañía</label>' +
+      '<input type="text" class="turnos-compania-input" id="compania-' + esc(e.id) + '" data-compania-id="' + esc(e.id) + '" value="' + esc(e.choferCompania || '') + '" maxlength="80" placeholder="Supervisor escribe la compañía">' +
+      '<button type="button" class="turnos-btn turnos-btn--secondary turnos-btn--sm" data-set-compania="' + esc(e.id) + '">Guardar</button></td>';
   }
 
   function adminTableHtml(entries, compact, readonly) {
@@ -159,7 +169,7 @@
         (compact ? '<td>' + esc(C().TIPO_LABELS[e.tipo] || e.tipo) + '</td>' : '') +
         '<td class="turnos-mono turnos-fecha-cell">' + esc(C().formatFechaDisplay(e.fecha)) + '<br><span class="turnos-muted-inline">' + esc(e.hora) + '</span></td>' +
         '<td>' + esc(e.choferNombre || '—') + '</td>' +
-        '<td>' + esc(e.choferCompania || '—') + '</td>' +
+        companiaCell(e, compact, readonly) +
         '<td class="turnos-qr-cell" title="' + esc(e.detalle) + '">' + esc(e.detalle) + '</td>' +
         '<td>' + convocado + statusBadge(e.estado) + '</td>' +
         (!compact ? limiteCell(e, compact, readonly) : '') +
@@ -326,7 +336,7 @@
       '<p class="turnos-sub">Usuario: <strong>' + esc(state.adminUser && (state.adminUser.name || state.adminUser.username)) + '</strong></p>' +
       '<p class="turnos-sub">Notificaciones: aviso en el navegador cuando está en otra pestaña (sin sonido en el panel).</p>' +
       '<button type="button" class="turnos-btn turnos-btn--primary turnos-btn--xl" data-admin-action="notif-perm">Activar notificaciones del navegador</button>' +
-      '<p class="turnos-hint">Turnos prioritarios: PIN = fecha de nacimiento de <strong>Juan Pablo Duarte</strong> (<span class="turnos-mono">' + esc(C().priorityPinHint()) + '</span> → <span class="turnos-mono">' + esc(C().priorityPinValue()) + '</span>). Defina la hora límite en cada fila prioritaria.</p>' +
+      '<p class="turnos-hint">Hora oficial: <strong>República Dominicana</strong> (America/Santo_Domingo). Turnos prioritarios: PIN = fecha de nacimiento de <strong>Juan Pablo Duarte</strong> (<span class="turnos-mono">' + esc(C().priorityPinHint()) + '</span>). Al ingresar el PIN se asigna la hora límite automáticamente. La <strong>compañía</strong> la escribe el supervisor en cada fila.</p>' +
       '<button type="button" class="turnos-btn turnos-btn--danger turnos-btn--xl" data-admin-action="reset">Reiniciar numeración</button>' +
       '<p class="turnos-hint">Conserva el historial. El próximo turno volverá a T-0001.</p>' +
       '<button type="button" class="turnos-btn turnos-btn--secondary" data-admin-action="logout">Cerrar sesión admin</button>' +
@@ -347,8 +357,8 @@
         Prioridad: e.prioridad ? 'Sí' : 'No',
         'Hora límite': e.horaLimite || '',
         Seguimiento: C().seguimientoResumen(e),
-        Convocado: e.convocadoAt ? new Date(e.convocadoAt).toLocaleString('es-ES') : '',
-        Actualizado: e.updatedAt ? new Date(e.updatedAt).toLocaleString('es-ES') : '',
+        Convocado: e.convocadoAt ? C().formatDateTimeLocale(e.convocadoAt) : '',
+        Actualizado: e.updatedAt ? C().formatDateTimeLocale(e.updatedAt) : '',
         Por: e.updatedBy || ''
       };
     });
@@ -419,6 +429,28 @@
         });
         return;
       }
+      var compBtn = ev.target.closest('[data-set-compania]');
+      if (compBtn) {
+        var cid = compBtn.getAttribute('data-set-compania');
+        var cinp = root.querySelector('[data-compania-id="' + cid + '"]');
+        var compania = cinp && cinp.value.trim();
+        if (!compania) {
+          alert('Escriba el nombre de la compañía.');
+          return;
+        }
+        var userName2 = state.adminUser && (state.adminUser.name || state.adminUser.username);
+        compBtn.disabled = true;
+        S().setCompania(cid, compania, userName2).then(function (result) {
+          compBtn.disabled = false;
+          if (!result.ok) {
+            alert(result.msg || 'No se pudo guardar la compañía.');
+            refresh();
+            return;
+          }
+          refresh();
+        });
+        return;
+      }
       var segBtn = ev.target.closest('[data-seguimiento-id]');
       if (segBtn) {
         var sid = segBtn.getAttribute('data-seguimiento-id');
@@ -482,11 +514,10 @@
   }
 
   function updateClock() {
-    var now = new Date();
     var timeEl = $('turnosClockTime');
     var dateEl = $('turnosClockDate');
-    if (timeEl) timeEl.textContent = now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-    if (dateEl) dateEl.textContent = now.toLocaleDateString('es-ES', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
+    if (timeEl) timeEl.textContent = C().formatClockTime();
+    if (dateEl) dateEl.textContent = C().formatClockDate();
   }
 
   function refresh() {
