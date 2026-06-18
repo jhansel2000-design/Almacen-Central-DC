@@ -42,17 +42,25 @@
   }
 
   function renderMenu() {
+    var offline = !S().getState().live
+      ? '<p class="turnos-offline-banner">Sin conexión con la nube. Los turnos requieren internet.</p>'
+      : '';
     var ref = C().getMyTurnRef();
+    var active = ref && ref.id ? S().findById(ref.id) : null;
+    if (!active || !C().isTurnActive(active)) {
+      active = S().findActiveByChofer(C().getRememberedChoferName());
+    }
     var resume = '';
-    if (ref && ref.turno) {
+    if (active && active.turno) {
       resume =
         '<div class="turnos-my-turn-banner">' +
         '<p class="turnos-my-turn-label">Su turno activo</p>' +
-        '<p class="turnos-my-turn-number turnos-mono">' + esc(ref.turno) + '</p>' +
+        '<p class="turnos-my-turn-number turnos-mono">' + esc(active.turno) + '</p>' +
         '<button type="button" class="turnos-btn turnos-btn--secondary turnos-btn--xl" data-chofer-resume>Ver mi turno</button>' +
         '</div>';
     }
     return (
+      offline +
       resume +
       '<section class="turnos-chofer-section">' +
       '<p class="turnos-chofer-lead">Seleccione el trámite que necesita hoy:</p>' +
@@ -214,17 +222,27 @@
 
   function syncMyTurnFromStore() {
     var ref = C().getMyTurnRef();
-    if (!ref || !ref.id) return;
-    var entry = S().findById(ref.id);
-    if (!entry) return;
-    if (!C().isTurnActive(entry)) {
-      C().clearMyTurn();
-      if (screen === 'success' && lastEntry && lastEntry.id === ref.id) {
+    var entry = ref && ref.id ? S().findById(ref.id) : null;
+    if (!entry || !C().isTurnActive(entry)) {
+      entry = S().findActiveByChofer(C().getRememberedChoferName());
+    }
+    if (!entry) {
+      if (ref && ref.id) C().clearMyTurn();
+      if (screen === 'success') {
         screen = 'menu';
         lastEntry = null;
       }
       return;
     }
+    if (!C().isTurnActive(entry)) {
+      C().clearMyTurn();
+      if (screen === 'success' && lastEntry && lastEntry.id === entry.id) {
+        screen = 'menu';
+        lastEntry = null;
+      }
+      return;
+    }
+    C().saveMyTurn(entry);
     lastEntry = entry;
     screen = 'success';
     showCallOverlay(entry);
@@ -241,6 +259,10 @@
   function submitForm(ev) {
     ev.preventDefault();
     showError('');
+    if (!S().getState().live) {
+      showError('Sin conexión con la nube. Verifique internet e intente de nuevo.');
+      return;
+    }
     var ref = C().getMyTurnRef();
     if (ref && ref.id) {
       var active = S().findById(ref.id);

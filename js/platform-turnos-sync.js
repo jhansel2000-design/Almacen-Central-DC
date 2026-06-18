@@ -169,6 +169,13 @@
     });
   }
 
+  function resetCounter() {
+    return pullState().then(function (remote) {
+      remote.counter = 0;
+      return pushState(remote);
+    });
+  }
+
   function fetchAll() {
     return pullState();
   }
@@ -187,6 +194,8 @@
     insertTurn: insertTurn,
     updateEstado: updateEstado,
     convocarChofer: convocarChofer,
+    resetCounter: resetCounter,
+    pushState: pushState,
     onChange: onChange,
     isLive: isLive,
     isSetupRequired: isSetupRequired,

@@ -176,6 +176,7 @@
     }).join('');
 
     host.innerHTML =
+      (data.live ? '' : '<p class="turnos-offline-banner">Sin conexión con la nube. Los datos de turnos están en Supabase — verifique internet.</p>') +
       '<div class="turnos-kpi-grid turnos-kpi-grid--admin">' +
       kpi('Total hoy', stats.totalHoy, 'blue') +
       kpi('Pendientes', stats.pendientes, 'red') +
@@ -348,8 +349,10 @@
       else if (action === 'export-csv') exportCsv();
       else if (action === 'reset') {
         if (confirm('¿Reiniciar numeración de turnos?')) {
-          S().resetCounter();
-          refresh();
+          S().resetCounter().then(function (result) {
+            if (!result.ok) alert(result.msg || 'No se pudo reiniciar.');
+            refresh();
+          });
         }
       } else if (action === 'logout' && global.PlatformTurnosApp) {
         global.PlatformTurnosApp.logoutAdmin();

@@ -81,20 +81,29 @@
     return entry.estado === 'PENDIENTE' || entry.estado === 'EN_PROCESO' || entry.estado === 'CONFIRMADO';
   }
 
+  function sessionStore() {
+    try { return global.sessionStorage; } catch (e) { return null; }
+  }
+
   function saveMyTurn(entry) {
     if (!entry || !entry.id) return;
+    var ss = sessionStore();
+    if (!ss) return;
     try {
-      localStorage.setItem(MY_TURN_KEY, JSON.stringify({
+      ss.setItem(MY_TURN_KEY, JSON.stringify({
         id: entry.id,
         turno: entry.turno,
-        tipo: entry.tipo
+        tipo: entry.tipo,
+        choferNombre: entry.choferNombre
       }));
     } catch (e) { /* noop */ }
   }
 
   function getMyTurnRef() {
+    var ss = sessionStore();
+    if (!ss) return null;
     try {
-      var raw = localStorage.getItem(MY_TURN_KEY);
+      var raw = ss.getItem(MY_TURN_KEY);
       if (!raw) return null;
       return JSON.parse(raw);
     } catch (e) {
@@ -103,20 +112,39 @@
   }
 
   function clearMyTurn() {
-    try { localStorage.removeItem(MY_TURN_KEY); } catch (e) { /* noop */ }
+    var ss = sessionStore();
+    if (!ss) return;
+    try { ss.removeItem(MY_TURN_KEY); } catch (e) { /* noop */ }
+  }
+
+  function findActiveTurnForChofer(entries, nombre) {
+    var ref = getMyTurnRef();
+    if (ref && ref.id) {
+      var byId = (entries || []).find(function (e) { return e.id === ref.id; });
+      if (byId && isTurnActive(byId)) return byId;
+    }
+    var key = String(nombre || ref && ref.choferNombre || getRememberedChoferName() || '').trim().toLowerCase();
+    if (!key) return null;
+    return (entries || []).find(function (e) {
+      return isTurnActive(e) && e.choferNombre.toLowerCase() === key;
+    }) || null;
   }
 
   function getConvocadoSeen(id) {
+    var ss = sessionStore();
+    if (!ss) return 0;
     try {
-      return Number(localStorage.getItem(CONVOCADO_SEEN_PREFIX + id)) || 0;
+      return Number(ss.getItem(CONVOCADO_SEEN_PREFIX + id)) || 0;
     } catch (e) {
       return 0;
     }
   }
 
   function markConvocadoSeen(id, ts) {
+    var ss = sessionStore();
+    if (!ss) return;
     try {
-      localStorage.setItem(CONVOCADO_SEEN_PREFIX + id, String(ts || Date.now()));
+      ss.setItem(CONVOCADO_SEEN_PREFIX + id, String(ts || Date.now()));
     } catch (e) { /* noop */ }
   }
 
@@ -135,22 +163,31 @@
     };
   }
 
-  function loadState() {
+  function loadLegacyLocalState() {
     try {
+      if (!global.localStorage) return { counter: 0, entries: [] };
       var raw = localStorage.getItem(STORAGE_KEY);
       if (raw) return migrateState(JSON.parse(raw));
       raw = localStorage.getItem('dc_turnos_despacho_v1');
-      if (raw) {
-        var migrated = migrateState(JSON.parse(raw));
-        saveState(migrated);
-        return migrated;
-      }
+      if (raw) return migrateState(JSON.parse(raw));
     } catch (e) { /* noop */ }
     return { counter: 0, entries: [] };
   }
 
-  function saveState(state) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  function clearLegacyLocalState() {
+    try {
+      if (!global.localStorage) return;
+      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem('dc_turnos_despacho_v1');
+    } catch (e) { /* noop */ }
+  }
+
+  function loadState() {
+    return loadLegacyLocalState();
+  }
+
+  function saveState() {
+    /* Los turnos ya no se guardan en localStorage — solo nube. */
   }
 
   function buildDetalle(payload) {
@@ -253,14 +290,18 @@
   }
 
   function rememberChoferName(name) {
+    var ss = sessionStore();
+    if (!ss) return;
     try {
-      localStorage.setItem(CHOFER_NAME_KEY, String(name || '').trim());
+      ss.setItem(CHOFER_NAME_KEY, String(name || '').trim());
     } catch (e) { /* noop */ }
   }
 
   function getRememberedChoferName() {
+    var ss = sessionStore();
+    if (!ss) return '';
     try {
-      return localStorage.getItem(CHOFER_NAME_KEY) || '';
+      return ss.getItem(CHOFER_NAME_KEY) || '';
     } catch (e) {
       return '';
     }
@@ -294,6 +335,8 @@
     TIPOS: TIPOS,
     TIPO_LABELS: TIPO_LABELS,
     loadState: loadState,
+    loadLegacyLocalState: loadLegacyLocalState,
+    clearLegacyLocalState: clearLegacyLocalState,
     saveState: saveState,
     createTurn: createTurn,
     allowedStates: allowedStates,
@@ -313,6 +356,7 @@
     entriesToday: entriesToday,
     filterByTipo: filterByTipo,
     filterCancelados: filterCancelados,
+    findActiveTurnForChofer: findActiveTurnForChofer,
     saveMyTurn: saveMyTurn,
     getMyTurnRef: getMyTurnRef,
     clearMyTurn: clearMyTurn,

@@ -1,23 +1,17 @@
 /**
- * Control de Turnos — estado compartido chofer / admin (+ Supabase en vivo)
+ * Control de Turnos — estado compartido (solo nube Supabase)
  */
 (function (global) {
   'use strict';
 
   var C = function () { return global.PlatformTurnosCore; };
   var Sync = function () { return global.PlatformTurnosSync; };
-  var shared = { counter: 0, entries: [], live: false, setupRequired: false };
+  var shared = { counter: 0, entries: [], live: false, error: '' };
   var listeners = [];
   var initPromise = null;
 
-  function loadLocal() {
-    var s = C().loadState();
-    shared.counter = s.counter;
-    shared.entries = s.entries;
-  }
-
-  function persistLocal() {
-    C().saveState({ counter: shared.counter, entries: shared.entries });
+  function cloudError(msg) {
+    return { ok: false, msg: msg || 'Sin conexión con la nube. Verifique internet e intente de nuevo.' };
   }
 
   function applyRemote(data) {
@@ -30,8 +24,17 @@
         return Math.max(max, n);
       }, 0);
     }
-    persistLocal();
     notify();
+  }
+
+  function upsertEntry(entry) {
+    var idx = shared.entries.findIndex(function (e) { return e.id === entry.id; });
+    if (idx >= 0) shared.entries[idx] = entry;
+    else shared.entries.unshift(entry);
+    shared.counter = Math.max(
+      shared.counter,
+      parseInt(String(entry.turno || '').replace(/\D/g, ''), 10) || 0
+    );
   }
 
   function notify() {
@@ -52,115 +55,68 @@
     return shared.entries.find(function (e) { return e.id === id; }) || null;
   }
 
-  function localAddTurn(payload) {
-    if (C().isDuplicateSubmit(shared.entries, payload)) {
-      return { ok: false, msg: 'Turno duplicado. Espere unos segundos e intente de nuevo.' };
+  function findActiveByChofer(nombre) {
+    return C().findActiveTurnForChofer(shared.entries, nombre);
+  }
+
+  function migrateLocalOnce(sync) {
+    var local = C().loadLegacyLocalState();
+    if (!local.entries.length) {
+      C().clearLegacyLocalState();
+      return Promise.resolve();
     }
-    shared.counter += 1;
-    var entry = C().createTurn(shared.counter, payload);
-    shared.entries.unshift(entry);
-    persistLocal();
-    C().rememberChoferName(payload.choferNombre);
-    C().playBeep();
-    C().saveMyTurn(entry);
-    notify();
-    return { ok: true, entry: entry };
+    if (shared.entries.length) {
+      C().clearLegacyLocalState();
+      return Promise.resolve();
+    }
+    return sync.pushState(local).then(function () {
+      C().clearLegacyLocalState();
+      applyRemote(local);
+    }).catch(function () { /* noop */ });
   }
 
   function addTurn(payload) {
     return init().then(function () {
       var sync = Sync();
-      if (sync && shared.live) {
-        return sync.insertTurn(payload).then(function (entry) {
-          var idx = shared.entries.findIndex(function (e) { return e.id === entry.id; });
-          if (idx >= 0) shared.entries[idx] = entry;
-          else shared.entries.unshift(entry);
-          shared.counter = Math.max(shared.counter, parseInt(String(entry.turno || '').replace(/\D/g, ''), 10) || 0);
-          persistLocal();
-          C().rememberChoferName(payload.choferNombre);
-          C().playBeep();
-          C().saveMyTurn(entry);
-          notify();
-          return { ok: true, entry: entry };
-        }).catch(function () {
-          return localAddTurn(payload);
-        });
-      }
-      return localAddTurn(payload);
-    });
-  }
-
-  function localSetEstado(id, estado, adminUser) {
-    var found = null;
-    shared.entries = shared.entries.map(function (e) {
-      if (e.id !== id) return e;
-      if (!C().isValidTransition(e, estado)) return e;
-      found = Object.assign({}, e, {
-        estado: estado,
-        updatedAt: Date.now(),
-        updatedBy: adminUser || 'admin'
+      if (!sync || !shared.live) return cloudError(shared.error);
+      return sync.insertTurn(payload).then(function (entry) {
+        upsertEntry(entry);
+        C().rememberChoferName(payload.choferNombre);
+        C().saveMyTurn(entry);
+        C().playBeep();
+        notify();
+        return { ok: true, entry: entry };
+      }).catch(function (err) {
+        return cloudError((err && err.message) || shared.error);
       });
-      return found;
     });
-    if (!found) return { ok: false, msg: 'No se pudo cambiar el estado.' };
-    persistLocal();
-    notify();
-    return { ok: true, entry: found };
   }
 
   function setEstado(id, estado, adminUser) {
     return init().then(function () {
       var sync = Sync();
-      if (sync && shared.live) {
-        return sync.updateEstado(id, estado, adminUser).then(function (entry) {
-          var idx = shared.entries.findIndex(function (e) { return e.id === id; });
-          if (idx >= 0) shared.entries[idx] = entry;
-          persistLocal();
-          notify();
-          return { ok: true, entry: entry };
-        }).catch(function () {
-          return Promise.resolve(localSetEstado(id, estado, adminUser));
-        });
-      }
-      return Promise.resolve(localSetEstado(id, estado, adminUser));
-    });
-  }
-
-  function localConvocar(id, adminUser) {
-    var found = null;
-    shared.entries = shared.entries.map(function (e) {
-      if (e.id !== id) return e;
-      found = Object.assign({}, e, {
-        convocadoAt: Date.now(),
-        updatedAt: Date.now(),
-        updatedBy: adminUser || 'admin'
+      if (!sync || !shared.live) return cloudError(shared.error);
+      return sync.updateEstado(id, estado, adminUser).then(function (entry) {
+        upsertEntry(entry);
+        notify();
+        return { ok: true, entry: entry };
+      }).catch(function (err) {
+        return cloudError((err && err.message) || 'No se pudo actualizar en la nube.');
       });
-      if (C().allowedStates(e.tipo).indexOf('EN_PROCESO') >= 0) {
-        found.estado = 'EN_PROCESO';
-      }
-      return found;
     });
-    if (!found) return { ok: false, msg: 'Turno no encontrado.' };
-    persistLocal();
-    notify();
-    return { ok: true, entry: found };
   }
 
   function convocarChofer(id, adminUser) {
     return init().then(function () {
       var sync = Sync();
-      if (sync && shared.live) {
-        return sync.convocarChofer(id, adminUser).then(function (entry) {
-          var idx = shared.entries.findIndex(function (e) { return e.id === id; });
-          if (idx >= 0) shared.entries[idx] = entry;
-          persistLocal();
-          notify();
-          return { ok: true, entry: entry };
-        }).catch(function () {
-          return Promise.resolve(localConvocar(id, adminUser));
-        });
-      }
-      return Promise.resolve(localConvocar(id, adminUser));
+      if (!sync || !shared.live) return cloudError(shared.error);
+      return sync.convocarChofer(id, adminUser).then(function (entry) {
+        upsertEntry(entry);
+        notify();
+        return { ok: true, entry: entry };
+      }).catch(function () {
+        return cloudError('No se pudo convocar en la nube.');
+      });
     });
   }
 
@@ -180,9 +136,16 @@
   }
 
   function resetCounter() {
-    shared.counter = 0;
-    persistLocal();
-    notify();
+    return init().then(function () {
+      var sync = Sync();
+      if (!sync || !shared.live) return cloudError(shared.error);
+      return sync.resetCounter().then(function () {
+        notify();
+        return { ok: true };
+      }).catch(function () {
+        return cloudError('No se pudo reiniciar en la nube.');
+      });
+    });
   }
 
   function getState() {
@@ -190,44 +153,50 @@
   }
 
   function load() {
-    loadLocal();
     notify();
     return shared;
   }
 
   function init() {
     if (initPromise) return initPromise;
-    loadLocal();
+    shared.entries = [];
+    shared.counter = 0;
+    shared.live = false;
+    shared.error = '';
     notify();
+
     var sync = Sync();
     if (!sync) {
-      shared.live = false;
+      shared.error = 'No se pudo cargar la conexión con la nube.';
       return Promise.resolve(shared);
     }
+
     initPromise = sync.ready().then(function (res) {
-      shared.setupRequired = sync.isSetupRequired();
-      if (res.ok && res.data) {
-        shared.live = true;
-        applyRemote(res.data);
-      } else {
+      if (!res.ok) {
         shared.live = false;
+        shared.error = 'Sin conexión con la nube. Verifique internet.';
+        notify();
+        return shared;
       }
+      shared.live = true;
+      shared.error = '';
+      applyRemote(res.data);
       sync.onChange(function (kind, data) {
         if (kind === 'sync' && data) {
           shared.live = true;
-          shared.setupRequired = false;
+          shared.error = '';
           applyRemote(data);
         }
       });
-      return shared;
+      return migrateLocalOnce(sync).then(function () { return shared; });
     });
+
     return initPromise;
   }
 
   global.PlatformTurnosStore = {
     load: load,
     init: init,
-    persist: persistLocal,
     subscribe: subscribe,
     addTurn: addTurn,
     setEstado: setEstado,
@@ -235,6 +204,7 @@
     cancelTurn: cancelTurn,
     resetCounter: resetCounter,
     getState: getState,
-    findById: findById
+    findById: findById,
+    findActiveByChofer: findActiveByChofer
   };
 })(typeof window !== 'undefined' ? window : this);
