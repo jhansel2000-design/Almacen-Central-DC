@@ -861,60 +861,203 @@ body.turnos-body.turnos-auth-open {
   align-items: center;
   justify-content: center;
   padding: 1.25rem;
-  background: rgba(0, 42, 92, 0.45);
-  backdrop-filter: blur(6px);
+  background: rgba(0, 36, 78, 0.72);
+  backdrop-filter: blur(4px);
 }
 
 .turnos-auth-card {
-  width: min(100%, 420px);
-  padding: 1.5rem;
-  border-radius: 14px;
-  border: 1px solid var(--turnos-border);
+  width: min(100%, 440px);
+  padding: 1.75rem 1.5rem 1.5rem;
+  border-radius: 16px;
+  border: 2px solid var(--bp-blue-light);
   background: #fff;
-  box-shadow: var(--turnos-shadow-lg);
+  box-shadow: 0 16px 48px rgba(0, 42, 92, 0.22);
+}
+
+.turnos-auth-brand {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 0.85rem;
+}
+
+.turnos-auth-brand img {
+  border-radius: 12px;
+  box-shadow: 0 4px 14px rgba(0, 56, 130, 0.2);
 }
 
 .turnos-auth-card h2 {
   margin: 0;
-  font-size: 1.25rem;
+  font-size: 1.45rem;
+  font-weight: 800;
   color: var(--bp-blue);
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.turnos-auth-sub {
+  margin: 0.5rem 0 1.35rem;
+  color: var(--turnos-text);
+  font-size: 0.95rem;
+  line-height: 1.45;
+}
+
+.turnos-auth-form .turnos-field {
+  margin-bottom: 1rem;
+}
+
+.turnos-auth-form .turnos-field span {
+  display: block;
+  margin-bottom: 0.45rem;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--bp-blue-dark);
+}
+
+.turnos-auth-form .turnos-input {
+  min-height: 52px;
+  padding: 0.75rem 1rem;
+  font-size: 1.05rem;
+  font-weight: 500;
+  border-width: 2px;
+  border-color: #b8c9dc;
+  color: #0f1f33;
+  -webkit-text-fill-color: #0f1f33;
+}
+
+.turnos-auth-form .turnos-input::placeholder {
+  color: #6b7f96;
+  opacity: 1;
+}
+
+.turnos-auth-form .turnos-input:focus {
+  border-color: var(--bp-blue);
+  box-shadow: 0 0 0 3px rgba(0, 56, 130, 0.18);
+}
+
+.turnos-auth-form .turnos-field-password .turnos-input {
+  padding-right: 4.75rem;
 }
 
 .turnos-pwd-toggle {
   position: absolute;
-  right: 0.65rem;
-  bottom: 0.55rem;
+  right: 0.75rem;
+  bottom: 0.9rem;
   border: none;
   background: none;
-  color: var(--turnos-blue-link);
-  font-size: 0.78rem;
-  cursor: pointer;
-}
-
-.turnos-auth-sub {
-  margin: 0.35rem 0 1.25rem;
-  color: var(--turnos-muted);
+  color: var(--bp-blue);
   font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0.2rem 0.35rem;
 }
 
-.turnos-auth-form .turnos-field { margin-bottom: 0.85rem; }
-
-.turnos-remember {
+.turnos-auth-form .turnos-remember {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 0.85rem;
-  font-size: 0.85rem;
+  gap: 0.55rem;
+  margin-bottom: 1rem;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--turnos-text);
+}
+
+.turnos-auth-form .turnos-remember input[type="checkbox"] {
+  width: 1.15rem;
+  height: 1.15rem;
+  accent-color: var(--bp-blue);
+  flex-shrink: 0;
+}
+
+.turnos-auth-form .turnos-btn--xl {
+  margin-top: 0.35rem;
+  min-height: 54px;
+  font-size: 1.05rem;
+  letter-spacing: 0.02em;
+}
+
+.turnos-auth-form .turnos-form-error {
+  margin-top: 0.85rem;
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+.turnos-auth-form .auth-human-verify {
+  margin: 1rem 0;
+  padding: 1rem;
+  border-radius: 12px;
+  background: var(--bp-blue-pale);
+  border: 1px solid var(--turnos-border);
+}
+
+.turnos-auth-form .auth-human-math-label {
+  color: var(--bp-blue-dark) !important;
+  font-size: 0.92rem !important;
+  font-weight: 700 !important;
+  line-height: 1.45 !important;
+  margin-bottom: 0.55rem !important;
+}
+
+.turnos-auth-form .auth-human-math-label strong {
+  color: var(--bp-blue) !important;
+  font-weight: 800 !important;
+}
+
+.turnos-auth-form .auth-field-input,
+.turnos-auth-form .auth-human-answer {
+  width: 100%;
+  min-height: 50px !important;
+  margin: 0 !important;
+  padding: 0.65rem 0.85rem !important;
+  font-size: 1.05rem !important;
+  font-weight: 500 !important;
+  background: #fff !important;
+  color: #0f1f33 !important;
+  -webkit-text-fill-color: #0f1f33 !important;
+  border: 2px solid #b8c9dc !important;
+  border-radius: 10px !important;
+}
+
+.turnos-auth-form .auth-field-input:focus,
+.turnos-auth-form .auth-human-answer:focus {
+  outline: none !important;
+  border-color: var(--bp-blue) !important;
+  box-shadow: 0 0 0 3px rgba(0, 56, 130, 0.18) !important;
+}
+
+.turnos-auth-form .auth-field-input::placeholder,
+.turnos-auth-form .auth-human-answer::placeholder {
+  color: #6b7f96 !important;
+  opacity: 1 !important;
+}
+
+.turnos-auth-form .auth-human-hint {
+  margin: 0.5rem 0 0;
+  font-size: 0.82rem;
   color: var(--turnos-muted);
+}
+
+.turnos-auth-form .auth-turnstile-label {
+  color: var(--bp-blue-dark) !important;
+  font-size: 0.9rem !important;
+  font-weight: 700 !important;
+}
+
+.turnos-auth-form .auth-turnstile-mount {
+  background: #fff;
+  border: 2px solid var(--turnos-border);
+  min-height: 68px;
+  padding: 0.35rem;
+}
+
+.turnos-auth-card .turnos-back-btn--center {
+  display: block;
+  margin: 1.25rem auto 0;
+  color: var(--bp-blue);
+  font-size: 0.92rem;
+  font-weight: 700;
 }
 
 .turnos-field-password { position: relative; }
-
-.turnos-back-btn--center {
-  display: block;
-  margin: 1rem auto 0;
-  color: var(--turnos-muted);
-}
 
 .turnos-kpi-grid--admin {
   grid-template-columns: repeat(3, minmax(0, 1fr));
