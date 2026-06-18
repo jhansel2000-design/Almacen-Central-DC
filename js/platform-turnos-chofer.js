@@ -112,11 +112,11 @@
       '<div class="turnos-priority-block">' +
       '<label class="turnos-priority-toggle">' +
       '<input type="checkbox" id="turnosFieldPrioridad" class="turnos-priority-check"> ' +
-      '<span>Turno <strong>prioritario</strong> (requiere PIN administrador)</span></label>' +
+      '<span>Turno <strong>prioritario</strong> (requiere PIN del día)</span></label>' +
       '<div id="turnosPriorityPinWrap" class="turnos-priority-pin" hidden>' +
-      '<label class="turnos-field"><span>PIN del administrador</span>' +
-      '<input class="turnos-input turnos-input--lg" id="turnosFieldAdminPin" type="password" inputmode="numeric" autocomplete="off" placeholder="PIN para autorizar prioridad"></label>' +
-      '<p class="turnos-hint turnos-hint--info">Solo personal autorizado puede aprobar turnos prioritarios.</p>' +
+      '<label class="turnos-field"><span>PIN — fecha de hoy</span>' +
+      '<input class="turnos-input turnos-input--lg" id="turnosFieldAdminPin" type="password" inputmode="numeric" autocomplete="off" maxlength="10" placeholder="DDMMAAAA"></label>' +
+      '<p class="turnos-hint turnos-hint--info">Ingrese la fecha de hoy sin barras: <strong class="turnos-mono">' + esc(C().priorityPinForDate()) + '</strong> (' + esc(C().priorityPinHint()) + ').</p>' +
       '</div></div>' +
       '<p id="turnosChoferFormError" class="turnos-form-error" hidden role="alert"></p>' +
       '<button type="submit" class="turnos-btn turnos-btn--primary turnos-btn--xl turnos-btn--hero">Generar mi turno</button>' +
@@ -315,11 +315,11 @@
     if (prioridad) {
       var pin = ($('turnosFieldAdminPin') && $('turnosFieldAdminPin').value || '').trim();
       if (!pin) {
-        showError('Indique el PIN del administrador para turno prioritario.');
+        showError('Indique el PIN del día (fecha actual) para turno prioritario.');
         return;
       }
       if (!C().verifyAdminPin(pin)) {
-        showError('PIN incorrecto. Solo un administrador puede autorizar prioridad.');
+        showError('PIN incorrecto. Use la fecha de hoy (DDMMAAAA), ej. ' + C().priorityPinForDate() + '.');
         return;
       }
       payload.prioridad = true;

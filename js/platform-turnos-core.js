@@ -9,7 +9,6 @@
   var MY_TURN_KEY = 'dc_turnos_my_active';
   var CONVOCADO_SEEN_PREFIX = 'dc_turnos_convocado_seen_';
   var DEDUP_MS = 8000;
-  var ADMIN_PIN = 'Central@';
 
   var TIPOS = {
     DESPACHO: 'despacho_facturas',
@@ -70,8 +69,25 @@
     };
   }
 
+  function priorityPinForDate(d) {
+    d = d || new Date();
+    var day = String(d.getDate()).padStart(2, '0');
+    var month = String(d.getMonth() + 1).padStart(2, '0');
+    var year = String(d.getFullYear());
+    return day + month + year;
+  }
+
+  function normalizePriorityPin(pin) {
+    return String(pin || '').replace(/\D/g, '');
+  }
+
+  function priorityPinHint(d) {
+    var raw = priorityPinForDate(d);
+    return raw.slice(0, 2) + '/' + raw.slice(2, 4) + '/' + raw.slice(4);
+  }
+
   function verifyAdminPin(pin) {
-    return String(pin || '').trim() === ADMIN_PIN;
+    return normalizePriorityPin(pin) === priorityPinForDate(new Date());
   }
 
   function sortEntries(entries) {
@@ -395,9 +411,10 @@
     markConvocadoSeen: markConvocadoSeen,
     vibrateCall: vibrateCall,
     verifyAdminPin: verifyAdminPin,
+    priorityPinForDate: priorityPinForDate,
+    priorityPinHint: priorityPinHint,
     sortEntries: sortEntries,
     priorityBadgeHtml: priorityBadgeHtml,
-    ADMIN_PIN: ADMIN_PIN,
     VENTANA_LABELS: VENTANA_LABELS
   };
 })(typeof window !== 'undefined' ? window : this);
