@@ -18,10 +18,12 @@
     return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   }
 
+  var ICON_V = '?v=11';
+
   var ICONS = {
-    despacho_facturas: 'assets/img/icon-turnos-despacho.svg',
-    liquidacion_facturas: 'assets/img/icon-turnos-liquidacion.svg',
-    nota_credito: 'assets/img/icon-turnos-nota-credito.svg'
+    despacho_facturas: 'assets/img/icon-turnos-despacho.svg' + ICON_V,
+    liquidacion_facturas: 'assets/img/icon-turnos-liquidacion.svg' + ICON_V,
+    nota_credito: 'assets/img/icon-turnos-nota-credito.svg' + ICON_V
   };
 
   function estadoLabel(entry) {
@@ -75,7 +77,7 @@
   function serviceCard(tipo, iconSrc, title, desc) {
     return (
       '<button type="button" class="turnos-service-card" data-chofer-tipo="' + esc(tipo) + '">' +
-      '<span class="turnos-service-icon"><img src="' + esc(iconSrc) + '" alt="" width="48" height="48" loading="lazy"></span>' +
+      '<span class="turnos-service-icon"><img src="' + esc(iconSrc) + '" alt="" width="52" height="52" loading="lazy"></span>' +
       '<span class="turnos-service-text">' +
       '<span class="turnos-service-title">' + esc(title) + '</span>' +
       '<span class="turnos-service-desc">' + esc(desc) + '</span></span></button>'

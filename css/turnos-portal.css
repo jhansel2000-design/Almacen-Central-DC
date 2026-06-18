@@ -118,8 +118,8 @@ body.turnos-body.turnos-auth-open {
 }
 
 .turnos-sidebar .turnos-nav-icon {
-  filter: brightness(0) invert(1);
-  opacity: 0.9;
+  border-radius: 7px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
 }
 
 .turnos-sidebar-foot {
@@ -278,7 +278,8 @@ body.turnos-body.turnos-auth-open {
 .turnos-sub {
   margin: -0.5rem 0 1rem;
   color: var(--turnos-muted);
-  font-size: 0.88rem;
+  font-size: 0.92rem;
+  line-height: 1.45;
 }
 
 .turnos-btn {
@@ -341,7 +342,7 @@ body.turnos-body.turnos-auth-open {
 .turnos-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.85rem;
+  font-size: 0.9rem;
 }
 
 .turnos-table th,
@@ -375,13 +376,14 @@ body.turnos-body.turnos-auth-open {
 
 .turnos-badge {
   display: inline-flex;
-  min-width: 88px;
+  min-width: 92px;
   justify-content: center;
-  padding: 0.25rem 0.55rem;
+  padding: 0.3rem 0.6rem;
   border-radius: 999px;
-  font-size: 0.68rem;
+  font-size: 0.72rem;
   font-weight: 800;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.03em;
+  line-height: 1.2;
 }
 
 .turnos-badge--pending { background: #fde8ec; color: #b91c1c; }
@@ -541,8 +543,9 @@ body.turnos-body.turnos-auth-open {
 }
 
 .turnos-mobile-nav .turnos-nav-icon {
-  filter: none;
-  opacity: 1;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
 }
 
 @media (max-width: 960px) {
@@ -570,13 +573,6 @@ body.turnos-body.turnos-auth-open {
   margin: 0 auto;
   padding: 0 1rem 1.5rem;
   background: var(--turnos-bg);
-}
-
-.turnos-portal-logo {
-  border-radius: 10px;
-  object-fit: cover;
-  box-shadow: var(--turnos-shadow);
-  border: 2px solid var(--bp-blue-light);
 }
 
 .turnos-chofer-header {
@@ -622,8 +618,10 @@ body.turnos-body.turnos-auth-open {
 
 .turnos-chofer-lead {
   margin: 0 0 1rem;
-  color: var(--turnos-muted);
-  font-size: 0.95rem;
+  color: var(--turnos-text);
+  font-size: 0.98rem;
+  font-weight: 600;
+  line-height: 1.4;
 }
 
 .turnos-service-grid {
@@ -658,19 +656,21 @@ body.turnos-body.turnos-auth-open {
 
 .turnos-service-icon {
   flex-shrink: 0;
-  width: 56px;
-  height: 56px;
+  width: 52px;
+  height: 52px;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 12px;
-  background: var(--bp-blue-light);
+  background: transparent;
 }
 
 .turnos-service-icon img {
   display: block;
-  width: 48px;
-  height: 48px;
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 56, 130, 0.18);
 }
 
 .turnos-service-text {
@@ -683,13 +683,16 @@ body.turnos-body.turnos-auth-open {
 .turnos-nav-icon {
   flex-shrink: 0;
   display: block;
+  width: 26px;
+  height: 26px;
   object-fit: contain;
+  border-radius: 7px;
 }
 
 .turnos-export-icon {
   flex-shrink: 0;
-  width: 48px;
-  height: 48px;
+  width: 44px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -697,13 +700,39 @@ body.turnos-body.turnos-auth-open {
 
 .turnos-export-icon img {
   display: block;
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 56, 130, 0.12);
+}
+
+.turnos-tramite-card img,
+.turnos-tramite-head img {
+  flex-shrink: 0;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 56, 130, 0.12);
+}
+
+.turnos-tramite-card img {
   width: 40px;
   height: 40px;
 }
 
+.turnos-tramite-head img {
+  width: 48px;
+  height: 48px;
+}
+
+.turnos-portal-logo {
+  border-radius: 10px;
+  object-fit: cover;
+  box-shadow: 0 2px 8px rgba(0, 56, 130, 0.18);
+  border: none;
+}
+
 .turnos-service-icon { font-size: 1.75rem; }
-.turnos-service-title { font-size: 1.05rem; font-weight: 800; color: var(--bp-blue); }
-.turnos-service-desc { font-size: 0.85rem; color: var(--turnos-muted); }
+.turnos-service-title { font-size: 1.08rem; font-weight: 800; color: var(--bp-blue); line-height: 1.25; }
+.turnos-service-desc { font-size: 0.88rem; color: var(--turnos-muted); line-height: 1.35; }
 
 .turnos-form-panel {
   animation: turnosFade 0.2s ease;
@@ -1031,14 +1060,20 @@ body.turnos-body.turnos-auth-open {
 .turnos-tramite-card-text span { font-size: 0.78rem; color: var(--turnos-muted); }
 
 .turnos-tramite-card-icon {
-  width: 36px;
-  height: 36px;
-  display: grid;
-  place-items: center;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border-radius: 10px;
-  background: #fde8ec;
-  color: var(--turnos-red);
-  font-weight: 800;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 56, 130, 0.12);
+}
+
+.turnos-tramite-card-icon img {
+  width: 40px;
+  height: 40px;
+  display: block;
 }
 
 .turnos-tramite-head {

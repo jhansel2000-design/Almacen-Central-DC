@@ -14,24 +14,26 @@
     nota_credito: 'turnosViewNota_credito'
   };
 
+  var ICON_V = '?v=11';
+
   var TRAMITE_MODULES = {
     despacho: {
       tipo: 'despacho_facturas',
       title: 'Despacho de facturas',
       hint: 'Cola de choferes con ID de carga. Convocar → ventana de despacho.',
-      icon: 'assets/img/icon-turnos-despacho.svg'
+      icon: 'assets/img/icon-turnos-despacho.svg' + ICON_V
     },
     liquidacion: {
       tipo: 'liquidacion_facturas',
       title: 'Liquidación de facturas',
       hint: 'Cierre por cantidad de viajes. Convocar cuando esté listo para atender.',
-      icon: 'assets/img/icon-turnos-liquidacion.svg'
+      icon: 'assets/img/icon-turnos-liquidacion.svg' + ICON_V
     },
     nota_credito: {
       tipo: 'nota_credito',
       title: 'Nota de crédito',
       hint: 'Flujo: Pendiente → Confirmado → Asentado.',
-      icon: 'assets/img/icon-turnos-nota-credito.svg'
+      icon: 'assets/img/icon-turnos-nota-credito.svg' + ICON_V
     }
   };
 
@@ -186,7 +188,7 @@
       var ts = tramiteStats(cfg.tipo);
       return (
         '<button type="button" class="turnos-tramite-card" data-turnos-nav="' + key + '">' +
-        '<img src="' + esc(cfg.icon) + '" alt="" width="36" height="36">' +
+        '<img src="' + esc(cfg.icon) + '" alt="" width="40" height="40">' +
         '<span class="turnos-tramite-card-text">' +
         '<strong>' + esc(cfg.title) + '</strong>' +
         '<span>' + ts.pendientes + ' pendientes · ' + ts.total + ' hoy</span>' +
@@ -209,7 +211,7 @@
       '<p class="turnos-sub">Seleccione un trámite para gestionar su cola por separado.</p>' +
       '<div class="turnos-tramite-grid">' + cards +
       '<button type="button" class="turnos-tramite-card turnos-tramite-card--muted" data-turnos-nav="cancelados">' +
-      '<span class="turnos-tramite-card-icon">✕</span>' +
+      '<span class="turnos-tramite-card-icon"><img src="assets/img/icon-turnos-gestion.svg' + ICON_V + '" alt="" width="40" height="40"></span>' +
       '<span class="turnos-tramite-card-text"><strong>Cancelados</strong><span>' + stats.cancelados + ' hoy</span></span></button>' +
       '</div></section>' +
       '<section class="turnos-panel"><h2>Actividad reciente</h2>' +
@@ -231,7 +233,7 @@
     host.innerHTML =
       '<section class="turnos-panel turnos-panel--tramite">' +
       '<div class="turnos-tramite-head">' +
-      '<img src="' + esc(cfg.icon) + '" alt="" width="44" height="44">' +
+      '<img src="' + esc(cfg.icon) + '" alt="" width="48" height="48">' +
       '<div><h2>' + esc(cfg.title) + '</h2><p class="turnos-sub">' + esc(cfg.hint) + '</p></div></div>' +
       '<div class="turnos-tramite-kpis">' +
       miniKpi('En cola', ts.pendientes) +
@@ -267,9 +269,9 @@
       '<section class="turnos-panel turnos-export-cards">' +
       '<h2>Exportar</h2><p class="turnos-sub">' + n + ' registros en total.</p>' +
       '<button type="button" class="turnos-export-card" data-admin-action="export-xlsx">' +
-      '<span class="turnos-export-icon"><img src="assets/img/icon-turnos-export.svg" alt="" width="40" height="40"></span><strong>Excel (.xlsx)</strong></button>' +
+      '<span class="turnos-export-icon"><img src="assets/img/icon-turnos-export.svg' + ICON_V + '" alt="" width="44" height="44"></span><strong>Excel (.xlsx)</strong></button>' +
       '<button type="button" class="turnos-export-card" data-admin-action="export-csv">' +
-      '<span class="turnos-export-icon"><img src="assets/img/icon-turnos-gestion.svg" alt="" width="40" height="40"></span><strong>CSV</strong></button>' +
+      '<span class="turnos-export-icon"><img src="assets/img/icon-turnos-csv.svg' + ICON_V + '" alt="" width="44" height="44"></span><strong>CSV</strong></button>' +
       '</section>';
   }
 
