@@ -158,12 +158,27 @@
     });
   }
 
+  function renderProgressRing(stats, extraClass) {
+    var cls = 'agenda-ring' + (extraClass ? ' ' + extraClass : '');
+    return '<div class="' + cls + '" style="--pct:' + stats.pct + '">' +
+      '<div class="agenda-ring__inner">' + stats.pct + '%</div></div>';
+  }
+
   function renderProgressBar(stats) {
     return '<div class="agenda-progress">' +
-      '<div class="agenda-progress__meta"><span>Productividad del día</span><strong>' + stats.pct + '%</strong></div>' +
+      '<div class="agenda-progress__meta"><span>Avance del día</span><strong>' + stats.pct + '%</strong></div>' +
       '<div class="agenda-progress__track"><div class="agenda-progress__fill" style="width:' + stats.pct + '%"></div></div>' +
       '<p class="agenda-progress__sub">' + stats.done + ' de ' + stats.total + ' tareas · ' +
-      stats.minutesDone + '/' + stats.minutesTotal + ' min estimados</p></div>';
+      stats.minutesDone + '/' + stats.minutesTotal + ' min</p></div>';
+  }
+
+  function renderHeroStats(stats) {
+    return '<section class="agenda-hero">' +
+      renderProgressRing(stats, 'agenda-hero__ring') +
+      '<div class="agenda-hero__copy">' +
+      '<strong>Productividad del día</strong>' +
+      '<span>' + stats.done + ' completadas · ' + stats.inProg + ' en proceso · ' + stats.pending + ' pendientes</span>' +
+      '</div></section>';
   }
 
   function renderDashboard() {
@@ -176,7 +191,8 @@
       var st = C().statsForPuesto(data.state, dayKey, p.id);
       var alert = st.pending > 0 && st.pct < 100;
       return '<button type="button" class="agenda-puesto-card' + (alert ? ' agenda-puesto-card--alert' : '') + '" data-agenda-puesto="' + esc(p.id) + '">' +
-        '<div class="agenda-puesto-card__head"><strong>' + esc(p.label) + '</strong><span class="agenda-puesto-card__pct">' + st.pct + '%</span></div>' +
+        '<div class="agenda-puesto-card__head"><strong>' + esc(p.label) + '</strong>' +
+        renderProgressRing(st, 'agenda-puesto-card__pct') + '</div>' +
         renderProgressBar(st) +
         '<div class="agenda-puesto-card__counts">' +
         '<span class="agenda-chip agenda-chip--done">' + st.done + ' hechas</span>' +
@@ -187,7 +203,7 @@
 
     host.innerHTML =
       '<header class="agenda-topbar">' +
-      '<div><p class="agenda-eyebrow">Agenda operativa</p><h1>Dashboard por puesto</h1>' +
+      '<div><p class="agenda-eyebrow">Panel supervisor</p><h1>Puestos del almacén</h1>' +
       '<p class="agenda-sub">' + esc(C().formatDateDisplay(dayKey)) + '</p></div>' +
       '<div class="agenda-topbar__actions">' +
       '<button type="button" class="agenda-btn agenda-btn--ghost" data-agenda-action="refresh">↻ Actualizar</button>' +
@@ -219,33 +235,37 @@
     var rows = tasks.map(function (row) {
       var t = row.template;
       var p = row.progress;
-      return '<tr class="' + statusClass(p.estado) + '" data-task-id="' + esc(t.id) + '">' +
-        '<td class="agenda-col-num">' + esc(t.numero || '—') + '</td>' +
-        '<td><span class="agenda-freq agenda-freq--' + esc(t.frecuencia.toLowerCase()) + '">' + esc(C().FREQ_LABELS[t.frecuencia] || t.frecuencia) + '</span></td>' +
-        '<td class="agenda-col-act">' + esc(t.actividad) + '</td>' +
-        '<td class="agenda-col-min">' + esc(t.minutos) + '</td>' +
-        '<td><button type="button" class="agenda-status-btn ' + statusClass(p.estado) + '" data-agenda-status="' + esc(p.estado) + '" data-task-id="' + esc(t.id) + '">' +
-        esc(C().ESTADO_LABELS[p.estado] || p.estado) + '</button></td>' +
-        '<td class="agenda-col-time">' + esc(p.horaEjecucion || '—') + '</td>' +
-        '<td><input class="agenda-comment" type="text" maxlength="240" placeholder="Comentario…" value="' + esc(p.comentarios) + '" data-task-id="' + esc(t.id) + '"></td>' +
-        '</tr>';
+      var freqKey = String(t.frecuencia || '').toLowerCase().replace('_', '_');
+      return '<article class="agenda-task ' + statusClass(p.estado) + '" data-task-id="' + esc(t.id) + '">' +
+        '<div class="agenda-task__head">' +
+        '<span class="agenda-task__num">' + esc(t.numero || '·') + '</span>' +
+        '<span class="agenda-freq agenda-freq--' + esc(freqKey) + '">' + esc(C().FREQ_LABELS[t.frecuencia] || t.frecuencia) + '</span>' +
+        '<span class="agenda-task__min">' + esc(t.minutos) + ' min</span></div>' +
+        '<p class="agenda-task__title">' + esc(t.actividad) + '</p>' +
+        '<div class="agenda-task__foot">' +
+        '<button type="button" class="agenda-status-btn ' + statusClass(p.estado) + '" data-agenda-status="' + esc(p.estado) + '" data-task-id="' + esc(t.id) + '">' +
+        esc(C().ESTADO_LABELS[p.estado] || p.estado) + '</button>' +
+        '<span class="agenda-task__time">' + esc(p.horaEjecucion || '—') + '</span>' +
+        '<input class="agenda-comment" type="text" maxlength="240" placeholder="Comentario…" value="' + esc(p.comentarios) + '" data-task-id="' + esc(t.id) + '">' +
+        '</div></article>';
     }).join('');
 
     var showBack = C().canManageAll(state.user);
     host.innerHTML =
       '<header class="agenda-topbar">' +
-      '<div>' + (showBack ? '<button type="button" class="agenda-back" data-agenda-action="back">← Dashboard</button>' : '') +
+      '<div>' + (showBack ? '<button type="button" class="agenda-back" data-agenda-action="back">← Todos los puestos</button>' : '') +
+      '<p class="agenda-eyebrow">Mi agenda</p>' +
       '<h1>' + esc(puesto.label) + '</h1><p class="agenda-sub">' + esc(C().formatDateDisplay(dayKey)) + '</p></div>' +
-      '<div class="agenda-topbar__actions"><button type="button" class="agenda-btn agenda-btn--ghost" data-agenda-action="refresh">↻</button></div>' +
-      '</header>' +
-      renderProgressBar(stats) +
+      '<div class="agenda-topbar__actions">' +
+      '<button type="button" class="agenda-btn agenda-btn--ghost" data-agenda-action="refresh">↻</button>' +
+      '<button type="button" class="agenda-btn agenda-btn--ghost" data-agenda-action="logout">Salir</button>' +
+      '</div></header>' +
+      renderHeroStats(stats) +
       '<section class="agenda-filters agenda-filters--detail">' +
       '<label>Frecuencia<select id="agendaFilterFreq"><option value="ALL">Todas</option><option value="DIARIA">Diaria</option><option value="INTER_DIARIA">Inter-diaria</option><option value="SEMANAL">Semanal</option></select></label>' +
       '<label>Estado<select id="agendaFilterStatus"><option value="ALL">Todos</option><option value="PENDIENTE">Pendiente</option><option value="EN_PROCESO">En proceso</option><option value="COMPLETADO">Completado</option></select></label>' +
       '</section>' +
-      '<div class="agenda-table-wrap"><table class="agenda-table"><thead><tr>' +
-      '<th>#</th><th>Frecuencia</th><th>Actividad</th><th>Min</th><th>Estado</th><th>Hora</th><th>Comentarios</th>' +
-      '</tr></thead><tbody>' + (rows || '<tr><td colspan="7" class="agenda-empty">Sin tareas para los filtros seleccionados.</td></tr>') + '</tbody></table></div>';
+      '<div class="agenda-task-list">' + (rows || '<p class="agenda-task-list__empty">Sin tareas para los filtros seleccionados.</p>') + '</div>';
     var ff = $('agendaFilterFreq');
     var fs = $('agendaFilterStatus');
     if (ff) ff.value = state.freqFilter;
