@@ -5,7 +5,7 @@
   'use strict';
 
   var LS_KEY = 'almacen_hub_news';
-  var SEED_VERSION = 10;
+  var SEED_VERSION = 11;
 
   function findSeedForItem(item, seeds) {
     if (!item) return null;
@@ -95,7 +95,7 @@
         pinned: true,
         comingSoon: true,
         imageOnly: true,
-        imageUrl: 'assets/img/agenda-hub-poster.jpg?v=3',
+        imageUrl: 'assets/img/agenda-hub-banner.svg?v=3',
         linkUrl: 'agenda.html',
         theme: 'agenda'
       }
