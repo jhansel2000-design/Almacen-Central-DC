@@ -266,6 +266,17 @@
     });
   }
 
+  function clearAllHistory() {
+    var today = C().todayKey();
+    return pushState({
+      counter: 0,
+      entries: [],
+      dashboardDay: today,
+      operatingDay: today,
+      autoResetDashboard: true
+    });
+  }
+
   function fetchAll() {
     return pullState();
   }
@@ -312,6 +323,7 @@
     setHoraLimite: setHoraLimite,
     setCompania: setCompania,
     resetCounter: resetCounter,
+    clearAllHistory: clearAllHistory,
     pushState: pushState,
     ensureDayCurrent: ensureDayCurrent,
     saveConfig: saveConfig,

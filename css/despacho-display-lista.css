@@ -1,0 +1,229 @@
+/* Pantalla TV — lista validadores
+   Una sola escala (--desp-table-fs) para que TODO el texto de la tabla
+   crezca igual en TVs grandes; IDC sin salto de línea. */
+body.desp-display-mode .desp-lista-present-inner {
+  /* Objetivo: ≥8 filas visibles en 1080p; tipografía sin cambios */
+  --desp-table-fs: clamp(0.95rem, 1.65vmin, 2.5rem);
+  --desp-badge-h: calc(var(--desp-table-fs) * 1.88);
+  --desp-etapa-h: calc(var(--desp-table-fs) * 1.1);
+  --desp-row-gap: 0;
+  padding: clamp(0.18rem, 0.35vh, 0.38rem) clamp(0.5rem, 1.2vw, 1.2rem);
+}
+
+body.desp-display-mode .desp-lista-present-toolbar {
+  flex-shrink: 0;
+  margin-bottom: clamp(0.06rem, 0.14vh, 0.12rem);
+  gap: clamp(0.35rem, 0.75vw, 0.65rem);
+  align-items: stretch;
+}
+
+body.desp-display-mode .desp-lista-present-kpis {
+  flex: 0 1 38%;
+  gap: clamp(0.35rem, 0.75vw, 0.65rem);
+  min-width: 0;
+}
+
+body.desp-display-mode .desp-lista-present-kpi {
+  min-height: clamp(3.5rem, 7.2vh, 6.5rem);
+  height: auto;
+  justify-content: flex-end;
+  gap: clamp(0.1rem, 0.2vh, 0.16rem);
+  padding: clamp(0.28rem, 0.5vh, 0.5rem) clamp(0.45rem, 0.9vw, 0.85rem);
+  padding-top: clamp(1.55rem, 2.85vh, 2.5rem);
+}
+
+body.desp-display-mode .desp-lista-present-toolbar .desp-val-resumen {
+  flex: 1 1 62%;
+  min-width: 0;
+  width: auto;
+  max-width: none;
+  max-height: none;
+  overflow: visible;
+  padding: clamp(0.2rem, 0.42vh, 0.42rem) clamp(0.35rem, 0.8vw, 0.75rem);
+}
+
+body.desp-display-mode .desp-val-resumen--solo-barras {
+  justify-content: center;
+  gap: 0;
+  padding: clamp(0.22rem, 0.45vh, 0.45rem) clamp(0.35rem, 0.8vw, 0.75rem);
+}
+
+body.desp-display-mode .desp-val-resumen--solo-barras .desp-val-chart-rows {
+  flex: 1;
+  align-content: center;
+}
+
+body.desp-display-mode .desp-val-chart-rows {
+  gap: clamp(0.1rem, 0.22vh, 0.2rem) clamp(0.45rem, 1vw, 1rem);
+  width: 100%;
+}
+
+body.desp-display-mode .desp-val-chart-row {
+  grid-template-columns: minmax(4.8rem, 8vmin) minmax(0, 1fr);
+  width: 100%;
+  font-size: clamp(0.58rem, 0.95vmin, 1.15rem);
+}
+
+body.desp-display-mode .desp-val-chart-name {
+  text-transform: uppercase;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  font-size: clamp(0.6rem, 1vmin, 1.2rem);
+}
+
+body.desp-display-mode .desp-val-chart-bars {
+  width: 100%;
+  gap: clamp(0.14rem, 0.28vh, 0.28rem);
+}
+
+body.desp-display-mode .desp-val-chart-bar-line {
+  height: clamp(0.42rem, 0.75vmin, 1rem);
+}
+
+body.desp-display-mode .desp-val-chart-seg-num {
+  font-size: clamp(0.62rem, 1vmin, 1.2rem);
+  font-weight: 800;
+}
+
+body.desp-display-mode .desp-lista-present-table-wrap {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+body.desp-display-mode .desp-lista-present-table {
+  font-size: var(--desp-table-fs);
+  table-layout: fixed;
+}
+
+body.desp-display-mode .desp-lista-present-col-idc {
+  width: 15%;
+}
+
+body.desp-display-mode .desp-lista-present-col-cliente {
+  width: 29%;
+}
+
+body.desp-display-mode .desp-lista-present-table th {
+  font-size: 0.72em;
+  padding: clamp(0.14rem, 0.28vh, 0.24rem) clamp(0.4rem, 0.85vw, 0.85rem);
+  letter-spacing: 0.05em;
+}
+
+body.desp-display-mode .desp-lista-present-table td {
+  padding: clamp(0.06rem, 0.18vh, 0.14rem) clamp(0.4rem, 0.85vw, 0.85rem);
+  vertical-align: top;
+  line-height: 1.15;
+}
+
+body.desp-display-mode .desp-lista-present-idc,
+body.desp-display-mode .desp-lista-present-cliente,
+body.desp-display-mode .desp-lista-present-jaula,
+body.desp-display-mode .desp-lista-present-validador {
+  vertical-align: middle;
+}
+
+body.desp-display-mode .desp-lista-present-idc {
+  font-size: 1.15em;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+body.desp-display-mode .desp-lista-present-cliente {
+  font-size: 1.06em;
+  font-weight: 600;
+}
+
+body.desp-display-mode .desp-lista-present-jaula {
+  font-size: 1.09em;
+  font-weight: 700;
+}
+
+body.desp-display-mode .desp-lista-present-estado-cell {
+  padding-right: 0.12rem !important;
+}
+
+body.desp-display-mode .desp-lista-present-fecha-cell {
+  padding-left: 0.12rem !important;
+  padding-right: 0.2rem !important;
+}
+
+body.desp-display-mode .desp-lista-present-th-fecha {
+  padding-left: 0.12rem !important;
+  padding-right: 0.2rem !important;
+}
+
+body.desp-display-mode .desp-lista-present-estado-col,
+body.desp-display-mode .desp-lista-present-fecha-col {
+  gap: var(--desp-row-gap);
+}
+
+body.desp-display-mode .desp-lista-present-badge-spacer {
+  min-height: var(--desp-badge-h);
+}
+
+body.desp-display-mode .desp-lista-present-etapas--labels,
+body.desp-display-mode .desp-lista-present-etapas--times {
+  gap: var(--desp-row-gap);
+}
+
+body.desp-display-mode .desp-lista-present-etapas--labels .desp-lista-present-etapa,
+body.desp-display-mode .desp-lista-present-etapas--times .desp-lista-present-etapa {
+  font-size: 0.67em;
+  min-height: var(--desp-etapa-h);
+  line-height: 1.05;
+}
+
+body.desp-display-mode .desp-lista-present-etapas--labels .desp-lista-present-etapa-lbl,
+body.desp-display-mode .desp-lista-present-etapas--times .desp-lista-present-etapa-time {
+  font-size: 1em;
+  font-weight: 600;
+}
+
+body.desp-display-mode .desp-lista-present-estado {
+  padding: 0.1em 0.38em;
+  font-size: 0.73em;
+  font-weight: 700;
+  line-height: 1.1;
+  gap: 0.3em;
+  border-radius: 0.35em;
+}
+
+body.desp-display-mode .desp-lista-present-estado .desp-estado-icon {
+  width: 1.15em;
+  height: 1.15em;
+  flex-shrink: 0;
+}
+
+body.desp-display-mode .desp-lista-present-kpi-num {
+  font-size: clamp(2.2rem, 4.5vmin, 6rem);
+  line-height: 0.95;
+}
+
+body.desp-display-mode .desp-lista-present-kpi-iconbox {
+  width: clamp(1.85rem, 3.2vmin, 4rem);
+  height: clamp(1.85rem, 3.2vmin, 4rem);
+  top: clamp(0.32rem, 0.6vh, 0.65rem);
+  left: clamp(0.38rem, 0.75vw, 0.85rem);
+}
+
+body.desp-display-mode .desp-lista-present-kpi-iconbox .desp-estado-icon {
+  width: 100%;
+  height: 100%;
+}
+
+body.desp-display-mode .desp-lista-present-kpi-lbl {
+  font-size: clamp(0.68rem, 1.25vmin, 1.65rem);
+  font-weight: 700;
+  line-height: 1.12;
+  letter-spacing: 0.02em;
+}
+
+body.desp-display-mode .desp-lista-present-validador-pill {
+  padding: 0.12em 0.38em;
+  font-size: 0.91em;
+  font-weight: 600;
+  border-radius: 0.35em;
+}

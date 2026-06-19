@@ -692,18 +692,89 @@ body.desp-display-mode .desp-lista-present-inner {
   flex: 1;
   min-height: 0;
   width: 100%;
-  max-width: 1400px;
+  max-width: none;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  padding: clamp(0.75rem, 2vh, 1.5rem) clamp(1rem, 3vw, 2rem);
+  padding: clamp(0.2rem, 0.45vh, 0.35rem) clamp(0.45rem, 1.2vw, 0.75rem);
   box-sizing: border-box;
 }
 
-body.desp-display-mode .desp-lista-present-totales {
+body.desp-display-mode .desp-lista-present-toolbar {
   flex-shrink: 0;
-  gap: clamp(0.4rem, 1vw, 0.65rem);
-  margin-bottom: clamp(0.5rem, 1vh, 0.75rem);
+  margin-bottom: clamp(0.15rem, 0.35vh, 0.25rem);
+}
+
+body.desp-display-mode .desp-lista-present-toolbar .desp-val-resumen {
+  flex: 1 1 62%;
+  width: auto;
+  max-width: none;
+  padding: clamp(0.28rem, 0.55vh, 0.38rem) clamp(0.35rem, 0.8vw, 0.48rem);
+  gap: clamp(0.12rem, 0.3vh, 0.2rem);
+}
+
+body.desp-display-mode .desp-lista-present-toolbar-left {
+  gap: clamp(0.25rem, 0.6vw, 0.4rem) clamp(0.35rem, 0.8vw, 0.5rem);
+}
+
+body.desp-display-mode .desp-lista-present-title {
+  font-size: clamp(0.62rem, 1.1vw, 0.78rem);
+}
+
+body.desp-display-mode .desp-lista-present-kpis {
+  flex: 0 1 38%;
+  width: auto;
+  gap: clamp(0.35rem, 0.75vw, 0.5rem);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+body.desp-display-mode .desp-lista-present-kpi {
+  min-height: auto;
+}
+
+body.desp-display-mode .desp-val-resumen {
+  flex: 1 1 62%;
+  max-width: none;
+  width: auto;
+}
+
+body.desp-display-mode .desp-val-resumen-title {
+  font-size: clamp(0.62rem, 1.1vw, 0.74rem);
+}
+
+body.desp-display-mode .desp-val-resumen-legend {
+  font-size: clamp(0.58rem, 1vw, 0.66rem);
+}
+
+body.desp-display-mode .desp-val-chart-row {
+  font-size: clamp(0.62rem, 1.05vw, 0.72rem);
+}
+
+body.desp-display-mode .desp-val-chart-name {
+  font-size: inherit;
+}
+
+body.desp-display-mode .desp-val-chart-bar-line {
+  height: clamp(0.34rem, 0.65vh, 0.42rem);
+}
+
+body.desp-display-mode .desp-val-chart-rows {
+  gap: clamp(0.15rem, 0.35vh, 0.22rem) clamp(0.35rem, 0.8vw, 0.5rem);
+}
+
+body.desp-display-mode .desp-val-resumen-foot {
+  font-size: clamp(0.58rem, 1vw, 0.66rem);
+  padding-top: clamp(0.12rem, 0.25vh, 0.18rem);
+}
+
+body.desp-display-mode .desp-val-chart-rows {
+  max-height: none;
+  overflow: visible;
+  grid-template-columns: 1fr 1fr;
+}
+
+body.desp-display-mode .desp-lista-present-totales {
+  display: none !important;
 }
 
 body.desp-display-mode .desp-lista-present-total {
@@ -726,22 +797,67 @@ body.desp-display-mode .desp-lista-present-total-icon .desp-estado-icon {
 body.desp-display-mode .desp-lista-present-table-wrap {
   flex: 1;
   min-height: 0;
-  overflow: auto;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 body.desp-display-mode .desp-lista-present-table {
-  font-size: clamp(0.95rem, 1.8vw, 1.15rem);
+  font-size: clamp(0.82rem, 1.45vw, 0.98rem);
 }
 
 body.desp-display-mode .desp-lista-present-table th {
-  font-size: clamp(0.72rem, 1.4vw, 0.85rem);
-  padding: clamp(0.5rem, 1vh, 0.75rem) clamp(0.65rem, 1.5vw, 1rem);
+  font-size: clamp(0.62rem, 1.15vw, 0.74rem);
+  padding: clamp(0.28rem, 0.55vh, 0.38rem) clamp(0.45rem, 1vw, 0.65rem);
 }
 
 body.desp-display-mode .desp-lista-present-table td {
-  padding: clamp(0.45rem, 1vh, 0.65rem) clamp(0.65rem, 1.5vw, 1rem);
+  padding: clamp(0.22rem, 0.45vh, 0.32rem) clamp(0.45rem, 1vw, 0.65rem);
+  vertical-align: middle;
+}
+
+body.desp-display-mode .desp-lista-present-estado {
+  padding: 0.18rem 0.42rem;
+  font-size: clamp(0.68rem, 1.15vw, 0.78rem);
+  gap: 0.25rem;
+}
+
+body.desp-display-mode .desp-lista-present-estado-stack {
+  gap: 0.12rem;
+}
+
+body.desp-display-mode .desp-lista-present-etapas--grid {
+  gap: 0.08rem 0.25rem;
+}
+
+body.desp-display-mode .desp-lista-present-etapa {
+  font-size: clamp(0.58rem, 1vw, 0.72rem);
 }
 
 body.desp-display-mode .desp-lista-present-idc {
-  font-size: clamp(1rem, 2vw, 1.2rem);
+  font-size: clamp(0.88rem, 1.55vw, 1.02rem);
+}
+
+body.desp-display-mode .desp-lista-present-validador-pill {
+  padding: 0.1rem 0.35rem;
+  font-size: 0.85em;
+}
+
+body.desp-display-mode .desp-lista-present-kpi-num,
+body.desp-display-mode .desp-lista-present-kpi-iconbox {
+  width: clamp(1.45rem, 2.8vw, 1.85rem);
+  height: clamp(1.45rem, 2.8vw, 1.85rem);
+}
+
+body.desp-display-mode .desp-lista-present-kpi-num {
+  font-size: clamp(1.45rem, 2.8vw, 1.85rem);
+  width: auto;
+  height: auto;
+}
+
+body.desp-display-mode .desp-lista-present-kpi-lbl {
+  font-size: clamp(0.48rem, 0.9vw, 0.58rem);
+}
+
+body.desp-display-mode .desp-lista-present-kpi {
+  padding: clamp(0.22rem, 0.45vh, 0.3rem) clamp(0.28rem, 0.6vw, 0.36rem);
 }

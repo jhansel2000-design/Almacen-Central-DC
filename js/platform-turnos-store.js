@@ -197,6 +197,21 @@
     });
   }
 
+  function clearAllHistory() {
+    return init().then(function () {
+      var sync = Sync();
+      if (!sync || !shared.live) return cloudError(shared.error);
+      return sync.clearAllHistory().then(function () {
+        shared.entries = [];
+        shared.counter = 0;
+        notify();
+        return { ok: true };
+      }).catch(function () {
+        return cloudError('No se pudo borrar el historial en la nube.');
+      });
+    });
+  }
+
   function getState() {
     return shared;
   }
@@ -276,6 +291,7 @@
     setCompania: setCompania,
     saveConfig: saveConfig,
     resetCounter: resetCounter,
+    clearAllHistory: clearAllHistory,
     getState: getState,
     findById: findById,
     findActiveByChofer: findActiveByChofer

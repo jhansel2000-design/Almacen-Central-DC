@@ -321,7 +321,7 @@
         '<img src="assets/img/icon-turnos-validacion.svg' + ICON_V + '" alt="" width="72" height="72">' +
         '</div>' +
         '<h3 class="turnos-val-empty__title">Todo al día</h3>' +
-        '<p class="turnos-val-empty__text">No hay choferes esperando validación. Cuando alguien envíe una solicitud desde la app chofer, aparecerá aquí al instante.</p>' +
+        '<p class="turnos-val-empty__text">No hay choferes esperando validación. Cuando alguien envíe una solicitud desde el portal chofer, aparecerá aquí al instante.</p>' +
         '<ol class="turnos-val-empty__steps">' +
         '<li>El chofer envía solicitud desde su celular</li>' +
         '<li>Usted confirma que está en el almacén</li>' +
@@ -465,7 +465,7 @@
           '<p class="turnos-sub turnos-sub-long">Confirme que el chofer está en el almacén antes de asignar el número T-XXXX. Sin validación no se genera ticket ni entra a la cola.</p></div></div>' +
           '<p class="turnos-validacion-count"><strong>' + pending.length + '</strong> solicitud(es) pendiente(s)</p>' +
           (global.PlatformTurnosPwa && !global.PlatformTurnosPwa.isStandalone()
-            ? '<p class="turnos-hint turnos-hint--info turnos-validacion-install-hint">Instale la <strong>app supervisor</strong> en el celular para validar con un toque. En PC verá el panel completo.</p>'
+            ? '<p class="turnos-hint turnos-hint--info turnos-validacion-install-hint">Guarde el <strong>acceso supervisor</strong> en el celular para validar con un toque. En PC verá el panel completo.</p>'
             : '')
         : (pending.length
           ? '<h2 class="turnos-lite-list-title">Solicitudes por validar</h2>'
@@ -655,13 +655,13 @@
       '<section class="turnos-panel">' +
       '<h2>Configuración</h2>' +
       '<p class="turnos-sub">Usuario: <strong>' + esc(state.adminUser && (state.adminUser.name || state.adminUser.username)) + '</strong></p>' +
-      '<p class="turnos-sub">Notificaciones: aviso en el navegador cuando está en otra pestaña (sin sonido en el panel).</p>' +
+      '<p class="turnos-sub">Notificaciones: aviso en el teléfono aunque cambie de pantalla o cierre la pestaña (requiere permiso y acceso guardado en inicio).</p>' +
       '<button type="button" class="turnos-btn turnos-btn--primary turnos-btn--xl" data-admin-action="notif-perm">Activar notificaciones del navegador</button>' +
       '<div class="turnos-config-block">' +
-      '<h3 class="turnos-config-title">App supervisor en el teléfono</h3>' +
-      '<p class="turnos-hint">Instale <strong>Turnos Supervisor</strong> como app independiente. ' +
+      '<h3 class="turnos-config-title">Supervisor en el teléfono</h3>' +
+      '<p class="turnos-hint">Guarde <strong>Turnos Supervisor</strong> en la pantalla de inicio. ' +
       'Enlace: <span class="turnos-mono">turnos-supervisor.html</span></p>' +
-      '<button type="button" class="turnos-btn turnos-btn--primary turnos-btn--xl" data-admin-action="pwa-install">Instalar app supervisor</button>' +
+      '<button type="button" class="turnos-btn turnos-btn--primary turnos-btn--xl" data-admin-action="pwa-install">Acceso directo supervisor</button>' +
       '<button type="button" class="turnos-btn turnos-btn--secondary turnos-btn--xl" data-admin-action="pwa-copy-supervisor">Copiar enlace supervisor</button>' +
       '</div>' +
       '<div class="turnos-config-block">' +
@@ -676,6 +676,8 @@
       '<p class="turnos-hint">Hora oficial: <strong>República Dominicana</strong>. Prioridad la asigna el supervisor al validar. Despacho: camión T1, T2 o T4 y cantidad de paletas.</p>' +
       '<button type="button" class="turnos-btn turnos-btn--danger turnos-btn--xl" data-admin-action="reset">Reiniciar numeración de turnos</button>' +
       '<p class="turnos-hint">Solo cambia el contador T-0001, T-0002… <strong>No borra</strong> el historial de turnos.</p>' +
+      '<button type="button" class="turnos-btn turnos-btn--danger turnos-btn--xl" data-admin-action="clear-history">Borrar TODO el historial de turnos</button>' +
+      '<p class="turnos-hint turnos-hint--danger">Elimina <strong>todos</strong> los registros en la nube (Despacho, Liquidación, Nota de crédito, cancelados). Acción irreversible.</p>' +
       '<button type="button" class="turnos-btn turnos-btn--secondary" data-admin-action="logout">Cerrar sesión admin</button>' +
       '</section>';
   }
@@ -840,7 +842,20 @@
             refresh();
           });
         }
-      }       else if (action === 'logout' && global.PlatformTurnosApp) {
+      }
+      else if (action === 'clear-history') {
+        if (!confirm('¿Borrar TODO el historial de turnos en la nube?\n\nEsta acción NO se puede deshacer.')) return;
+        if (!confirm('Confirme de nuevo: se eliminarán TODOS los registros (activos, atendidos y cancelados).')) return;
+        S().clearAllHistory().then(function (result) {
+          if (!result.ok) {
+            alert(result.msg || 'No se pudo borrar el historial.');
+            return;
+          }
+          alert('Historial borrado. La numeración reinicia en T-0001.');
+          refresh();
+        });
+      }
+      else if (action === 'logout' && global.PlatformTurnosApp) {
         global.PlatformTurnosApp.logoutAdmin();
       }
       else if (action === 'refresh-validacion') {

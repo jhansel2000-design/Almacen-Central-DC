@@ -199,7 +199,7 @@
       '<ul class="turnos-perm-list">' +
       '<li id="turnosPermItemNotif" class="turnos-perm-item turnos-perm-item--pending"><span class="turnos-perm-icon">1</span><span>Notificaciones del celular</span></li>' +
       '<li id="turnosPermItemAudio" class="turnos-perm-item turnos-perm-item--pending"><span class="turnos-perm-icon">2</span><span>Sonido, voz y alarma</span></li>' +
-      '<li id="turnosPermItemIos" class="turnos-perm-item turnos-perm-item--pending" hidden><span class="turnos-perm-icon">3</span><span>App en pantalla de inicio (iPhone)</span></li>' +
+      '<li id="turnosPermItemIos" class="turnos-perm-item turnos-perm-item--pending" hidden><span class="turnos-perm-icon">3</span><span>Acceso en pantalla de inicio (iPhone)</span></li>' +
       '</ul>' +
       '<button type="button" class="turnos-btn turnos-btn--primary turnos-btn--xl turnos-perm-btn" id="turnosPermBtn">Autorizar ahora</button>' +
       '<button type="button" class="turnos-btn turnos-btn--secondary turnos-btn--xl turnos-perm-btn turnos-perm-btn--ios" id="turnosPermIosBtn" hidden>Agregar a pantalla de inicio</button>' +
@@ -271,7 +271,7 @@
     if (iosBtn) iosBtn.hidden = !st.iosDevice || st.iosInstallOk;
     if (st.iosDevice) {
       setItemState('turnosPermItemIos', st.iosInstallOk,
-        st.iosInstallOk ? 'App en inicio — instalada' : 'App en inicio — pendiente (obligatorio en iPhone)');
+        st.iosInstallOk ? 'Acceso en inicio — listo' : 'Acceso en inicio — pendiente (obligatorio en iPhone)');
     }
     var denied = document.getElementById('turnosPermDenied');
     if (denied) denied.hidden = st.notifications !== 'denied';

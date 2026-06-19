@@ -146,7 +146,20 @@
     var body = 'Diríjase a la ' + ventana + '.';
     var tag = 'turnos-chofer-call-' + entry.id;
     var icon = 'assets/img/icon-turnos-gestion.svg';
-    var url = global.location ? global.location.href : './turnos.html';
+    var url = global.location ? global.location.href.split('#')[0] : './turnos.html';
+    var payload = {
+      title: title,
+      body: body,
+      tag: tag,
+      icon: icon,
+      url: url,
+      requireInteraction: true
+    };
+    var Sw = global.PlatformTurnosSwWatch;
+    if (Sw) {
+      Sw.showViaWorker(payload);
+      return;
+    }
     var options = {
       body: body,
       tag: tag,
@@ -169,14 +182,7 @@
 
     function viaWorker(reg) {
       if (navigator.serviceWorker.controller) {
-        navigator.serviceWorker.controller.postMessage({
-          type: 'turnos-call',
-          title: title,
-          body: body,
-          tag: tag,
-          icon: icon,
-          url: url
-        });
+        navigator.serviceWorker.controller.postMessage(Object.assign({ type: 'turnos-call' }, payload));
         return;
       }
       reg.showNotification(title, options).catch(viaWindow);
@@ -187,6 +193,28 @@
       Promise.resolve(ready).then(viaWorker).catch(viaWindow);
     } else {
       viaWindow();
+    }
+  }
+
+  function syncChoferBackgroundWatch(entry) {
+    var Sw = global.PlatformTurnosSwWatch;
+    var Store = global.PlatformTurnosStore;
+    if (!Sw) return;
+    var entries = (Store && Store.getState && Store.getState().entries) || [];
+    Sw.startWatch({
+      role: 'chofer',
+      myTurnId: entry && entry.id ? entry.id : '',
+      choferName: C().getRememberedChoferName(),
+      bootstrap: true,
+      bootstrapEntries: entries,
+      convocadoSeen: {},
+      openUrl: global.location ? global.location.href.split('#')[0] : './turnos.html',
+      pollMs: 10000
+    });
+    if (entry && entry.id && entry.convocadoAt) {
+      Sw.updateWatch({
+        markConvocadoSeen: { id: entry.id, at: C().getConvocadoSeen(entry.id) }
+      });
     }
   }
 
@@ -345,6 +373,7 @@
     if (isNew) {
       requestWakeLock();
       runFullAlert(entry);
+      syncChoferBackgroundWatch(entry);
     }
     return true;
   }
@@ -352,8 +381,16 @@
   function dismiss(entry) {
     if (entry && entry.convocadoAt) {
       C().markConvocadoSeen(entry.id, entry.convocadoAt);
+      var Sw = global.PlatformTurnosSwWatch;
+      if (Sw) {
+        Sw.updateWatch({ markConvocadoSeen: { id: entry.id, at: entry.convocadoAt } });
+      }
     } else if (activeEntry && activeEntry.convocadoAt) {
       C().markConvocadoSeen(activeEntry.id, activeEntry.convocadoAt);
+      var Sw2 = global.PlatformTurnosSwWatch;
+      if (Sw2) {
+        Sw2.updateWatch({ markConvocadoSeen: { id: activeEntry.id, at: activeEntry.convocadoAt } });
+      }
     }
     activeEntry = null;
     stopAlarm();
@@ -384,7 +421,10 @@
   }
 
   function onPageHide() {
-    if (activeEntry) showNotification(activeEntry);
+    if (activeEntry) {
+      showNotification(activeEntry);
+      syncChoferBackgroundWatch(activeEntry);
+    }
   }
 
   function init() {
@@ -405,6 +445,7 @@
     isActive: isActive,
     getActiveEntry: getActiveEntry,
     requestPermission: requestPermission,
-    buildSpeechText: buildSpeechText
+    buildSpeechText: buildSpeechText,
+    syncChoferBackgroundWatch: syncChoferBackgroundWatch
   };
 })(typeof window !== 'undefined' ? window : this);

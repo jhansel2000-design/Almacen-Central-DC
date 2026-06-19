@@ -405,6 +405,27 @@
       '</select></label>';
   }
 
+  function renderValidadorAsignadoCell(p, canEdit) {
+    var current = fmtValidador(p);
+    if (!canEdit) return esc(current);
+    var opts = listValidadoresAsignables();
+    var selId = 'despValAsignado_' + p.id;
+    var hasCurrent = current && current !== '—' && opts.indexOf(current) >= 0;
+    var html = '<select class="desp-validador-asignado-select" id="' + esc(selId) + '" ' +
+      'data-pedido-id="' + esc(p.id) + '" data-prev-validador="' + esc(hasCurrent ? current : '') + '" ' +
+      'aria-label="Validador asignado para ' + esc(formatIdc(p.idc)) + '">';
+    if (!hasCurrent) {
+      html += '<option value=""' + (!current || current === '—' ? ' selected' : '') + '>Sin asignar…</option>';
+      if (current && current !== '—') {
+        html += '<option value="' + esc(current) + '" selected>' + esc(current) + '</option>';
+      }
+    }
+    html += opts.map(function (name) {
+      return '<option value="' + esc(name) + '"' + (current === name ? ' selected' : '') + '>' + esc(name) + '</option>';
+    }).join('');
+    return html + '</select>';
+  }
+
   function renderPrepEstadoField(inputName) {
     inputName = inputName || 'prepEstado';
     var ids = DS.PREPARADOR_ESTADOS;
@@ -582,7 +603,7 @@
           '<td class="desp-cliente">' + esc(fmtCliente(p)) + '</td>' +
           '<td>' + esc(p.jaula || '—') + '</td>' +
           '<td>' + estadoBadge(p.estado) + '</td>' +
-          '<td class="desp-validador-asignado">' + esc(fmtValidador(p)) + '</td>' +
+          '<td class="desp-validador-asignado">' + renderValidadorAsignadoCell(p, canRemove) + '</td>' +
           '<td class="desp-dt">' + esc(fmtDt(p.createdAt || p.updatedAt)) + '</td>' +
           (canRemove
             ? '<td class="desp-val-actions desp-val-actions--live">' +
@@ -605,9 +626,8 @@
       '<section class="desp-panel desp-panel--val-share" aria-labelledby="despValShareTitle">' +
       '<header class="desp-panel-head">' +
       '<div><span class="desp-eyebrow">Pantalla externa · Validador</span>' +
-      '<h3 id="despValShareTitle">Seguimiento validador en vivo</h3>' +
+      '<h3 id="despValShareTitle">Seguimiento validador</h3>' +
       '<p class="desp-panel-sub">Lo que comparte en TV · el validador marca <strong>Cargado</strong> o cambia estado · <strong>Quitar</strong> saca el IDC</p></div>' +
-      (sharing ? '<span class="desp-share-live-tag desp-share-live-tag--lista"><span class="desp-live-dot"></span> EN VIVO</span>' : '') +
       '</header>' +
       '<p class="desp-share-status desp-share-status--lista" id="despListaShareStatus"' + (sharing ? '' : ' hidden') + '>' +
       (sharing ? 'En pantalla TV · ' + esc(String(pedidos.length)) + ' IDC en seguimiento validador' : '') +
@@ -887,7 +907,7 @@
       '<td class="desp-cliente">' + esc(fmtCliente(p)) + '</td>' +
       '<td>' + esc(p.jaula) + '</td>' +
       '<td>' + estadoBadge(p.estado) + '</td>' +
-      '<td class="desp-validador-asignado">' + esc(fmtValidador(p)) + '</td>' +
+      '<td class="desp-validador-asignado">' + renderValidadorAsignadoCell(p, canValidate) + '</td>' +
       '<td class="desp-dt">' + esc(fmtDt(p.createdAt || p.updatedAt)) + '<br><small>' + esc(p.updatedBy) + '</small></td>' +
       '<td class="desp-val-actions">' + renderValidadorEstadoBtns(p, canValidate, false) +
       (canValidate ? ' <button type="button" class="btn btn-ghost desp-btn-archive" data-pedido-id="' + esc(p.id) + '" data-idc="' + esc(formatIdc(p.idc)) + '" data-pasillo="' + esc(p.jaula || '') + '" title="Quitar del seguimiento validador">Quitar</button>' : '') +
@@ -1220,6 +1240,29 @@
       });
     }
     if (filtEl) filtEl.addEventListener('change', applyFilters);
+
+    host.querySelectorAll('.desp-validador-asignado-select').forEach(function (sel) {
+      sel.addEventListener('change', function () {
+        var validador = sel.value;
+        var pedidoId = sel.getAttribute('data-pedido-id');
+        var prev = sel.getAttribute('data-prev-validador') || '';
+        if (!validador) {
+          sel.value = prev;
+          return;
+        }
+        if (!pedidoId) return;
+        var res = DS.asignarValidador(pedidoId, validador, userName);
+        if (!res.ok) {
+          toast(res.error, 'warn');
+          sel.value = prev;
+          return;
+        }
+        if (!res.unchanged) {
+          toast('Validador asignado: ' + validador, 'success');
+        }
+        render(host, res.data, opts);
+      });
+    });
 
     host.querySelectorAll('.desp-btn-archive').forEach(function (btn) {
       btn.addEventListener('click', function () {

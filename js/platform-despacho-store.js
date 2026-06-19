@@ -414,6 +414,46 @@
     return { ok: true, data: data, pedido: pedido };
   }
 
+  function asignarValidador(pedidoId, validadorAsignado, usuario) {
+    validadorAsignado = String(validadorAsignado || '').trim();
+    if (!validadorAsignado) {
+      return { ok: false, error: 'Seleccione el validador.' };
+    }
+    if (VALIDADORES_ASIGNABLES.indexOf(validadorAsignado) < 0) {
+      return { ok: false, error: 'Seleccione un validador de la lista autorizada.' };
+    }
+    var data = load();
+    var idx = (data.pedidos || []).findIndex(function (p) { return p.id === pedidoId; });
+    if (idx < 0) return { ok: false, error: 'Pedido no encontrado.' };
+
+    var pedido = data.pedidos[idx];
+    if (!pedido.seguimientoValidador || pedido.visibleValidador === false) {
+      return { ok: false, error: 'Solo puede asignar validador a IDC en seguimiento activo.' };
+    }
+
+    var prev = String(pedido.validadorAsignado || '').trim();
+    if (prev === validadorAsignado) {
+      return { ok: true, data: data, pedido: pedido, unchanged: true };
+    }
+
+    var ts = nowIso();
+    pedido.validadorAsignado = validadorAsignado;
+    pedido.updatedAt = ts;
+    pedido.updatedBy = usuario || '—';
+    pushHistorial(pedido, {
+      at: ts,
+      usuario: usuario || '—',
+      panel: 'validador',
+      desde: null,
+      hacia: pedido.estado,
+      nota: prev
+        ? 'Validador reasignado: ' + prev + ' → ' + validadorAsignado
+        : 'Validador asignado: ' + validadorAsignado
+    });
+    save(data);
+    return { ok: true, data: data, pedido: pedido };
+  }
+
   /** Orden validador: fecha/hora de registro (no reordenar al cambiar estado). */
   function pedidoTimestamp(p) {
     var t = Date.parse(p && p.createdAt);
@@ -790,6 +830,52 @@
     return counts;
   }
 
+  /** Resumen por validador: validados, cargados y última actividad (pantalla TV). */
+  function resumenPorValidador(pedidos) {
+    var pool = (pedidos || []).filter(function (p) {
+      return p.seguimientoValidador === true;
+    });
+    var byName = {};
+    VALIDADORES_ASIGNABLES.forEach(function (name) {
+      byName[name] = { nombre: name, validado: 0, cargado: 0, ultimaValidacion: null };
+    });
+    pool.forEach(function (p) {
+      var name = String(p.validadorAsignado || '').trim();
+      if (!name) return;
+      if (!byName[name]) {
+        byName[name] = { nombre: name, validado: 0, cargado: 0, ultimaValidacion: null };
+      }
+      var row = byName[name];
+      if (p.estado === 'en_validacion') row.validado += 1;
+      else if (p.estado === 'listo_despacho') row.cargado += 1;
+      if (p.estado === 'en_validacion' || p.estado === 'listo_despacho') {
+        var ts = p.updatedAt || p.createdAt;
+        if (ts && (!row.ultimaValidacion || ts > row.ultimaValidacion)) {
+          row.ultimaValidacion = ts;
+        }
+      }
+    });
+    var list = VALIDADORES_ASIGNABLES.map(function (n) {
+      return byName[n] || { nombre: n, validado: 0, cargado: 0, ultimaValidacion: null };
+    });
+    Object.keys(byName).forEach(function (n) {
+      if (VALIDADORES_ASIGNABLES.indexOf(n) < 0) list.push(byName[n]);
+    });
+    list.sort(function (a, b) {
+      var ta = (a.validado + a.cargado);
+      var tb = (b.validado + b.cargado);
+      if (tb !== ta) return tb - ta;
+      return String(a.nombre).localeCompare(String(b.nombre), 'es');
+    });
+    var totValidado = 0;
+    var totCargado = 0;
+    list.forEach(function (r) {
+      totValidado += r.validado;
+      totCargado += r.cargado;
+    });
+    return { filas: list, totalValidado: totValidado, totalCargado: totCargado };
+  }
+
   function getPedidosActivos(pedidos) {
     return (pedidos || []).slice().sort(function (a, b) {
       var ja = String(a.jaula || '').localeCompare(String(b.jaula || ''), 'es', { numeric: true });
@@ -841,6 +927,47 @@
     return empty;
   }
 
+  /** Fecha/hora en que el pedido entró al estado actual (desde historial). */
+  function fechaCambioEstado(pedido) {
+    if (!pedido) return null;
+    var estado = pedido.estado;
+    var hist = pedido.historial || [];
+    var i;
+    for (i = 0; i < hist.length; i++) {
+      if (hist[i].hacia === estado && hist[i].at) return hist[i].at;
+    }
+    return pedido.updatedAt || pedido.createdAt || null;
+  }
+
+  /** Fechas de pendiente, validado y cargado (historial validador). */
+  function fechasEtapasValidador(pedido) {
+    var out = {
+      pendiente_carga: null,
+      en_validacion: null,
+      listo_despacho: null
+    };
+    if (!pedido) return out;
+    var hist = pedido.historial || [];
+    var i;
+    var e;
+    for (i = 0; i < hist.length; i++) {
+      e = hist[i].hacia;
+      if (!hist[i].at) continue;
+      if (e === 'pendiente_carga' && !out.pendiente_carga) out.pendiente_carga = hist[i].at;
+      else if (e === 'en_validacion' && !out.en_validacion) out.en_validacion = hist[i].at;
+      else if (e === 'listo_despacho' && !out.listo_despacho) out.listo_despacho = hist[i].at;
+    }
+    if (!out.pendiente_carga) out.pendiente_carga = pedido.createdAt || null;
+    if (pedido.estado === 'en_validacion' && !out.en_validacion) {
+      out.en_validacion = pedido.updatedAt || null;
+    }
+    if (pedido.estado === 'listo_despacho') {
+      if (!out.en_validacion) out.en_validacion = null;
+      if (!out.listo_despacho) out.listo_despacho = pedido.updatedAt || null;
+    }
+    return out;
+  }
+
   global.PlatformDespachoStore = {
     STORAGE_KEY: STORAGE_KEY,
     ESTADOS: ESTADOS,
@@ -853,6 +980,7 @@
     registrarPedido: registrarPedido,
     enviarASeguimientoValidador: enviarASeguimientoValidador,
     cambiarEstado: cambiarEstado,
+    asignarValidador: asignarValidador,
     archivarDeVistaValidador: archivarDeVistaValidador,
     getPedidosSeguimientoPreparador: getPedidosSeguimientoPreparador,
     getPedidosVisiblesValidador: getPedidosVisiblesValidador,
@@ -860,6 +988,7 @@
     getRegistroEnviadosValidador: getRegistroEnviadosValidador,
     countKpiOperador: countKpiOperador,
     countResumenValidador: countResumenValidador,
+    resumenPorValidador: resumenPorValidador,
     filterPedidos: filterPedidos,
     countByEstado: countByEstado,
     formatEstado: formatEstado,
@@ -880,6 +1009,8 @@
     toggleLiveShareLista: toggleLiveShareLista,
     getPedidosActivos: getPedidosActivos,
     bindSync: bindSync,
-    wipeAll: wipeAll
+    wipeAll: wipeAll,
+    fechaCambioEstado: fechaCambioEstado,
+    fechasEtapasValidador: fechasEtapasValidador
   };
 })(typeof window !== 'undefined' ? window : this);

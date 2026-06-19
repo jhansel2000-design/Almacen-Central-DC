@@ -150,6 +150,35 @@
     return 'agenda-status--pending';
   }
 
+  function nextEstadoLabel(current) {
+    var next = C().nextEstado(current);
+    return C().ESTADO_LABELS[next] || next;
+  }
+
+  function renderFiltersSection(extraClass) {
+    var cls = 'agenda-filters' + (extraClass ? ' ' + extraClass : '');
+    return '<section class="' + cls + '">' +
+      '<p class="agenda-filters__title">Filtrar tareas</p>' +
+      '<label><span>Frecuencia</span><select id="agendaFilterFreq">' +
+      '<option value="ALL">Todas</option>' +
+      '<option value="DIARIA">Diaria</option>' +
+      '<option value="INTER_DIARIA">Inter-diaria</option>' +
+      '<option value="SEMANAL">Semanal</option></select></label>' +
+      '<label><span>Estado</span><select id="agendaFilterStatus">' +
+      '<option value="ALL">Todos</option>' +
+      '<option value="PENDIENTE">Pendiente</option>' +
+      '<option value="EN_PROCESO">En proceso</option>' +
+      '<option value="COMPLETADO">Completado</option></select></label>' +
+      '</section>';
+  }
+
+  function syncFilterControls() {
+    var ff = $('agendaFilterFreq');
+    var fs = $('agendaFilterStatus');
+    if (ff) ff.value = state.freqFilter;
+    if (fs) fs.value = state.statusFilter;
+  }
+
   function filterTasks(tasks) {
     return tasks.filter(function (row) {
       if (state.freqFilter !== 'ALL' && row.template.frecuencia !== state.freqFilter) return false;
@@ -204,22 +233,15 @@
     host.innerHTML =
       '<header class="agenda-topbar">' +
       '<div><p class="agenda-eyebrow">Panel supervisor</p><h1>Puestos del almacén</h1>' +
-      '<p class="agenda-sub">' + esc(C().formatDateDisplay(dayKey)) + '</p></div>' +
+      '<p class="agenda-sub">Resumen del día · ' + esc(C().formatDateDisplay(dayKey)) + '</p></div>' +
       '<div class="agenda-topbar__actions">' +
       '<button type="button" class="agenda-btn agenda-btn--ghost" data-agenda-action="refresh">↻ Actualizar</button>' +
       '<button type="button" class="agenda-btn agenda-btn--ghost" data-agenda-action="logout">Salir</button>' +
       '</div></header>' +
-      '<section class="agenda-filters">' +
-      '<label>Frecuencia<select id="agendaFilterFreq"><option value="ALL">Todas</option>' +
-      '<option value="DIARIA">Diaria</option><option value="INTER_DIARIA">Inter-diaria</option><option value="SEMANAL">Semanal</option></select></label>' +
-      '<label>Estado<select id="agendaFilterStatus"><option value="ALL">Todos</option>' +
-      '<option value="PENDIENTE">Pendiente</option><option value="EN_PROCESO">En proceso</option><option value="COMPLETADO">Completado</option></select></label>' +
-      '</section>' +
+      '<p class="agenda-help">Seleccione un puesto para ver y actualizar sus tareas del día.</p>' +
+      renderFiltersSection() +
       '<div class="agenda-puesto-grid">' + rows + '</div>';
-    var ff = $('agendaFilterFreq');
-    var fs = $('agendaFilterStatus');
-    if (ff) ff.value = state.freqFilter;
-    if (fs) fs.value = state.statusFilter;
+    syncFilterControls();
   }
 
   function renderDetail() {
@@ -243,10 +265,12 @@
         '<span class="agenda-task__min">' + esc(t.minutos) + ' min</span></div>' +
         '<p class="agenda-task__title">' + esc(t.actividad) + '</p>' +
         '<div class="agenda-task__foot">' +
-        '<button type="button" class="agenda-status-btn ' + statusClass(p.estado) + '" data-agenda-status="' + esc(p.estado) + '" data-task-id="' + esc(t.id) + '">' +
-        esc(C().ESTADO_LABELS[p.estado] || p.estado) + '</button>' +
-        '<span class="agenda-task__time">' + esc(p.horaEjecucion || '—') + '</span>' +
-        '<input class="agenda-comment" type="text" maxlength="240" placeholder="Comentario…" value="' + esc(p.comentarios) + '" data-task-id="' + esc(t.id) + '">' +
+        '<button type="button" class="agenda-status-btn ' + statusClass(p.estado) + '" data-agenda-status="' + esc(p.estado) + '" data-task-id="' + esc(t.id) + '"' +
+        ' aria-label="Marcar como ' + esc(nextEstadoLabel(p.estado)) + '"' +
+        ' title="Toque para cambiar a ' + esc(nextEstadoLabel(p.estado)) + '">' +
+        esc(C().ESTADO_LABELS[p.estado] || p.estado) + ' → ' + esc(nextEstadoLabel(p.estado)) + '</button>' +
+        '<span class="agenda-task__time" aria-label="Hora de ejecución">' + esc(p.horaEjecucion || '—') + '</span>' +
+        '<input class="agenda-comment" type="text" maxlength="240" placeholder="Añadir comentario (opcional)" value="' + esc(p.comentarios) + '" data-task-id="' + esc(t.id) + '" aria-label="Comentario de la tarea">' +
         '</div></article>';
     }).join('');
 
@@ -257,19 +281,14 @@
       '<p class="agenda-eyebrow">Mi agenda</p>' +
       '<h1>' + esc(puesto.label) + '</h1><p class="agenda-sub">' + esc(C().formatDateDisplay(dayKey)) + '</p></div>' +
       '<div class="agenda-topbar__actions">' +
-      '<button type="button" class="agenda-btn agenda-btn--ghost" data-agenda-action="refresh">↻</button>' +
+      '<button type="button" class="agenda-btn agenda-btn--ghost" data-agenda-action="refresh">↻ Actualizar</button>' +
       '<button type="button" class="agenda-btn agenda-btn--ghost" data-agenda-action="logout">Salir</button>' +
       '</div></header>' +
       renderHeroStats(stats) +
-      '<section class="agenda-filters agenda-filters--detail">' +
-      '<label>Frecuencia<select id="agendaFilterFreq"><option value="ALL">Todas</option><option value="DIARIA">Diaria</option><option value="INTER_DIARIA">Inter-diaria</option><option value="SEMANAL">Semanal</option></select></label>' +
-      '<label>Estado<select id="agendaFilterStatus"><option value="ALL">Todos</option><option value="PENDIENTE">Pendiente</option><option value="EN_PROCESO">En proceso</option><option value="COMPLETADO">Completado</option></select></label>' +
-      '</section>' +
+      '<p class="agenda-help">Toque el botón de estado en cada tarea para marcar el avance. Puede añadir un comentario si lo necesita.</p>' +
+      renderFiltersSection('agenda-filters--detail') +
       '<div class="agenda-task-list">' + (rows || '<p class="agenda-task-list__empty">Sin tareas para los filtros seleccionados.</p>') + '</div>';
-    var ff = $('agendaFilterFreq');
-    var fs = $('agendaFilterStatus');
-    if (ff) ff.value = state.freqFilter;
-    if (fs) fs.value = state.statusFilter;
+    syncFilterControls();
   }
 
   function renderNoAccess() {

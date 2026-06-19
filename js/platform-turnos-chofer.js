@@ -39,7 +39,7 @@
     if (!isIOSDevice()) return '';
     return (
       '<div class="turnos-ios-hint">' +
-      '<p class="turnos-hint turnos-hint--warn"><strong>iPhone:</strong> para escuchar cuando cambie de app o apague la pantalla, ' +
+      '<p class="turnos-hint turnos-hint--warn"><strong>iPhone:</strong> para escuchar cuando cambie de pantalla o apague la pantalla, ' +
       'toque <strong>Compartir → Agregar a pantalla de inicio</strong> y abra el portal desde ese icono. ' +
       'Active notificaciones y el volumen del timbre.</p></div>'
     );
@@ -345,6 +345,19 @@
     wasPendingValidation = C().isPendingValidation(entry);
     C().saveMyTurn(entry);
     lastEntry = entry;
+    if (Call() && Call().syncChoferBackgroundWatch) {
+      Call().syncChoferBackgroundWatch(entry);
+    } else if (global.PlatformTurnosSwWatch && (entry.turno || C().isPendingValidation(entry))) {
+      global.PlatformTurnosSwWatch.startWatch({
+        role: 'chofer',
+        myTurnId: entry.id,
+        choferName: C().getRememberedChoferName(),
+        bootstrap: true,
+        bootstrapEntries: S().getState().entries || [],
+        openUrl: global.location ? global.location.href.split('#')[0] : './turnos.html',
+        pollMs: 10000
+      });
+    }
     if (!userPrefersMenu) {
       screen = C().isPendingValidation(entry) ? 'waiting' : 'success';
     }

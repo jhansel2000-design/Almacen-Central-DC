@@ -172,7 +172,7 @@
   }
 
   function primaryActionLabel() {
-    if (deferredPrompt) return 'Instalar app';
+    if (deferredPrompt) return 'Instalar acceso directo';
     if (isIOS()) return 'Agregar a inicio';
     if (isAndroid()) return 'Instalar acceso directo';
     return 'Cómo instalar';
@@ -181,12 +181,12 @@
   function copyForRole(role) {
     if (role === 'supervisor') {
       return {
-        bannerTitle: isMobileLayout() ? 'App supervisor en su teléfono' : 'App supervisor — PC o celular',
+        bannerTitle: isMobileLayout() ? 'Supervisor en su teléfono' : 'Supervisor — PC o celular',
         bannerSub: isIOS()
           ? 'En iPhone: Compartir → Agregar a pantalla de inicio. Abre directo al panel de validación.'
-          : 'Instálela para validar turnos al instante y recibir avisos de nuevas solicitudes.',
-        footLabel: isMobileLayout() ? 'Instalar app supervisor' : 'Instalar app supervisor / copiar enlace',
-        modalTitle: 'Instalar app — Supervisor',
+          : 'Guárdelo en inicio para validar turnos al instante y recibir avisos de nuevas solicitudes.',
+        footLabel: isMobileLayout() ? 'Acceso directo supervisor' : 'Acceso directo supervisor / copiar enlace',
+        modalTitle: 'Acceso directo — Supervisor',
         modalLead: 'Icono «Turnos Supervisor» en su pantalla de inicio. Al abrir entra al <strong>panel administrativo</strong> para validar turnos.',
         linkLabel: 'Enlace directo para supervisores',
         appShortName: 'Turnos Supervisor'
@@ -195,10 +195,10 @@
     return {
       bannerTitle: isMobileLayout() ? 'Acceso directo en su teléfono' : 'Acceso directo — PC o celular',
       bannerSub: isIOS()
-        ? 'En iPhone: Compartir → Agregar a pantalla de inicio. En Android: Instalar app.'
-        : 'Instálelo como app para abrir con un toque y recibir alertas de turno.',
-      footLabel: isMobileLayout() ? 'Descargar app en el teléfono' : 'Instalar acceso directo / copiar enlace',
-      modalTitle: 'Instalar Control de Turnos — Chofer',
+        ? 'En iPhone: Compartir → Agregar a pantalla de inicio. En Android: acceso directo.'
+        : 'Guárdelo en la pantalla de inicio para abrir con un toque y recibir alertas de turno.',
+      footLabel: isMobileLayout() ? 'Descargar acceso directo' : 'Instalar acceso directo / copiar enlace',
+      modalTitle: 'Acceso directo — Control de Turnos Chofer',
       modalLead: 'Cree un icono «Turnos DC» en la pantalla de inicio. Funciona en <strong>iPhone</strong>, <strong>Android</strong> y <strong>PC</strong>.',
       linkLabel: 'Enlace directo para choferes',
       appShortName: 'Turnos DC'
@@ -237,15 +237,15 @@
     banner.id = 'turnosPwaBannerChofer';
     banner.className = 'turnos-pwa-banner turnos-pwa-banner--chofer is-hidden';
     banner.setAttribute('role', 'region');
-    banner.setAttribute('aria-label', 'Instalar app chofer');
+    banner.setAttribute('aria-label', 'Acceso directo chofer');
     banner.innerHTML =
       '<div class="turnos-pwa-banner__inner">' +
       '<img class="turnos-pwa-banner__icon" src="' + roleIcon('chofer') + '" alt="" width="40" height="40">' +
       '<div class="turnos-pwa-banner__text">' +
       '<strong data-pwa-title>Acceso directo en su teléfono</strong>' +
-      '<span data-pwa-sub>Instálelo como app para recibir alertas.</span></div>' +
+      '<span data-pwa-sub>Guárdelo en inicio para recibir alertas.</span></div>' +
       '<div class="turnos-pwa-banner__actions">' +
-      '<button type="button" class="turnos-btn turnos-btn--primary turnos-btn--sm" data-pwa-install>Instalar app</button>' +
+      '<button type="button" class="turnos-btn turnos-btn--primary turnos-btn--sm" data-pwa-install>Acceso directo</button>' +
       '<button type="button" class="turnos-btn turnos-btn--secondary turnos-btn--sm" data-pwa-copy>Copiar enlace</button>' +
       '</div>' +
       '<button type="button" class="turnos-pwa-banner__close" data-pwa-dismiss aria-label="Cerrar">&times;</button></div>';
@@ -261,7 +261,7 @@
       footBtn.id = 'turnosPwaFootBtnChofer';
       footBtn.className = 'turnos-pwa-foot-btn';
       footBtn.dataset.pwaRole = 'chofer';
-      footBtn.textContent = 'Descargar acceso directo (app en el teléfono)';
+      footBtn.textContent = 'Descargar acceso directo en el teléfono';
       footBtn.addEventListener('click', function () {
         setRole('chofer');
         openInstallModal('chofer');
@@ -279,15 +279,15 @@
     banner.id = 'turnosPwaBannerSupervisor';
     banner.className = 'turnos-pwa-banner turnos-pwa-banner--supervisor is-hidden';
     banner.setAttribute('role', 'region');
-    banner.setAttribute('aria-label', 'Instalar app supervisor');
+    banner.setAttribute('aria-label', 'Acceso directo supervisor');
     banner.innerHTML =
       '<div class="turnos-pwa-banner__inner">' +
       '<img class="turnos-pwa-banner__icon" src="' + roleIcon('supervisor') + '" alt="" width="40" height="40">' +
       '<div class="turnos-pwa-banner__text">' +
-      '<strong data-pwa-title>App supervisor en su teléfono</strong>' +
+      '<strong data-pwa-title>Supervisor en su teléfono</strong>' +
       '<span data-pwa-sub>Instálela para validar turnos y recibir avisos.</span></div>' +
       '<div class="turnos-pwa-banner__actions">' +
-      '<button type="button" class="turnos-btn turnos-btn--primary turnos-btn--sm" data-pwa-install>Instalar app</button>' +
+      '<button type="button" class="turnos-btn turnos-btn--primary turnos-btn--sm" data-pwa-install>Acceso directo</button>' +
       '<button type="button" class="turnos-btn turnos-btn--secondary turnos-btn--sm" data-pwa-copy>Copiar enlace</button>' +
       '</div>' +
       '<button type="button" class="turnos-pwa-banner__close" data-pwa-dismiss aria-label="Cerrar">&times;</button></div>';
@@ -302,7 +302,7 @@
       sideBtn.className = 'turnos-pwa-sidebar-btn';
       sideBtn.innerHTML =
         '<img src="' + roleIcon('supervisor') + '" alt="" width="22" height="22">' +
-        '<span>Instalar app supervisor</span>';
+        '<span>Acceso directo supervisor</span>';
       sideBtn.addEventListener('click', function () {
         setRole('supervisor');
         openInstallModal('supervisor');
@@ -319,10 +319,10 @@
       btn.type = 'button';
       btn.id = 'turnosPwaAdminBtn';
       btn.className = 'turnos-pwa-admin-btn';
-      btn.title = 'Instalar app supervisor';
+      btn.title = 'Acceso directo supervisor';
       btn.innerHTML =
         '<img src="' + roleIcon('supervisor') + '" alt="" width="22" height="22">' +
-        '<span>App supervisor</span>';
+        '<span>Supervisor</span>';
       btn.addEventListener('click', function () {
         setRole('supervisor');
         openInstallModal('supervisor');
@@ -374,8 +374,8 @@
       if (badge) badge.hidden = !installed;
       if (installBtn) {
         installBtn.hidden = !offer;
-        installBtn.textContent = primaryActionLabel() === 'Instalar app'
-          ? ('Instalar app ' + (otherRole === 'supervisor' ? 'supervisor' : 'chofer'))
+        installBtn.textContent = primaryActionLabel() === 'Instalar acceso directo'
+          ? ('Acceso directo ' + (otherRole === 'supervisor' ? 'supervisor' : 'chofer'))
           : primaryActionLabel();
       }
     });
@@ -420,8 +420,8 @@
       if (card) card.classList.toggle('turnos-apps-card--installed', installed);
       if (installBtn) {
         installBtn.hidden = !offer;
-        installBtn.textContent = primaryActionLabel() === 'Instalar app'
-          ? ('Instalar app ' + role)
+        installBtn.textContent = primaryActionLabel() === 'Instalar acceso directo'
+          ? ('Acceso directo ' + role)
           : primaryActionLabel();
       }
     });
@@ -473,7 +473,7 @@
         var installBtn = $('turnosPwaAuthInstallBtn');
         if (subEl) subEl.textContent = copy.bannerSub;
         if (installBtn) {
-          installBtn.textContent = label === 'Instalar app' ? 'Descargar app supervisor' : label;
+          installBtn.textContent = label === 'Instalar acceso directo' ? 'Acceso directo supervisor' : label;
         }
       }
     }
@@ -485,7 +485,7 @@
       sticky.hidden = !showSticky;
       document.body.classList.toggle('turnos-pwa-sticky-open', showSticky);
     }
-    if (stickyBtn) stickyBtn.textContent = label === 'Instalar app' ? 'Instalar app supervisor' : label;
+    if (stickyBtn) stickyBtn.textContent = label === 'Instalar acceso directo' ? 'Acceso directo supervisor' : label;
   }
 
   function ensureBanner() {
@@ -514,7 +514,7 @@
       var installed = isRoleInstalled(role);
       footBtn.hidden = installed && !canOfferInstall(role);
       footBtn.textContent = installed
-        ? ('App ' + (role === 'supervisor' ? 'supervisor' : 'chofer') + ' instalada ✓')
+        ? ('Acceso ' + (role === 'supervisor' ? 'supervisor' : 'chofer') + ' instalado ✓')
         : copy.footLabel;
     }
   }
@@ -581,8 +581,8 @@
       : '<li>Abra desde el icono para solicitar turno y recibir alertas.</li>';
     return (
       '<ol class="turnos-pwa-steps">' +
-      '<li>Toque <strong>Instalar app</strong> (Chrome mostrará el diálogo).</li>' +
-      '<li>Si no aparece: menú <strong>⋮</strong> → <strong>Instalar aplicación</strong>.</li>' +
+      '<li>Toque <strong>Acceso directo</strong> (Chrome mostrará el diálogo).</li>' +
+      '<li>Si no aparece: menú <strong>⋮</strong> → <strong>Añadir a pantalla de inicio</strong>.</li>' +
       extra +
       '</ol>'
     );
@@ -590,12 +590,12 @@
 
   function desktopStepsHtml(role) {
     var extra = role === 'supervisor'
-      ? '<li>Al abrir la app irá al <strong>acceso administrativo</strong> para validar solicitudes.</li>'
+      ? '<li>Al abrir el acceso irá al <strong>panel de validación</strong> para confirmar solicitudes.</li>'
       : '<li>Comparta el enlace de choferes con quien solicite turno.</li>';
     return (
       '<ol class="turnos-pwa-steps">' +
       '<li>En <strong>Chrome</strong> o <strong>Edge</strong>: icono de instalación en la barra de direcciones.</li>' +
-      '<li>O use <strong>Instalar app</strong> abajo.</li>' +
+      '<li>O use <strong>Acceso directo</strong> abajo.</li>' +
       extra +
       '</ol>'
     );
@@ -605,8 +605,8 @@
     if (!isCrossInstallNeeded(role)) return '';
     return (
       '<p class="turnos-pwa-modal__cross-note">' +
-      '<strong>Segunda app en el mismo teléfono:</strong> ' +
-      'Abra el enlace en <strong>Safari</strong> o <strong>Chrome</strong> (no desde la otra app instalada) ' +
+      '<strong>Segundo acceso en el mismo teléfono:</strong> ' +
+      'Abra el enlace en <strong>Safari</strong> o <strong>Chrome</strong> (no desde el otro acceso instalado) ' +
       'y agréguelo a inicio. Tendrá <strong>2 iconos</strong>: chofer y supervisor.</p>'
     );
   }

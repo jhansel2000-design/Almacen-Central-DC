@@ -1,12 +1,14 @@
 /**
- * Control de Turnos — notificaciones admin (solo cuando está en otra pestaña)
+ * Control de Turnos — notificaciones supervisor (PWA / segundo plano / app cerrada)
  */
 (function (global) {
   'use strict';
 
   var C = function () { return global.PlatformTurnosCore; };
+  var Sw = function () { return global.PlatformTurnosSwWatch; };
   var seen = {};
   var bootstrapped = false;
+  var burstTimer = null;
 
   function isAdminViewActive() {
     var root = document.getElementById('turnosAdminRoot');
@@ -15,7 +17,10 @@
   }
 
   function shouldNotify() {
-    return isAdminViewActive() && document.visibilityState === 'hidden';
+    if (!isAdminViewActive()) return false;
+    if (document.visibilityState === 'hidden') return true;
+    if (typeof document.hasFocus === 'function' && !document.hasFocus()) return true;
+    return false;
   }
 
   function requestPermission() {
@@ -29,9 +34,7 @@
     }
   }
 
-  function showBrowserNotification(entry) {
-    if (!global.Notification || Notification.permission !== 'granted') return;
-    if (!shouldNotify()) return;
+  function buildNotificationContent(entry) {
     var isValidation = entry.estado === C().ESTADO_PENDIENTE_VALIDACION;
     var title = isValidation
       ? 'Solicitud por validar — ' + (C().TIPO_LABELS[entry.tipo] || entry.tipo)
@@ -41,26 +44,68 @@
       body += ' — Confirme presencia en el almacén antes de asignar turno.';
     } else {
       body += ' · ' + (C().TIPO_LABELS[entry.tipo] || entry.tipo);
-      if (entry.prioridad && entry.horaLimite) body += ' · Prioritario';
     }
-    try {
-      var n = new Notification(title, {
-        body: body,
-        tag: 'turnos-admin-' + entry.id,
-        renotify: true,
-        requireInteraction: !!(entry.prioridad || isValidation)
-      });
-      n.onclick = function () {
-        try { global.focus(); } catch (e) { /* noop */ }
-        n.close();
-      };
-    } catch (e) { /* noop */ }
+    return {
+      title: title,
+      body: body,
+      tag: 'turnos-admin-' + entry.id,
+      requireInteraction: !!(entry.prioridad || isValidation),
+      icon: 'assets/img/icon-turnos-validacion.svg',
+      url: global.location ? global.location.href.split('#')[0] : './turnos-supervisor.html'
+    };
+  }
+
+  function showBrowserNotification(entry) {
+    if (!global.Notification || Notification.permission !== 'granted') return;
+    if (!shouldNotify()) return;
+    var content = buildNotificationContent(entry);
+
+    function viaWindow() {
+      try {
+        var n = new Notification(content.title, {
+          body: content.body,
+          tag: content.tag,
+          renotify: true,
+          requireInteraction: content.requireInteraction
+        });
+        n.onclick = function () {
+          try { global.focus(); } catch (e) { /* noop */ }
+          n.close();
+        };
+      } catch (e) { /* noop */ }
+    }
+
+    if (Sw()) {
+      Sw().showViaWorker(content);
+    } else {
+      viaWindow();
+    }
+  }
+
+  function startBurst(entry) {
+    if (burstTimer) clearInterval(burstTimer);
+    showBrowserNotification(entry);
+    burstTimer = setInterval(function () {
+      if (!shouldNotify()) return;
+      showBrowserNotification(entry);
+    }, 10000);
+    setTimeout(function () {
+      if (burstTimer) {
+        clearInterval(burstTimer);
+        burstTimer = null;
+      }
+    }, 120000);
   }
 
   function alertForEntry(entry) {
     if (!entry || entry.estado === 'CANCELADO') return;
     if (!isAdminViewActive()) return;
-    if (shouldNotify()) showBrowserNotification(entry);
+    if (!shouldNotify()) return;
+    if (entry.estado === C().ESTADO_PENDIENTE_VALIDACION) {
+      startBurst(entry);
+    } else {
+      showBrowserNotification(entry);
+    }
   }
 
   function trackEntry(entry) {
@@ -78,11 +123,23 @@
     bootstrapped = true;
   }
 
+  function syncBackgroundWatch(entries) {
+    if (!Sw() || !isAdminViewActive()) return;
+    Sw().startWatch({
+      role: 'supervisor',
+      bootstrap: !bootstrapped,
+      bootstrapEntries: entries || [],
+      openUrl: global.location ? global.location.href.split('#')[0] : './turnos-supervisor.html',
+      pollMs: 12000
+    });
+  }
+
   function onStoreUpdate(shared) {
     if (!isAdminViewActive()) return;
     var entries = (shared && shared.entries) || [];
     if (!bootstrapped) {
       bootstrap(entries);
+      syncBackgroundWatch(entries);
       return;
     }
     entries.forEach(function (e) {
@@ -97,20 +154,43 @@
         }
       }
     });
+    syncBackgroundWatch(entries);
+  }
+
+  function onPageHide() {
+    if (!isAdminViewActive()) return;
+    var entries = (global.PlatformTurnosStore && global.PlatformTurnosStore.getState().entries) || [];
+    var pending = entries.filter(function (e) {
+      return e.estado === C().ESTADO_PENDIENTE_VALIDACION;
+    });
+    if (!pending.length || Notification.permission !== 'granted') return;
+    showBrowserNotification(pending[pending.length - 1]);
   }
 
   function reset() {
     seen = {};
     bootstrapped = false;
+    if (burstTimer) {
+      clearInterval(burstTimer);
+      burstTimer = null;
+    }
   }
 
   function start() {
     reset();
     requestPermission();
+    document.addEventListener('pagehide', onPageHide);
+    document.addEventListener('visibilitychange', function () {
+      if (document.visibilityState === 'hidden' && isAdminViewActive()) {
+        var shared = global.PlatformTurnosStore && global.PlatformTurnosStore.getState();
+        if (shared) syncBackgroundWatch(shared.entries || []);
+      }
+    });
   }
 
   function stop() {
     reset();
+    if (Sw()) Sw().stopWatch();
   }
 
   global.PlatformTurnosAlerts = {
