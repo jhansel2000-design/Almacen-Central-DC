@@ -5,7 +5,7 @@
   'use strict';
 
   var LS_KEY = 'almacen_hub_news';
-  var SEED_VERSION = 6;
+  var SEED_VERSION = 7;
 
   function refreshSeedCopy(items) {
     var seeds = defaultSeedItems();
@@ -18,7 +18,8 @@
           body: seed.body,
           imageUrl: seed.imageUrl,
           linkUrl: seed.linkUrl,
-          theme: seed.theme
+          theme: seed.theme,
+          comingSoon: seed.comingSoon
         });
       }
       return item;
@@ -65,7 +66,7 @@
       {
         id: 'seed_portal_turnos',
         title: 'Control de Turnos de Despacho',
-        body: 'Qué puedes hacer:\n• Elegir trámite: despacho, liquidación o nota de crédito\n• Pedir turno desde el celular sin hacer fila\n• Recibir aviso con voz y alarma cuando sea su turno\n\nCarteles para imprimir (código QR y pasos): carpeta «Turnos-Imprimir-DC» en el Escritorio de esta PC — no están publicados en la web.',
+        body: 'Qué puedes hacer:\n• Elegir trámite: despacho, liquidación o nota de crédito\n• Pedir turno desde el celular sin hacer fila\n• Recibir aviso con voz y alarma cuando sea su turno\n\nCarteles PDF en Escritorio\\Turnos-Imprimir-DC: QR chofer, pasos chofer, QR supervisor y pasos supervisor (separados).',
         publishedAt: '2026-06-16T10:00:00.000Z',
         publishedBy: 'Almacén Central DC',
         active: true,
@@ -73,6 +74,19 @@
         imageUrl: 'assets/img/turnos-hub-poster.jpg',
         linkUrl: 'turnos.html',
         theme: 'turnos'
+      },
+      {
+        id: 'seed_portal_agenda',
+        title: 'Agenda Operativa',
+        body: 'Próximamente disponible para todo el personal.\n\nEn qué nos puede ayudar:\n• Ver tareas diarias, inter-diarias y semanales de su puesto\n• Marcar pendiente, en proceso o completado con hora y comentarios\n• Medir productividad del día por área en tiempo real\n• Cada colaborador entra con su usuario y ve solo su agenda\n• Supervisores y administración tienen vista completa del almacén',
+        publishedAt: '2026-06-19T12:00:00.000Z',
+        publishedBy: 'Almacén Central DC',
+        active: true,
+        pinned: true,
+        comingSoon: true,
+        imageUrl: 'assets/img/agenda-hub-banner.svg',
+        linkUrl: 'agenda.html',
+        theme: 'agenda'
       }
     ];
   }
@@ -87,6 +101,7 @@
       publishedBy: String(row.published_by || row.publishedBy || '').trim(),
       active: row.active !== false,
       pinned: !!row.pinned,
+      comingSoon: !!(row.coming_soon || row.comingSoon),
       imageUrl: String(row.image_url || row.imageUrl || '').trim(),
       linkUrl: String(row.link_url || row.linkUrl || '').trim(),
       theme: String(row.theme || '').trim()
@@ -121,6 +136,7 @@
         title: title,
         body: body,
         pinned: !!data.pinned,
+        comingSoon: !!data.comingSoon,
         imageUrl: imageUrl,
         linkUrl: linkUrl,
         theme: theme
@@ -165,6 +181,7 @@
       published_by: item.publishedBy || '',
       active: item.active !== false,
       pinned: !!item.pinned,
+      coming_soon: !!item.comingSoon,
       image_url: item.imageUrl || '',
       link_url: item.linkUrl || '',
       theme: item.theme || ''

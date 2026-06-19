@@ -12,14 +12,18 @@
     despacho: 'Entrar a despacho',
     ops: 'Entrar a operaciones',
     mando: 'Entrar al mando',
-    inventario: 'Entrar a inventario'
+    inventario: 'Entrar a inventario',
+    turnos: 'Entrar a turnos',
+    agenda: 'Vista previa'
   };
 
   var TAG_BY_THEME = {
     despacho: 'Portal de Despacho',
     ops: 'Operaciones de Piso',
     mando: 'Control de Mando',
-    inventario: 'Inventario RF'
+    inventario: 'Inventario RF',
+    turnos: 'Control de Turnos',
+    agenda: 'Agenda Operativa'
   };
 
   var ROTATE_MS = 20000;
@@ -56,7 +60,7 @@
         return;
       }
       if (inList) { html += '</ul>'; inList = false; }
-      if (/^qué puedes hacer:/i.test(trimmed)) {
+      if (/^qué puedes hacer:/i.test(trimmed) || /^en qué nos puede ayudar:/i.test(trimmed)) {
         html += '<p class="hub-board-card__lead">' + esc(trimmed) + '</p>';
       } else if (!hasIntro) {
         html += '<p class="hub-board-card__intro">' + esc(trimmed) + '</p>';
@@ -86,11 +90,21 @@
     if (theme && TAG_BY_THEME[theme]) {
       html += '<span class="hub-board-card__badge">' + esc(TAG_BY_THEME[theme]) + '</span>';
     }
+    if (item.comingSoon) {
+      html += '<span class="hub-board-card__soon">Próximamente</span>';
+    }
     html += '<h3 class="hub-board-card__title">' + esc(item.title) + '</h3>';
     if (item.body) html += '<div class="hub-board-card__text">' + renderBodyHtml(item.body) + '</div>';
 
     html += '<div class="hub-board-card__footer">';
-    if (item.linkUrl) {
+    if (item.comingSoon) {
+      html += '<div class="hub-board-card__actions">';
+      html += '<span class="hub-board-card__btn hub-board-card__btn--soon">Próximamente</span>';
+      if (item.linkUrl) {
+        html += '<a class="hub-board-card__btn hub-board-card__btn--ghost" href="' + esc(item.linkUrl) + '">' + esc(CTA_BY_THEME[theme] || 'Vista previa') + ' →</a>';
+      }
+      html += '</div>';
+    } else if (item.linkUrl) {
       var cta = CTA_BY_THEME[theme] || 'Ver más';
       html += '<div class="hub-board-card__actions">';
       html += '<a class="hub-board-card__btn" href="' + esc(item.linkUrl) + '">' + esc(cta) + ' →</a>';
@@ -237,7 +251,9 @@
     html += '<option value="despacho">Despacho (naranja)</option>';
     html += '<option value="ops">Operaciones (verde)</option>';
     html += '<option value="mando">Mando (azul)</option>';
-    html += '<option value="inventario">Inventario (dorado)</option></select>';
+    html += '<option value="inventario">Inventario (dorado)</option>';
+    html += '<option value="turnos">Turnos (azul)</option>';
+    html += '<option value="agenda">Agenda (turquesa)</option></select>';
     html += '<label class="hub-news-check"><input type="checkbox" id="hubNewsPinned"> Fijar arriba del tablón</label>';
     html += '<div class="admin-btn-row">';
     html += '<button type="submit" class="btn btn-primary" id="hubNewsSubmit">Publicar aviso</button>';

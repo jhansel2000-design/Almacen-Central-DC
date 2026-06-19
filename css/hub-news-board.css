@@ -358,6 +358,10 @@
 
 .hub-board-card__actions {
   width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  align-items: center;
 }
 
 .hub-board-card__btn {
@@ -459,6 +463,58 @@
 .hub-board-card--inventario .hub-board-card__btn {
   background: #92764a;
   border-color: #c5a572;
+}
+
+.hub-board-card--agenda {
+  --hub-accent: #14b8a6;
+  --hub-accent-soft: rgba(20, 184, 166, 0.14);
+}
+
+.hub-board-card--agenda .hub-board-card__badge {
+  color: #5eead4;
+  border-color: rgba(20, 184, 166, 0.35);
+}
+
+.hub-board-card--agenda .hub-board-card__btn:not(.hub-board-card__btn--ghost) {
+  background: #0d9488;
+  border-color: #14b8a6;
+  box-shadow: 0 4px 16px rgba(13, 148, 136, 0.35);
+}
+
+.hub-board-card--agenda .hub-board-card__btn--ghost {
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  color: #7dd3fc;
+  box-shadow: none;
+}
+
+.hub-board-card--agenda .hub-board-card__btn--ghost:hover {
+  background: rgba(56, 189, 248, 0.2);
+}
+
+.hub-board-card__soon {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 0.5rem;
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #fde68a;
+  background: rgba(251, 191, 36, 0.12);
+  border: 1px solid rgba(251, 191, 36, 0.35);
+  vertical-align: middle;
+}
+
+.hub-board-card__btn--soon {
+  cursor: default;
+  pointer-events: none;
+  background: rgba(148, 163, 184, 0.16) !important;
+  border: 1px solid rgba(148, 163, 184, 0.28) !important;
+  color: #cbd5e1 !important;
+  box-shadow: none !important;
 }
 
 /* —— Contenedor externo —— */

@@ -146,19 +146,37 @@ body.auth-locked:has(.auth-layout--hub-news) .auth-video-scrim {
 }
 
 .auth-layout--hub.auth-layout--portals-only .auth-portal-icon--agenda,
-.auth-portal-card--agenda .auth-portal-icon--photo {
+.auth-portal-card--agenda .auth-portal-icon--photo,
+.hub-drawer .auth-portal-card--agenda .auth-portal-icon {
   background:
-    linear-gradient(135deg, rgba(0, 0, 0, 0.32), rgba(126, 182, 255, 0.28)),
-    linear-gradient(160deg, #0d2137 0%, #1a4a6e 45%, #2d6a4f 100%);
-  border-color: rgba(126, 182, 255, 0.42);
+    radial-gradient(circle at 28% 22%, rgba(56, 189, 248, 0.28), transparent 52%),
+    linear-gradient(145deg, #0c4a6e 0%, #0f766e 52%, #134e4a 100%);
+  border-color: rgba(45, 212, 191, 0.42);
+  position: relative;
+  overflow: hidden;
+}
+
+.auth-portal-card--agenda .auth-portal-icon--agenda::before,
+.auth-layout--hub.auth-layout--portals-only .auth-portal-icon--agenda::before,
+.hub-drawer .auth-portal-card--agenda .auth-portal-icon::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: url('../assets/img/icon-agenda-portal.svg') center / 68% no-repeat;
+  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.35));
 }
 
 .auth-portal-card--agenda:hover {
-  border-color: rgba(126, 182, 255, 0.55);
+  border-color: rgba(45, 212, 191, 0.58);
+  box-shadow: 0 8px 28px rgba(13, 148, 136, 0.18);
 }
 
 .auth-portal-card--agenda .auth-portal-cta {
-  color: #9ec5ff;
+  color: #5eead4;
+}
+
+.auth-layout--hub.auth-layout--portals-only .auth-portal-card--agenda .auth-portal-icon--photo {
+  box-shadow: 0 4px 18px rgba(13, 148, 136, 0.28);
 }
 
 .auth-layout--hub.auth-layout--portals-only .auth-portal-card--turnos .auth-portal-icon--photo {
