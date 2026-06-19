@@ -206,6 +206,18 @@
     return Math.min(100, Math.round((value / scaleMax) * 100));
   }
 
+  function renderBarSvg(pct, kind) {
+    var track = 'rgba(255,255,255,0.06)';
+    var fill = kind === 'cargado' ? '#34d399' : '#fbbf24';
+    var w = Math.max(0, Math.min(100, pct || 0));
+    var rects = w > 0
+      ? '<rect x="0" y="0" width="' + w + '" height="10" fill="' + fill + '"/>' +
+        (w < 100 ? '<rect x="' + w + '" y="0" width="' + (100 - w) + '" height="10" fill="' + track + '"/>' : '')
+      : '<rect x="0" y="0" width="100" height="10" fill="' + track + '"/>';
+    return '<svg class="desp-val-chart-bar-svg" viewBox="0 0 100 10" preserveAspectRatio="none" aria-hidden="true">' +
+      rects + '</svg>';
+  }
+
   function renderResumenGrafico(pedidos) {
     var store = DS();
     if (!store || !store.resumenPorValidador) return '';
@@ -216,19 +228,15 @@
     var rows = filas.map(function (r) {
       var pctV = barPct(r.validado, scaleMax);
       var pctC = barPct(r.cargado, scaleMax);
-      var segVCls = 'desp-val-chart-seg desp-val-chart-seg--validado' + (pctV ? '' : ' desp-val-chart-seg--zero');
-      var segCCls = 'desp-val-chart-seg desp-val-chart-seg--cargado' + (pctC ? '' : ' desp-val-chart-seg--zero');
       return '<div class="desp-val-chart-row">' +
         '<span class="desp-val-chart-name" title="' + esc(r.nombre) + '">' + esc(r.nombre) + '</span>' +
         '<div class="desp-val-chart-bars" role="img" aria-label="' + esc(r.nombre) + ': ' +
         r.validado + ' validados, ' + r.cargado + ' cargados">' +
         '<div class="desp-val-chart-bar-row">' +
-        '<div class="desp-val-chart-bar-line">' +
-        '<span class="' + segVCls + '" style="width:' + pctV + '%"></span></div>' +
+        '<div class="desp-val-chart-bar-line">' + renderBarSvg(pctV, 'validado') + '</div>' +
         '<span class="desp-val-chart-seg-num desp-val-chart-seg-num--validado">' + esc(String(r.validado)) + '</span></div>' +
         '<div class="desp-val-chart-bar-row">' +
-        '<div class="desp-val-chart-bar-line">' +
-        '<span class="' + segCCls + '" style="width:' + pctC + '%"></span></div>' +
+        '<div class="desp-val-chart-bar-line">' + renderBarSvg(pctC, 'cargado') + '</div>' +
         '<span class="desp-val-chart-seg-num desp-val-chart-seg-num--cargado">' + esc(String(r.cargado)) + '</span></div>' +
         '</div>' +
         '<span class="desp-val-chart-ultima">' + esc(fmtDtLista(r.ultimaValidacion)) + '</span>' +
