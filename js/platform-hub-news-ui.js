@@ -71,6 +71,8 @@
     return html;
   }
 
+  var AGENDA_BOARD_IMAGE = 'assets/img/agenda-hub-poster.jpg?v=4';
+
   function mediaSrc(url) {
     var src = String(url || '').trim();
     if (!src) return '';
@@ -78,24 +80,32 @@
     return src;
   }
 
+  function resolveItemImage(item) {
+    var url = mediaSrc(item && item.imageUrl);
+    if (url) return url;
+    if (item && item.theme === 'agenda') return AGENDA_BOARD_IMAGE;
+    return '';
+  }
+
   function isImageOnlyCard(item) {
-    return !!(item && item.imageUrl && (item.imageOnly || item.theme === 'agenda'));
+    return !!(item && (item.imageOnly || item.theme === 'agenda'));
   }
 
   function renderItemHtml(item, isActive) {
     var theme = item.theme || '';
+    var imageSrc = resolveItemImage(item);
     var imageOnly = isImageOnlyCard(item);
     var classes = 'hub-board-slide hub-board-card';
     if (isActive) classes += ' is-active';
     if (theme) classes += ' hub-board-card--' + theme;
-    if (item.imageUrl) classes += ' hub-board-card--has-media';
+    if (imageSrc) classes += ' hub-board-card--has-media';
     if (imageOnly) classes += ' hub-board-card--image-only';
 
     var html = '<article class="' + classes + '" aria-hidden="' + (isActive ? 'false' : 'true') + '" aria-label="' + esc(item.title) + '">';
 
-    if (item.imageUrl) {
+    if (imageSrc) {
       html += '<div class="hub-board-card__media">';
-      html += '<img src="' + esc(mediaSrc(item.imageUrl)) + '" alt="' + esc(item.title) + '" loading="eager" decoding="async">';
+      html += '<img src="' + esc(imageSrc) + '" alt="' + esc(item.title) + '" loading="eager" decoding="async">';
       html += '</div>';
     }
 
