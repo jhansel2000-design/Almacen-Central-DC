@@ -5,7 +5,7 @@
   'use strict';
 
   var LS_KEY = 'almacen_hub_news';
-  var SEED_VERSION = 9;
+  var SEED_VERSION = 10;
 
   function findSeedForItem(item, seeds) {
     if (!item) return null;
@@ -28,7 +28,8 @@
           imageUrl: seed.imageUrl,
           linkUrl: seed.linkUrl,
           theme: seed.theme,
-          comingSoon: seed.comingSoon
+          comingSoon: seed.comingSoon,
+          imageOnly: seed.imageOnly
         });
       }
       return item;
@@ -93,7 +94,8 @@
         active: true,
         pinned: true,
         comingSoon: true,
-        imageUrl: 'assets/img/agenda-hub-poster.jpg?v=2',
+        imageOnly: true,
+        imageUrl: 'assets/img/agenda-hub-poster.jpg?v=3',
         linkUrl: 'agenda.html',
         theme: 'agenda'
       }
@@ -111,6 +113,7 @@
       active: row.active !== false,
       pinned: !!row.pinned,
       comingSoon: !!(row.coming_soon || row.comingSoon),
+      imageOnly: !!(row.image_only || row.imageOnly),
       imageUrl: String(row.image_url || row.imageUrl || '').trim(),
       linkUrl: String(row.link_url || row.linkUrl || '').trim(),
       theme: String(row.theme || '').trim()

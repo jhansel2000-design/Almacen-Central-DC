@@ -78,19 +78,30 @@
     return src;
   }
 
+  function isImageOnlyCard(item) {
+    return !!(item && item.imageUrl && (item.imageOnly || item.theme === 'agenda'));
+  }
+
   function renderItemHtml(item, isActive) {
     var theme = item.theme || '';
+    var imageOnly = isImageOnlyCard(item);
     var classes = 'hub-board-slide hub-board-card';
     if (isActive) classes += ' is-active';
     if (theme) classes += ' hub-board-card--' + theme;
     if (item.imageUrl) classes += ' hub-board-card--has-media';
+    if (imageOnly) classes += ' hub-board-card--image-only';
 
-    var html = '<article class="' + classes + '" aria-hidden="' + (isActive ? 'false' : 'true') + '">';
+    var html = '<article class="' + classes + '" aria-hidden="' + (isActive ? 'false' : 'true') + '" aria-label="' + esc(item.title) + '">';
 
     if (item.imageUrl) {
       html += '<div class="hub-board-card__media">';
       html += '<img src="' + esc(mediaSrc(item.imageUrl)) + '" alt="' + esc(item.title) + '" loading="eager" decoding="async">';
       html += '</div>';
+    }
+
+    if (imageOnly) {
+      html += '</article>';
+      return html;
     }
 
     html += '<div class="hub-board-card__body">';
