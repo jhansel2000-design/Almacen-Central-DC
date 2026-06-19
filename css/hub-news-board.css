@@ -267,7 +267,13 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: center;
   display: block;
+}
+
+.hub-board-card--agenda .hub-board-card__media img {
+  object-fit: cover;
+  object-position: center;
 }
 
 .hub-board-card__body {

@@ -5,7 +5,7 @@
   'use strict';
 
   var LS_KEY = 'almacen_hub_news';
-  var SEED_VERSION = 7;
+  var SEED_VERSION = 8;
 
   function refreshSeedCopy(items) {
     var seeds = defaultSeedItems();
@@ -30,7 +30,7 @@
     var merged = (items || []).slice();
     defaultSeedItems().forEach(function (seed) {
       var exists = merged.some(function (n) {
-        return n.theme === seed.theme && n.title === seed.title;
+        return n.id === seed.id || (n.theme === seed.theme && n.title === seed.title);
       });
       if (!exists) merged.push(Object.assign({}, seed));
     });
@@ -84,7 +84,7 @@
         active: true,
         pinned: true,
         comingSoon: true,
-        imageUrl: 'assets/img/agenda-hub-banner.svg',
+        imageUrl: 'assets/img/agenda-hub-poster.jpg?v=1',
         linkUrl: 'agenda.html',
         theme: 'agenda'
       }
