@@ -820,6 +820,22 @@
     return stats;
   }
 
+  function isTodayLocal(iso) {
+    if (!iso) return false;
+    var t = new Date(iso);
+    if (isNaN(t.getTime())) return false;
+    var now = new Date();
+    return t.getFullYear() === now.getFullYear() &&
+      t.getMonth() === now.getMonth() &&
+      t.getDate() === now.getDate();
+  }
+
+  function validadorCreditoHistorial(p, h) {
+    var u = String(h && h.usuario ? h.usuario : '').trim();
+    if (VALIDADORES_ASIGNABLES.indexOf(u) >= 0) return u;
+    return String(p.validadorAsignado || '').trim();
+  }
+
   /** Totales visibles en el panel del validador (activos, no retirados). */
   function countResumenValidador(pedidos) {
     var activos = getPedidosVisiblesValidador(pedidos);
@@ -830,7 +846,7 @@
     return counts;
   }
 
-  /** Resumen por validador: validados, cargados y última actividad (pantalla TV). */
+  /** Resumen por validador: validados y cargados HOY (fecha local), pantalla TV. */
   function resumenPorValidador(pedidos) {
     var pool = (pedidos || []).filter(function (p) {
       return p.seguimientoValidador === true;
@@ -840,20 +856,21 @@
       byName[name] = { nombre: name, validado: 0, cargado: 0, ultimaValidacion: null };
     });
     pool.forEach(function (p) {
-      var name = String(p.validadorAsignado || '').trim();
-      if (!name) return;
-      if (!byName[name]) {
-        byName[name] = { nombre: name, validado: 0, cargado: 0, ultimaValidacion: null };
-      }
-      var row = byName[name];
-      if (p.estado === 'en_validacion') row.validado += 1;
-      else if (p.estado === 'listo_despacho') row.cargado += 1;
-      if (p.estado === 'en_validacion' || p.estado === 'listo_despacho') {
-        var ts = p.updatedAt || p.createdAt;
-        if (ts && (!row.ultimaValidacion || ts > row.ultimaValidacion)) {
-          row.ultimaValidacion = ts;
+      (p.historial || []).forEach(function (h) {
+        if (!isTodayLocal(h.at)) return;
+        if (h.hacia !== 'en_validacion' && h.hacia !== 'listo_despacho') return;
+        var name = validadorCreditoHistorial(p, h);
+        if (!name) return;
+        if (!byName[name]) {
+          byName[name] = { nombre: name, validado: 0, cargado: 0, ultimaValidacion: null };
         }
-      }
+        var row = byName[name];
+        if (h.hacia === 'en_validacion') row.validado += 1;
+        else if (h.hacia === 'listo_despacho') row.cargado += 1;
+        if (h.at && (!row.ultimaValidacion || h.at > row.ultimaValidacion)) {
+          row.ultimaValidacion = h.at;
+        }
+      });
     });
     var list = VALIDADORES_ASIGNABLES.map(function (n) {
       return byName[n] || { nombre: n, validado: 0, cargado: 0, ultimaValidacion: null };
