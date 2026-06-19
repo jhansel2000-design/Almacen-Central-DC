@@ -233,11 +233,11 @@
         '<div class="desp-val-chart-bars" role="img" aria-label="' + esc(r.nombre) + ': ' +
         r.validado + ' validados, ' + r.cargado + ' cargados">' +
         '<div class="desp-val-chart-bar-row">' +
-        renderBarFlex(r.validado, scaleMax, 'validado') +
-        '<span class="desp-val-chart-seg-num desp-val-chart-seg-num--validado">' + esc(String(r.validado)) + '</span></div>' +
-        '<div class="desp-val-chart-bar-row">' +
         renderBarFlex(r.cargado, scaleMax, 'cargado') +
         '<span class="desp-val-chart-seg-num desp-val-chart-seg-num--cargado">' + esc(String(r.cargado)) + '</span></div>' +
+        '<div class="desp-val-chart-bar-row">' +
+        renderBarFlex(r.validado, scaleMax, 'validado') +
+        '<span class="desp-val-chart-seg-num desp-val-chart-seg-num--validado">' + esc(String(r.validado)) + '</span></div>' +
         '</div>' +
         '<span class="desp-val-chart-ultima">' + esc(fmtDtLista(r.ultimaValidacion)) + '</span>' +
         '</div>';

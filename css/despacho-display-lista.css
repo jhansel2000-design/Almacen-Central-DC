@@ -62,6 +62,26 @@ body.desp-display-mode .desp-val-chart-row {
   grid-template-columns: minmax(4.8rem, 8vmin) minmax(0, 1fr);
   width: 100%;
   font-size: clamp(0.58rem, 0.95vmin, 1.15rem);
+  position: relative;
+}
+
+body.desp-display-mode .desp-val-chart-row::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: calc(max(4.8rem, 8vmin) + clamp(0.25rem, 0.5vw, 0.45rem));
+  right: 0;
+  height: 1px;
+  background: rgba(148, 163, 184, 0.22);
+  transform: translateY(-50%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+body.desp-display-mode .desp-val-chart-name,
+body.desp-display-mode .desp-val-chart-bars {
+  position: relative;
+  z-index: 1;
 }
 
 body.desp-display-mode .desp-val-chart-name {
