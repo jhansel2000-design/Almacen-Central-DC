@@ -223,12 +223,12 @@
         '<div class="desp-val-chart-bars" role="img" aria-label="' + esc(r.nombre) + ': ' +
         r.validado + ' validados, ' + r.cargado + ' cargados">' +
         '<div class="desp-val-chart-bar-row">' +
-        '<div class="desp-val-chart-bar-line" style="--bar-w:' + pctV + '">' +
-        '<span class="' + segVCls + '"></span></div>' +
+        '<div class="desp-val-chart-bar-line">' +
+        '<span class="' + segVCls + '" style="width:' + pctV + '%"></span></div>' +
         '<span class="desp-val-chart-seg-num desp-val-chart-seg-num--validado">' + esc(String(r.validado)) + '</span></div>' +
         '<div class="desp-val-chart-bar-row">' +
-        '<div class="desp-val-chart-bar-line" style="--bar-w:' + pctC + '">' +
-        '<span class="' + segCCls + '"></span></div>' +
+        '<div class="desp-val-chart-bar-line">' +
+        '<span class="' + segCCls + '" style="width:' + pctC + '%"></span></div>' +
         '<span class="desp-val-chart-seg-num desp-val-chart-seg-num--cargado">' + esc(String(r.cargado)) + '</span></div>' +
         '</div>' +
         '<span class="desp-val-chart-ultima">' + esc(fmtDtLista(r.ultimaValidacion)) + '</span>' +
