@@ -213,6 +213,7 @@ body.desp-display-mode .desp-lista-present-fecha-cell {
 body.desp-display-mode .desp-lista-present-th-fecha {
   padding-left: 0.12rem !important;
   padding-right: 0.2rem !important;
+  font-size: 0.85em;
 }
 
 body.desp-display-mode .desp-lista-present-estado-col,
@@ -236,10 +237,18 @@ body.desp-display-mode .desp-lista-present-etapas--times .desp-lista-present-eta
   line-height: 1.05;
 }
 
+body.desp-display-mode .desp-lista-present-etapas--times .desp-lista-present-etapa {
+  font-size: 0.78em;
+}
+
 body.desp-display-mode .desp-lista-present-etapas--labels .desp-lista-present-etapa-lbl,
 body.desp-display-mode .desp-lista-present-etapas--times .desp-lista-present-etapa-time {
   font-size: 1em;
   font-weight: 600;
+}
+
+body.desp-display-mode .desp-lista-present-etapas--times .desp-lista-present-etapa-time {
+  font-weight: 700;
 }
 
 body.desp-display-mode .desp-lista-present-estado {
