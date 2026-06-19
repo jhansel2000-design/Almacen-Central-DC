@@ -145,6 +145,22 @@ body.auth-locked:has(.auth-layout--hub-news) .auth-video-scrim {
   border-color: rgba(96, 165, 250, 0.42);
 }
 
+.auth-layout--hub.auth-layout--portals-only .auth-portal-icon--agenda,
+.auth-portal-card--agenda .auth-portal-icon--photo {
+  background:
+    linear-gradient(135deg, rgba(0, 0, 0, 0.32), rgba(126, 182, 255, 0.28)),
+    linear-gradient(160deg, #0d2137 0%, #1a4a6e 45%, #2d6a4f 100%);
+  border-color: rgba(126, 182, 255, 0.42);
+}
+
+.auth-portal-card--agenda:hover {
+  border-color: rgba(126, 182, 255, 0.55);
+}
+
+.auth-portal-card--agenda .auth-portal-cta {
+  color: #9ec5ff;
+}
+
 .auth-layout--hub.auth-layout--portals-only .auth-portal-card--turnos .auth-portal-icon--photo {
   box-shadow: 0 4px 16px rgba(37, 99, 235, 0.22);
 }

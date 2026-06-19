@@ -21,6 +21,7 @@ data/*.json
 !data/web-users.json
 !data/averias.json
 !data/site-config.json
+!data/agenda-seed.json
 !data/.gitkeep
 
 # Archivos generados en tu PC (IP personal, links locales)

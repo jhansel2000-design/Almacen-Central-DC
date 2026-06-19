@@ -32,7 +32,7 @@
   <link rel="stylesheet" href="css/executive-comfort.css">
   <link rel="stylesheet" href="css/auth-cinematic.css?v=18">
   <link rel="stylesheet" href="css/auth-security.css?v=3">
-  <link rel="stylesheet" href="css/auth-portals-layout.css?v=30">
+  <link rel="stylesheet" href="css/auth-portals-layout.css?v=31">
   <link rel="stylesheet" href="css/hub-news-board.css?v=13">
   <link rel="stylesheet" href="css/perf-lite.css?v=17">
   <link rel="stylesheet" href="css/despacho-auth.css?v=30">
@@ -123,6 +123,14 @@
                   <strong>Turnos — Supervisor</strong>
                   <span>Celular: validar · PC: panel completo</span>
                   <span class="auth-portal-cta">App supervisor →</span>
+                </div>
+              </a>
+              <a href="agenda.html" class="auth-portal-card auth-portal-card--agenda">
+                <span class="auth-portal-icon auth-portal-icon--photo auth-portal-icon--agenda" aria-hidden="true"></span>
+                <div class="auth-portal-body">
+                  <strong>Agenda operativa</strong>
+                  <span>Tareas diarias por puesto · seguimiento en vivo</span>
+                  <span class="auth-portal-cta">Entrar a agenda →</span>
                 </div>
               </a>
             </div>
@@ -426,6 +434,12 @@
                 </select>
                 <input id="userPassword" type="password" placeholder="Contraseña (nueva)" maxlength="128" autocomplete="new-password">
               </div>
+              <div class="admin-form-row">
+                <select id="userAgendaPuesto" title="Agenda operativa asignada al usuario">
+                  <option value="">Sin puesto de agenda</option>
+                </select>
+              </div>
+              <p class="admin-hint small">Agenda: asigne el puesto que verá al entrar con su usuario. Los administradores ven todos los puestos.</p>
               <button type="submit" class="btn btn-primary" id="btnSaveUser">Guardar usuario</button>
               <button type="button" class="btn" id="btnCancelUserEdit" hidden>Cancelar edición</button>
             </form>
@@ -629,7 +643,7 @@
   <script defer src="js/platform-tv-dashboard.js?v=10"></script>
   <script defer src="js/platform-gestures.js"></script>
   <script defer src="js/platform-operaciones-ui.js"></script>
-  <script defer src="js/platform-admin.js?v=15"></script>
+  <script defer src="js/platform-admin.js?v=17"></script>
   <script defer src="js/platform-admin-tools.js?v=5"></script>
   <script defer src="js/platform-admin-ui.js?v=3"></script>
   <script defer src="js/platform-modules.js?v=2"></script>

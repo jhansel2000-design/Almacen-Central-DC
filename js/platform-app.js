@@ -2722,6 +2722,7 @@
   }
 
   function refreshAdminTables() {
+    populateAgendaPuestoSelect();
     var staffHost = $('staffUsersHost');
     if (userCan('users.manage') && global.PlatformAdminUI.renderUsersPanel) {
       global.PlatformAdminUI.renderUsersPanel(
@@ -2744,12 +2745,27 @@
     if (form) form.reset();
     if ($('userEditId')) $('userEditId').value = '';
     if ($('userRole')) $('userRole').value = 'colaborador';
+    if ($('userAgendaPuesto')) $('userAgendaPuesto').value = '';
     if ($('userUsername')) $('userUsername').disabled = false;
     if ($('userRole')) $('userRole').disabled = false;
     var cancelBtn = $('btnCancelUserEdit');
     if (cancelBtn) cancelBtn.hidden = true;
     var saveBtn = $('btnSaveUser');
     if (saveBtn) saveBtn.textContent = 'Guardar usuario';
+  }
+
+  function populateAgendaPuestoSelect() {
+    var sel = $('userAgendaPuesto');
+    if (!sel || !global.PlatformAdmin || !global.PlatformAdmin.AGENDA_PUESTO_IDS) return;
+    var current = sel.value;
+    sel.innerHTML = '<option value="">Sin puesto de agenda</option>';
+    Object.keys(global.PlatformAdmin.AGENDA_PUESTO_IDS).forEach(function (id) {
+      var opt = document.createElement('option');
+      opt.value = id;
+      opt.textContent = global.PlatformAdmin.AGENDA_PUESTO_IDS[id];
+      sel.appendChild(opt);
+    });
+    if (current) sel.value = current;
   }
 
   function loadUserForEdit(id) {
@@ -2763,6 +2779,7 @@
     $('userUsername').disabled = false;
     $('userName').value = user.name;
     $('userRole').value = user.role;
+    if ($('userAgendaPuesto')) $('userAgendaPuesto').value = user.agendaPuesto || '';
     $('userRole').disabled = false;
     $('userPassword').value = '';
     $('userPassword').placeholder = 'Contraseña (nueva)';
@@ -2919,7 +2936,8 @@
       username: username,
       name: displayName || username,
       role: $('userRole').value,
-      areas: []
+      areas: [],
+      agendaPuesto: ($('userAgendaPuesto') && $('userAgendaPuesto').value) || ''
     };
 
     if (editId) {
@@ -2928,7 +2946,7 @@
         toastNotify('La cuenta del administrador general no se edita desde la plataforma.', 'warn');
         return;
       }
-      var patch = { name: payload.name, areas: [] };
+      var patch = { name: payload.name, areas: [], agendaPuesto: payload.agendaPuesto };
       patch.username = payload.username;
       patch.role = payload.role;
       if (password) {
@@ -2954,6 +2972,7 @@
       name: payload.name,
       role: payload.role,
       areas: [],
+      agendaPuesto: payload.agendaPuesto,
       passwordHash: hash
     });
     if (!res.ok) {

@@ -28,12 +28,15 @@
     'despacho.validate': 'Validador de despacho',
     'access.request': 'Solicitar acceso a configuración',
     'requests.manage': 'Gestionar solicitudes de acceso',
-    'news.manage': 'Publicar noticias del tablón'
+    'news.manage': 'Publicar noticias del tablón',
+    'agenda.use': 'Módulo Agenda operativa',
+    'agenda.all': 'Agenda — ver todos los puestos'
   };
 
   var SECONDARY_ADMIN_PERMISSIONS = [
     'dashboard.view', 'filter.apply', 'data.import', 'export.data', 'reportes.view',
-    'ai.use', 'tv.mode', 'despacho.use', 'despacho.validate', 'logs.view', 'news.manage'
+    'ai.use', 'tv.mode', 'despacho.use', 'despacho.validate', 'logs.view', 'news.manage',
+    'agenda.use', 'agenda.all'
   ];
 
   var PRIMARY_ONLY_PERMISSIONS = [
@@ -42,8 +45,8 @@
 
   var ROLE_PERMISSIONS = {
     administrador: SECONDARY_ADMIN_PERMISSIONS,
-    supervisor: ['dashboard.view', 'filter.apply', 'data.import', 'export.data', 'reportes.view', 'logs.view', 'ai.use', 'tv.mode', 'despacho.use', 'despacho.validate'],
-    colaborador: ['dashboard.view', 'filter.apply', 'data.import', 'export.data', 'reportes.view', 'ai.use', 'tv.mode', 'despacho.use', 'despacho.validate', 'access.request'],
+    supervisor: ['dashboard.view', 'filter.apply', 'data.import', 'export.data', 'reportes.view', 'logs.view', 'ai.use', 'tv.mode', 'despacho.use', 'despacho.validate', 'agenda.use'],
+    colaborador: ['dashboard.view', 'filter.apply', 'data.import', 'export.data', 'reportes.view', 'ai.use', 'tv.mode', 'despacho.use', 'despacho.validate', 'access.request', 'agenda.use'],
     operador: ['dashboard.view', 'tv.mode', 'despacho.use'],
     preparador: ['dashboard.view', 'tv.mode', 'despacho.use'],
     validador: ['dashboard.view', 'tv.mode', 'despacho.use', 'despacho.validate', 'reportes.view', 'export.data', 'filter.apply']
@@ -56,6 +59,18 @@
     operador: 'Operador',
     preparador: 'Preparador',
     validador: 'Validador'
+  };
+
+  var AGENDA_PUESTO_IDS = {
+    supervisor_inventario: 'Supervisor de Inventario',
+    digitadora_inventario: 'Digitadora de Inventario',
+    coordinador_almacen: 'Coordinador Almacén',
+    auxiliar_despacho: 'Auxiliar de Despacho',
+    supervisor_despacho: 'Supervisor de Despacho',
+    supervisor_validadores: 'Supervisor de Validadores',
+    supervisor_devoluciones: 'Supervisor de Devoluciones',
+    coordinador_recepcion: 'Coordinador Recepción',
+    supervisora_oficina: 'Supervisora de Oficina'
   };
 
   // Administrador general — usuario y contraseña SOLO se cambian aquí (Cursor), no en la plataforma.
@@ -95,7 +110,19 @@
 
   function normalizeUser(u) {
     if (!u.extraPermissions) u.extraPermissions = [];
+    u.agendaPuesto = normalizeAgendaPuestoField(u.agendaPuesto);
     return u;
+  }
+
+  function normalizeAgendaPuestoField(value) {
+    var id = String(value || '').trim();
+    if (!id) return '';
+    if (AGENDA_PUESTO_IDS[id]) return id;
+    return '';
+  }
+
+  function getAgendaPuestoLabel(id) {
+    return AGENDA_PUESTO_IDS[id] || '';
   }
 
   function dedupeStaffByUsername(staffList) {
@@ -272,7 +299,8 @@
         passwordHash: u.passwordHash,
         areas: u.areas || [],
         active: u.active !== false,
-        extraPermissions: u.extraPermissions || []
+        extraPermissions: u.extraPermissions || [],
+        agendaPuesto: normalizeAgendaPuestoField(u.agendaPuesto)
       };
     });
   }
@@ -506,6 +534,7 @@
       areas: data.areas || [],
       active: data.active !== false,
       extraPermissions: data.extraPermissions || [],
+      agendaPuesto: normalizeAgendaPuestoField(data.agendaPuesto),
       isPrimaryAdmin: data.role === 'administrador' ? false : undefined
     });
     users.push(user);
@@ -643,6 +672,8 @@
     PERMISSIONS: PERMISSIONS,
     ROLE_PERMISSIONS: ROLE_PERMISSIONS,
     ROLE_LABELS: ROLE_LABELS,
+    AGENDA_PUESTO_IDS: AGENDA_PUESTO_IDS,
+    getAgendaPuestoLabel: getAgendaPuestoLabel,
     getUsers: getUsers,
     getPrimaryAdmin: getPrimaryAdmin,
     getStaffUsers: getStaffUsers,

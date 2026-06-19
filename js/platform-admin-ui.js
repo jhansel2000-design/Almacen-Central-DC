@@ -38,13 +38,19 @@
       return;
     }
     var html = '<div class="admin-table-wrap"><table class="data-table admin-staff-table"><thead><tr>' +
-      '<th>Usuario</th><th>Nombre</th><th>Rol</th><th>Estado</th><th></th></tr></thead><tbody>';
+      '<th>Usuario</th><th>Nombre</th><th>Rol</th><th>Agenda / Puesto</th><th>Estado</th><th></th></tr></thead><tbody>';
     users.forEach(function (u) {
       var roleLabel = global.PlatformAdmin.getRoleLabel
         ? global.PlatformAdmin.getRoleLabel(u)
         : (global.PlatformAdmin.ROLE_LABELS[u.role] || u.role);
+      var agendaLabel = '—';
+      if (u.role === 'administrador' || (global.PlatformAdmin.can && global.PlatformAdmin.can(u.role, 'agenda.all', u))) {
+        agendaLabel = 'Todos';
+      } else if (u.agendaPuesto && global.PlatformAdmin.getAgendaPuestoLabel) {
+        agendaLabel = global.PlatformAdmin.getAgendaPuestoLabel(u.agendaPuesto) || u.agendaPuesto;
+      }
       html += '<tr><td>' + esc(u.username) + '</td><td>' + esc(global.PlatformAdmin.getDisplayName ? global.PlatformAdmin.getDisplayName(u) : (u.name || u.username)) + '</td><td>' +
-        esc(roleLabel) + '</td><td>' +
+        esc(roleLabel) + '</td><td>' + esc(agendaLabel) + '</td><td>' +
         (u.active ? 'Activo' : 'Inactivo') + '</td><td class="admin-actions">' +
         '<button type="button" class="btn btn-sm" data-edit="' + esc(u.id) + '">Editar</button> ' +
         '<button type="button" class="btn btn-sm" data-del="' + esc(u.id) + '">Eliminar</button></td></tr>';
