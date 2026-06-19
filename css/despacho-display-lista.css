@@ -68,12 +68,11 @@ body.desp-display-mode .desp-val-chart-row {
 body.desp-display-mode .desp-val-chart-row::after {
   content: '';
   position: absolute;
-  top: 50%;
-  left: calc(max(4.8rem, 8vmin) + clamp(0.25rem, 0.5vw, 0.45rem));
+  left: 0;
   right: 0;
+  bottom: 0;
   height: 1px;
   background: rgba(148, 163, 184, 0.22);
-  transform: translateY(-50%);
   pointer-events: none;
   z-index: 0;
 }
