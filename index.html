@@ -163,7 +163,34 @@
                 <p class="hub-board__empty-title">No hay noticias disponibles</p>
                 <p class="hub-board__empty-desc">Cuando se publiquen avisos, aparecerán aquí de forma automática.</p>
               </div>
-              <div id="hubNewsFeed" class="hub-board__feed" aria-live="polite"></div>
+              <div id="hubNewsFeed" class="hub-board__feed" aria-live="polite">
+                <article class="hub-board-slide hub-board-card hub-board-card--agenda hub-board-card--has-media is-active hub-board-fallback" aria-hidden="false">
+                  <div class="hub-board-card__media">
+                    <img src="assets/img/agenda-hub-poster.jpg?v=2" alt="Agenda Operativa" loading="eager" decoding="async">
+                  </div>
+                  <div class="hub-board-card__body">
+                    <span class="hub-board-card__badge">Agenda Operativa</span>
+                    <span class="hub-board-card__soon">Próximamente</span>
+                    <h3 class="hub-board-card__title">Agenda Operativa</h3>
+                    <div class="hub-board-card__text">
+                      <p class="hub-board-card__intro">Próximamente disponible para todo el personal.</p>
+                      <p class="hub-board-card__lead">En qué nos puede ayudar:</p>
+                      <ul class="hub-board-card__list">
+                        <li>Ver tareas diarias, inter-diarias y semanales de su puesto</li>
+                        <li>Marcar pendiente, en proceso o completado con hora y comentarios</li>
+                        <li>Medir productividad del día por área en tiempo real</li>
+                        <li>Cada colaborador entra con su usuario y ve solo su agenda</li>
+                      </ul>
+                    </div>
+                    <div class="hub-board-card__footer">
+                      <div class="hub-board-card__actions">
+                        <span class="hub-board-card__btn hub-board-card__btn--soon">Próximamente</span>
+                        <a class="hub-board-card__btn hub-board-card__btn--ghost" href="agenda.html">Vista previa →</a>
+                      </div>
+                    </div>
+                  </div>
+                </article>
+              </div>
             </div>
           </section>
         </div>
@@ -652,10 +679,10 @@
   <script defer src="js/platform-shortcuts.js"></script>
   <script defer src="js/platform-web-users.js?v=18"></script>
   <script defer src="js/platform-wake-lock.js?v=1"></script>
-  <script defer src="js/platform-hub-news-core.js?v=8"></script>
-  <script defer src="js/platform-hub-news-sync.js?v=4"></script>
-  <script defer src="js/platform-hub-news-ui.js?v=11"></script>
-  <script defer src="js/platform-hub-news-app.js?v=2"></script>
+  <script defer src="js/platform-hub-news-core.js?v=9"></script>
+  <script defer src="js/platform-hub-news-sync.js?v=5"></script>
+  <script defer src="js/platform-hub-news-ui.js?v=12"></script>
+  <script defer src="js/platform-hub-news-app.js?v=3"></script>
   <script defer src="js/platform-app.js?v=58"></script>
   <script defer src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js" crossorigin="anonymous"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js" crossorigin="anonymous"></script>

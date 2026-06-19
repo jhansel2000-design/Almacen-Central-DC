@@ -42,8 +42,13 @@
 
   function mergeRows(rows) {
     var C = core();
-    var mapped = (rows || []).map(C.mapRow).filter(Boolean);
-    items = C.activeItems(C.ensurePortalSeeds(C.refreshSeedCopy(mapped)));
+    if (!C) return items;
+    try {
+      var mapped = (rows || []).map(C.mapRow).filter(Boolean);
+      items = C.activeItems(C.applyPortalSeeds ? C.applyPortalSeeds(mapped) : mapped);
+    } catch (e) {
+      items = C.readLocal();
+    }
     C.writeLocal(items);
     notify('items', items);
     return items;

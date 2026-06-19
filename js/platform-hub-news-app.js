@@ -36,7 +36,11 @@
   function initPublicBoard() {
     if (boardReady || !sync() || !ui()) return;
     boardReady = true;
-    sync().init().then(refreshBoard);
+    var C = global.PlatformHubNewsCore;
+    if (C && C.applyPortalSeeds) {
+      ui().renderBoard(C.activeItems(C.applyPortalSeeds(C.defaultSeedItems())));
+    }
+    sync().init().then(refreshBoard).catch(function () { refreshBoard(); });
     sync().onChange(function () { refreshBoard(); });
   }
 

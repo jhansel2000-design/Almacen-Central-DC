@@ -5,14 +5,23 @@
   'use strict';
 
   var LS_KEY = 'almacen_hub_news';
-  var SEED_VERSION = 8;
+  var SEED_VERSION = 9;
+
+  function findSeedForItem(item, seeds) {
+    if (!item) return null;
+    var byId = seeds.find(function (s) { return item.id && s.id === item.id; });
+    if (byId) return byId;
+    if (item.theme) {
+      var byTheme = seeds.find(function (s) { return s.theme && s.theme === item.theme; });
+      if (byTheme) return byTheme;
+    }
+    return seeds.find(function (s) { return s.title === item.title; });
+  }
 
   function refreshSeedCopy(items) {
     var seeds = defaultSeedItems();
     return (items || []).map(function (item) {
-      var seed = seeds.find(function (s) {
-        return s.id === item.id || (s.theme === item.theme && s.title === item.title);
-      });
+      var seed = findSeedForItem(item, seeds);
       if (seed) {
         return Object.assign({}, item, {
           body: seed.body,
@@ -84,7 +93,7 @@
         active: true,
         pinned: true,
         comingSoon: true,
-        imageUrl: 'assets/img/agenda-hub-poster.jpg?v=1',
+        imageUrl: 'assets/img/agenda-hub-poster.jpg?v=2',
         linkUrl: 'agenda.html',
         theme: 'agenda'
       }
@@ -188,11 +197,17 @@
     };
   }
 
+  function applyPortalSeeds(items) {
+    return ensurePortalSeeds(refreshSeedCopy(items || []));
+  }
+
   global.PlatformHubNewsCore = {
     LS_KEY: LS_KEY,
     SEED_VERSION: SEED_VERSION,
     defaultSeedItems: defaultSeedItems,
     refreshSeedCopy: refreshSeedCopy,
+    ensurePortalSeeds: ensurePortalSeeds,
+    applyPortalSeeds: applyPortalSeeds,
     mapRow: mapRow,
     sortItems: sortItems,
     activeItems: activeItems,

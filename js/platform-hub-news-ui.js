@@ -71,6 +71,13 @@
     return html;
   }
 
+  function mediaSrc(url) {
+    var src = String(url || '').trim();
+    if (!src) return '';
+    if (/^https?:\/\//i.test(src) || src.charAt(0) === '/') return src;
+    return src;
+  }
+
   function renderItemHtml(item, isActive) {
     var theme = item.theme || '';
     var classes = 'hub-board-slide hub-board-card';
@@ -82,7 +89,7 @@
 
     if (item.imageUrl) {
       html += '<div class="hub-board-card__media">';
-      html += '<img src="' + esc(item.imageUrl) + '" alt="" loading="lazy" decoding="async">';
+      html += '<img src="' + esc(mediaSrc(item.imageUrl)) + '" alt="' + esc(item.title) + '" loading="eager" decoding="async">';
       html += '</div>';
     }
 
