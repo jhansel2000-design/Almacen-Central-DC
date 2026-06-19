@@ -15,10 +15,15 @@ body.desp-display-mode .desp-lista-present-toolbar {
   margin-bottom: clamp(0.06rem, 0.14vh, 0.12rem);
   gap: clamp(0.35rem, 0.75vw, 0.65rem);
   align-items: stretch;
+  width: 100%;
+  justify-content: flex-start;
+  box-sizing: border-box;
 }
 
 body.desp-display-mode .desp-lista-present-kpis {
-  flex: 0 1 38%;
+  flex: 0 0 38%;
+  width: 38%;
+  max-width: 38%;
   gap: clamp(0.35rem, 0.75vw, 0.65rem);
   min-width: 0;
 }
@@ -33,13 +38,14 @@ body.desp-display-mode .desp-lista-present-kpi {
 }
 
 body.desp-display-mode .desp-lista-present-toolbar .desp-val-resumen {
-  flex: 1 1 62%;
+  flex: 1 1 0;
   min-width: 0;
-  width: auto;
+  width: 100%;
   max-width: none;
   max-height: none;
   overflow: visible;
   padding: clamp(0.2rem, 0.42vh, 0.42rem) clamp(0.35rem, 0.8vw, 0.75rem);
+  box-sizing: border-box;
 }
 
 body.desp-display-mode .desp-val-resumen--solo-barras {
@@ -104,7 +110,7 @@ body.desp-display-mode .desp-val-chart-bar-row {
 body.desp-display-mode .desp-val-chart-bar-line {
   display: block;
   width: 100%;
-  max-width: min(100%, 11rem);
+  max-width: 100%;
   height: clamp(0.42rem, 0.75vmin, 1rem);
   border-radius: 999px;
   overflow: hidden;
@@ -203,6 +209,56 @@ body.desp-display-mode .desp-lista-present-jaula {
 
 body.desp-display-mode .desp-lista-present-estado-cell {
   padding-right: 0.12rem !important;
+}
+
+body.desp-display-mode .desp-lista-present-estado-fecha-cell {
+  padding-left: 0.12rem !important;
+  padding-right: 0.2rem !important;
+  vertical-align: top;
+}
+
+body.desp-display-mode .desp-lista-present-estado-fecha-block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--desp-row-gap);
+  width: 100%;
+}
+
+body.desp-display-mode .desp-lista-present-estado-badge-wrap .desp-lista-present-estado {
+  justify-content: flex-start;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+body.desp-display-mode .desp-lista-present-etapas--paired {
+  display: flex;
+  flex-direction: column;
+  gap: var(--desp-row-gap);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+}
+
+body.desp-display-mode .desp-lista-present-etapas--paired .desp-lista-present-etapa-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: clamp(0.35rem, 0.8vw, 0.75rem);
+  min-height: var(--desp-etapa-h);
+  font-size: 0.78em;
+  line-height: 1.05;
+}
+
+body.desp-display-mode .desp-lista-present-etapas--paired .desp-lista-present-etapa-lbl {
+  font-weight: 600;
+}
+
+body.desp-display-mode .desp-lista-present-etapas--paired .desp-lista-present-etapa-time {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  text-align: right;
 }
 
 body.desp-display-mode .desp-lista-present-fecha-cell {

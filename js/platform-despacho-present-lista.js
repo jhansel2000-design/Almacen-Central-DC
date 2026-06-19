@@ -117,8 +117,7 @@
       ? store.fechasEtapasValidador(p)
       : {};
     var orden = ['pendiente_carga', 'en_validacion', 'listo_despacho'];
-    var labels = '';
-    var times = '';
+    var paired = '';
     orden.forEach(function (id) {
       var iso = etapas[id];
       var reached = !!iso;
@@ -126,28 +125,18 @@
       var cls = ' desp-lista-present-etapa--' + ETAPA_CLS[id] +
         (reached ? ' desp-lista-present-etapa--done' : '') +
         (current ? ' desp-lista-present-etapa--current' : '');
-      labels += '<li class="desp-lista-present-etapa' + cls + '">' +
-        '<span class="desp-lista-present-etapa-lbl">' + esc(ETAPA_LABELS[id]) + '</span></li>';
-      times += '<li class="desp-lista-present-etapa' + cls + '">' +
+      paired += '<li class="desp-lista-present-etapa-row' + cls + '">' +
+        '<span class="desp-lista-present-etapa-lbl">' + esc(ETAPA_LABELS[id]) + '</span>' +
         '<span class="desp-lista-present-etapa-time">' + esc(fmtDtCompact(iso)) + '</span></li>';
     });
-    return { labels: labels, times: times };
+    return paired;
   }
 
-  function estadoCellHtml(p) {
-    var rows = etapasRowsHtml(p);
-    return '<div class="desp-lista-present-estado-col">' +
+  function estadoFechaCellHtml(p) {
+    return '<div class="desp-lista-present-estado-fecha-block">' +
       '<div class="desp-lista-present-estado-badge-wrap">' + estadoHtml(p.estado) + '</div>' +
-      '<ul class="desp-lista-present-etapas desp-lista-present-etapas--labels" aria-label="Etapas">' +
-      rows.labels + '</ul></div>';
-  }
-
-  function fechasCellHtml(p) {
-    var rows = etapasRowsHtml(p);
-    return '<div class="desp-lista-present-fecha-col">' +
-      '<div class="desp-lista-present-badge-spacer" aria-hidden="true"></div>' +
-      '<ul class="desp-lista-present-etapas desp-lista-present-etapas--times" aria-label="Fechas por etapa">' +
-      rows.times + '</ul></div>';
+      '<ul class="desp-lista-present-etapas desp-lista-present-etapas--paired" aria-label="Estado y fechas por etapa">' +
+      etapasRowsHtml(p) + '</ul></div>';
   }
 
   function renderTableRows(pedidos) {
@@ -165,8 +154,7 @@
         '<td class="desp-lista-present-jaula">' + esc(p.jaula || '—') + '</td>' +
         '<td class="desp-lista-present-validador">' +
         '<span class="desp-lista-present-validador-pill">' + esc(validador) + '</span></td>' +
-        '<td class="desp-lista-present-estado-cell">' + estadoCellHtml(p) + '</td>' +
-        '<td class="desp-lista-present-fecha-cell">' + fechasCellHtml(p) + '</td>' +
+        '<td class="desp-lista-present-estado-fecha-cell" colspan="2">' + estadoFechaCellHtml(p) + '</td>' +
         '</tr>';
     }).join('');
   }
