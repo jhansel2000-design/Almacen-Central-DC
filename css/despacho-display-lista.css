@@ -76,13 +76,27 @@ body.desp-display-mode .desp-val-chart-bars {
   gap: clamp(0.14rem, 0.28vh, 0.28rem);
 }
 
+body.desp-display-mode .desp-val-chart-bar-row {
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: clamp(0.25rem, 0.5vw, 0.45rem);
+  align-items: center;
+}
+
 body.desp-display-mode .desp-val-chart-bar-line {
+  width: 100%;
+  max-width: min(100%, 11rem);
   height: clamp(0.42rem, 0.75vmin, 1rem);
+}
+
+body.desp-display-mode .desp-val-chart-seg--zero {
+  display: none;
 }
 
 body.desp-display-mode .desp-val-chart-seg-num {
   font-size: clamp(0.62rem, 1vmin, 1.2rem);
   font-weight: 800;
+  min-width: 1.35em;
+  text-align: right;
 }
 
 body.desp-display-mode .desp-lista-present-table-wrap {
