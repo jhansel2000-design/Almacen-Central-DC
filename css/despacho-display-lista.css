@@ -83,9 +83,20 @@ body.desp-display-mode .desp-val-chart-bar-row {
 }
 
 body.desp-display-mode .desp-val-chart-bar-line {
+  display: block;
   width: 100%;
   max-width: min(100%, 11rem);
   height: clamp(0.42rem, 0.75vmin, 1rem);
+  position: relative;
+  overflow: hidden;
+}
+
+body.desp-display-mode .desp-val-chart-seg {
+  display: block;
+  height: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 body.desp-display-mode .desp-val-chart-seg--zero {

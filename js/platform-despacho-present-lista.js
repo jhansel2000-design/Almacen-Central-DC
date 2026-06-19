@@ -192,14 +192,13 @@
       '</div>';
   }
 
-  function barScaleMax(filas, key) {
+  function barScaleGlobal(filas) {
     var m = 0;
     filas.forEach(function (r) {
-      var v = r[key] || 0;
+      var v = Math.max(r.validado || 0, r.cargado || 0);
       if (v > m) m = v;
     });
-    if (m <= 0) return 1;
-    return Math.ceil(m * 1.45);
+    return m > 0 ? m : 1;
   }
 
   function barPct(value, scaleMax) {
@@ -212,12 +211,11 @@
     if (!store || !store.resumenPorValidador) return '';
     var resumen = store.resumenPorValidador(pedidos || []);
     var filas = resumen.filas || [];
-    var scaleValidado = barScaleMax(filas, 'validado');
-    var scaleCargado = barScaleMax(filas, 'cargado');
+    var scaleMax = barScaleGlobal(filas);
 
     var rows = filas.map(function (r) {
-      var pctV = barPct(r.validado, scaleValidado);
-      var pctC = barPct(r.cargado, scaleCargado);
+      var pctV = barPct(r.validado, scaleMax);
+      var pctC = barPct(r.cargado, scaleMax);
       var segVCls = 'desp-val-chart-seg desp-val-chart-seg--validado' + (pctV ? '' : ' desp-val-chart-seg--zero');
       var segCCls = 'desp-val-chart-seg desp-val-chart-seg--cargado' + (pctC ? '' : ' desp-val-chart-seg--zero');
       return '<div class="desp-val-chart-row">' +
