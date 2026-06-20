@@ -373,7 +373,13 @@
 
   function fmtValidador(p) {
     var n = p && p.validadorAsignado ? String(p.validadorAsignado).trim() : '';
-    return n || '—';
+    if (!n) return '—';
+    if (DS && DS.VALIDADOR_SIN_ASIGNAR && n === DS.VALIDADOR_SIN_ASIGNAR) return DS.VALIDADOR_SIN_ASIGNAR;
+    return n;
+  }
+
+  function validadorSinAsignarValue() {
+    return (DS && DS.VALIDADOR_SIN_ASIGNAR) ? DS.VALIDADOR_SIN_ASIGNAR : 'No asignado';
   }
 
   function listValidadoresAsignables() {
@@ -392,10 +398,13 @@
   function renderValidadorAsignadoField(selected) {
     selected = String(selected || '').trim();
     var opts = listValidadoresAsignables();
-    var hasSelected = selected && opts.indexOf(selected) >= 0;
+    var sinAsignar = validadorSinAsignarValue();
+    var hasSelected = selected && (opts.indexOf(selected) >= 0 || selected === sinAsignar);
     return '<label class="desp-field desp-field--validador"><span>Validador asignado</span>' +
       '<select id="despValidador" name="validadorAsignado" required>' +
       '<option value="">Seleccione validador…</option>' +
+      '<option value="' + esc(sinAsignar) + '"' + (selected === sinAsignar ? ' selected' : '') + '>' +
+      esc(sinAsignar) + '</option>' +
       opts.map(function (name) {
         return '<option value="' + esc(name) + '"' + (selected === name ? ' selected' : '') + '>' + esc(name) + '</option>';
       }).join('') +
@@ -409,8 +418,10 @@
     var current = fmtValidador(p);
     if (!canEdit) return esc(current);
     var opts = listValidadoresAsignables();
+    var sinAsignar = validadorSinAsignarValue();
     var selId = 'despValAsignado_' + p.id;
-    var hasCurrent = current && current !== '—' && opts.indexOf(current) >= 0;
+    var hasCurrent = current && current !== '—' &&
+      (opts.indexOf(current) >= 0 || current === sinAsignar);
     var html = '<select class="desp-validador-asignado-select" id="' + esc(selId) + '" ' +
       'data-pedido-id="' + esc(p.id) + '" data-prev-validador="' + esc(hasCurrent ? current : '') + '" ' +
       'aria-label="Validador asignado para ' + esc(formatIdc(p.idc)) + '">';
@@ -420,6 +431,8 @@
         html += '<option value="' + esc(current) + '" selected>' + esc(current) + '</option>';
       }
     }
+    html += '<option value="' + esc(sinAsignar) + '"' + (current === sinAsignar ? ' selected' : '') + '>' +
+      esc(sinAsignar) + '</option>';
     html += opts.map(function (name) {
       return '<option value="' + esc(name) + '"' + (current === name ? ' selected' : '') + '>' + esc(name) + '</option>';
     }).join('');
@@ -1246,6 +1259,7 @@
         var validador = sel.value;
         var pedidoId = sel.getAttribute('data-pedido-id');
         var prev = sel.getAttribute('data-prev-validador') || '';
+        var sinAsignar = validadorSinAsignarValue();
         if (!validador) {
           sel.value = prev;
           return;
@@ -1258,7 +1272,9 @@
           return;
         }
         if (!res.unchanged) {
-          toast('Validador asignado: ' + validador, 'success');
+          toast(validador === sinAsignar
+            ? 'IDC marcado como «No asignado» (no suma en resumen TV)'
+            : 'Validador asignado: ' + validador, 'success');
         }
         render(host, res.data, opts);
       });

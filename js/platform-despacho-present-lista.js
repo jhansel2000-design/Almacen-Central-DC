@@ -148,6 +148,7 @@
       var idc = store ? store.formatIdc(p.idc) : p.idc;
       var cliente = p.cliente ? String(p.cliente).trim() : '—';
       var validador = p.validadorAsignado ? String(p.validadorAsignado).trim() : '—';
+      if (!validador) validador = '—';
       return '<tr>' +
         '<td class="desp-lista-present-idc">' + esc(idc) + '</td>' +
         '<td class="desp-lista-present-cliente">' + esc(cliente) + '</td>' +

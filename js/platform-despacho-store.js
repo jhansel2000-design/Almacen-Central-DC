@@ -82,6 +82,8 @@
     'Raul M.',
     'José P.'
   ];
+  /** No va en VALIDADORES_ASIGNABLES: no suma en el resumen TV. */
+  var VALIDADOR_SIN_ASIGNAR = 'No asignado';
   var FLUJO = ['facturado', 'pendiente_carga', 'en_validacion', 'listo_despacho'];
 
   function uid() {
@@ -296,7 +298,8 @@
     if (!idc) return { ok: false, error: 'Ingrese el ID del pedido (IDC).' };
     if (!jaula) return { ok: false, error: 'Ingrese la jaula.' };
     if (!validadorAsignado) return { ok: false, error: 'Seleccione el validador asignado al pedido.' };
-    if (VALIDADORES_ASIGNABLES.indexOf(validadorAsignado) < 0) {
+    if (validadorAsignado !== VALIDADOR_SIN_ASIGNAR &&
+        VALIDADORES_ASIGNABLES.indexOf(validadorAsignado) < 0) {
       return { ok: false, error: 'Seleccione un validador de la lista autorizada.' };
     }
 
@@ -417,9 +420,10 @@
   function asignarValidador(pedidoId, validadorAsignado, usuario) {
     validadorAsignado = String(validadorAsignado || '').trim();
     if (!validadorAsignado) {
-      return { ok: false, error: 'Seleccione el validador.' };
+      return { ok: false, error: 'Seleccione el validador o «No asignado».' };
     }
-    if (VALIDADORES_ASIGNABLES.indexOf(validadorAsignado) < 0) {
+    if (validadorAsignado !== VALIDADOR_SIN_ASIGNAR &&
+        VALIDADORES_ASIGNABLES.indexOf(validadorAsignado) < 0) {
       return { ok: false, error: 'Seleccione un validador de la lista autorizada.' };
     }
     var data = load();
@@ -830,10 +834,38 @@
       t.getDate() === now.getDate();
   }
 
+  function dayKeyLocal(iso) {
+    if (!iso) return '';
+    var t = new Date(iso);
+    if (isNaN(t.getTime())) return '';
+    return t.getFullYear() + '-' + t.getMonth() + '-' + t.getDate();
+  }
+
+  function esValidadorContable(nombre) {
+    var n = String(nombre || '').trim();
+    return n && n !== VALIDADOR_SIN_ASIGNAR && VALIDADORES_ASIGNABLES.indexOf(n) >= 0;
+  }
+
+  function normalizarNombreValidador(nombre) {
+    return String(nombre || '').trim().toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\./g, '').replace(/\s+/g, ' ');
+  }
+
+  function resolverValidadorEnHistorial(usuario) {
+    var u = String(usuario || '').trim();
+    if (!u || u === VALIDADOR_SIN_ASIGNAR) return '';
+    if (esValidadorContable(u)) return u;
+    var uNorm = normalizarNombreValidador(u);
+    for (var i = 0; i < VALIDADORES_ASIGNABLES.length; i++) {
+      var v = VALIDADORES_ASIGNABLES[i];
+      if (normalizarNombreValidador(v) === uNorm) return v;
+    }
+    return '';
+  }
+
+  /** Solo cuenta al validador que figura como usuario en el historial (sin fallback al asignado). */
   function validadorCreditoHistorial(p, h) {
-    var u = String(h && h.usuario ? h.usuario : '').trim();
-    if (VALIDADORES_ASIGNABLES.indexOf(u) >= 0) return u;
-    return String(p.validadorAsignado || '').trim();
+    return resolverValidadorEnHistorial(h && h.usuario ? h.usuario : '');
   }
 
   /** Totales visibles en el panel del validador (activos, no retirados). */
@@ -855,12 +887,16 @@
     VALIDADORES_ASIGNABLES.forEach(function (name) {
       byName[name] = { nombre: name, validado: 0, cargado: 0, ultimaValidacion: null };
     });
+    var contadoHoy = Object.create(null);
     pool.forEach(function (p) {
       (p.historial || []).forEach(function (h) {
         if (!isTodayLocal(h.at)) return;
         if (h.hacia !== 'en_validacion' && h.hacia !== 'listo_despacho') return;
         var name = validadorCreditoHistorial(p, h);
         if (!name) return;
+        var dedupeKey = String(p.id || p.idc || '') + '|' + h.hacia + '|' + dayKeyLocal(h.at);
+        if (contadoHoy[dedupeKey]) return;
+        contadoHoy[dedupeKey] = true;
         if (!byName[name]) {
           byName[name] = { nombre: name, validado: 0, cargado: 0, ultimaValidacion: null };
         }
@@ -991,6 +1027,7 @@
     PREPARADOR_ESTADOS: PREPARADOR_ESTADOS,
     VALIDADOR_ESTADOS: VALIDADOR_ESTADOS,
     VALIDADORES_ASIGNABLES: VALIDADORES_ASIGNABLES,
+    VALIDADOR_SIN_ASIGNAR: VALIDADOR_SIN_ASIGNAR,
     FLUJO: FLUJO,
     load: load,
     save: save,
