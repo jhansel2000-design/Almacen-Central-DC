@@ -5,7 +5,7 @@
   'use strict';
 
   var LS_KEY = 'almacen_hub_news';
-  var SEED_VERSION = 12;
+  var SEED_VERSION = 13;
 
   function findSeedForItem(item, seeds) {
     if (!item) return null;
@@ -98,6 +98,18 @@
         imageUrl: 'assets/img/agenda-hub-poster.jpg?v=4',
         linkUrl: 'agenda.html',
         theme: 'agenda'
+      },
+      {
+        id: 'seed_portal_recepcion',
+        title: 'Control Patio · Recepción',
+        body: 'Qué puedes hacer:\n• Registrar contenedores importados o locales\n• Validar mercancía y dar entrada al muelle\n• Ver paletas, división y estado en una sola tabla\n• Compartir el seguimiento en pantalla TV del patio',
+        publishedAt: '2026-06-20T14:00:00.000Z',
+        publishedBy: 'Almacén Central DC',
+        active: true,
+        pinned: true,
+        imageUrl: 'assets/img/recepcion-hub-poster.jpg?v=1',
+        linkUrl: 'recepcion.html',
+        theme: 'recepcion'
       }
     ];
   }

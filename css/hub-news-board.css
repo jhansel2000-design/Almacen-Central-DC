@@ -538,6 +538,30 @@
   background: rgba(56, 189, 248, 0.2);
 }
 
+.hub-board-card--recepcion {
+  --hub-accent: #ef4444;
+  --hub-accent-soft: rgba(239, 68, 68, 0.14);
+}
+
+.hub-board-card--recepcion .hub-board-card__badge {
+  color: #fca5a5;
+  border-color: rgba(239, 68, 68, 0.35);
+}
+
+.hub-board-card--recepcion .hub-board-card__btn {
+  background: #c62828;
+  border-color: #ef4444;
+  box-shadow: 0 4px 16px rgba(198, 40, 40, 0.4);
+}
+
+.hub-board-card--recepcion .hub-board-card__btn:hover {
+  background: #b71c1c;
+}
+
+.hub-board-card--recepcion .hub-board-card__media img {
+  object-position: center 42%;
+}
+
 .hub-board-card__soon {
   display: inline-flex;
   align-items: center;

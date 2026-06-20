@@ -14,7 +14,8 @@
     mando: 'Entrar al mando',
     inventario: 'Entrar a inventario',
     turnos: 'Entrar a turnos',
-    agenda: 'Vista previa'
+    agenda: 'Vista previa',
+    recepcion: 'Entrar a recepción'
   };
 
   var TAG_BY_THEME = {
@@ -23,7 +24,8 @@
     mando: 'Control de Mando',
     inventario: 'Inventario RF',
     turnos: 'Control de Turnos',
-    agenda: 'Agenda Operativa'
+    agenda: 'Agenda Operativa',
+    recepcion: 'Control Patio · Recepción'
   };
 
   var ROTATE_MS = 20000;
@@ -72,6 +74,7 @@
   }
 
   var AGENDA_BOARD_IMAGE = 'assets/img/agenda-hub-poster.jpg?v=4';
+  var RECEPCION_BOARD_IMAGE = 'assets/img/recepcion-hub-poster.jpg?v=1';
 
   function mediaSrc(url) {
     var src = String(url || '').trim();
@@ -84,6 +87,7 @@
     var url = mediaSrc(item && item.imageUrl);
     if (url) return url;
     if (item && item.theme === 'agenda') return AGENDA_BOARD_IMAGE;
+    if (item && item.theme === 'recepcion') return RECEPCION_BOARD_IMAGE;
     return '';
   }
 
@@ -281,7 +285,8 @@
     html += '<option value="mando">Mando (azul)</option>';
     html += '<option value="inventario">Inventario (dorado)</option>';
     html += '<option value="turnos">Turnos (azul)</option>';
-    html += '<option value="agenda">Agenda (turquesa)</option></select>';
+    html += '<option value="agenda">Agenda (turquesa)</option>';
+    html += '<option value="recepcion">Recepción patio (rojo)</option></select>';
     html += '<label class="hub-news-check"><input type="checkbox" id="hubNewsPinned"> Fijar arriba del tablón</label>';
     html += '<div class="admin-btn-row">';
     html += '<button type="submit" class="btn btn-primary" id="hubNewsSubmit">Publicar aviso</button>';
