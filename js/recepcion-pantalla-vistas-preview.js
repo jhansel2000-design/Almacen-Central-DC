@@ -1,7 +1,7 @@
 /**
  * Preview — varias vistas pantalla TV recepción (solo mock, no producción)
  */
-(function () {
+(function (global) {
   'use strict';
 
   var VIEWS = {
@@ -85,6 +85,16 @@
 
   var currentView = 'v1';
   var mountEl = null;
+
+  function viewFromUrl() {
+    try {
+      var q = new URLSearchParams(global.location.search || '').get('view');
+      if (q && VIEWS[q]) return q;
+      var h = String(global.location.hash || '').replace(/^#/, '');
+      if (h && VIEWS[h]) return h;
+    } catch (e) { /* noop */ }
+    return 'v1';
+  }
 
   function esc(s) {
     return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -339,21 +349,14 @@
   function renderSwitcher() {
     var bar = document.getElementById('recVpSwitcher');
     if (!bar) return;
-    bar.innerHTML = '<span class="rec-vp-switcher-label">Vista pantalla TV</span>' +
-      Object.keys(VIEWS).map(function (k) {
-        var v = VIEWS[k];
-        return '<button type="button" data-rec-vp="' + v.id + '"' +
-          (v.id === currentView ? ' class="is-on"' : '') + '>' + esc(v.label) + '</button>';
-      }).join('') +
-      '<span class="rec-vp-switcher-note">Preview · estilo recepción · sin registro · fechas largas</span>';
-    bar.querySelectorAll('[data-rec-vp]').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        setView(btn.getAttribute('data-rec-vp'));
-      });
+    bar.querySelectorAll('[data-rec-vp]').forEach(function (el) {
+      var id = el.getAttribute('data-rec-vp');
+      el.classList.toggle('is-on', id === currentView);
+      if (el.tagName === 'A') el.setAttribute('href', '?view=' + id);
     });
   }
 
-  function setView(id) {
+  function setView(id, pushUrl) {
     if (!VIEWS[id]) return;
     currentView = id;
     document.body.className = 'rec-display-mode rec-live-on rec-vistas-preview' +
@@ -362,12 +365,29 @@
     if (mountEl) {
       mountEl.innerHTML = '<div class="rec-present-shell">' + renderView(id) + '</div>';
     }
+    if (pushUrl !== false && global.history && global.history.replaceState) {
+      try {
+        global.history.replaceState(null, '', '?view=' + id);
+      } catch (e) { /* noop */ }
+    }
+  }
+
+  function bindSwitcher() {
+    var bar = document.getElementById('recVpSwitcher');
+    if (!bar) return;
+    bar.querySelectorAll('[data-rec-vp]').forEach(function (el) {
+      el.addEventListener('click', function (ev) {
+        if (el.tagName === 'A') ev.preventDefault();
+        setView(el.getAttribute('data-rec-vp'));
+      });
+    });
   }
 
   function init() {
     mountEl = document.getElementById('recGlobalLiveBoard');
-    renderSwitcher();
-    setView(currentView);
+    currentView = viewFromUrl();
+    bindSwitcher();
+    setView(currentView, false);
   }
 
   if (document.readyState === 'loading') {
@@ -375,4 +395,4 @@
   } else {
     init();
   }
-})();
+})(typeof window !== 'undefined' ? window : this);
