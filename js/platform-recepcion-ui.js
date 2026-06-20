@@ -98,6 +98,37 @@
       '</div></div>';
   }
 
+  function canEditMuelle(user, item) {
+    if (!item || item.entrada === 'ok') return false;
+    return A().canRegister(user) || A().canValidate(user);
+  }
+
+  function renderMuelleCell(item, user) {
+    if (!canEditMuelle(user, item)) {
+      return esc(item.muelle || '—');
+    }
+    return '<div class="rec-muelle-edit">' +
+      '<input type="text" class="rec-input rec-muelle-input" data-rec-muelle-input="' + esc(item.id) + '" ' +
+      'value="' + esc(item.muelle || '') + '" placeholder="J9" maxlength="12" autocapitalize="characters" ' +
+      'aria-label="Muelle para ' + esc(item.contenedor) + '">' +
+      '<button type="button" class="rec-btn rec-btn--sm rec-btn--muelle" data-rec-action="guardar-muelle" ' +
+      'data-rec-id="' + esc(item.id) + '">Guardar</button></div>';
+  }
+
+  function renderMuelleModal() {
+    return '<div class="rec-muelle-modal is-hidden" id="recMuelleModal" role="dialog" aria-modal="true" aria-labelledby="recMuelleModalTitle">' +
+      '<div class="rec-muelle-modal__backdrop" data-rec-action="cerrar-muelle-modal"></div>' +
+      '<div class="rec-muelle-modal__panel">' +
+      '<h3 id="recMuelleModalTitle" class="rec-muelle-modal__title">Muelle de entrada</h3>' +
+      '<p class="rec-muelle-modal__sub" id="recMuelleModalSub">Indique el muelle antes de confirmar la entrada.</p>' +
+      '<label class="rec-field" for="recMuelleModalInput"><span>Muelle</span>' +
+      '<input type="text" id="recMuelleModalInput" class="rec-input" placeholder="J9" maxlength="12" autocapitalize="characters"></label>' +
+      '<div class="rec-muelle-modal__actions">' +
+      '<button type="button" class="rec-btn rec-btn--ghost" data-rec-action="cerrar-muelle-modal">Cancelar</button>' +
+      '<button type="button" class="rec-btn rec-btn--primary" id="recMuelleModalConfirm">Confirmar entrada</button>' +
+      '</div></div></div>';
+  }
+
   function renderTableRows(contenedores, user) {
     var store = S();
     if (!contenedores.length) {
@@ -109,7 +140,7 @@
         actions += '<button type="button" class="rec-btn rec-btn--sm rec-btn--ok" data-rec-action="validar" data-rec-id="' + esc(c.id) + '">Validar</button>';
       }
       if (A().canValidate(user) && c.validado === 'ok' && c.entrada !== 'ok') {
-        actions += '<button type="button" class="rec-btn rec-btn--sm rec-btn--ent" data-rec-action="entrada" data-rec-id="' + esc(c.id) + '" data-rec-muelle="' + esc(c.muelle) + '">Dar entrada</button>';
+        actions += '<button type="button" class="rec-btn rec-btn--sm rec-btn--ent" data-rec-action="entrada" data-rec-id="' + esc(c.id) + '">Dar entrada</button>';
       }
       if (A().canRegister(user)) {
         actions += '<button type="button" class="rec-btn rec-btn--sm rec-btn--danger" data-rec-action="eliminar" data-rec-id="' + esc(c.id) + '">Quitar</button>';
@@ -123,7 +154,7 @@
         '<td class="rec-col-status">' + badgeValidado(c.validado) + '</td>' +
         '<td class="rec-col-status">' + badgeEntrada(c.entrada) + '</td>' +
         '<td class="rec-col-num">' + esc(String(c.paletas || 0)) + '</td>' +
-        '<td class="rec-col-muelle">' + esc(c.muelle || '—') + '</td>' +
+        '<td class="rec-col-muelle">' + renderMuelleCell(c, user) + '</td>' +
         '<td class="rec-col-actions">' + actions + '</td></tr>';
     }).join('');
   }
@@ -148,7 +179,15 @@
       '<th>Validado</th><th>Entrada</th><th>Paletas</th><th>Muelle</th><th></th>' +
       '</tr></thead>' +
       '<tbody id="recTableBody">' + renderTableRows(contenedores, user) + '</tbody>' +
-      '</table></div></section></div>';
+      '</table></div></section>' +
+      renderMuelleModal() +
+      '</div>';
+  }
+
+  function readMuelleInput(root, id) {
+    if (!root || !id) return '';
+    var input = root.querySelector('[data-rec-muelle-input="' + id + '"]');
+    return input ? String(input.value || '').trim() : '';
   }
 
   function bindApp(root, user, callbacks) {
@@ -180,10 +219,24 @@
       var action = btn.getAttribute('data-rec-action');
       var id = btn.getAttribute('data-rec-id');
       if (action === 'validar' && callbacks.onValidar) callbacks.onValidar(id);
+      if (action === 'guardar-muelle' && callbacks.onGuardarMuelle) {
+        callbacks.onGuardarMuelle(id, readMuelleInput(root, id));
+      }
       if (action === 'entrada' && callbacks.onEntrada) {
-        callbacks.onEntrada(id, btn.getAttribute('data-rec-muelle') || '');
+        callbacks.onEntrada(id, readMuelleInput(root, id));
+      }
+      if (action === 'cerrar-muelle-modal' && callbacks.onCloseMuelleModal) {
+        callbacks.onCloseMuelleModal();
       }
       if (action === 'eliminar' && callbacks.onEliminar) callbacks.onEliminar(id);
+    });
+
+    root.addEventListener('keydown', function (ev) {
+      if (ev.key !== 'Enter') return;
+      var input = ev.target.closest('[data-rec-muelle-input]');
+      if (!input || !callbacks.onGuardarMuelle) return;
+      ev.preventDefault();
+      callbacks.onGuardarMuelle(input.getAttribute('data-rec-muelle-input'), input.value);
     });
 
     var shareBtn = root.querySelector('#recBtnShare');

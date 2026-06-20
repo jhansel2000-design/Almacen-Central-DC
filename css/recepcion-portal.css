@@ -197,6 +197,76 @@ body.rec-portal.rec-dash-view {
   box-shadow: 0 0 0 2px rgba(255, 82, 82, 0.25);
 }
 
+.rec-muelle-edit {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 7.5rem;
+}
+
+.rec-muelle-input {
+  flex: 1 1 4.5rem;
+  min-width: 4.5rem;
+  padding: 0.45rem 0.55rem;
+  font-size: 0.85rem;
+}
+
+.rec-btn--muelle {
+  flex: 0 0 auto;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.rec-muelle-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 30000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.rec-muelle-modal.is-hidden {
+  display: none !important;
+}
+
+.rec-muelle-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.72);
+}
+
+.rec-muelle-modal__panel {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 420px);
+  padding: 1.25rem;
+  border-radius: 16px;
+  border: 1px solid var(--rec-border);
+  background: var(--rec-panel);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+}
+
+.rec-muelle-modal__title {
+  margin: 0 0 0.35rem;
+  color: #ffcdd2;
+}
+
+.rec-muelle-modal__sub {
+  margin: 0 0 0.85rem;
+  color: var(--rec-muted);
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.rec-muelle-modal__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
 .rec-table-wrap {
   overflow: auto;
 }

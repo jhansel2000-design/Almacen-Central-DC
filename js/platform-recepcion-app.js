@@ -65,11 +65,29 @@
     ui.bindApp(root, state.user, {
       onRegister: handleRegister,
       onValidar: handleValidar,
+      onGuardarMuelle: handleGuardarMuelle,
       onEntrada: handleEntrada,
+      onCloseMuelleModal: closeMuelleModal,
       onEliminar: handleEliminar,
       onToggleShare: handleToggleShare,
       onLogout: logout
     });
+
+    var modalConfirm = $('recMuelleModalConfirm');
+    if (modalConfirm) {
+      modalConfirm.onclick = confirmMuelleModalEntrada;
+    }
+    var modalInput = $('recMuelleModalInput');
+    if (modalInput) {
+      modalInput.onkeydown = function (ev) {
+        if (ev.key === 'Enter') {
+          ev.preventDefault();
+          confirmMuelleModalEntrada();
+        } else if (ev.key === 'Escape') {
+          closeMuelleModal();
+        }
+      };
+    }
   }
 
   function handleRegister(payload, form) {
@@ -100,13 +118,70 @@
     renderApp();
   }
 
-  function handleEntrada(id, currentMuelle) {
-    var muelle = window.prompt('Muelle de entrada:', currentMuelle || '');
-    if (muelle == null) return;
-    var res = global.PlatformRecepcionStore.marcarEntrada(id, muelle, Auth.getDisplayName(state.user));
+  var pendingEntradaId = null;
+
+  function closeMuelleModal() {
+    pendingEntradaId = null;
+    var modal = $('recMuelleModal');
+    if (modal) modal.classList.add('is-hidden');
+  }
+
+  function openMuelleModal(id, currentMuelle, contenedor) {
+    pendingEntradaId = id;
+    var modal = $('recMuelleModal');
+    var input = $('recMuelleModalInput');
+    var sub = $('recMuelleModalSub');
+    if (sub) {
+      sub.textContent = contenedor
+        ? 'Contenedor ' + contenedor + ' — indique el muelle antes de confirmar la entrada.'
+        : 'Indique el muelle antes de confirmar la entrada.';
+    }
+    if (input) {
+      input.value = currentMuelle || '';
+      input.focus();
+      input.select();
+    }
+    if (modal) modal.classList.remove('is-hidden');
+  }
+
+  function confirmMuelleModalEntrada() {
+    if (!pendingEntradaId) return;
+    var input = $('recMuelleModalInput');
+    var muelle = input ? String(input.value || '').trim() : '';
+    if (!muelle) {
+      toast('Indique el muelle.', 'err');
+      if (input) input.focus();
+      return;
+    }
+    var id = pendingEntradaId;
+    closeMuelleModal();
+    completeEntrada(id, muelle);
+  }
+
+  function completeEntrada(id, muelle) {
+    var store = global.PlatformRecepcionStore;
+    var res = store.marcarEntrada(id, muelle, Auth.getDisplayName(state.user));
     if (!res.ok) { toast(res.error, 'err'); return; }
     if (!res.unchanged) toast('Entrada registrada en muelle ' + res.item.muelle + '.', 'ok');
     renderApp();
+  }
+
+  function handleGuardarMuelle(id, muelle) {
+    var res = global.PlatformRecepcionStore.actualizarMuelle(id, muelle, Auth.getDisplayName(state.user));
+    if (!res.ok) { toast(res.error, 'err'); return; }
+    if (!res.unchanged) toast('Muelle ' + res.item.muelle + ' guardado.', 'ok');
+    renderApp();
+  }
+
+  function handleEntrada(id, muelleHint) {
+    muelleHint = String(muelleHint || '').trim();
+    if (muelleHint) {
+      completeEntrada(id, muelleHint);
+      return;
+    }
+    var data = global.PlatformRecepcionStore.load();
+    var item = (data.contenedores || []).find(function (c) { return c.id === id; });
+    openMuelleModal(id, item && item.muelle ? item.muelle : '', item && item.contenedor);
   }
 
   function handleEliminar(id) {

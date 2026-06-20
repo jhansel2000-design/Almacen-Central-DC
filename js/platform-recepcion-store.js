@@ -214,6 +214,33 @@
     return { ok: true, data: data, item: item };
   }
 
+  function actualizarMuelle(id, muelle, usuario) {
+    var data = load();
+    var idx = findById(data, id);
+    if (idx < 0) return { ok: false, error: 'Contenedor no encontrado.' };
+    var item = data.contenedores[idx];
+    if (item.entrada === 'ok') {
+      return { ok: false, error: 'El muelle ya quedó confirmado con la entrada.' };
+    }
+    muelle = String(muelle || '').trim().toUpperCase();
+    if (!muelle) return { ok: false, error: 'Indique el muelle.' };
+    if (item.muelle === muelle) {
+      return { ok: true, data: data, item: item, unchanged: true };
+    }
+    var ts = nowIso();
+    item.muelle = muelle;
+    item.updatedAt = ts;
+    item.updatedBy = usuario || '—';
+    pushHistorial(item, {
+      at: ts,
+      usuario: usuario,
+      accion: 'muelle',
+      nota: 'Muelle asignado · ' + muelle
+    });
+    save(data);
+    return { ok: true, data: data, item: item };
+  }
+
   function marcarEntrada(id, muelle, usuario) {
     var data = load();
     var idx = findById(data, id);
@@ -340,6 +367,7 @@
     formatFechaSolo: formatFechaSolo,
     registrarContenedor: registrarContenedor,
     marcarValidado: marcarValidado,
+    actualizarMuelle: actualizarMuelle,
     marcarEntrada: marcarEntrada,
     eliminarContenedor: eliminarContenedor,
     getContenedoresActivos: getContenedoresActivos,
