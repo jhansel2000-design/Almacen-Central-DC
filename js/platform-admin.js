@@ -30,13 +30,15 @@
     'requests.manage': 'Gestionar solicitudes de acceso',
     'news.manage': 'Publicar noticias del tablón',
     'agenda.use': 'Módulo Agenda operativa',
-    'agenda.all': 'Agenda — ver todos los puestos'
+    'agenda.all': 'Agenda — ver todos los puestos',
+    'recepcion.use': 'Control Patio — recepción de contenedores',
+    'recepcion.validate': 'Validar y dar entrada a contenedores'
   };
 
   var SECONDARY_ADMIN_PERMISSIONS = [
     'dashboard.view', 'filter.apply', 'data.import', 'export.data', 'reportes.view',
     'ai.use', 'tv.mode', 'despacho.use', 'despacho.validate', 'logs.view', 'news.manage',
-    'agenda.use', 'agenda.all'
+    'agenda.use', 'agenda.all', 'recepcion.use', 'recepcion.validate'
   ];
 
   var PRIMARY_ONLY_PERMISSIONS = [
@@ -45,11 +47,11 @@
 
   var ROLE_PERMISSIONS = {
     administrador: SECONDARY_ADMIN_PERMISSIONS,
-    supervisor: ['dashboard.view', 'filter.apply', 'data.import', 'export.data', 'reportes.view', 'logs.view', 'ai.use', 'tv.mode', 'despacho.use', 'despacho.validate', 'agenda.use'],
-    colaborador: ['dashboard.view', 'filter.apply', 'data.import', 'export.data', 'reportes.view', 'ai.use', 'tv.mode', 'despacho.use', 'despacho.validate', 'access.request', 'agenda.use'],
-    operador: ['dashboard.view', 'tv.mode', 'despacho.use'],
-    preparador: ['dashboard.view', 'tv.mode', 'despacho.use'],
-    validador: ['dashboard.view', 'tv.mode', 'despacho.use', 'despacho.validate', 'reportes.view', 'export.data', 'filter.apply']
+    supervisor: ['dashboard.view', 'filter.apply', 'data.import', 'export.data', 'reportes.view', 'logs.view', 'ai.use', 'tv.mode', 'despacho.use', 'despacho.validate', 'agenda.use', 'recepcion.use', 'recepcion.validate'],
+    colaborador: ['dashboard.view', 'filter.apply', 'data.import', 'export.data', 'reportes.view', 'ai.use', 'tv.mode', 'despacho.use', 'despacho.validate', 'access.request', 'agenda.use', 'recepcion.use', 'recepcion.validate'],
+    operador: ['dashboard.view', 'tv.mode', 'despacho.use', 'recepcion.use'],
+    preparador: ['dashboard.view', 'tv.mode', 'despacho.use', 'recepcion.use'],
+    validador: ['dashboard.view', 'tv.mode', 'despacho.use', 'despacho.validate', 'reportes.view', 'export.data', 'filter.apply', 'recepcion.use', 'recepcion.validate']
   };
 
   var ROLE_LABELS = {
