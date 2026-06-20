@@ -166,7 +166,7 @@
       var refresh = global.PlatformWebUsers && global.PlatformWebUsers.refresh
         ? global.PlatformWebUsers.refresh()
         : Promise.resolve();
-      refresh.then(function () {
+      return refresh.then(function () {
         var user = Auth.authenticate(username, PC.sha256Sync(password));
         if (!user) {
           if (errEl) {
@@ -185,6 +185,11 @@
         enterApp(user);
         toast('Bienvenido, ' + Auth.getDisplayName(user), 'ok');
       });
+    }).catch(function (err) {
+      if (errEl) {
+        errEl.textContent = (err && err.message) || 'No se pudo iniciar sesión. Recargue la página.';
+        errEl.hidden = false;
+      }
     });
   }
 
@@ -233,6 +238,8 @@
     ready.then(function () {
       tryRestoreSession();
       if (!state.user) setAuthVisible(true);
+    }).catch(function () {
+      setAuthVisible(true);
     });
   }
 

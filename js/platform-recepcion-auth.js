@@ -43,7 +43,7 @@
 
   function getUserById(userId) {
     if (!global.PlatformAdmin || !userId) return null;
-    var users = global.PlatformAdmin.listUsers ? global.PlatformAdmin.listUsers() : [];
+    var users = global.PlatformAdmin.getUsers ? global.PlatformAdmin.getUsers() : [];
     var i;
     for (i = 0; i < users.length; i++) {
       if (users[i].id === userId && users[i].active !== false) {

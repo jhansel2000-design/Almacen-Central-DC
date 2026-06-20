@@ -1,5 +1,41 @@
 /* Control Patio — login (tema rojo · imagen profesional) */
 
+body.auth-locked .auth-overlay.rec-auth-overlay {
+  pointer-events: auto !important;
+}
+
+.rec-auth-overlay .auth-layout,
+.rec-auth-overlay .auth-stack,
+.rec-auth-overlay .auth-glass-card,
+.rec-auth-overlay .auth-form,
+.rec-auth-overlay .auth-hub-links,
+.rec-auth-overlay .auth-hub-link,
+.rec-auth-overlay .auth-field,
+.rec-auth-overlay .auth-field-input,
+.rec-auth-overlay .auth-remember,
+.rec-auth-overlay .auth-remember input,
+.rec-auth-overlay .auth-pwd-toggle,
+.rec-auth-overlay .btn,
+.rec-auth-overlay .auth-human-verify,
+.rec-auth-overlay .auth-human-verify * {
+  pointer-events: auto !important;
+  touch-action: manipulation;
+}
+
+.rec-auth-overlay .auth-stack {
+  position: relative;
+  z-index: 5;
+  width: 100%;
+}
+
+.rec-auth-hero {
+  pointer-events: none;
+}
+
+.rec-auth-hero-panel {
+  pointer-events: auto;
+}
+
 .rec-auth-overlay {
   --rec-red: #c62828;
   --rec-red-dark: #7f0010;
@@ -109,6 +145,24 @@
   margin-top: 1.25rem;
   opacity: 0.85;
   text-decoration: none;
+  pointer-events: auto;
+  position: relative;
+  z-index: 3;
+}
+
+.rec-auth-back--stack {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  margin-top: 0;
+  padding: 0.55rem 0.75rem;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 138, 128, 0.35);
+  background: rgba(198, 40, 40, 0.12);
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-align: center;
 }
 
 .rec-auth-back:hover {
