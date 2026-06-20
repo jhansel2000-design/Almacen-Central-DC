@@ -224,7 +224,10 @@
       panel: entry.panel || 'sistema',
       desde: entry.desde != null ? entry.desde : null,
       hacia: entry.hacia,
-      nota: entry.nota || ''
+      nota: entry.nota || '',
+      validadorAsignado: entry.validadorAsignado != null
+        ? String(entry.validadorAsignado || '').trim()
+        : String(pedido.validadorAsignado || '').trim()
     });
     pedido.historial = pedido.historial.slice(0, 50);
   }
@@ -448,8 +451,9 @@
       at: ts,
       usuario: usuario || '—',
       panel: 'validador',
-      desde: null,
-      hacia: pedido.estado,
+      desde: prev || null,
+      hacia: null,
+      validadorAsignado: validadorAsignado,
       nota: prev
         ? 'Validador reasignado: ' + prev + ' → ' + validadorAsignado
         : 'Validador asignado: ' + validadorAsignado
@@ -863,28 +867,70 @@
     return '';
   }
 
-  function validadorAsignadoContable(p) {
-    var asignado = String(p && p.validadorAsignado ? p.validadorAsignado : '').trim();
+  function validadorAsignadoContable(nombre) {
+    var asignado = String(nombre || '').trim();
     if (!asignado || asignado === VALIDADOR_SIN_ASIGNAR) return '';
     if (VALIDADORES_ASIGNABLES.indexOf(asignado) < 0) return '';
     return asignado;
   }
 
+  function validadorAsignadoEnPedido(p) {
+    return validadorAsignadoContable(p && p.validadorAsignado ? p.validadorAsignado : '');
+  }
+
+  /** Solo transiciones reales del flujo validador (no asignaciones ni re-asignaciones). */
+  function esTransicionContableValidador(h) {
+    if (!h || !h.hacia) return false;
+    if (h.hacia === 'en_validacion') return h.desde === 'pendiente_carga';
+    if (h.hacia === 'listo_despacho') return h.desde === 'en_validacion';
+    return false;
+  }
+
+  function asignadoAlMomentoHistorial(p, targetH) {
+    var asignado = '';
+    var histAsc = (p.historial || []).slice().sort(function (a, b) {
+      return String(a.at || '').localeCompare(String(b.at || ''));
+    });
+    var i;
+    for (i = 0; i < histAsc.length; i++) {
+      var h = histAsc[i];
+      if (h === targetH) break;
+      if (h.at === targetH.at && h.hacia === targetH.hacia && h.desde === targetH.desde &&
+          h.usuario === targetH.usuario) break;
+      var snap = validadorAsignadoContable(h.validadorAsignado);
+      if (snap) {
+        asignado = snap;
+        continue;
+      }
+      if (h.panel === 'validador' && !h.hacia) {
+        var m = String(h.nota || '').match(/→\s*(.+)$/);
+        if (m) asignado = validadorAsignadoContable(m[1]) || asignado;
+        else {
+          m = String(h.nota || '').match(/asignado:\s*(.+)$/i);
+          if (m) asignado = validadorAsignadoContable(m[1]) || asignado;
+        }
+      }
+    }
+    return asignado;
+  }
+
   /**
-   * Acredita al validador que actuó (usuario en historial) o, si el login no coincide,
-   * al validador asignado cuando el cambio fue en panel validador — solo cuenta trabajo de HOY.
+   * Acredita quien actuó (usuario) o el validador asignado en el momento del cambio.
    */
   function validadorCreditoHistorial(p, h) {
     var fromUser = resolverValidadorEnHistorial(h && h.usuario ? h.usuario : '');
     if (fromUser) return fromUser;
-    if (!h || h.panel !== 'validador') return '';
-    return validadorAsignadoContable(p);
+    var snap = validadorAsignadoContable(h && h.validadorAsignado ? h.validadorAsignado : '');
+    if (snap) return snap;
+    var enMomento = asignadoAlMomentoHistorial(p, h);
+    if (enMomento) return enMomento;
+    return '';
   }
 
   function esConteoValidadorHoy(p, h) {
     if (!h || !isTodayLocal(h.at)) return false;
-    if (h.hacia !== 'en_validacion' && h.hacia !== 'listo_despacho') return false;
     if (h.panel && h.panel !== 'validador') return false;
+    if (!esTransicionContableValidador(h)) return false;
     return !!validadorCreditoHistorial(p, h);
   }
 
