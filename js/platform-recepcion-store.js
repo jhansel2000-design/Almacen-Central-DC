@@ -31,9 +31,44 @@
       module: 'recepcion',
       version: 1,
       updatedAt: nowIso(),
+      registroCounter: 0,
       contenedores: [],
       liveShareBoard: null
     };
+  }
+
+  function formatRegistroNum(n) {
+    return 'REC-' + String(Math.max(0, parseInt(n, 10) || 0)).padStart(4, '0');
+  }
+
+  function peekNextRegistro(data) {
+    data = data || load();
+    return formatRegistroNum((data.registroCounter || 0) + 1);
+  }
+
+  function nextRegistroNum(data) {
+    data.registroCounter = (data.registroCounter || 0) + 1;
+    return formatRegistroNum(data.registroCounter);
+  }
+
+  function parseRegistroNum(code) {
+    var m = String(code || '').match(/^REC-(\d+)$/i);
+    return m ? parseInt(m[1], 10) : 0;
+  }
+
+  function ensureRegistroNumbers(data) {
+    var max = data.registroCounter || 0;
+    (data.contenedores || []).forEach(function (c) {
+      max = Math.max(max, parseRegistroNum(c.registro));
+    });
+    (data.contenedores || []).forEach(function (c) {
+      if (!c.registro) {
+        max += 1;
+        c.registro = formatRegistroNum(max);
+      }
+    });
+    data.registroCounter = max;
+    return data;
   }
 
   function load() {
@@ -51,7 +86,9 @@
   function normalizePayload(data) {
     data = data || emptyPayload();
     data.module = 'recepcion';
+    data.registroCounter = Math.max(0, parseInt(data.registroCounter, 10) || 0);
     data.contenedores = (data.contenedores || []).map(normalizeContenedor);
+    ensureRegistroNumbers(data);
     data.liveShareBoard = normalizeLiveShare(data.liveShareBoard);
     return data;
   }
@@ -60,6 +97,7 @@
     c = c || {};
     return {
       id: c.id || uid(),
+      registro: String(c.registro || '').trim().toUpperCase(),
       fecha: c.fecha || c.createdAt || nowIso(),
       contenedor: String(c.contenedor || '').trim().toUpperCase(),
       tipo: c.tipo === 'local' ? 'local' : 'importado',
@@ -169,6 +207,7 @@
     var ts = nowIso();
     var item = normalizeContenedor({
       id: uid(),
+      registro: nextRegistroNum(data),
       fecha: payload.fecha || ts,
       contenedor: contenedor,
       tipo: payload.tipo === 'local' ? 'local' : 'importado',
@@ -188,7 +227,7 @@
       at: ts,
       usuario: usuario,
       accion: 'registro',
-      nota: 'Contenedor registrado · ' + (item.tipo === 'local' ? 'Local' : 'Importado')
+      nota: 'Registro ' + item.registro + ' · ' + (item.tipo === 'local' ? 'Local' : 'Importado')
     });
     data.contenedores.unshift(item);
     save(data);
@@ -269,6 +308,28 @@
     data.contenedores.splice(idx, 1);
     save(data);
     return { ok: true, data: data };
+  }
+
+  function getRegistroActividad(data, limit) {
+    data = data || load();
+    limit = limit || 60;
+    var rows = [];
+    (data.contenedores || []).forEach(function (c) {
+      (c.historial || []).forEach(function (h) {
+        rows.push({
+          at: h.at,
+          registro: c.registro,
+          contenedor: c.contenedor,
+          usuario: h.usuario,
+          accion: h.accion,
+          nota: h.nota
+        });
+      });
+    });
+    rows.sort(function (a, b) {
+      return String(b.at || '').localeCompare(String(a.at || ''));
+    });
+    return rows.slice(0, limit);
   }
 
   function getContenedoresActivos(contenedores) {
@@ -365,6 +426,9 @@
     save: save,
     formatFecha: formatFecha,
     formatFechaSolo: formatFechaSolo,
+    formatRegistroNum: formatRegistroNum,
+    peekNextRegistro: peekNextRegistro,
+    getRegistroActividad: getRegistroActividad,
     registrarContenedor: registrarContenedor,
     marcarValidado: marcarValidado,
     actualizarMuelle: actualizarMuelle,

@@ -60,14 +60,26 @@
       '</div>';
   }
 
+  function accionLabel(accion) {
+    var map = {
+      registro: 'Registro',
+      validado: 'Validación',
+      entrada: 'Entrada',
+      muelle: 'Muelle'
+    };
+    return map[accion] || String(accion || '—');
+  }
+
   function renderRegistroForm(user) {
     if (!A().canRegister(user)) return '';
     var store = S();
+    var nextReg = store.peekNextRegistro ? store.peekNextRegistro() : '';
     var divOpts = (store.DIVISIONES || []).map(function (d) {
       return '<option value="' + esc(d) + '">' + esc(d) + '</option>';
     }).join('');
     return '<section class="rec-panel rec-panel--form" aria-labelledby="recFormTitle">' +
       '<h2 id="recFormTitle" class="rec-panel-title">Registrar contenedor</h2>' +
+      (nextReg ? '<p class="rec-next-registro">Próximo registro: <strong>' + esc(nextReg) + '</strong></p>' : '') +
       '<form id="recRegistroForm" class="rec-form" novalidate>' +
       '<div class="rec-form-grid">' +
       '<label class="rec-field"><span>Fecha</span><input type="date" id="recFecha" class="rec-input" value="' + esc(todayInputValue()) + '" required></label>' +
@@ -131,10 +143,33 @@
       '</div></div></div>';
   }
 
+  function renderRegistroLog(data) {
+    var store = S();
+    var rows = store.getRegistroActividad ? store.getRegistroActividad(data, 40) : [];
+    var body = rows.length ? rows.map(function (r) {
+      return '<tr>' +
+        '<td class="rec-log-fecha">' + esc(store.formatFecha(r.at)) + '</td>' +
+        '<td class="rec-log-reg"><strong>' + esc(r.registro || '—') + '</strong></td>' +
+        '<td class="rec-log-cont">' + esc(r.contenedor || '—') + '</td>' +
+        '<td>' + esc(r.usuario || '—') + '</td>' +
+        '<td><span class="rec-log-acc rec-log-acc--' + esc(String(r.accion || 'otro')) + '">' +
+        esc(accionLabel(r.accion)) + '</span></td>' +
+        '<td class="rec-log-nota">' + esc(r.nota || '—') + '</td></tr>';
+    }).join('') : '<tr><td colspan="6" class="rec-empty">Sin movimientos registrados.</td></tr>';
+
+    return '<section class="rec-panel rec-panel--log" aria-labelledby="recLogTitle">' +
+      '<h2 id="recLogTitle" class="rec-panel-title">Registro de actividad</h2>' +
+      '<p class="rec-log-sub">Historial de registros, validaciones, muelles y entradas.</p>' +
+      '<div class="rec-table-wrap">' +
+      '<table class="rec-table rec-table--log" aria-label="Registro de actividad">' +
+      '<thead><tr><th>Fecha</th><th>Registro</th><th>Contenedor</th><th>Usuario</th><th>Acción</th><th>Detalle</th></tr></thead>' +
+      '<tbody>' + body + '</tbody></table></div></section>';
+  }
+
   function renderTableRows(contenedores, user) {
     var store = S();
     if (!contenedores.length) {
-      return '<tr><td colspan="10" class="rec-empty">Sin contenedores registrados.</td></tr>';
+      return '<tr><td colspan="11" class="rec-empty">Sin contenedores registrados.</td></tr>';
     }
     return contenedores.map(function (c) {
       var actions = '';
@@ -149,6 +184,7 @@
       }
       return '<tr data-rec-row="' + esc(c.id) + '">' +
         '<td class="rec-col-fecha">' + esc(store.formatFechaSolo(c.fecha)) + '</td>' +
+        '<td class="rec-col-registro"><strong>' + esc(c.registro || '—') + '</strong></td>' +
         '<td class="rec-col-contenedor"><strong>' + esc(c.contenedor) + '</strong></td>' +
         '<td class="rec-col-tipo">' + badgeTipo(c.tipo) + '</td>' +
         '<td class="rec-col-division">' + esc(c.division || '—') + '</td>' +
@@ -177,11 +213,12 @@
       '<div class="rec-table-wrap">' +
       '<table class="rec-table" aria-label="Contenedores en recepción">' +
       '<thead><tr>' +
-      '<th>Fecha</th><th>Contenedor</th><th>Tipo</th><th>División</th><th>Descripción</th>' +
+      '<th>Fecha</th><th>Registro</th><th>Contenedor</th><th>Tipo</th><th>División</th><th>Descripción</th>' +
       '<th>Paletas</th><th>Muelle</th><th>Validado</th><th>Entrada</th><th></th>' +
       '</tr></thead>' +
       '<tbody id="recTableBody">' + renderTableRows(contenedores, user) + '</tbody>' +
       '</table></div></section>' +
+      renderRegistroLog(data) +
       renderMuelleModal() +
       '</div>';
   }

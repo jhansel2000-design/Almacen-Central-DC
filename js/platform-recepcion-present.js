@@ -28,7 +28,7 @@
   function signature(share, contenedores, counts) {
     if (!share || !share.active) return '';
     var rows = (contenedores || []).map(function (c) {
-      return [c.contenedor, c.tipo, c.division, c.validado, c.entrada, c.paletas, c.muelle].join(':');
+      return [c.registro, c.contenedor, c.tipo, c.division, c.validado, c.entrada, c.paletas, c.muelle].join(':');
     }).join('|');
     var c = counts || {};
     return share.updatedAt + '::' + [c.total, c.pendienteValidar, c.conEntrada].join(',') + '::' + rows;
@@ -37,11 +37,12 @@
   function renderRows(contenedores) {
     var store = S();
     if (!contenedores.length) {
-      return '<tr><td colspan="8" class="rec-present-empty">Sin contenedores en seguimiento.</td></tr>';
+      return '<tr><td colspan="9" class="rec-present-empty">Sin contenedores en seguimiento.</td></tr>';
     }
     return contenedores.map(function (c) {
       return '<tr>' +
         '<td class="rec-present-fecha">' + esc(store.formatFechaSolo(c.fecha)) + '</td>' +
+        '<td class="rec-present-registro">' + esc(c.registro || '—') + '</td>' +
         '<td class="rec-present-contenedor">' + esc(c.contenedor) + '</td>' +
         '<td class="rec-present-tipo-cell">' + tipoBadge(c.tipo) + '</td>' +
         '<td class="rec-present-division">' + esc(c.division || '—') + '</td>' +
@@ -90,7 +91,7 @@
       '<div class="rec-present-table-wrap">' +
       '<table class="rec-present-table" aria-label="Seguimiento contenedores en vivo">' +
       '<thead><tr>' +
-      '<th>Fecha</th><th>Contenedor</th><th>Tipo</th><th>División</th><th>Descripción</th>' +
+      '<th>Fecha</th><th>Registro</th><th>Contenedor</th><th>Tipo</th><th>División</th><th>Descripción</th>' +
       '<th>Paletas</th><th>Muelle</th><th>Validado</th><th>Entrada</th>' +
       '</tr></thead>' +
       '<tbody>' + renderRows(contenedores) + '</tbody></table></div></div>';

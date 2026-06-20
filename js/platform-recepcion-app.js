@@ -97,7 +97,7 @@
       toast(res.error, 'err');
       return;
     }
-    toast('Contenedor ' + res.item.contenedor + ' registrado.', 'ok');
+    toast('Registro ' + res.item.registro + ' · contenedor ' + res.item.contenedor + '.', 'ok');
     if (form) form.reset();
     var fecha = $('recFecha');
     if (fecha && global.PlatformRecepcionStore) {

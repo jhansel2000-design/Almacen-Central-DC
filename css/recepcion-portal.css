@@ -155,6 +155,55 @@ body.rec-portal.rec-dash-view {
   color: #ffcdd2;
 }
 
+.rec-next-registro {
+  margin: -0.35rem 0 0.85rem;
+  font-size: 0.88rem;
+  color: var(--rec-muted);
+}
+
+.rec-next-registro strong {
+  color: #ff8a80;
+  letter-spacing: 0.04em;
+}
+
+.rec-log-sub {
+  margin: -0.45rem 0 0.85rem;
+  font-size: 0.85rem;
+  color: var(--rec-muted);
+}
+
+.rec-col-registro strong,
+.rec-log-reg strong {
+  color: #ff8a80;
+  letter-spacing: 0.03em;
+  font-size: 0.82rem;
+}
+
+.rec-table--log {
+  font-size: 0.84rem;
+}
+
+.rec-log-nota {
+  max-width: 16rem;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.rec-log-acc {
+  display: inline-flex;
+  padding: 0.12rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
+.rec-log-acc--registro { background: rgba(255, 138, 128, 0.22); }
+.rec-log-acc--validado { background: rgba(255, 213, 79, 0.22); color: #ffe082; }
+.rec-log-acc--entrada { background: rgba(102, 187, 106, 0.22); color: #b9f6ca; }
+.rec-log-acc--muelle { background: rgba(144, 202, 249, 0.18); color: #90caf9; }
+
 .rec-form-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
