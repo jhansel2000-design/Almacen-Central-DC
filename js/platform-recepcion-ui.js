@@ -134,7 +134,6 @@
       '<div class="rbl-card-head"><h3>Nuevo contenedor</h3>' +
       (nextReg ? '<span class="rbl-reg">' + esc(nextReg) + '</span>' : '') + '</div>' +
       '<div class="rbl-card-body rec-panel rec-panel--form">' +
-      (nextReg ? '<p class="rec-next-registro">Próximo: <strong>' + esc(nextReg) + '</strong></p>' : '') +
       '<form id="recRegistroForm" class="rec-form" novalidate>' +
       '<div class="rec-form-grid">' +
       '<label class="rec-field"><span>Fecha</span><input type="date" id="recFecha" class="rec-input" value="' + esc(todayInputValue()) + '" required></label>' +
@@ -361,17 +360,18 @@
       '<div class="rbl-f-screen is-on" data-rec-screen="ops">' +
       renderTorreKpis(counts, contenedores, liveActive) +
       '<div class="rbl-f-grid">' +
-      '<div class="rbl-card">' +
+      '<div class="rbl-card rbl-card--manifest">' +
       '<div class="rbl-card-head"><h3>Manifiesto de recepción</h3>' +
       '<span>' + esc(String(contenedores.length)) + ' en seguimiento</span></div>' +
-      '<div class="rec-table-wrap">' +
-      '<table class="rec-table" aria-label="Contenedores en recepción">' +
+      '<div class="rbl-card-body rbl-card-body--flush">' +
+      '<div class="rec-table-wrap rec-table-wrap--manifest">' +
+      '<table class="rec-table rec-table--manifest" aria-label="Contenedores en recepción">' +
       '<thead><tr>' +
       '<th>Fecha</th><th>Registro</th><th>Contenedor</th><th>Tipo</th><th>División</th><th>Descripción</th>' +
       '<th>Paletas</th><th>Muelle</th><th>Validado</th><th>Entrada</th><th></th>' +
       '</tr></thead>' +
       '<tbody id="recTableBody">' + renderTableRows(contenedores, user) + '</tbody>' +
-      '</table></div></div>' +
+      '</table></div></div></div>' +
       renderRegistroFormCard(user) +
       '</div></div>' +
       '<div class="rbl-f-screen" data-rec-screen="hist">' + renderRegistroLogCard(data) + '</div>' +

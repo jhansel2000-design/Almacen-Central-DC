@@ -32,6 +32,10 @@ body.rbl-theme-f .rbl-f-wrap {
 
 body.rbl-theme-f .rbl-hub-btn { display: flex; }
 
+body.rec-dash-view .rec-tc-app .rbl-hub-btn {
+  position: absolute;
+}
+
 /* Hero H4 · Arco luminoso */
 body.rbl-theme-f .rbl-f-hero--h4 {
   background: #0a0a0a;
