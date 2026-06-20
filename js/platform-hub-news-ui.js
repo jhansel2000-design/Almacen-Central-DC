@@ -15,7 +15,7 @@
     inventario: 'Entrar a inventario',
     turnos: 'Entrar a turnos',
     agenda: 'Vista previa',
-    recepcion: 'Entrar a recepción'
+    recepcion: 'Vista previa'
   };
 
   var TAG_BY_THEME = {
