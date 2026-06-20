@@ -118,26 +118,42 @@
     });
   }
 
+  function mergeWebUsersAfterCloud() {
+    return syncFromCloud().catch(function () {
+      return { ok: false, reason: 'cloud-error' };
+    }).then(function (cloud) {
+      return importFromWeb().then(function (web) {
+        return {
+          ok: !!(web && web.ok) || !!(cloud && cloud.ok),
+          cloud: cloud,
+          web: web
+        };
+      });
+    });
+  }
+
   function ready() {
     if (!readyPromise) {
-      readyPromise = syncFromCloud().then(function (cloud) {
-        if (cloud && cloud.ok) return cloud;
-        if (isCloudPrimary()) return cloud || { ok: false, reason: 'cloud-empty' };
-        return importFromWeb();
-      });
+      readyPromise = mergeWebUsersAfterCloud();
     }
     return readyPromise;
   }
 
   function refresh() {
+    var chain = Promise.resolve({ ok: false });
     if (isCloudPrimary() && global.PlatformRegistryCloudSync && global.PlatformRegistryCloudSync.pullAll) {
-      return global.PlatformRegistryCloudSync.pullAll().then(function () {
-        return { ok: true, source: 'registry' };
+      chain = global.PlatformRegistryCloudSync.pullAll().then(function () {
+        return { ok: true, source: 'registry-pull' };
       });
+    } else {
+      chain = syncFromCloud();
     }
-    return syncFromCloud().then(function (cloud) {
-      if (cloud && cloud.ok) return cloud;
-      return importFromWeb();
+    return chain.catch(function () {
+      return { ok: false, reason: 'cloud-error' };
+    }).then(function (cloud) {
+      return importFromWeb().then(function (web) {
+        return { ok: true, cloud: cloud, web: web };
+      });
     });
   }
 

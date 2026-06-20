@@ -436,10 +436,18 @@
     }, 1000);
   }
 
+  function boot() {
+    if (global.PlatformWebUsers && global.PlatformWebUsers.ready) {
+      global.PlatformWebUsers.ready().then(start).catch(start);
+    } else {
+      start();
+    }
+  }
+
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', start);
+    document.addEventListener('DOMContentLoaded', boot);
   } else {
-    start();
+    boot();
   }
 
   global.PlatformAgendaApp = { start: start, logout: logout };

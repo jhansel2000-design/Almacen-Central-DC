@@ -863,9 +863,29 @@
     return '';
   }
 
-  /** Solo cuenta al validador que figura como usuario en el historial (sin fallback al asignado). */
+  function validadorAsignadoContable(p) {
+    var asignado = String(p && p.validadorAsignado ? p.validadorAsignado : '').trim();
+    if (!asignado || asignado === VALIDADOR_SIN_ASIGNAR) return '';
+    if (VALIDADORES_ASIGNABLES.indexOf(asignado) < 0) return '';
+    return asignado;
+  }
+
+  /**
+   * Acredita al validador que actuó (usuario en historial) o, si el login no coincide,
+   * al validador asignado cuando el cambio fue en panel validador — solo cuenta trabajo de HOY.
+   */
   function validadorCreditoHistorial(p, h) {
-    return resolverValidadorEnHistorial(h && h.usuario ? h.usuario : '');
+    var fromUser = resolverValidadorEnHistorial(h && h.usuario ? h.usuario : '');
+    if (fromUser) return fromUser;
+    if (!h || h.panel !== 'validador') return '';
+    return validadorAsignadoContable(p);
+  }
+
+  function esConteoValidadorHoy(p, h) {
+    if (!h || !isTodayLocal(h.at)) return false;
+    if (h.hacia !== 'en_validacion' && h.hacia !== 'listo_despacho') return false;
+    if (h.panel && h.panel !== 'validador') return false;
+    return !!validadorCreditoHistorial(p, h);
   }
 
   /** Totales visibles en el panel del validador (activos, no retirados). */
@@ -890,8 +910,7 @@
     var contadoHoy = Object.create(null);
     pool.forEach(function (p) {
       (p.historial || []).forEach(function (h) {
-        if (!isTodayLocal(h.at)) return;
-        if (h.hacia !== 'en_validacion' && h.hacia !== 'listo_despacho') return;
+        if (!esConteoValidadorHoy(p, h)) return;
         var name = validadorCreditoHistorial(p, h);
         if (!name) return;
         var dedupeKey = String(p.id || p.idc || '') + '|' + h.hacia + '|' + dayKeyLocal(h.at);
