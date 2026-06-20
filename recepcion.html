@@ -54,29 +54,7 @@
         <div class="auth-glass-card rec-auth-glass">
           <form id="recAuthForm" class="auth-form" novalidate action="#" method="post">
             <h2 id="recAuthTitle" class="auth-heading rec-auth-heading">Acceso Control Patio</h2>
-            <p class="auth-subheading rec-auth-subheading">1. Elige tu área · 2. Inicia sesión con tu usuario asignado</p>
-            <div class="auth-role-picker rec-auth-role-picker" role="radiogroup" aria-label="Área en recepción">
-              <div class="rec-auth-role-option">
-                <input class="rec-auth-role-input" type="radio" name="recAuthArea" id="recAuthAreaReg" value="registrador" checked>
-                <label class="auth-role-card rec-auth-role-card active" for="recAuthAreaReg" data-role="registrador">
-                  <span class="role-check" aria-hidden="true">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
-                  </span>
-                  <strong>Registro patio</strong>
-                  <span class="role-desc">Registrar contenedores importados o locales</span>
-                </label>
-              </div>
-              <div class="rec-auth-role-option">
-                <input class="rec-auth-role-input" type="radio" name="recAuthArea" id="recAuthAreaVal" value="validador">
-                <label class="auth-role-card rec-auth-role-card" for="recAuthAreaVal" data-role="validador">
-                  <span class="role-check" aria-hidden="true">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
-                  </span>
-                  <strong>Validación y entrada</strong>
-                  <span class="role-desc">Validar mercancía y dar entrada al muelle</span>
-                </label>
-              </div>
-            </div>
+            <p class="auth-subheading rec-auth-subheading">Inicia sesión con tu usuario asignado</p>
             <div class="auth-field">
               <label for="recAuthUsername">Usuario asignado</label>
               <input id="recAuthUsername" class="auth-field-input" type="text" autocomplete="username" maxlength="64" required>
@@ -110,8 +88,8 @@
   <script src="js/platform-admin.js?v=17"></script>
   <script src="js/platform-toast.js"></script>
   <script src="js/platform-recepcion-store.js?v=1"></script>
-  <script src="js/platform-recepcion-auth.js?v=2"></script>
-  <script src="js/platform-recepcion-ui.js?v=1"></script>
-  <script src="js/platform-recepcion-app.js?v=2"></script>
+  <script src="js/platform-recepcion-auth.js?v=3"></script>
+  <script src="js/platform-recepcion-ui.js?v=2"></script>
+  <script src="js/platform-recepcion-app.js?v=3"></script>
 </body>
 </html>

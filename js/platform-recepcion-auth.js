@@ -1,72 +1,92 @@
 /**
  * Autenticación — Control Patio · Recepción de contenedores
- * Solo usuarios registrados en Administración / web-users.json
+ * Un solo login; permisos del usuario WMS definen qué puede hacer.
  */
 (function (global) {
   'use strict';
-
-  var ROLE_LABELS = {
-    registrador: 'Registro patio',
-    validador: 'Validación y entrada'
-  };
 
   function getDisplayName(user) {
     if (!user) return '';
     return String(user.name || user.username || '').trim();
   }
 
-  function getRoleLabel(user) {
+  function getAccessLabel(user) {
     if (!user) return '';
-    return ROLE_LABELS[user.role] || user.role;
+    var parts = [];
+    if (canRegister(user)) parts.push('Registro');
+    if (canValidate(user)) parts.push('Validación y entrada');
+    return parts.length ? parts.join(' · ') : 'Recepción';
   }
 
-  function mapWmsToRecepcionRole(wmsUser, preferredArea) {
-    if (!global.PlatformAdmin) return null;
+  function sessionFromWmsUser(wmsUser) {
+    if (!global.PlatformAdmin || !wmsUser) return null;
     var canUse = global.PlatformAdmin.can(wmsUser.role, 'recepcion.use', wmsUser);
     var canVal = global.PlatformAdmin.can(wmsUser.role, 'recepcion.validate', wmsUser);
     if (!canUse && !canVal) return null;
-    if (preferredArea === 'validador') {
-      if (!canVal) return null;
-      return 'validador';
-    }
-    if (!canUse) return null;
-    return 'registrador';
-  }
-
-  function sessionFromWmsUser(wmsUser, preferredArea) {
-    var role = mapWmsToRecepcionRole(wmsUser, preferredArea);
-    if (!role) return null;
     return {
       id: wmsUser.id,
       username: wmsUser.username,
       name: getDisplayName(wmsUser),
-      role: role,
+      canRegister: canUse,
+      canValidate: canVal,
       registeredRole: wmsUser.role,
       isPrimaryAdmin: wmsUser.isPrimaryAdmin
     };
   }
 
-  function authenticate(username, passwordHash, preferredArea) {
+  function authenticate(username, passwordHash) {
     if (!global.PlatformAdmin) return null;
-    preferredArea = preferredArea === 'validador' ? 'validador' : 'registrador';
     var wmsUser = global.PlatformAdmin.authenticate(username, passwordHash);
     if (!wmsUser) return null;
-    return sessionFromWmsUser(wmsUser, preferredArea);
+    return sessionFromWmsUser(wmsUser);
+  }
+
+  function getUserById(userId) {
+    if (!global.PlatformAdmin || !userId) return null;
+    var users = global.PlatformAdmin.listUsers ? global.PlatformAdmin.listUsers() : [];
+    var i;
+    for (i = 0; i < users.length; i++) {
+      if (users[i].id === userId && users[i].active !== false) {
+        return sessionFromWmsUser(users[i]);
+      }
+    }
+    return null;
+  }
+
+  function normalizeStoredUser(user) {
+    if (!user) return null;
+    if (user.canRegister != null || user.canValidate != null) {
+      if (!user.canRegister && !user.canValidate) return null;
+      return user;
+    }
+    if (user.role === 'registrador') {
+      user.canRegister = true;
+      user.canValidate = false;
+    } else if (user.role === 'validador') {
+      user.canRegister = false;
+      user.canValidate = true;
+    } else {
+      return null;
+    }
+    delete user.role;
+    return user;
   }
 
   function canValidate(user) {
-    return user && user.role === 'validador';
+    return !!(user && user.canValidate);
   }
 
   function canRegister(user) {
-    return user && user.role === 'registrador';
+    return !!(user && user.canRegister);
   }
 
   global.PlatformRecepcionAuth = {
-    ROLE_LABELS: ROLE_LABELS,
     authenticate: authenticate,
+    getUserById: getUserById,
+    normalizeStoredUser: normalizeStoredUser,
     getDisplayName: getDisplayName,
-    getRoleLabel: getRoleLabel,
+    getAccessLabel: getAccessLabel,
+    getRoleLabel: getAccessLabel,
     canValidate: canValidate,
     canRegister: canRegister
   };

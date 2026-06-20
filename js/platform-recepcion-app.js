@@ -55,11 +55,6 @@
     document.body.classList.toggle('rec-dash-view', !visible);
   }
 
-  function getSelectedArea() {
-    var checked = document.querySelector('input[name="recAuthArea"]:checked');
-    return checked ? String(checked.value || '').trim() : 'registrador';
-  }
-
   function renderApp() {
     var root = $('recApp');
     var store = global.PlatformRecepcionStore;
@@ -173,12 +168,10 @@
         ? global.PlatformWebUsers.refresh()
         : Promise.resolve();
       refresh.then(function () {
-        var user = Auth.authenticate(username, PC.sha256Sync(password), area);
+        var user = Auth.authenticate(username, PC.sha256Sync(password));
         if (!user) {
           if (errEl) {
-            errEl.textContent = area === 'validador'
-              ? 'Usuario o contraseña incorrectos, o sin permiso de validación en recepción.'
-              : 'Usuario o contraseña incorrectos, o sin permiso de registro en recepción.';
+            errEl.textContent = 'Usuario o contraseña incorrectos, o sin acceso a Control Patio.';
             errEl.hidden = false;
           }
           return;
@@ -198,7 +191,13 @@
       clearSession();
       return;
     }
-    enterApp(raw.user);
+    var user = Auth.getUserById(raw.user.id) ||
+      Auth.normalizeStoredUser(raw.user);
+    if (!user) {
+      clearSession();
+      return;
+    }
+    enterApp(user);
   }
 
   function bindAuthUi() {
@@ -213,12 +212,6 @@
         toggle.textContent = show ? 'Ocultar' : 'Ver';
       });
     }
-    document.querySelectorAll('.rec-auth-role-card').forEach(function (card) {
-      card.addEventListener('click', function () {
-        document.querySelectorAll('.rec-auth-role-card').forEach(function (c) { c.classList.remove('active'); });
-        card.classList.add('active');
-      });
-    });
     if (PC && PC.restoreRememberedLoginUsername) {
       PC.restoreRememberedLoginUsername('recepcion', $('recAuthUsername'));
     }
