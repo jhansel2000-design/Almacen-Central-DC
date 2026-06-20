@@ -175,7 +175,12 @@
       refresh.then(function () {
         var user = Auth.authenticate(username, PC.sha256Sync(password), area);
         if (!user) {
-          if (errEl) { errEl.textContent = 'Usuario o contraseña incorrectos, o sin acceso a esta área.'; errEl.hidden = false; }
+          if (errEl) {
+            errEl.textContent = area === 'validador'
+              ? 'Usuario o contraseña incorrectos, o sin permiso de validación en recepción.'
+              : 'Usuario o contraseña incorrectos, o sin permiso de registro en recepción.';
+            errEl.hidden = false;
+          }
           return;
         }
         PC.persistRememberedLoginUsername('recepcion', username, !!($('recAuthRememberUser') && $('recAuthRememberUser').checked));
