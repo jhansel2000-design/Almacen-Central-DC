@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-06-10T17:00:00.000Z",
+  "updatedAt": "2026-06-19T12:00:00.000Z",
   "users": [
     {
       "id": "u_enmanuel_vasquez",
@@ -51,6 +51,56 @@
       "areas": [],
       "active": true,
       "extraPermissions": ["reportes.view", "export.data", "filter.apply"]
+    },
+    {
+      "id": "u_maria_ramos",
+      "username": "MARIA.RAMOS",
+      "name": "Maria Ramos",
+      "role": "colaborador",
+      "passwordHash": "1f716d570d3f228c9b8fa3b09d761c2d7d1f68a47173c2dbc712a18249ebe688",
+      "areas": [],
+      "active": true,
+      "extraPermissions": ["agenda.all"]
+    },
+    {
+      "id": "u_elizabeth_cruz",
+      "username": "ELIZABETH.CRUZ",
+      "name": "Elizabeth Cruz",
+      "role": "colaborador",
+      "passwordHash": "ff11e71736272725259c5ff7c2d57c5bd60ab49727a1358183b9b17507dda92e",
+      "areas": [],
+      "active": true,
+      "extraPermissions": ["agenda.all"]
+    },
+    {
+      "id": "u_luis_jose",
+      "username": "LUIS.JOSE",
+      "name": "Luis Jose de Jesus",
+      "role": "colaborador",
+      "passwordHash": "43de121dbca467a7e9dcc23270871bcebef01dab17724895ef3fb03f67e914b7",
+      "areas": [],
+      "active": true,
+      "extraPermissions": ["agenda.all"]
+    },
+    {
+      "id": "u_claudia_santos",
+      "username": "CLAUDIA.SANTOS",
+      "name": "Claudia de los Santos",
+      "role": "colaborador",
+      "passwordHash": "8c4e64ed00953552690a568cea93f828f432b38e0f7a5e8847d0b93889dc4c93",
+      "areas": [],
+      "active": true,
+      "extraPermissions": ["agenda.all"]
+    },
+    {
+      "id": "u_jiomalliry_cruz",
+      "username": "JIOMALLIRY.CRUZ",
+      "name": "Jiomalliry de la Cruz",
+      "role": "colaborador",
+      "passwordHash": "417a858336cd740c342eb1cffcf3c3c3ddb794cb801c0821c067fcad919504ad",
+      "areas": [],
+      "active": true,
+      "extraPermissions": ["agenda.all"]
     }
   ]
 }
