@@ -11,7 +11,7 @@
     waitingEl.hidden = false;
     waitingEl.setAttribute('aria-hidden', 'false');
     var txt = waitingEl.querySelector('.rec-display-wait-text');
-    if (txt) txt.textContent = msg || 'Esperando transmisión desde Control Patio…';
+    if (txt) txt.textContent = msg || 'Esperando transmisión desde Gestión de Recepción y Ubicación…';
   }
 
   function hideWaiting() {

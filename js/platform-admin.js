@@ -31,7 +31,7 @@
     'news.manage': 'Publicar noticias del tablón',
     'agenda.use': 'Módulo Agenda operativa',
     'agenda.all': 'Agenda — ver todos los puestos',
-    'recepcion.use': 'Control Patio — recepción de contenedores',
+    'recepcion.use': 'Gestión de Recepción y Ubicación',
     'recepcion.validate': 'Validar y dar entrada a contenedores'
   };
 

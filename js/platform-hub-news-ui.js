@@ -25,7 +25,7 @@
     inventario: 'Inventario RF',
     turnos: 'Control de Turnos',
     agenda: 'Agenda Operativa',
-    recepcion: 'Control Patio · Recepción'
+    recepcion: 'Gestión de Recepción y Ubicación'
   };
 
   var ROTATE_MS = 20000;

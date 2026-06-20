@@ -1,7 +1,7 @@
--- Tablón — Control Patio · Recepción de contenedores
+-- Tablón — Gestión de Recepción y Ubicación
 insert into public.hub_news (title, body, published_by, pinned, image_url, link_url, theme, active)
 select
-  'Control Patio · Recepción',
+  'Gestión de Recepción y Ubicación',
   'Seguimiento de contenedores importados y locales en el patio del almacén.
 
 Qué puedes hacer:
@@ -16,5 +16,5 @@ Qué puedes hacer:
   'recepcion',
   true
 where not exists (
-  select 1 from public.hub_news where theme = 'recepcion' and title = 'Control Patio · Recepción'
+  select 1 from public.hub_news where theme = 'recepcion' and title = 'Gestión de Recepción y Ubicación'
 );

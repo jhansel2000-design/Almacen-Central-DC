@@ -81,7 +81,7 @@
       '<header class="rec-present-header">' +
       '<img class="jc-logo-img jc-logo-img--present" src="assets/img/jc-logo.png?v=5" alt="AC" width="44" height="44">' +
       '<div><p class="rec-present-eyebrow">Almacén Central DC</p>' +
-      '<h1 class="rec-present-title">Control Patio · Recepción de contenedores</h1></div>' +
+      '<h1 class="rec-present-title">Gestión de Recepción y Ubicación</h1></div>' +
       '<div class="rec-present-kpis">' +
       '<span><strong>' + esc(String(counts.total || 0)) + '</strong> seguimiento</span>' +
       '<span><strong>' + esc(String(counts.pendienteValidar || 0)) + '</strong> pend. validar</span>' +

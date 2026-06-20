@@ -171,7 +171,7 @@
         var user = Auth.authenticate(username, PC.sha256Sync(password));
         if (!user) {
           if (errEl) {
-            errEl.textContent = 'Usuario o contraseña incorrectos, o sin acceso a Control Patio.';
+            errEl.textContent = 'Usuario o contraseña incorrectos, o sin acceso a este portal.';
             errEl.hidden = false;
           }
           return;
