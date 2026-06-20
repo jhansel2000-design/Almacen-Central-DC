@@ -1,0 +1,314 @@
+/* Torre de control — producción (puente rec-* + rbl-*) */
+
+body.rec-dash-view.rbl-theme-f {
+  background: linear-gradient(180deg, #dce4ef 0%, #eef2f7 40%, #f1f5f9 100%);
+  color: #0f172a;
+  font-family: "Inter", "DM Sans", system-ui, sans-serif;
+}
+
+body.rec-dash-view.rbl-theme-f.auth-locked {
+  background: var(--rec-bg, #140305);
+}
+
+.rec-tc-app {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 1rem 2rem;
+  position: relative;
+}
+
+body.rec-dash-view .rec-tc-app .rbl-hub-btn {
+  top: 1rem;
+  left: 1rem;
+  display: flex;
+}
+
+body.rec-dash-view .rec-tc-app .rbl-f-hero {
+  padding-left: 4.25rem;
+  margin-top: 0.25rem;
+}
+
+@media (max-width: 640px) {
+  body.rec-dash-view .rec-tc-app .rbl-f-hero { padding-left: 0; }
+}
+
+/* Tabla manifiesto dentro de tarjeta clara */
+.rec-tc-app .rbl-card .rec-table-wrap {
+  max-height: min(52vh, 520px);
+  overflow: auto;
+}
+
+.rec-tc-app .rec-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+
+.rec-tc-app .rec-table th,
+.rec-tc-app .rec-table td {
+  text-align: center;
+  padding: 0.55rem 0.45rem;
+  border-bottom: 1px solid #e2e8f0;
+  color: #334155;
+}
+
+.rec-tc-app .rec-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #f8fafc;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.rec-tc-app .rec-table tbody tr:hover {
+  background: #f8fafc;
+}
+
+.rec-tc-app .rec-col-registro strong,
+.rec-tc-app .rec-log-reg strong {
+  color: #b91c1c;
+}
+
+.rec-tc-app .rec-empty {
+  color: #94a3b8;
+  padding: 1.5rem;
+}
+
+/* Formulario torre */
+.rec-tc-app .rec-panel--form {
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+
+.rec-tc-app .rec-panel-title {
+  display: none;
+}
+
+.rec-tc-app .rec-next-registro {
+  margin: 0 0 0.75rem;
+  font-size: 0.78rem;
+  color: #64748b;
+}
+
+.rec-tc-app .rec-next-registro strong {
+  color: #b91c1c;
+}
+
+.rec-tc-app .rec-form-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  margin-bottom: 0.65rem;
+}
+
+.rec-tc-app .rec-field span {
+  display: block;
+  font-size: 0.62rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #64748b;
+  margin-bottom: 0.28rem;
+}
+
+.rec-tc-app .rec-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.55rem 0.7rem;
+  border-radius: 10px;
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  color: #0f172a;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.rec-tc-app .rec-input:focus {
+  outline: none;
+  border-color: #b91c1c;
+  box-shadow: 0 0 0 3px rgba(185, 28, 28, 0.12);
+}
+
+.rec-tc-app .rec-form-row-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.55rem;
+}
+
+.rec-tc-app .rec-btn--primary {
+  width: 100%;
+  margin-top: 0.35rem;
+  padding: 0.7rem;
+  border: none;
+  border-radius: 10px;
+  background: linear-gradient(180deg, #dc2626, #991b1b);
+  color: #fff;
+  font-weight: 800;
+  box-shadow: 0 4px 14px rgba(185, 28, 28, 0.3);
+}
+
+.rec-tc-app .rec-btn--primary:hover {
+  background: linear-gradient(180deg, #ef4444, #b91c1c);
+}
+
+/* Botones en tabla */
+.rec-tc-app .rec-btn {
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  color: #475569;
+  border-radius: 8px;
+  padding: 0.28rem 0.55rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.rec-tc-app .rec-btn--ok {
+  background: #ecfdf5;
+  border-color: #6ee7b7;
+  color: #047857;
+}
+
+.rec-tc-app .rec-btn--ent {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #b91c1c;
+}
+
+.rec-tc-app .rec-btn--ghost[aria-pressed="true"] {
+  background: #ecfdf5;
+  border-color: #22c55e;
+  color: #166534;
+}
+
+.rec-tc-app .rec-badge--ok {
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #6ee7b7;
+}
+
+.rec-tc-app .rec-badge--pendiente {
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+
+.rec-tc-app .rec-tipo--local {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.rec-tc-app .rec-tipo--importado {
+  background: #fffbeb;
+  color: #b45309;
+}
+
+/* Historia */
+.rec-tc-app .rec-panel--log {
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+
+.rec-tc-app .rec-panel--log .rec-panel-title {
+  display: none;
+}
+
+.rec-tc-app .rec-log-sub {
+  display: none;
+}
+
+.rec-tc-app .rec-table--log th,
+.rec-tc-app .rec-table--log td {
+  font-size: 0.78rem;
+}
+
+/* Config operativa */
+.rec-tc-cfg-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.rec-tc-cfg-actions .rec-btn {
+  width: 100%;
+  justify-content: center;
+  padding: 0.65rem 1rem;
+  font-size: 0.82rem;
+  text-decoration: none;
+}
+
+.rec-tc-cfg-actions .rec-btn--cfg-primary {
+  background: linear-gradient(180deg, #dc2626, #991b1b);
+  border-color: transparent;
+  color: #fff;
+}
+
+.rec-tc-cfg-user {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.rec-tc-cfg-role {
+  font-size: 0.75rem;
+  color: #64748b;
+  margin-top: 0.15rem;
+}
+
+/* Modal muelle — sobre drawer */
+.rec-tc-app .rec-muelle-modal {
+  z-index: 40000;
+}
+
+.rec-tc-app .rec-muelle-modal__panel {
+  background: #fff;
+  border-color: #e2e8f0;
+  color: #0f172a;
+}
+
+.rec-tc-app .rec-muelle-modal__title {
+  color: #991b1b;
+}
+
+.rec-tc-app .rec-muelle-modal__sub {
+  color: #64748b;
+}
+
+.rec-tc-app .rbl-kpi--action.is-live {
+  border-color: rgba(34, 197, 94, 0.55) !important;
+}
+
+.rec-tc-app .rbl-drawer {
+  border-right-color: rgba(239, 68, 68, 0.35);
+}
+
+.rec-tc-app .rbl-drawer-link.is-on {
+  background: linear-gradient(90deg, rgba(127, 29, 29, 0.5), rgba(185, 28, 28, 0.2));
+  border-color: rgba(248, 113, 113, 0.45);
+  box-shadow: inset 3px 0 0 #ef4444;
+}
+
+.rec-tc-app .rbl-kpi-sub {
+  display: block;
+  font-size: 0.62rem;
+  color: #64748b;
+  margin-top: 0.1rem;
+}
+
+.rec-tc-app .rbl-reg {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #b91c1c;
+  letter-spacing: 0.04em;
+}

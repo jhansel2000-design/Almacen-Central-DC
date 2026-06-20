@@ -1066,29 +1066,6 @@
 
     var form = host.querySelector('#despPrepForm');
     if (form) {
-      var prepLiveTimer = null;
-      var prepIdcInput = host.querySelector('#despIdc');
-      var prepJaulaInput = host.querySelector('#despJaula');
-
-      function pushPrepLiveShare() {
-        var vals = getPrepFormValues(host);
-        if (!String(vals.idc || '').trim()) return;
-        DS.publishLiveShare(vals.idc, vals.jaula, vals.estado, userName);
-      }
-
-      if (prepIdcInput) {
-        prepIdcInput.addEventListener('input', function () {
-          clearTimeout(prepLiveTimer);
-          prepLiveTimer = setTimeout(pushPrepLiveShare, 600);
-        });
-      }
-      if (prepJaulaInput) {
-        prepJaulaInput.addEventListener('input', function () {
-          clearTimeout(prepLiveTimer);
-          prepLiveTimer = setTimeout(pushPrepLiveShare, 600);
-        });
-      }
-
       var btnUpdate = host.querySelector('#despBtnUpdateIdc');
       if (btnUpdate) {
         btnUpdate.addEventListener('click', function () {
@@ -1099,7 +1076,6 @@
             return;
           }
           toast(res.updated ? 'IDC actualizado — en seguimiento validador' : 'IDC registrado — en seguimiento validador', 'success');
-          DS.publishLiveShare(vals.idc, vals.jaula, vals.estado, userName);
           var snap = capturePrepForm(host);
           render(host, res.data, opts);
           restorePrepForm(host, snap);

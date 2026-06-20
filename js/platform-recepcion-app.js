@@ -53,6 +53,7 @@
     }
     document.body.classList.toggle('auth-locked', visible);
     document.body.classList.toggle('rec-dash-view', !visible);
+    document.body.classList.toggle('rbl-theme-f', !visible);
   }
 
   function renderApp() {

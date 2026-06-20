@@ -42,6 +42,133 @@
     }
   }
 
+  function countMuellesOcupados(contenedores) {
+    var set = Object.create(null);
+    (contenedores || []).forEach(function (c) {
+      var m = String(c.muelle || '').trim();
+      if (m) set[m] = true;
+    });
+    return Object.keys(set).length;
+  }
+
+  function sumPaletas(contenedores) {
+    var n = 0;
+    (contenedores || []).forEach(function (c) {
+      n += Number(c.paletas) || 0;
+    });
+    return n;
+  }
+
+  function renderTorreHero() {
+    return '<header class="rbl-f-hero rbl-f-hero--h4">' +
+      '<span class="rbl-f-hero-glow" aria-hidden="true"></span>' +
+      '<div class="rbl-f-hero-inner">' +
+      '<div class="rbl-f-logo">' +
+      '<img class="jc-logo-img jc-logo-img--hero rbl-f-logo-img" src="assets/img/jc-logo.svg?v=1" alt="Almacén Central AC" width="52" height="52">' +
+      '<div class="rbl-f-logo-text">' +
+      '<h1>Gestión de Recepción y Ubicación</h1>' +
+      '<p>Almacén Central DC · Patio de contenedores</p>' +
+      '</div></div></div></header>';
+  }
+
+  function renderTorreDrawer(user) {
+    var name = A().getDisplayName(user);
+    return '<button type="button" class="rbl-hub-btn" id="recHubBtn" aria-label="Abrir menú" aria-expanded="false">' +
+      '<span></span><span></span><span></span></button>' +
+      '<div class="rbl-drawer-backdrop" id="recDrawerBd" hidden></div>' +
+      '<aside class="rbl-drawer" id="recDrawer" aria-label="Navegación">' +
+      '<div class="rbl-drawer-brand">' +
+      '<img class="jc-logo-img rbl-drawer-logo" src="assets/img/jc-logo.svg?v=1" alt="AC" width="40" height="40">' +
+      '<p>Recepción · Almacén Central</p></div>' +
+      '<nav class="rbl-drawer-nav">' +
+      '<button type="button" class="rbl-drawer-link is-on" data-rec-screen="ops">Operaciones</button>' +
+      '<button type="button" class="rbl-drawer-link" data-rec-screen="hist">Historia</button>' +
+      '<button type="button" class="rbl-drawer-link" data-rec-screen="cfg">Configuraciones</button>' +
+      '</nav>' +
+      '<div class="rbl-drawer-foot">' + esc(name) + '</div></aside>';
+  }
+
+  function renderTorreKpis(counts, contenedores, liveActive) {
+    counts = counts || {};
+    var muelles = countMuellesOcupados(contenedores);
+    var paletas = sumPaletas(contenedores);
+    return '<div class="rbl-kpi-grid" role="group" aria-label="Resumen recepción">' +
+      '<div class="rbl-kpi">' +
+      '<div class="rbl-kpi-icon rbl-kpi-icon--blue">' +
+      '<img class="rbl-kpi-icon-img" src="assets/img/kpi-contenedor.svg?v=2" alt="" width="52" height="52"></div>' +
+      '<div><span class="rbl-kpi-num">' + esc(String(counts.total || 0)) + '</span>' +
+      '<span class="rbl-kpi-lbl">Contenedores activos</span></div></div>' +
+      '<div class="rbl-kpi">' +
+      '<div class="rbl-kpi-icon rbl-kpi-icon--amber">' +
+      '<img class="rbl-kpi-icon-img" src="assets/img/kpi-jaula.svg?v=2" alt="" width="52" height="52"></div>' +
+      '<div><span class="rbl-kpi-num">' + esc(String(muelles)) + '</span>' +
+      '<span class="rbl-kpi-lbl">Muelles ocupados</span></div></div>' +
+      '<div class="rbl-kpi">' +
+      '<div class="rbl-kpi-icon rbl-kpi-icon--teal">' +
+      '<img class="rbl-kpi-icon-img rbl-kpi-icon-img--photo" src="assets/img/kpi-paletas-gen.png?v=1" alt="" width="52" height="52"></div>' +
+      '<div><span class="rbl-kpi-num">' + esc(String(paletas)) + '</span>' +
+      '<span class="rbl-kpi-lbl">Paletas recibidas</span></div></div>' +
+      '<div class="rbl-kpi">' +
+      '<div class="rbl-kpi-icon rbl-kpi-icon--navy">' +
+      '<svg class="rbl-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">' +
+      '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></div>' +
+      '<div><span class="rbl-kpi-num">' + esc(String(counts.pendienteValidar || 0)) + '</span>' +
+      '<span class="rbl-kpi-lbl">Pend. validar</span></div></div>' +
+      '<button type="button" class="rbl-kpi rbl-kpi--action' + (liveActive ? ' is-live' : '') + '" id="recBtnShare"' +
+      (liveActive ? ' aria-pressed="true"' : '') + ' title="Compartir manifiesto en pantalla TV">' +
+      '<div class="rbl-kpi-icon rbl-kpi-icon--cast">' +
+      '<img class="rbl-kpi-icon-img" src="assets/img/kpi-pantalla.svg?v=2" alt="" width="52" height="52"></div>' +
+      '<div><span class="rbl-kpi-lbl rbl-kpi-lbl--action">' +
+      (liveActive ? '● Pantalla en vivo' : 'Compartir pantalla') + '</span>' +
+      '<span class="rbl-kpi-sub">TV recepción · en vivo</span></div></button></div>';
+  }
+
+  function renderRegistroFormCard(user) {
+    if (!A().canRegister(user)) return '';
+    var store = S();
+    var nextReg = store.peekNextRegistro ? store.peekNextRegistro() : '';
+    var divOpts = (store.DIVISIONES || []).map(function (d) {
+      return '<option value="' + esc(d) + '">' + esc(d) + '</option>';
+    }).join('');
+    return '<div class="rbl-card rbl-f-form">' +
+      '<div class="rbl-card-head"><h3>Nuevo contenedor</h3>' +
+      (nextReg ? '<span class="rbl-reg">' + esc(nextReg) + '</span>' : '') + '</div>' +
+      '<div class="rbl-card-body rec-panel rec-panel--form">' +
+      (nextReg ? '<p class="rec-next-registro">Próximo: <strong>' + esc(nextReg) + '</strong></p>' : '') +
+      '<form id="recRegistroForm" class="rec-form" novalidate>' +
+      '<div class="rec-form-grid">' +
+      '<label class="rec-field"><span>Fecha</span><input type="date" id="recFecha" class="rec-input" value="' + esc(todayInputValue()) + '" required></label>' +
+      '<label class="rec-field"><span>Contenedor</span><input type="text" id="recContenedor" class="rec-input" placeholder="COR-20003645" maxlength="32" required autocapitalize="characters"></label>' +
+      '<label class="rec-field"><span>Tipo</span><select id="recTipo" class="rec-input" required>' +
+      '<option value="importado">Importado</option><option value="local">Local</option></select></label>' +
+      '<label class="rec-field"><span>División</span><select id="recDivision" class="rec-input" required>' +
+      '<option value="">Seleccione…</option>' + divOpts + '</select></label>' +
+      '<label class="rec-field rec-field--wide"><span>Descripción</span><input type="text" id="recDescripcion" class="rec-input" placeholder="PAMPERS / GATORADE…" maxlength="120" required></label>' +
+      '<div class="rec-form-row-pair">' +
+      '<label class="rec-field"><span>Paletas</span><input type="number" id="recPaletas" class="rec-input" min="0" max="999" value="0"></label>' +
+      '<label class="rec-field"><span>Muelle (opcional)</span><input type="text" id="recMuelle" class="rec-input" placeholder="J9" maxlength="12" autocapitalize="characters"></label>' +
+      '</div></div>' +
+      '<button type="submit" class="rec-btn rec-btn--primary">Registrar contenedor</button>' +
+      '</form></div></div>';
+  }
+
+  function renderTorreCfg(user, liveActive) {
+    return '<div class="rbl-f-screen" data-rec-screen="cfg">' +
+      '<div class="rbl-cfg-grid">' +
+      '<div class="rbl-card"><div class="rbl-card-head"><h3>Sesión</h3><span>Usuario activo</span></div>' +
+      '<div class="rbl-card-body rbl-cfg-section">' +
+      '<p class="rec-tc-cfg-user">' + esc(A().getDisplayName(user)) + '</p>' +
+      '<p class="rec-tc-cfg-role">' + esc(A().getRoleLabel(user)) + '</p></div></div>' +
+      '<div class="rbl-card"><div class="rbl-card-head"><h3>Pantalla TV</h3><span>Manifiesto en vivo</span></div>' +
+      '<div class="rbl-card-body rbl-cfg-section rec-tc-cfg-actions">' +
+      '<button type="button" class="rec-btn rec-btn--cfg-primary" id="recBtnShareCfg"' +
+      (liveActive ? ' aria-pressed="true"' : '') + '>' +
+      (liveActive ? '● Dejar de compartir pantalla' : 'Compartir en pantalla TV') + '</button>' +
+      '<a class="rec-btn" id="recBtnOpenDisplay" href="recepcion-pantalla.html" target="_blank" rel="noopener">Abrir pantalla TV</a>' +
+      '<button type="button" class="rec-btn" id="recBtnLogout">Cerrar sesión</button>' +
+      '</div></div></div></div>';
+  }
+
   function renderKpis(counts) {
     counts = counts || {};
     return '<div class="rec-kpis" role="group" aria-label="Resumen recepción">' +
@@ -197,6 +324,29 @@
     }).join('');
   }
 
+  function renderRegistroLogCard(data) {
+    var store = S();
+    var rows = store.getRegistroActividad ? store.getRegistroActividad(data, 40) : [];
+    var body = rows.length ? rows.map(function (r) {
+      return '<tr>' +
+        '<td class="rec-log-fecha">' + esc(store.formatFecha(r.at)) + '</td>' +
+        '<td class="rec-log-reg"><strong>' + esc(r.registro || '—') + '</strong></td>' +
+        '<td class="rec-log-cont">' + esc(r.contenedor || '—') + '</td>' +
+        '<td>' + esc(r.usuario || '—') + '</td>' +
+        '<td><span class="rec-log-acc rec-log-acc--' + esc(String(r.accion || 'otro')) + '">' +
+        esc(accionLabel(r.accion)) + '</span></td>' +
+        '<td class="rec-log-nota">' + esc(r.nota || '—') + '</td></tr>';
+    }).join('') : '<tr><td colspan="6" class="rec-empty">Sin movimientos registrados.</td></tr>';
+
+    return '<div class="rbl-card rec-panel rec-panel--log">' +
+      '<div class="rbl-card-head"><h3>Historia de operaciones</h3><span>Registro de actividad</span></div>' +
+      '<div class="rbl-card-body">' +
+      '<div class="rec-table-wrap">' +
+      '<table class="rec-table rec-table--log" aria-label="Registro de actividad">' +
+      '<thead><tr><th>Fecha</th><th>Registro</th><th>Contenedor</th><th>Usuario</th><th>Acción</th><th>Detalle</th></tr></thead>' +
+      '<tbody>' + body + '</tbody></table></div></div></div>';
+  }
+
   function renderApp(user, data) {
     var store = S();
     data = data || store.load();
@@ -204,12 +354,16 @@
     var counts = store.countResumen(data.contenedores);
     var liveActive = store.isLiveShareBoardActive(data);
 
-    return '<div class="rec-app-shell">' +
-      renderToolbar(user, liveActive) +
-      renderKpis(counts) +
-      renderRegistroForm(user) +
-      '<section class="rec-panel rec-panel--table" aria-labelledby="recTableTitle">' +
-      '<h2 id="recTableTitle" class="rec-panel-title">Seguimiento de contenedores</h2>' +
+    return '<div class="rec-tc-app rbl-f">' +
+      renderTorreDrawer(user) +
+      '<div class="rbl-stage"><div class="rbl-f-wrap">' +
+      renderTorreHero() +
+      '<div class="rbl-f-screen is-on" data-rec-screen="ops">' +
+      renderTorreKpis(counts, contenedores, liveActive) +
+      '<div class="rbl-f-grid">' +
+      '<div class="rbl-card">' +
+      '<div class="rbl-card-head"><h3>Manifiesto de recepción</h3>' +
+      '<span>' + esc(String(contenedores.length)) + ' en seguimiento</span></div>' +
       '<div class="rec-table-wrap">' +
       '<table class="rec-table" aria-label="Contenedores en recepción">' +
       '<thead><tr>' +
@@ -217,10 +371,67 @@
       '<th>Paletas</th><th>Muelle</th><th>Validado</th><th>Entrada</th><th></th>' +
       '</tr></thead>' +
       '<tbody id="recTableBody">' + renderTableRows(contenedores, user) + '</tbody>' +
-      '</table></div></section>' +
-      renderRegistroLog(data) +
+      '</table></div></div>' +
+      renderRegistroFormCard(user) +
+      '</div></div>' +
+      '<div class="rbl-f-screen" data-rec-screen="hist">' + renderRegistroLogCard(data) + '</div>' +
+      renderTorreCfg(user, liveActive) +
+      '</div></div>' +
       renderMuelleModal() +
       '</div>';
+  }
+
+  function setRecScreen(root, id) {
+    if (!root) return;
+    root.querySelectorAll('.rbl-f-screen').forEach(function (s) {
+      s.classList.toggle('is-on', s.getAttribute('data-rec-screen') === id);
+    });
+    root.querySelectorAll('.rbl-drawer-link').forEach(function (b) {
+      b.classList.toggle('is-on', b.getAttribute('data-rec-screen') === id);
+    });
+  }
+
+  function closeRecDrawer(root) {
+    if (!root) return;
+    var btn = root.querySelector('#recHubBtn');
+    var bd = root.querySelector('#recDrawerBd');
+    var dr = root.querySelector('#recDrawer');
+    if (btn) { btn.classList.remove('is-open'); btn.setAttribute('aria-expanded', 'false'); }
+    if (bd) { bd.classList.remove('is-open'); bd.hidden = true; }
+    if (dr) dr.classList.remove('is-open');
+  }
+
+  function openRecDrawer(root) {
+    if (!root) return;
+    var btn = root.querySelector('#recHubBtn');
+    var bd = root.querySelector('#recDrawerBd');
+    var dr = root.querySelector('#recDrawer');
+    if (btn) { btn.classList.add('is-open'); btn.setAttribute('aria-expanded', 'true'); }
+    if (bd) { bd.hidden = false; bd.classList.add('is-open'); }
+    if (dr) dr.classList.add('is-open');
+  }
+
+  function bindTorreNav(root) {
+    if (!root) return;
+    var hubBtn = root.querySelector('#recHubBtn');
+    var drawerBd = root.querySelector('#recDrawerBd');
+    if (hubBtn) {
+      hubBtn.addEventListener('click', function () {
+        var dr = root.querySelector('#recDrawer');
+        if (dr && dr.classList.contains('is-open')) closeRecDrawer(root);
+        else openRecDrawer(root);
+      });
+    }
+    if (drawerBd) drawerBd.addEventListener('click', function () { closeRecDrawer(root); });
+    root.querySelectorAll('[data-rec-screen]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var id = btn.getAttribute('data-rec-screen');
+        if (id) {
+          setRecScreen(root, id);
+          closeRecDrawer(root);
+        }
+      });
+    });
   }
 
   function readMuelleInput(root, id) {
@@ -278,10 +489,16 @@
       callbacks.onGuardarMuelle(input.getAttribute('data-rec-muelle-input'), input.value);
     });
 
-    var shareBtn = root.querySelector('#recBtnShare');
-    if (shareBtn && callbacks.onToggleShare) {
-      shareBtn.addEventListener('click', callbacks.onToggleShare);
+    bindTorreNav(root);
+
+    function wireShare(btn) {
+      if (btn && callbacks.onToggleShare) {
+        btn.addEventListener('click', callbacks.onToggleShare);
+      }
     }
+    wireShare(root.querySelector('#recBtnShare'));
+    wireShare(root.querySelector('#recBtnShareCfg'));
+
     var logoutBtn = root.querySelector('#recBtnLogout');
     if (logoutBtn && callbacks.onLogout) logoutBtn.addEventListener('click', callbacks.onLogout);
   }
