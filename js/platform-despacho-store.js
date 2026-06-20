@@ -410,6 +410,7 @@
       panel: 'validador',
       desde: prev,
       hacia: nuevoEstado,
+      validadorAsignado: pedido.validadorAsignado,
       nota: nuevoEstado === 'listo_despacho'
         ? 'Validador marcó como cargado'
         : (prevFase === 'preparacion' && newFase !== 'preparacion')
@@ -878,10 +879,29 @@
     return validadorAsignadoContable(p && p.validadorAsignado ? p.validadorAsignado : '');
   }
 
+  function parseValidadorNotaPreparador(nota) {
+    var m = String(nota || '').match(/→\s*validador\s+(.+?)\.?\s*$/i);
+    if (m) return validadorAsignadoContable(m[1].trim());
+    return '';
+  }
+
+  function parseValidadorNotaAsignacion(nota) {
+    var n = String(nota || '');
+    var m = n.match(/reasignado:\s*.+?\s→\s*(.+)$/i);
+    if (m) return validadorAsignadoContable(m[1].trim());
+    m = n.match(/asignado:\s*(.+)$/i);
+    if (m) return validadorAsignadoContable(m[1].trim());
+    return '';
+  }
+
   /** Solo transiciones reales del flujo validador (no asignaciones ni re-asignaciones). */
   function esTransicionContableValidador(h) {
     if (!h || !h.hacia) return false;
-    if (h.hacia === 'en_validacion') return h.desde === 'pendiente_carga';
+    var nota = String(h.nota || '');
+    if (/validador reasignado|validador asignado:/i.test(nota)) return false;
+    if (h.hacia === 'en_validacion') {
+      return h.desde === 'pendiente_carga' || h.desde == null;
+    }
     if (h.hacia === 'listo_despacho') return h.desde === 'en_validacion';
     return false;
   }
@@ -903,15 +923,42 @@
         continue;
       }
       if (h.panel === 'validador' && !h.hacia) {
-        var m = String(h.nota || '').match(/→\s*(.+)$/);
-        if (m) asignado = validadorAsignadoContable(m[1]) || asignado;
-        else {
-          m = String(h.nota || '').match(/asignado:\s*(.+)$/i);
-          if (m) asignado = validadorAsignadoContable(m[1]) || asignado;
-        }
+        var fromAsign = parseValidadorNotaAsignacion(h.nota);
+        if (fromAsign) asignado = fromAsign;
+        continue;
+      }
+      if (h.panel === 'preparador') {
+        var fromPrep = parseValidadorNotaPreparador(h.nota);
+        if (fromPrep) asignado = fromPrep;
       }
     }
     return asignado;
+  }
+
+  /** Fallback seguro: validador del pedido, salvo reasignación posterior a la transición. */
+  function validadorAsignadoEnMomentoFallback(p, h) {
+    if (!esTransicionContableValidador(h)) return '';
+    var enMomento = asignadoAlMomentoHistorial(p, h);
+    if (enMomento) return enMomento;
+    var assignadoActual = validadorAsignadoEnPedido(p);
+    if (!assignadoActual) return '';
+    var histAsc = (p.historial || []).slice().sort(function (a, b) {
+      return String(a.at || '').localeCompare(String(b.at || ''));
+    });
+    var targetAt = String(h.at || '');
+    var i;
+    for (i = 0; i < histAsc.length; i++) {
+      var e = histAsc[i];
+      if (e === h) continue;
+      if (String(e.at || '') <= targetAt) continue;
+      if (e.panel !== 'validador' || e.hacia) continue;
+      var m = String(e.nota || '').match(/reasignado:\s*(.+?)\s→/i);
+      if (m) {
+        var prev = validadorAsignadoContable(m[1].trim());
+        if (prev) return prev;
+      }
+    }
+    return assignadoActual;
   }
 
   /**
@@ -924,14 +971,13 @@
     if (snap) return snap;
     var enMomento = asignadoAlMomentoHistorial(p, h);
     if (enMomento) return enMomento;
-    return '';
+    return validadorAsignadoEnMomentoFallback(p, h);
   }
 
   function esConteoValidadorHoy(p, h) {
     if (!h || !isTodayLocal(h.at)) return false;
     if (h.panel && h.panel !== 'validador') return false;
-    if (!esTransicionContableValidador(h)) return false;
-    return !!validadorCreditoHistorial(p, h);
+    return esTransicionContableValidador(h);
   }
 
   /** Totales visibles en el panel del validador (activos, no retirados). */

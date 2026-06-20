@@ -233,7 +233,7 @@
     }).join('');
 
     if (!rows) {
-      rows = '<p class="desp-val-chart-empty">Sin actividad de validadores.</p>';
+      rows = '<p class="desp-val-chart-empty">Sin validaciones ni cargas registradas hoy.</p>';
     }
 
     return '<aside class="desp-val-resumen desp-val-resumen--solo-barras" aria-label="Resumen validadores">' +
