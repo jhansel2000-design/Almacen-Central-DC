@@ -829,23 +829,6 @@
     return stats;
   }
 
-  function isTodayLocal(iso) {
-    if (!iso) return false;
-    var t = new Date(iso);
-    if (isNaN(t.getTime())) return false;
-    var now = new Date();
-    return t.getFullYear() === now.getFullYear() &&
-      t.getMonth() === now.getMonth() &&
-      t.getDate() === now.getDate();
-  }
-
-  function dayKeyLocal(iso) {
-    if (!iso) return '';
-    var t = new Date(iso);
-    if (isNaN(t.getTime())) return '';
-    return t.getFullYear() + '-' + t.getMonth() + '-' + t.getDate();
-  }
-
   function esValidadorContable(nombre) {
     var n = String(nombre || '').trim();
     return n && n !== VALIDADOR_SIN_ASIGNAR && VALIDADORES_ASIGNABLES.indexOf(n) >= 0;
@@ -974,12 +957,6 @@
     return validadorAsignadoEnMomentoFallback(p, h);
   }
 
-  function esConteoValidadorHoy(p, h) {
-    if (!h || !isTodayLocal(h.at)) return false;
-    if (h.panel && h.panel !== 'validador') return false;
-    return esTransicionContableValidador(h);
-  }
-
   /** Totales visibles en el panel del validador (activos, no retirados). */
   function countResumenValidador(pedidos) {
     var activos = getPedidosVisiblesValidador(pedidos);
@@ -990,34 +967,34 @@
     return counts;
   }
 
-  /** Resumen por validador: validados y cargados HOY (fecha local), pantalla TV. */
+  /** Resumen por validador: IDC activos asignados, según estado actual (validado / cargado). */
   function resumenPorValidador(pedidos) {
-    var pool = (pedidos || []).filter(function (p) {
-      return p.seguimientoValidador === true;
-    });
+    var activos = getPedidosVisiblesValidador(pedidos);
     var byName = {};
     VALIDADORES_ASIGNABLES.forEach(function (name) {
       byName[name] = { nombre: name, validado: 0, cargado: 0, ultimaValidacion: null };
     });
-    var contadoHoy = Object.create(null);
-    pool.forEach(function (p) {
-      (p.historial || []).forEach(function (h) {
-        if (!esConteoValidadorHoy(p, h)) return;
-        var name = validadorCreditoHistorial(p, h);
-        if (!name) return;
-        var dedupeKey = String(p.id || p.idc || '') + '|' + h.hacia + '|' + dayKeyLocal(h.at);
-        if (contadoHoy[dedupeKey]) return;
-        contadoHoy[dedupeKey] = true;
-        if (!byName[name]) {
-          byName[name] = { nombre: name, validado: 0, cargado: 0, ultimaValidacion: null };
+    activos.forEach(function (p) {
+      var name = validadorAsignadoEnPedido(p);
+      if (!name) return;
+      if (!byName[name]) {
+        byName[name] = { nombre: name, validado: 0, cargado: 0, ultimaValidacion: null };
+      }
+      var row = byName[name];
+      var etapas = fechasEtapasValidador(p);
+      if (p.estado === 'en_validacion') {
+        row.validado += 1;
+        var tsVal = etapas.en_validacion || p.updatedAt;
+        if (tsVal && (!row.ultimaValidacion || tsVal > row.ultimaValidacion)) {
+          row.ultimaValidacion = tsVal;
         }
-        var row = byName[name];
-        if (h.hacia === 'en_validacion') row.validado += 1;
-        else if (h.hacia === 'listo_despacho') row.cargado += 1;
-        if (h.at && (!row.ultimaValidacion || h.at > row.ultimaValidacion)) {
-          row.ultimaValidacion = h.at;
+      } else if (p.estado === 'listo_despacho') {
+        row.cargado += 1;
+        var tsCar = etapas.listo_despacho || p.updatedAt;
+        if (tsCar && (!row.ultimaValidacion || tsCar > row.ultimaValidacion)) {
+          row.ultimaValidacion = tsCar;
         }
-      });
+      }
     });
     var list = VALIDADORES_ASIGNABLES.map(function (n) {
       return byName[n] || { nombre: n, validado: 0, cargado: 0, ultimaValidacion: null };
