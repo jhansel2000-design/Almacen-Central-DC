@@ -80,6 +80,8 @@
   }
 
   function fmtDtLista(iso) {
+    var store = DS();
+    if (store && store.formatFechaDespacho) return store.formatFechaDespacho(iso);
     if (!iso) return '—';
     try {
       return new Intl.DateTimeFormat('es-DO', {
@@ -92,59 +94,21 @@
     }
   }
 
-  function fmtDtCompact(iso) {
-    if (!iso) return '—';
-    try {
-      var d = new Date(iso);
-      var date = new Intl.DateTimeFormat('es-DO', {
-        day: 'numeric',
-        month: 'numeric',
-        timeZone: 'America/Santo_Domingo'
-      }).format(d);
-      var time = new Intl.DateTimeFormat('es-DO', {
-        timeStyle: 'short',
-        timeZone: 'America/Santo_Domingo'
-      }).format(d);
-      return date + ' ' + time;
-    } catch (e) {
-      return String(iso).slice(0, 16).replace('T', ' ');
-    }
-  }
-
-  function etapasRowsHtml(p) {
-    var store = DS();
-    var etapas = store && store.fechasEtapasValidador
-      ? store.fechasEtapasValidador(p)
-      : {};
-    var orden = ['pendiente_carga', 'en_validacion', 'listo_despacho'];
-    var paired = '';
-    orden.forEach(function (id) {
-      var iso = etapas[id];
-      var reached = !!iso;
-      var current = p.estado === id;
-      var cls = ' desp-lista-present-etapa--' + ETAPA_CLS[id] +
-        (reached ? ' desp-lista-present-etapa--done' : '') +
-        (current ? ' desp-lista-present-etapa--current' : '');
-      paired += '<li class="desp-lista-present-etapa-row' + cls + '">' +
-        '<span class="desp-lista-present-etapa-lbl">' + esc(ETAPA_LABELS[id]) + '</span>' +
-        '<span class="desp-lista-present-etapa-time">' + esc(fmtDtCompact(iso)) + '</span></li>';
-    });
-    return paired;
-  }
-
-  function estadoFechaCellHtml(p) {
-    return '<div class="desp-lista-present-estado-fecha-block">' +
-      '<div class="desp-lista-present-estado-badge-wrap">' + estadoHtml(p.estado) + '</div>' +
-      '<ul class="desp-lista-present-etapas desp-lista-present-etapas--paired" aria-label="Estado y fechas por etapa">' +
-      etapasRowsHtml(p) + '</ul></div>';
+  function fechaEtapaCellHtml(iso, etapaId) {
+    var cls = iso ? (ETAPA_CLS[etapaId] || 'empty') : 'empty';
+    return '<td class="desp-lista-present-fecha-etapa desp-lista-present-fecha-etapa--' + cls + '">' +
+      esc(iso ? fmtDtLista(iso) : '—') + '</td>';
   }
 
   function renderTableRows(pedidos) {
     if (!pedidos.length) {
-      return '<tr><td colspan="6" class="desp-lista-present-empty">Sin IDC registrados todavía.</td></tr>';
+      return '<tr><td colspan="8" class="desp-lista-present-empty">Sin IDC registrados todavía.</td></tr>';
     }
     return pedidos.map(function (p) {
       var store = DS();
+      var etapas = store && store.fechasEtapasValidador
+        ? store.fechasEtapasValidador(p)
+        : {};
       var idc = store ? store.formatIdc(p.idc) : p.idc;
       var cliente = p.cliente ? String(p.cliente).trim() : '—';
       var validador = p.validadorAsignado ? String(p.validadorAsignado).trim() : '—';
@@ -155,7 +119,10 @@
         '<td class="desp-lista-present-jaula">' + esc(p.jaula || '—') + '</td>' +
         '<td class="desp-lista-present-validador">' +
         '<span class="desp-lista-present-validador-pill">' + esc(validador) + '</span></td>' +
-        '<td class="desp-lista-present-estado-fecha-cell" colspan="2">' + estadoFechaCellHtml(p) + '</td>' +
+        '<td class="desp-lista-present-estado-cell-only">' + estadoHtml(p.estado) + '</td>' +
+        fechaEtapaCellHtml(etapas.pendiente_carga, 'pendiente_carga') +
+        fechaEtapaCellHtml(etapas.en_validacion, 'en_validacion') +
+        fechaEtapaCellHtml(etapas.listo_despacho, 'listo_despacho') +
         '</tr>';
     }).join('');
   }
@@ -181,13 +148,11 @@
       '</div>';
   }
 
+  /** Tope visual de productividad (no se muestra en pantalla). Evita barras siempre llenas. */
+  var BAR_SCALE_MAX = 10;
+
   function barScaleGlobal(filas) {
-    var m = 0;
-    filas.forEach(function (r) {
-      var v = Math.max(r.validado || 0, r.cargado || 0);
-      if (v > m) m = v;
-    });
-    return m > 0 ? m : 1;
+    return BAR_SCALE_MAX;
   }
 
   function barFlexClass(n) {
@@ -228,7 +193,6 @@
         renderBarFlex(r.validado, scaleMax, 'validado') +
         '<span class="desp-val-chart-seg-num desp-val-chart-seg-num--validado">' + esc(String(r.validado)) + '</span></div>' +
         '</div>' +
-        '<span class="desp-val-chart-ultima">' + esc(fmtDtLista(r.ultimaValidacion)) + '</span>' +
         '</div>';
     }).join('');
 
@@ -273,10 +237,13 @@
       '<table class="desp-lista-present-table" aria-label="Lista IDC en seguimiento validador">' +
       '<colgroup><col class="desp-lista-present-col-idc"><col class="desp-lista-present-col-cliente">' +
       '<col class="desp-lista-present-col-jaula"><col class="desp-lista-present-col-validador">' +
-      '<col class="desp-lista-present-col-estado"><col class="desp-lista-present-col-fecha"></colgroup>' +
+      '<col class="desp-lista-present-col-estado"><col class="desp-lista-present-col-f1">' +
+      '<col class="desp-lista-present-col-f2"><col class="desp-lista-present-col-f3"></colgroup>' +
       '<thead><tr><th>IDC</th><th>Cliente</th><th>Jaula</th><th>Validador</th>' +
       '<th class="desp-lista-present-th-estado">Estado</th>' +
-      '<th class="desp-lista-present-th-fecha">Fecha y hora</th></tr></thead>' +
+      '<th class="desp-lista-present-th-fecha-etapa">Registro IDC</th>' +
+      '<th class="desp-lista-present-th-fecha-etapa">Validado</th>' +
+      '<th class="desp-lista-present-th-fecha-etapa">Cargado</th></tr></thead>' +
       '<tbody>' + renderTableRows(pedidos) + '</tbody></table></div></div></div>';
 
     lastSig = listaSignature(share, pedidos, counts, resumen);

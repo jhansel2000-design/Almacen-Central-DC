@@ -94,6 +94,63 @@
     return new Date().toISOString();
   }
 
+  /** Jornada laboral despacho: día operativo desde las 6:00 a.m. (hora RD). */
+  var JORNADA_INICIO_HORA = 6;
+  var TZ_DESPACHO = 'America/Santo_Domingo';
+
+  function formatFechaDespacho(iso) {
+    if (!iso) return '—';
+    try {
+      return new Intl.DateTimeFormat('es-DO', {
+        dateStyle: 'short',
+        timeStyle: 'short',
+        timeZone: TZ_DESPACHO
+      }).format(new Date(iso));
+    } catch (e) {
+      return String(iso).slice(0, 16).replace('T', ' ');
+    }
+  }
+
+  /** Clave YYYY-MM-DD de la jornada laboral (inicia 6:00 a.m. hora RD). */
+  function claveJornadaLaboral(iso) {
+    if (!iso) return '';
+    try {
+      var d = new Date(iso);
+      var parts = new Intl.DateTimeFormat('en-CA', {
+        timeZone: TZ_DESPACHO,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        hour12: false
+      }).formatToParts(d);
+      var y = '';
+      var m = '';
+      var day = '';
+      var hour = 0;
+      parts.forEach(function (p) {
+        if (p.type === 'year') y = p.value;
+        if (p.type === 'month') m = p.value;
+        if (p.type === 'day') day = p.value;
+        if (p.type === 'hour') hour = parseInt(p.value, 10) || 0;
+      });
+      if (hour < JORNADA_INICIO_HORA) {
+        var dt = new Date(Date.UTC(parseInt(y, 10), parseInt(m, 10) - 1, parseInt(day, 10)));
+        dt.setUTCDate(dt.getUTCDate() - 1);
+        y = String(dt.getUTCFullYear());
+        m = String(dt.getUTCMonth() + 1).padStart(2, '0');
+        day = String(dt.getUTCDate()).padStart(2, '0');
+      }
+      return y + '-' + m + '-' + day;
+    } catch (e) {
+      return '';
+    }
+  }
+
+  function jornadaLaboralActualClave() {
+    return claveJornadaLaboral(nowIso());
+  }
+
   function emptyPayload() {
     return {
       module: 'despacho',
@@ -984,13 +1041,13 @@
       var etapas = fechasEtapasValidador(p);
       if (p.estado === 'en_validacion') {
         row.validado += 1;
-        var tsVal = etapas.en_validacion || p.updatedAt;
+        var tsVal = etapas.en_validacion;
         if (tsVal && (!row.ultimaValidacion || tsVal > row.ultimaValidacion)) {
           row.ultimaValidacion = tsVal;
         }
       } else if (p.estado === 'listo_despacho') {
         row.cargado += 1;
-        var tsCar = etapas.listo_despacho || p.updatedAt;
+        var tsCar = etapas.listo_despacho;
         if (tsCar && (!row.ultimaValidacion || tsCar > row.ultimaValidacion)) {
           row.ultimaValidacion = tsCar;
         }
@@ -1068,19 +1125,34 @@
     return empty;
   }
 
-  /** Fecha/hora en que el pedido entró al estado actual (desde historial). */
+  /** Inicio del ciclo actual en seguimiento validador (último ingreso a pendiente). */
+  function inicioCicloValidador(pedido) {
+    if (!pedido) return null;
+    var hist = pedido.historial || [];
+    var i;
+    for (i = 0; i < hist.length; i++) {
+      if (hist[i].at && hist[i].hacia === 'pendiente_carga') return hist[i].at;
+    }
+    return pedido.createdAt || null;
+  }
+
+  /** Fecha/hora en que el pedido entró al estado actual (momento exacto de la acción). */
   function fechaCambioEstado(pedido) {
     if (!pedido) return null;
     var estado = pedido.estado;
+    var etapas = fechasEtapasValidador(pedido);
+    if (estado === 'pendiente_carga') return etapas.pendiente_carga;
+    if (estado === 'en_validacion') return etapas.en_validacion;
+    if (estado === 'listo_despacho') return etapas.listo_despacho;
     var hist = pedido.historial || [];
     var i;
     for (i = 0; i < hist.length; i++) {
       if (hist[i].hacia === estado && hist[i].at) return hist[i].at;
     }
-    return pedido.updatedAt || pedido.createdAt || null;
+    return null;
   }
 
-  /** Fechas de pendiente, validado y cargado (historial validador). */
+  /** Fechas de registro, validado y cargado — timestamp del historial al momento de cada acción. */
   function fechasEtapasValidador(pedido) {
     var out = {
       pendiente_carga: null,
@@ -1089,22 +1161,28 @@
     };
     if (!pedido) return out;
     var hist = pedido.historial || [];
+    var cicloDesde = inicioCicloValidador(pedido);
+    out.pendiente_carga = cicloDesde;
+    if (!cicloDesde) return out;
+
     var i;
-    var e;
+    var h;
     for (i = 0; i < hist.length; i++) {
-      e = hist[i].hacia;
-      if (!hist[i].at) continue;
-      if (e === 'pendiente_carga' && !out.pendiente_carga) out.pendiente_carga = hist[i].at;
-      else if (e === 'en_validacion' && !out.en_validacion) out.en_validacion = hist[i].at;
-      else if (e === 'listo_despacho' && !out.listo_despacho) out.listo_despacho = hist[i].at;
+      h = hist[i];
+      if (!h || !h.at || h.at < cicloDesde) continue;
+      if (h.hacia === 'en_validacion' && esTransicionContableValidador(h) && !out.en_validacion) {
+        out.en_validacion = h.at;
+      }
+      if (h.hacia === 'listo_despacho' && esTransicionContableValidador(h) && !out.listo_despacho) {
+        out.listo_despacho = h.at;
+      }
     }
-    if (!out.pendiente_carga) out.pendiente_carga = pedido.createdAt || null;
-    if (pedido.estado === 'en_validacion' && !out.en_validacion) {
-      out.en_validacion = pedido.updatedAt || null;
-    }
-    if (pedido.estado === 'listo_despacho') {
-      if (!out.en_validacion) out.en_validacion = null;
-      if (!out.listo_despacho) out.listo_despacho = pedido.updatedAt || null;
+
+    if (pedido.estado === 'pendiente_carga') {
+      out.en_validacion = null;
+      out.listo_despacho = null;
+    } else if (pedido.estado === 'en_validacion') {
+      out.listo_despacho = null;
     }
     return out;
   }
@@ -1152,6 +1230,12 @@
     getPedidosActivos: getPedidosActivos,
     bindSync: bindSync,
     wipeAll: wipeAll,
+    JORNADA_INICIO_HORA: JORNADA_INICIO_HORA,
+    TZ_DESPACHO: TZ_DESPACHO,
+    formatFechaDespacho: formatFechaDespacho,
+    claveJornadaLaboral: claveJornadaLaboral,
+    jornadaLaboralActualClave: jornadaLaboralActualClave,
+    inicioCicloValidador: inicioCicloValidador,
     fechaCambioEstado: fechaCambioEstado,
     fechasEtapasValidador: fechasEtapasValidador
   };
