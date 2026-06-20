@@ -4,6 +4,9 @@ body.rec-dash-view.rbl-theme-f {
   background: linear-gradient(180deg, #dce4ef 0%, #eef2f7 40%, #f1f5f9 100%);
   color: #0f172a;
   font-family: "Inter", "DM Sans", system-ui, sans-serif;
+  width: 100%;
+  min-height: 100vh;
+  overflow-x: hidden;
 }
 
 body.rec-dash-view.rbl-theme-f.auth-locked {
@@ -14,21 +17,28 @@ body.rec-dash-view.rbl-theme-f.auth-locked {
   width: 100%;
   min-height: 100vh;
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
 }
 
 .rec-tc-app {
   position: relative;
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 1rem 1.25rem 1.5rem;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: clamp(0.5rem, 0.9vw, 0.85rem) clamp(0.6rem, 1.1vw, 1rem);
   box-sizing: border-box;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
 }
 
 /* Menú ☰ anclado al contenedor, no a la ventana */
 .rec-tc-app .rbl-hub-btn {
   position: absolute;
-  top: 1.15rem;
-  left: 1.25rem;
+  top: clamp(0.5rem, 0.9vw, 0.85rem);
+  left: clamp(0.6rem, 1.1vw, 1rem);
   z-index: 30;
   display: flex;
 }
@@ -37,25 +47,44 @@ body.rec-dash-view.rbl-theme-f.auth-locked {
   max-width: none;
   margin: 0;
   padding: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
 .rec-tc-app .rbl-f-wrap {
   width: 100%;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.rec-tc-app .rbl-f-screen.is-on {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
 }
 
 .rec-tc-app .rbl-f-hero {
   padding-left: 4.75rem;
-  margin-bottom: 1rem;
+  margin-bottom: 0.75rem;
+  flex-shrink: 0;
 }
 
 .rec-tc-app .rbl-kpi-grid {
-  margin-bottom: 1rem;
+  margin-bottom: 0.75rem;
+  flex-shrink: 0;
 }
 
 .rec-tc-app .rbl-f-grid {
   align-items: stretch;
-  grid-template-columns: minmax(0, 1fr) minmax(300px, 380px);
-  gap: 1rem;
+  flex: 1;
+  min-height: 0;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, min(26vw, 420px));
+  gap: clamp(0.65rem, 1vw, 1rem);
 }
 
 .rec-tc-app .rbl-f-grid > .rbl-card {
@@ -147,7 +176,7 @@ body.rec-dash-view.rbl-theme-f.auth-locked {
 .rec-tc-app .rec-table-wrap--manifest {
   flex: 1;
   min-height: 0;
-  max-height: min(58vh, 560px);
+  max-height: none;
   overflow: auto;
   -webkit-overflow-scrolling: touch;
 }
@@ -437,6 +466,22 @@ body.rec-dash-view.rbl-theme-f.auth-locked {
   font-weight: 800;
   color: #b91c1c;
   letter-spacing: 0.04em;
+}
+
+@media (min-width: 1600px) {
+  .rec-tc-app .rbl-f-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(360px, 440px);
+  }
+
+  .rec-tc-app .rec-table th {
+    font-size: 0.62rem;
+    padding: 0.55rem 0.45rem;
+  }
+
+  .rec-tc-app .rec-table td {
+    font-size: 0.8rem;
+    padding: 0.5rem 0.45rem;
+  }
 }
 
 @media (max-width: 520px) {
