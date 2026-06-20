@@ -154,7 +154,6 @@
       if (errEl) { errEl.textContent = 'Usuario y contraseña requeridos.'; errEl.hidden = false; }
       return;
     }
-    var area = getSelectedArea();
     var Sec = global.PlatformSecurity;
     var verify = Sec && Sec.verifyBeforeLogin
       ? Sec.verifyBeforeLogin({ portal: 'recepcion', form: $('recAuthForm') })
@@ -171,7 +170,12 @@
         var user = Auth.authenticate(username, PC.sha256Sync(password));
         if (!user) {
           if (errEl) {
-            errEl.textContent = 'Usuario o contraseña incorrectos, o sin acceso a este portal.';
+            var wmsUser = global.PlatformAdmin && global.PlatformAdmin.authenticate
+              ? global.PlatformAdmin.authenticate(username, PC.sha256Sync(password))
+              : null;
+            errEl.textContent = wmsUser
+              ? 'Su usuario no tiene permiso para Gestión de Recepción y Ubicación. Contacte al administrador.'
+              : 'Usuario o contraseña incorrectos.';
             errEl.hidden = false;
           }
           return;
@@ -228,6 +232,7 @@
       : Promise.resolve();
     ready.then(function () {
       tryRestoreSession();
+      if (!state.user) setAuthVisible(true);
     });
   }
 
