@@ -59,10 +59,16 @@
     return n;
   }
 
+  function renderHubBtn() {
+    return '<button type="button" class="rbl-hub-btn" id="recHubBtn" aria-label="Abrir menú" aria-expanded="false">' +
+      '<span></span><span></span><span></span></button>';
+  }
+
   function renderTorreHero() {
     return '<header class="rbl-f-hero rbl-f-hero--h4">' +
       '<span class="rbl-f-hero-glow" aria-hidden="true"></span>' +
       '<div class="rbl-f-hero-inner">' +
+      renderHubBtn() +
       '<div class="rbl-f-logo">' +
       '<img class="jc-logo-img jc-logo-img--hero rbl-f-logo-img" src="assets/img/jc-logo.svg?v=1" alt="Almacén Central AC" width="52" height="52">' +
       '<div class="rbl-f-logo-text">' +
@@ -73,9 +79,7 @@
 
   function renderTorreDrawer(user) {
     var name = A().getDisplayName(user);
-    return '<button type="button" class="rbl-hub-btn" id="recHubBtn" aria-label="Abrir menú" aria-expanded="false">' +
-      '<span></span><span></span><span></span></button>' +
-      '<div class="rbl-drawer-backdrop" id="recDrawerBd" hidden></div>' +
+    return '<div class="rbl-drawer-backdrop" id="recDrawerBd" hidden></div>' +
       '<aside class="rbl-drawer" id="recDrawer" aria-label="Navegación">' +
       '<div class="rbl-drawer-brand">' +
       '<img class="jc-logo-img rbl-drawer-logo" src="assets/img/jc-logo.svg?v=1" alt="AC" width="40" height="40">' +

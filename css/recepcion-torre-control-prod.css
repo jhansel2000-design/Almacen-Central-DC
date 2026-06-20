@@ -34,13 +34,17 @@ body.rec-dash-view.rbl-theme-f.auth-locked {
   min-height: 100vh;
 }
 
-/* Menú ☰ anclado al contenedor, no a la ventana */
+/* Menú ☰ integrado en el hero (no flotando fuera) */
 .rec-tc-app .rbl-hub-btn {
-  position: absolute;
-  top: clamp(0.5rem, 0.9vw, 0.85rem);
-  left: clamp(0.6rem, 1.1vw, 1rem);
-  z-index: 30;
+  position: relative;
+  top: auto;
+  left: auto;
+  flex-shrink: 0;
+  z-index: 2;
   display: flex;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 14px;
 }
 
 .rec-tc-app .rbl-stage {
@@ -69,9 +73,20 @@ body.rec-dash-view.rbl-theme-f.auth-locked {
 }
 
 .rec-tc-app .rbl-f-hero {
-  padding-left: 4.75rem;
+  padding-left: 0;
   margin-bottom: 0.75rem;
   flex-shrink: 0;
+}
+
+.rec-tc-app .rbl-f-hero-inner {
+  display: flex;
+  align-items: center;
+  gap: clamp(0.65rem, 1vw, 0.9rem);
+}
+
+.rec-tc-app .rbl-f-logo {
+  flex: 1;
+  min-width: 0;
 }
 
 .rec-tc-app .rbl-kpi-grid {
@@ -112,12 +127,14 @@ body.rec-dash-view.rbl-theme-f.auth-locked {
 }
 
 @media (max-width: 640px) {
-  .rec-tc-app .rbl-f-hero { padding-left: 0; padding-top: 3.5rem; }
+  .rec-tc-app .rbl-f-hero-inner {
+    flex-wrap: wrap;
+    gap: 0.55rem;
+  }
+
   .rec-tc-app .rbl-hub-btn {
-    top: auto;
-    bottom: 1rem;
-    left: 1rem;
-    position: fixed;
+    width: 2.5rem;
+    height: 2.5rem;
   }
 }
 
