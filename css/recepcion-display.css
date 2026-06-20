@@ -99,6 +99,8 @@ body.rec-live-on .rec-display-waiting {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  text-align: center;
+  vertical-align: middle;
 }
 
 .rec-present-table th {

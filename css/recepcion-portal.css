@@ -183,9 +183,16 @@ body.rec-portal.rec-dash-view {
   font-size: 0.84rem;
 }
 
+.rec-table--log th,
+.rec-table--log td {
+  text-align: center;
+}
+
 .rec-log-nota {
   max-width: 16rem;
+  margin: 0 auto;
   color: rgba(255, 255, 255, 0.82);
+  text-align: center;
 }
 
 .rec-log-acc {
@@ -263,6 +270,7 @@ body.rec-portal.rec-dash-view {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  justify-content: center;
   gap: 0.35rem;
   min-width: 7.5rem;
 }
@@ -343,7 +351,7 @@ body.rec-portal.rec-dash-view {
 .rec-table td {
   padding: 0.55rem 0.65rem;
   border-bottom: 1px solid rgba(255, 138, 128, 0.14);
-  text-align: left;
+  text-align: center;
   vertical-align: middle;
 }
 
@@ -365,10 +373,16 @@ body.rec-portal.rec-dash-view {
 
 .rec-col-desc {
   max-width: 18rem;
+  text-align: center;
 }
 
 .rec-col-actions {
   white-space: nowrap;
+  text-align: center;
+}
+
+.rec-col-actions .rec-btn {
+  margin: 0.12rem;
 }
 
 .rec-empty {
