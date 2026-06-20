@@ -13,6 +13,25 @@
     unbindSync: null
   };
 
+  var displayWindow = null;
+
+  function getDisplayUrl() {
+    var path = global.location.pathname.replace(/[^/]*$/, 'recepcion-pantalla.html');
+    return global.location.origin + path;
+  }
+
+  function openDisplayWindow() {
+    if (displayWindow && !displayWindow.closed) {
+      try { displayWindow.focus(); } catch (e) { /* noop */ }
+      return displayWindow;
+    }
+    displayWindow = global.open(getDisplayUrl(), 'recepcion_pantalla', 'noopener,noreferrer');
+    if (!displayWindow) {
+      toast('Permita ventanas emergentes para abrir la pantalla TV, o use Configuraciones → Abrir pantalla TV.', 'err');
+    }
+    return displayWindow;
+  }
+
   function $(id) { return document.getElementById(id); }
 
   function toast(msg, type) {
@@ -71,6 +90,7 @@
       onCloseMuelleModal: closeMuelleModal,
       onEliminar: handleEliminar,
       onToggleShare: handleToggleShare,
+      onOpenDisplay: openDisplayWindow,
       onLogout: logout
     });
 
@@ -196,8 +216,20 @@
   function handleToggleShare() {
     var store = global.PlatformRecepcionStore;
     var active = store.isLiveShareBoardActive(store.load());
+    if (active) {
+      store.toggleLiveShareBoard(Auth.getDisplayName(state.user));
+      toast('Pantalla TV detenida.', 'info');
+      renderApp();
+      return;
+    }
+    var win = openDisplayWindow();
     store.toggleLiveShareBoard(Auth.getDisplayName(state.user));
-    toast(active ? 'Pantalla TV detenida.' : 'Compartiendo seguimiento en pantalla TV.', active ? 'info' : 'ok');
+    toast(
+      win
+        ? 'Compartiendo seguimiento en pantalla TV.'
+        : 'Transmisión activada. Si no se abrió sola, use Configuraciones → Abrir pantalla TV.',
+      win ? 'ok' : 'info'
+    );
     renderApp();
   }
 

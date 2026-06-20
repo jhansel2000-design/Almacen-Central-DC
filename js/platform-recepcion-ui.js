@@ -499,6 +499,14 @@
     wireShare(root.querySelector('#recBtnShare'));
     wireShare(root.querySelector('#recBtnShareCfg'));
 
+    var openDisplayBtn = root.querySelector('#recBtnOpenDisplay');
+    if (openDisplayBtn && callbacks.onOpenDisplay) {
+      openDisplayBtn.addEventListener('click', function (ev) {
+        ev.preventDefault();
+        callbacks.onOpenDisplay();
+      });
+    }
+
     var logoutBtn = root.querySelector('#recBtnLogout');
     if (logoutBtn && callbacks.onLogout) logoutBtn.addEventListener('click', callbacks.onLogout);
   }
