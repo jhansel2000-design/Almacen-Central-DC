@@ -77,8 +77,10 @@
       '<label class="rec-field"><span>División</span><select id="recDivision" class="rec-input" required>' +
       '<option value="">Seleccione…</option>' + divOpts + '</select></label>' +
       '<label class="rec-field rec-field--wide"><span>Descripción</span><input type="text" id="recDescripcion" class="rec-input" placeholder="PAMPERS / GATORADE…" maxlength="120" required></label>' +
+      '<div class="rec-form-row-pair">' +
       '<label class="rec-field"><span>Paletas</span><input type="number" id="recPaletas" class="rec-input" min="0" max="999" value="0"></label>' +
       '<label class="rec-field"><span>Muelle (opcional)</span><input type="text" id="recMuelle" class="rec-input" placeholder="J9" maxlength="12" autocapitalize="characters"></label>' +
+      '</div>' +
       '</div>' +
       '<button type="submit" class="rec-btn rec-btn--primary">Registrar contenedor</button>' +
       '</form></section>';
@@ -151,10 +153,10 @@
         '<td class="rec-col-tipo">' + badgeTipo(c.tipo) + '</td>' +
         '<td class="rec-col-division">' + esc(c.division || '—') + '</td>' +
         '<td class="rec-col-desc">' + esc(c.descripcion || '—') + '</td>' +
-        '<td class="rec-col-status">' + badgeValidado(c.validado) + '</td>' +
-        '<td class="rec-col-status">' + badgeEntrada(c.entrada) + '</td>' +
         '<td class="rec-col-num">' + esc(String(c.paletas || 0)) + '</td>' +
         '<td class="rec-col-muelle">' + renderMuelleCell(c, user) + '</td>' +
+        '<td class="rec-col-status">' + badgeValidado(c.validado) + '</td>' +
+        '<td class="rec-col-status">' + badgeEntrada(c.entrada) + '</td>' +
         '<td class="rec-col-actions">' + actions + '</td></tr>';
     }).join('');
   }
@@ -176,7 +178,7 @@
       '<table class="rec-table" aria-label="Contenedores en recepción">' +
       '<thead><tr>' +
       '<th>Fecha</th><th>Contenedor</th><th>Tipo</th><th>División</th><th>Descripción</th>' +
-      '<th>Validado</th><th>Entrada</th><th>Paletas</th><th>Muelle</th><th></th>' +
+      '<th>Paletas</th><th>Muelle</th><th>Validado</th><th>Entrada</th><th></th>' +
       '</tr></thead>' +
       '<tbody id="recTableBody">' + renderTableRows(contenedores, user) + '</tbody>' +
       '</table></div></section>' +

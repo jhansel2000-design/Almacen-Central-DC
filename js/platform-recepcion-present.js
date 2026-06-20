@@ -46,10 +46,10 @@
         '<td class="rec-present-tipo-cell">' + tipoBadge(c.tipo) + '</td>' +
         '<td class="rec-present-division">' + esc(c.division || '—') + '</td>' +
         '<td class="rec-present-desc">' + esc(c.descripcion || '—') + '</td>' +
-        '<td class="rec-present-status">' + badge(c.validado) + '</td>' +
-        '<td class="rec-present-status">' + badge(c.entrada) + '</td>' +
         '<td class="rec-present-num">' + esc(String(c.paletas || 0)) + '</td>' +
         '<td class="rec-present-muelle">' + esc(c.muelle || '—') + '</td>' +
+        '<td class="rec-present-status">' + badge(c.validado) + '</td>' +
+        '<td class="rec-present-status">' + badge(c.entrada) + '</td>' +
         '</tr>';
     }).join('');
   }
@@ -91,7 +91,7 @@
       '<table class="rec-present-table" aria-label="Seguimiento contenedores en vivo">' +
       '<thead><tr>' +
       '<th>Fecha</th><th>Contenedor</th><th>Tipo</th><th>División</th><th>Descripción</th>' +
-      '<th>Validado</th><th>Entrada</th><th>Paletas</th><th>Muelle</th>' +
+      '<th>Paletas</th><th>Muelle</th><th>Validado</th><th>Entrada</th>' +
       '</tr></thead>' +
       '<tbody>' + renderRows(contenedores) + '</tbody></table></div></div>';
 
