@@ -1367,6 +1367,9 @@
     VALIDADOR_ESTADOS.forEach(function (id) {
       counts[id] = activos.filter(function (p) { return p.estado === id; }).length;
     });
+    counts.en_validacion += activos.filter(function (p) {
+      return p.estado === 'listo_despacho' && !tuvoValidacionEnCiclo(p);
+    }).length;
     activos.forEach(function (p) {
       cargasEquipoExplicitas(p).forEach(function (c) {
         counts.totalCamiones += c.camiones || 0;
@@ -1407,6 +1410,9 @@
         if (name) {
           var rowCar = ensureRow(name);
           rowCar.cargado += 1;
+          if (!tuvoValidacionEnCiclo(p)) {
+            rowCar.validado += 1;
+          }
           var tsCar = etapas.listo_despacho;
           if (tsCar && (!rowCar.ultimaValidacion || tsCar > rowCar.ultimaValidacion)) {
             rowCar.ultimaValidacion = tsCar;
@@ -1494,6 +1500,21 @@
     return pedido.createdAt || null;
   }
 
+  /** ¿Pasó por validado en el ciclo actual? (si no, cargado directo cuenta también como validado). */
+  function tuvoValidacionEnCiclo(pedido) {
+    if (!pedido) return false;
+    var cicloDesde = inicioCicloValidador(pedido);
+    if (!cicloDesde) return false;
+    var hist = pedido.historial || [];
+    var i;
+    for (i = 0; i < hist.length; i++) {
+      var h = hist[i];
+      if (!h || !h.at || h.at < cicloDesde) continue;
+      if (h.hacia === 'en_validacion') return true;
+    }
+    return false;
+  }
+
   /** Fecha/hora en que el pedido entró al estado actual (momento exacto de la acción). */
   function fechaCambioEstado(pedido) {
     if (!pedido) return null;
@@ -1572,6 +1593,9 @@
           }
         }
         if (!out.listo_despacho) out.listo_despacho = pedido.updatedAt || null;
+      }
+      if (!out.en_validacion && out.listo_despacho) {
+        out.en_validacion = out.listo_despacho;
       }
     }
     return out;
