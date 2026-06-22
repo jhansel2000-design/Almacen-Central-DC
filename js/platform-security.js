@@ -124,8 +124,24 @@
     return { ok: true };
   }
 
+  function markFormInteracted(form) {
+    if (form) form.setAttribute('data-dc-form-interacted', '1');
+  }
+
+  function bindFormInteraction(form) {
+    if (!form || form.getAttribute('data-dc-interaction-bound') === '1') return;
+    form.setAttribute('data-dc-interaction-bound', '1');
+    function onInteract() {
+      markFormInteracted(form);
+      form.setAttribute('data-dc-form-ts', String(Date.now()));
+    }
+    form.addEventListener('input', onInteract, { passive: true });
+    form.addEventListener('focusin', onInteract, { passive: true });
+  }
+
   function checkTiming(form) {
     if (!form) return { ok: true };
+    if (form.getAttribute('data-dc-form-interacted') === '1') return { ok: true };
     var ts = parseInt(form.getAttribute('data-dc-form-ts') || '0', 10);
     if (!ts) return { ok: true };
     if (Date.now() - ts < minFormMs) {
@@ -310,12 +326,17 @@
   function mountLoginForm(form, portal) {
     if (!form) return loadConfig();
     ensureHoneypot(form);
+    bindFormInteraction(form);
     form.setAttribute('data-dc-form-ts', String(Date.now()));
     form.setAttribute('data-dc-portal', portal || 'default');
     var box = ensureVerifyBox(form);
     return loadConfig().then(function () {
       if (!box) return;
-      if (turnstileSiteKey) return setupTurnstile(box, portal || 'default');
+      if (turnstileSiteKey) {
+        return setupTurnstile(box, portal || 'default').catch(function () {
+          setupMathChallenge(box, portal || 'default');
+        });
+      }
       setupMathChallenge(box, portal || 'default');
       setVerifyMode(form, 'math');
     });
@@ -352,10 +373,22 @@
     if (!tm.ok) return Promise.resolve(tm);
 
     return loadConfig().then(function () {
-      var math = verifyMathChallenge(form, portal);
-      if (!math.ok) return math;
       var ts = verifyTurnstileClient(form);
-      if (!ts.ok) return ts;
+      if (!ts.ok) {
+        if (getVerifyMode(form) === 'turnstile') {
+          var box = form && form.querySelector('.auth-human-verify');
+          if (box) setupMathChallenge(box, portal);
+          var mathRetry = verifyMathChallenge(form, portal);
+          if (!mathRetry.ok) {
+            return { ok: false, error: 'Completa la verificación humana (suma).' };
+          }
+        } else {
+          return ts;
+        }
+      } else {
+        var math = verifyMathChallenge(form, portal);
+        if (!math.ok) return math;
+      }
       return verifyOnServer(turnstileToken).then(function (server) {
         if (!server.ok) return server;
         return { ok: true };

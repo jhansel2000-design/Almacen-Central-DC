@@ -39,21 +39,50 @@
     el.hidden = !msg;
   }
 
+  function ensureAuthTouch() {
+    var overlay = $('tempAuthOverlay');
+    if (!overlay) return;
+    overlay.style.pointerEvents = 'auto';
+    var layout = overlay.querySelector('.auth-layout');
+    var stack = overlay.querySelector('.auth-stack');
+    if (layout) layout.style.pointerEvents = 'auto';
+    if (stack) stack.style.pointerEvents = 'auto';
+  }
+
   function setAuthVisible(visible) {
     var overlay = $('tempAuthOverlay');
     var app = $('tempApp');
     if (overlay) {
       overlay.classList.toggle('is-hidden', !visible);
       overlay.setAttribute('aria-hidden', visible ? 'false' : 'true');
+      if (visible) {
+        overlay.style.removeProperty('pointer-events');
+        ensureAuthTouch();
+      } else {
+        overlay.style.pointerEvents = 'none';
+      }
     }
     if (app) {
       app.classList.toggle('is-hidden', visible);
-      app.setAttribute('aria-hidden', visible ? 'true' : 'false');
-      if (visible) app.setAttribute('inert', '');
-      else app.removeAttribute('inert');
+      if (visible) {
+        app.style.pointerEvents = 'none';
+        app.setAttribute('aria-hidden', 'true');
+        app.setAttribute('inert', '');
+      } else {
+        app.style.pointerEvents = 'auto';
+        app.removeAttribute('aria-hidden');
+        app.removeAttribute('inert');
+      }
     }
     document.body.classList.toggle('auth-locked', visible);
     document.body.classList.toggle('temp-dash-view', !visible);
+  }
+
+  function setLoginLoading(loading) {
+    var btn = $('tempAuthSubmit');
+    if (!btn) return;
+    btn.classList.toggle('is-loading', loading);
+    btn.disabled = loading;
   }
 
   function enterApp(user) {
@@ -73,14 +102,18 @@
       showAuthError(allowed.message);
       return;
     }
-    if (!username || !password) {
-      showAuthError('Completa usuario y contraseña.');
+    if (!username) {
+      showAuthError('Escribe el usuario.');
+      $('tempAuthUsername') && $('tempAuthUsername').focus();
+      return;
+    }
+    if (!password) {
+      showAuthError('Escribe la contraseña.');
+      $('tempAuthPassword') && $('tempAuthPassword').focus();
       return;
     }
 
-    var btn = $('tempAuthSubmit');
-    if (btn) btn.disabled = true;
-
+    setLoginLoading(true);
     var Sec = global.PlatformSecurity;
     var verifyHuman = Sec && Sec.verifyBeforeLogin
       ? Sec.verifyBeforeLogin({ portal: 'temperatura', form: $('tempAuthForm') })
@@ -88,16 +121,18 @@
 
     verifyHuman.then(function (human) {
       if (!human.ok) {
-        if (btn) btn.disabled = false;
+        setLoginLoading(false);
         showAuthError(human.error || 'Completa la verificación humana.');
+        if (Sec && Sec.resetHumanVerify) Sec.resetHumanVerify($('tempAuthForm'));
         return;
       }
       try {
         var hash = PC.sha256Sync(password);
         var user = Auth.authenticate(username, hash);
-        if (btn) btn.disabled = false;
+        setLoginLoading(false);
         if (!user) {
           PC.recordAveriasLoginFailure();
+          if (Sec && Sec.resetHumanVerify) Sec.resetHumanVerify($('tempAuthForm'), { reason: 'auth-failed' });
           showAuthError('Usuario o contraseña incorrectos.');
           return;
         }
@@ -111,8 +146,8 @@
         enterApp(user);
         toast('Bienvenido, ' + (Auth.getDisplayName ? Auth.getDisplayName(user) : user.name) + '.', 'ok');
       } catch (err) {
-        if (btn) btn.disabled = false;
-        showAuthError('No se pudo validar la sesión.');
+        setLoginLoading(false);
+        showAuthError('No se pudo validar la sesión. Intenta de nuevo.');
       }
     });
   }
@@ -140,6 +175,7 @@
     if (global.PlatformSecurity && global.PlatformSecurity.mountLoginForm) {
       global.PlatformSecurity.mountLoginForm(form, 'temperatura');
     }
+    ensureAuthTouch();
     var toggle = $('tempBtnTogglePassword');
     var pwd = $('tempAuthPassword');
     if (toggle && pwd) {

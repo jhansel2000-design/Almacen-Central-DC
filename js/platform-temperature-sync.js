@@ -15,6 +15,11 @@
   var readyPromise = null;
   var lastSyncAt = 0;
   var setupRequired = false;
+  var cloudReady = false;
+
+  function isCloudReady() {
+    return cloudReady && !setupRequired;
+  }
 
   function isMissingTableError(err) {
     if (!err) return false;
@@ -114,12 +119,14 @@
       .then(function (res) {
         if (res.error) throw res.error;
         setupRequired = false;
+        cloudReady = true;
         mergeAreas(res.data);
         return areas;
       })
       .catch(function (err) {
         if (isMissingTableError(err)) {
           setupRequired = true;
+          cloudReady = false;
           notify('setup', { required: true });
         }
         mergeAreas(core().defaultAreas());
@@ -206,6 +213,9 @@
   function insertReading(payload) {
     var client = sb();
     if (!client) return Promise.reject(new Error('Supabase no disponible'));
+    if (setupRequired) {
+      return Promise.reject(new Error('Falta activar Supabase: ejecute SETUP-TEMPERATURA-SUPABASE.bat y pegue el SQL en supabase.com.'));
+    }
     var row = {
       area_id: payload.areaId,
       celsius: Number(payload.celsius),
@@ -218,8 +228,12 @@
       .then(function (res) {
         if (res.error) throw res.error;
         setupRequired = false;
+        cloudReady = true;
         lastSyncAt = Date.now();
-        return res.data;
+        return Promise.all([fetchCurrent(), fetchAlerts()]).then(function () {
+          notify('reading', { id: res.data && res.data.id });
+          return res.data;
+        });
       });
   }
 
@@ -281,7 +295,10 @@
         fetchAlerts();
         notify('reading', null);
       },
-      pollFallbackMs: 0
+      pull: function () {
+        return fetchCurrent().then(function () { return fetchAlerts(); });
+      },
+      pollFallbackMs: 4000
     });
 
     unsubAlerts = RT.subscribeTable({
@@ -293,6 +310,15 @@
       },
       pull: fetchAlerts,
       pollFallbackMs: 12000
+    });
+  }
+
+  function recheckCloud() {
+    if (!setupRequired) return Promise.resolve(true);
+    readyPromise = null;
+    return ready().then(function () {
+      notify('setup', { required: setupRequired });
+      return !setupRequired;
     });
   }
 
@@ -346,6 +372,8 @@
     getAlerts: getAlerts,
     getLastSyncAt: getLastSyncAt,
     isSetupRequired: isSetupRequired,
+    isCloudReady: isCloudReady,
+    recheckCloud: recheckCloud,
     formatError: formatError,
     isMissingTableError: isMissingTableError,
     fetchAreas: fetchAreas,

@@ -50,6 +50,49 @@
     return 'temp-status--unknown';
   }
 
+  function parseTempValue(raw) {
+    var s = String(raw || '').trim().replace(',', '.');
+    if (!s) return NaN;
+    return Number(s);
+  }
+
+  function updateSyncHeader() {
+    var el = $('tempHeaderSync');
+    if (!el) return;
+    var S = sync();
+    if (S.isSetupRequired && S.isSetupRequired()) {
+      el.textContent = 'Sin base de datos';
+      el.className = 'user-info temp-sync-status temp-sync-status--warn';
+      el.title = 'Ejecute SETUP-TEMPERATURA-SUPABASE.bat una vez';
+      return;
+    }
+    if (!global.PlatformSupabase || !global.PlatformSupabase.isEnabled || !global.PlatformSupabase.isEnabled()) {
+      el.textContent = 'Sin conexión';
+      el.className = 'user-info temp-sync-status temp-sync-status--warn';
+      return;
+    }
+    var last = S.getLastSyncAt();
+    var fresh = last && (Date.now() - last) < 20000;
+    el.textContent = fresh ? 'En vivo' : 'Sincronizando…';
+    el.className = 'user-info temp-sync-status' + (fresh ? ' temp-sync-status--live' : '');
+    el.title = last
+      ? 'Última actualización: ' + core().formatDateTime(new Date(last).toISOString())
+      : 'Conectando con Supabase';
+  }
+
+  function renderSetupBanner() {
+    var S = sync();
+    if (!S.isSetupRequired || !S.isSetupRequired()) return '';
+    return (
+      '<div class="temp-setup-banner" role="alert">' +
+      '<strong>Base de datos de temperatura pendiente</strong>' +
+      '<p>Para registrar y ver datos en tiempo real hoy, ejecute <strong>SETUP-TEMPERATURA-SUPABASE.bat</strong> ' +
+      'en la carpeta del proyecto (el SQL ya queda en el portapapeles) o pegue el archivo ' +
+      '<code>supabase/migrations/20250616_temperature_monitoring.sql</code> en ' +
+      '<a href="https://supabase.com/dashboard/project/pjbzbwckcbhmkeidsqjz/sql/new" target="_blank" rel="noopener">Supabase → SQL Editor</a> y pulse RUN.</p></div>'
+    );
+  }
+
   function renderHome() {
     var host = $('tempViewHome');
     if (!host) return;
@@ -81,16 +124,7 @@
       return a.status === 'active' || a.status === 'acknowledged';
     });
 
-    var setupBanner = '';
-    if (S.isSetupRequired && S.isSetupRequired()) {
-      setupBanner =
-        '<div class="temp-setup-banner" role="alert">' +
-        '<strong>Configuración pendiente en Supabase</strong>' +
-        '<p>Para guardar y ver temperaturas en vivo, ejecute una sola vez el SQL del archivo ' +
-        '<code>supabase/migrations/20250616_temperature_monitoring.sql</code> en ' +
-        '<a href="https://supabase.com/dashboard/project/pjbzbwckcbhmkeidsqjz/sql/new" target="_blank" rel="noopener">Supabase → SQL Editor</a>, ' +
-        'o use <code>SETUP-TEMPERATURA-SUPABASE.bat</code> en la carpeta del proyecto.</p></div>';
-    }
+    var setupBanner = renderSetupBanner();
 
     var cards = current.map(function (item) {
       var area = item.area || {};
@@ -138,24 +172,31 @@
   function renderRegister() {
     var host = $('tempViewRegister');
     if (!host) return;
-    var areas = sync().getAreas();
+    var S = sync();
+    var blocked = S.isSetupRequired && S.isSetupRequired();
+    var areas = S.getAreas();
     var opts = areas.map(function (a) {
       return '<option value="' + esc(a.id) + '">' + esc(a.name) + ' (' + esc(core().formatRange(a)) + ')</option>';
     }).join('');
 
     host.innerHTML =
+      renderSetupBanner() +
       '<header class="temp-view-head"><h2>Registrar temperatura</h2>' +
       '<p class="temp-view-sub">Entrada manual · visible para todos al instante</p></header>' +
-      '<form id="tempRegisterForm" class="temp-form">' +
+      (blocked
+        ? '<p class="temp-empty">Active la base de datos arriba para poder guardar lecturas.</p>'
+        : '<form id="tempRegisterForm" class="temp-form">' +
       '<label class="temp-field"><span>Área</span><select id="tempRegArea" required>' + opts + '</select></label>' +
       '<label class="temp-field"><span>Temperatura (°C)</span>' +
-      '<input id="tempRegValue" type="number" step="0.1" min="-40" max="60" required placeholder="Ej. 22.5"></label>' +
+      '<input id="tempRegValue" type="text" inputmode="decimal" pattern="-?[0-9]+([.,][0-9]+)?" required placeholder="Ej. 22,5" autocomplete="off"></label>' +
       '<label class="temp-field"><span>Notas (opcional)</span>' +
       '<input id="tempRegNotes" type="text" maxlength="200" placeholder="Observaciones"></label>' +
+      '<p id="tempRegError" class="temp-reg-error" role="alert" hidden></p>' +
       '<div class="temp-form-actions">' +
-      '<button type="submit" class="temp-btn temp-btn--primary">Guardar lectura</button>' +
+      '<button type="submit" class="temp-btn temp-btn--primary" id="tempRegSubmit">Guardar lectura</button>' +
       '<button type="button" class="temp-btn temp-btn--ghost" data-temp-action="dashboard">Volver al dashboard</button>' +
-      '</div></form>';
+      '</div></form>');
+    updateSyncHeader();
   }
 
   function renderHistory() {
@@ -356,7 +397,8 @@
     else if (mod === 'register') renderRegister();
     else if (mod === 'history') renderHistory();
     else if (mod === 'alerts') renderAlerts();
-    else if (mod === 'charts') renderCharts();
+    else     if (mod === 'charts') renderCharts();
+    updateSyncHeader();
     closeDrawer();
   }
 
@@ -380,14 +422,38 @@
 
   function submitRegister(ev) {
     ev.preventDefault();
-    var areaId = ($('tempRegArea') && $('tempRegArea').value) || '';
-    var val = Number(($('tempRegValue') && $('tempRegValue').value) || '');
-    var notes = ($('tempRegNotes') && $('tempRegNotes').value) || '';
-    if (!areaId || isNaN(val)) {
-      toast('Completa área y temperatura.', 'warn');
+    var errEl = $('tempRegError');
+    if (errEl) {
+      errEl.hidden = true;
+      errEl.textContent = '';
+    }
+    if (sync().isSetupRequired && sync().isSetupRequired()) {
+      toast('Active Supabase con SETUP-TEMPERATURA-SUPABASE.bat antes de registrar.', 'err');
       return;
     }
-    var btn = ev.target.querySelector('[type="submit"]');
+    var areaId = ($('tempRegArea') && $('tempRegArea').value) || '';
+    var val = parseTempValue($('tempRegValue') && $('tempRegValue').value);
+    var notes = ($('tempRegNotes') && $('tempRegNotes').value) || '';
+    if (!areaId || isNaN(val)) {
+      var msg = 'Completa área y temperatura válida (ej. 22,5).';
+      if (errEl) {
+        errEl.textContent = msg;
+        errEl.hidden = false;
+      }
+      toast(msg, 'warn');
+      return;
+    }
+    if (val < -40 || val > 60) {
+      var rangeMsg = 'La temperatura debe estar entre -40 y 60 °C.';
+      if (errEl) {
+        errEl.textContent = rangeMsg;
+        errEl.hidden = false;
+      }
+      toast(rangeMsg, 'warn');
+      return;
+    }
+    var form = $('tempRegisterForm');
+    var btn = $('tempRegSubmit') || (form && form.querySelector('[type="submit"]'));
     if (btn) btn.disabled = true;
     sync().insertReading({
       areaId: areaId,
@@ -395,12 +461,18 @@
       recordedBy: state.user ? state.user.name : '',
       notes: notes
     }).then(function () {
-      toast('Temperatura registrada.', 'ok');
+      toast('Temperatura registrada — todos la ven al instante.', 'ok');
       showModule('dashboard');
     }).catch(function (err) {
-      toast(sync().formatError(err, 'No se pudo guardar.'), 'err');
+      var msg = sync().formatError(err, 'No se pudo guardar.');
+      if (errEl) {
+        errEl.textContent = msg;
+        errEl.hidden = false;
+      }
+      toast(msg, 'err');
     }).finally(function () {
       if (btn) btn.disabled = false;
+      updateSyncHeader();
     });
   }
 
@@ -450,10 +522,13 @@
   }
 
   function onSyncChange(kind) {
+    updateSyncHeader();
     if (state.module === 'dashboard') renderDashboard();
     else if (state.module === 'home') renderHome();
     else if (state.module === 'alerts') renderAlerts();
+    else if (state.module === 'register' && kind === 'setup') renderRegister();
     else if (state.module === 'history' && kind === 'reading') loadHistoryTable();
+    else if (state.module === 'dashboard' && kind === 'reading') renderDashboard();
   }
 
   function start(user) {
@@ -472,11 +547,21 @@
     state.offSync = sync().onChange(onSyncChange);
 
     sync().ready().then(function () {
+      updateSyncHeader();
       showModule('home');
+      global.setInterval(updateSyncHeader, 5000);
+      global.setInterval(function () {
+        if (sync().isSetupRequired && sync().isSetupRequired() && sync().recheckCloud) {
+          sync().recheckCloud().then(function (ok) {
+            if (ok) toast('Base de datos lista — ya puede registrar temperaturas.', 'ok');
+          });
+        }
+      }, 12000);
     }).catch(function () {
+      updateSyncHeader();
       showModule('home');
       if (sync().isSetupRequired && sync().isSetupRequired()) {
-        toast('Activa Supabase con SETUP-TEMPERATURA-SUPABASE.bat para guardar lecturas.', 'warn');
+        toast('Ejecute SETUP-TEMPERATURA-SUPABASE.bat una vez para guardar lecturas en vivo.', 'warn');
       } else {
         toast('Modo sin conexión — verifique Supabase.', 'warn');
       }
