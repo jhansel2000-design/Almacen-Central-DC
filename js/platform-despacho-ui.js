@@ -703,6 +703,8 @@
     }
     return '<div class="desp-table-wrap desp-lista-vivo-wrap">' +
       '<table class="desp-table desp-table--lista-vivo" aria-label="Seguimiento validador en vivo">' +
+      '<colgroup><col><col><col><col><col><col class="desp-col-carga"><col>' +
+      (canRemove ? '<col>' : '') + '</colgroup>' +
       '<thead><tr><th>IDC</th><th>Cliente</th><th>Jaula</th><th>Estado</th><th>Asignado</th><th>Carga por validador</th><th>Fecha y hora</th>' +
       (canRemove ? '<th>Acción</th>' : '') +
       '</tr></thead><tbody>' +
@@ -970,6 +972,8 @@
       '</div>' +
       '<div class="desp-table-wrap">' +
       '<table class="desp-table" id="despValTable">' +
+      '<colgroup><col><col><col><col><col><col class="desp-col-carga"><col>' +
+      (canValidate ? '<col><col>' : '<col>') + '</colgroup>' +
       '<thead><tr>' +
       '<th>IDC</th><th>Cliente</th><th>Jaula</th><th>Estado</th><th>Asignado</th><th>Carga por validador</th><th>Fecha y hora</th>' +
       (canValidate ? '<th>Acción</th>' : '') +

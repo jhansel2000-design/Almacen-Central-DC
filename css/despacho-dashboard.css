@@ -2557,9 +2557,16 @@ body.desp-controller-mode .desp-live-present-lista {
 
 /* —— Carga por validador (camiones) —— */
 .desp-carga-equipo-cell {
-  min-width: 0;
-  max-width: 16rem;
+  min-width: 12.5rem;
+  width: 15%;
+  max-width: none;
   vertical-align: top;
+  overflow: visible;
+}
+
+col.desp-col-carga {
+  width: 16%;
+  min-width: 12.5rem;
 }
 
 .desp-carga-equipo--read {
@@ -2589,10 +2596,10 @@ body.desp-controller-mode .desp-live-present-lista {
 .desp-carga-chip-name {
   font-weight: 700;
   color: var(--text);
-  max-width: 8.5rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  max-width: none;
+  white-space: normal;
+  word-break: break-word;
+  line-height: 1.2;
 }
 
 .desp-carga-chip-num {
@@ -2624,11 +2631,11 @@ body.desp-controller-mode .desp-live-present-lista {
 }
 
 .desp-carga-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
-  gap: 0.35rem 0.45rem;
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  padding: 0.35rem 0.45rem;
+  gap: 0.3rem 0.45rem;
+  padding: 0.4rem 0.5rem;
   border-radius: 10px;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -2640,11 +2647,15 @@ body.desp-controller-mode .desp-live-present-lista {
 }
 
 .desp-carga-row-name {
+  flex: 1 1 100%;
   font-size: 0.8rem;
   font-weight: 700;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.25;
+  white-space: normal;
+  word-break: break-word;
+  overflow: visible;
+  text-overflow: unset;
+  color: var(--text);
 }
 
 .desp-carga-row-qty {
@@ -2734,12 +2745,16 @@ body.desp-controller-mode .desp-live-present-lista {
 
 #despValTable td.desp-cliente,
 #despValTable td.desp-validador-asignado,
-#despValTable td.desp-carga-equipo-cell,
 .desp-table--lista-vivo td.desp-cliente,
-.desp-table--lista-vivo td.desp-validador-asignado,
-.desp-table--lista-vivo td.desp-carga-equipo-cell {
+.desp-table--lista-vivo td.desp-validador-asignado {
   overflow: hidden;
   max-width: 0;
+}
+
+#despValTable td.desp-carga-equipo-cell,
+.desp-table--lista-vivo td.desp-carga-equipo-cell {
+  overflow: visible;
+  max-width: none;
 }
 
 .desp-validador-asignado-select {
@@ -2752,6 +2767,6 @@ body.desp-controller-mode .desp-live-present-lista {
   min-width: 0;
 }
 
-.desp-carga-chip-name {
-  max-width: 5.5rem;
+.desp-carga-chip {
+  max-width: 100%;
 }
