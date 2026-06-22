@@ -195,10 +195,6 @@ body.desp-display-mode .desp-val-chart-bar-fill--cargado {
   background: #34d399;
 }
 
-body.desp-display-mode .desp-val-chart-bar-fill--camiones {
-  background: #60a5fa;
-}
-
 body.desp-display-mode .desp-val-chart-bar-rest {
   display: block;
   height: 100%;

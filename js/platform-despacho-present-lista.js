@@ -29,7 +29,7 @@
   var KPI_LABELS = {
     pendiente_carga: 'Pendiente',
     en_validacion: 'Validado',
-    listo_despacho: 'IDC carg.'
+    listo_despacho: 'Cargado'
   };
 
   function DS() {
@@ -148,7 +148,7 @@
         var lbl = KPI_LABELS[id] || e.kpiLabel || e.short || e.label;
         var kpiCls = id === 'pendiente_carga' ? 'pendiente' : (id === 'en_validacion' ? 'validado' : 'cargado');
         var title = id === 'listo_despacho'
-          ? 'IDC marcados como cargados (estado listo despacho)'
+          ? 'IDC marcados como cargados'
           : (id === 'en_validacion' ? 'IDC en validación' : 'IDC pendientes por validar');
         return '<div class="desp-lista-present-kpi desp-lista-present-kpi--' + esc(kpiCls) + '">' +
           (icon ? '<span class="desp-lista-present-kpi-iconbox" aria-hidden="true">' + icon + '</span>' : '') +
@@ -164,7 +164,7 @@
   function barScaleGlobal(filas) {
     var max = BAR_SCALE_MAX;
     (filas || []).forEach(function (r) {
-      max = Math.max(max, r.validado || 0, r.camiones || 0, r.cargado || 0);
+      max = Math.max(max, r.validado || 0, r.cargado || 0);
     });
     return Math.min(250, max);
   }
@@ -193,29 +193,24 @@
     if (!store || !store.resumenPorValidador) return '';
     var resumen = store.resumenPorValidador(pedidos || []);
     var filas = (resumen.filas || []).filter(function (r) {
-      return (r.camiones || 0) > 0 || (r.validado || 0) > 0 || (r.cargado || 0) > 0;
+      return (r.validado || 0) > 0 || (r.cargado || 0) > 0;
     });
     var scaleMax = barScaleGlobal(filas);
 
     var rows = filas.map(function (r) {
-      var camiones = r.camiones != null ? r.camiones : 0;
       var cargado = r.cargado != null ? r.cargado : 0;
       return '<div class="desp-val-chart-row">' +
         '<span class="desp-val-chart-name" title="' + esc(r.nombre) + '">' + esc(r.nombre) + '</span>' +
         '<div class="desp-val-chart-bars" role="img" aria-label="' + esc(r.nombre) + ': ' +
-        cargado + ' IDC cargados, ' + r.validado + ' validados, ' + camiones + ' camiones">' +
-        '<div class="desp-val-chart-bar-row">' +
-        renderBarFlex(cargado, scaleMax, 'cargado') +
-        '<span class="desp-val-chart-seg-num desp-val-chart-seg-num--cargado" title="IDC cargados">' +
-        esc(String(cargado)) + '</span></div>' +
+        r.validado + ' validados, ' + cargado + ' cargados">' +
         '<div class="desp-val-chart-bar-row">' +
         renderBarFlex(r.validado, scaleMax, 'validado') +
         '<span class="desp-val-chart-seg-num desp-val-chart-seg-num--validado" title="IDC validados">' +
         esc(String(r.validado)) + '</span></div>' +
         '<div class="desp-val-chart-bar-row">' +
-        renderBarFlex(camiones, scaleMax, 'camiones') +
-        '<span class="desp-val-chart-seg-num desp-val-chart-seg-num--camiones" title="Camiones registrados">' +
-        esc(String(camiones)) + '</span></div>' +
+        renderBarFlex(cargado, scaleMax, 'cargado') +
+        '<span class="desp-val-chart-seg-num desp-val-chart-seg-num--cargado" title="IDC cargados">' +
+        esc(String(cargado)) + '</span></div>' +
         '</div>' +
         '</div>';
     }).join('');
@@ -226,9 +221,8 @@
 
     return '<aside class="desp-val-resumen desp-val-resumen--solo-barras" aria-label="Resumen validadores">' +
       '<div class="desp-val-resumen-legend desp-val-resumen-legend--tv">' +
-      '<span class="desp-val-resumen-legend-item"><span class="desp-val-swatch desp-val-swatch--cargado" aria-hidden="true"></span> IDC carg.</span>' +
       '<span class="desp-val-resumen-legend-item"><span class="desp-val-swatch desp-val-swatch--validado" aria-hidden="true"></span> Validados</span>' +
-      '<span class="desp-val-resumen-legend-item"><span class="desp-val-swatch desp-val-swatch--camiones" aria-hidden="true"></span> Camiones</span>' +
+      '<span class="desp-val-resumen-legend-item"><span class="desp-val-swatch desp-val-swatch--cargado" aria-hidden="true"></span> Cargados</span>' +
       '</div>' +
       '<div class="desp-val-chart-rows">' + rows + '</div></aside>';
   }
