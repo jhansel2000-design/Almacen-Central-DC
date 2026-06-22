@@ -281,7 +281,8 @@
   function pedidoSigPiece(p) {
     if (!p) return '';
     var cargas = (p.cargasEquipo || []).map(function (c) {
-      return String(c.validador || '') + '=' + String(c.camiones || 0);
+      return String(c.validador || '') + '=' + String(c.camiones || 0) +
+        (c.explicit ? '!' : '');
     }).sort().join('+');
     return String(p.id) + ':' + String(p.estado) + '@' + String(p.updatedAt || '') +
       '~' + String(p.validadorAsignado || '') + '~' + cargas +

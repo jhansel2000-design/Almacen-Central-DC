@@ -679,7 +679,7 @@
     if (!DS.resumenPorValidador) return '';
     var resumen = DS.resumenPorValidador(pedidos || []);
     var activos = (resumen.filas || []).filter(function (r) {
-      return (r.camiones || 0) > 0;
+      return (r.cargado || 0) > 0;
     });
     if (!activos.length) {
       return '<p class="desp-muted desp-resumen-camiones-empty">Sin camiones registrados todavía.</p>';
@@ -689,7 +689,7 @@
         var short = String(r.nombre || '').split(' ')[0];
         return '<div class="desp-resumen-camiones-item" title="' + esc(r.nombre) + '">' +
           '<span class="desp-resumen-camiones-name">' + esc(short) + '</span>' +
-          '<span class="desp-resumen-camiones-val"><strong>' + esc(String(r.camiones || 0)) + '</strong> cam.</span>' +
+          '<span class="desp-resumen-camiones-val"><strong>' + esc(String(r.cargado || 0)) + '</strong> cam.</span>' +
           '<span class="desp-resumen-camiones-val">' + esc(String(r.validado || 0)) + ' val.</span>' +
           '</div>';
       }).join('') +

@@ -71,7 +71,7 @@
     }).join('|');
     var countSig = counts
       ? [counts.pendiente_carga, counts.en_validacion, counts.listo_despacho,
-        counts.totalCamiones, counts.total].join(',')
+        counts.cargadoUnidades, counts.totalCamiones, counts.total].join(',')
       : '';
     var valSig = '';
     if (resumen && resumen.filas) {
@@ -103,14 +103,17 @@
       esc(iso ? fmtDtLista(iso) : '—') + '</td>';
   }
 
-  function renderTableFoot(counts) {
+  function renderTableFoot(counts, updatedAt) {
     if (!counts) return '';
+    var syncLbl = updatedAt ? fmtDtLista(updatedAt) : '—';
     return '<tfoot><tr class="desp-lista-present-foot">' +
       '<td colspan="9">' +
       '<span class="desp-lista-present-foot-item">IDC visibles: <strong>' + esc(String(counts.total || 0)) + '</strong></span>' +
       '<span class="desp-lista-present-foot-item">Pendiente: <strong>' + esc(String(counts.pendiente_carga || 0)) + '</strong></span>' +
       '<span class="desp-lista-present-foot-item">Validado: <strong>' + esc(String(counts.en_validacion || 0)) + '</strong></span>' +
-      '<span class="desp-lista-present-foot-item">Cargado: <strong>' + esc(String(counts.listo_despacho || 0)) + '</strong></span>' +
+      '<span class="desp-lista-present-foot-item">Cargado: <strong>' + esc(String(counts.cargadoUnidades != null ? counts.cargadoUnidades : counts.listo_despacho || 0)) + ' cam.</strong>' +
+      ' <span class="desp-lista-present-foot-idc">(' + esc(String(counts.listo_despacho || 0)) + ' IDC)</span></span>' +
+      '<span class="desp-lista-present-foot-item desp-lista-present-foot-sync" title="Última actualización de datos">Actualizado: ' + esc(syncLbl) + '</span>' +
       '</td></tr></tfoot>';
   }
 
@@ -158,12 +161,17 @@
         var icon = store.renderEstadoIconSvg ? store.renderEstadoIconSvg(id, { compact: true }) : '';
         var lbl = KPI_LABELS[id] || e.kpiLabel || e.short || e.label;
         var kpiCls = id === 'pendiente_carga' ? 'pendiente' : (id === 'en_validacion' ? 'validado' : 'cargado');
+        var num = counts[id] || 0;
         var title = id === 'listo_despacho'
-          ? 'IDC marcados como cargados'
+          ? 'Camiones registrados en IDC cargados'
           : (id === 'en_validacion' ? 'IDC en validación' : 'IDC pendientes por validar');
+        if (id === 'listo_despacho' && counts.cargadoUnidades != null) {
+          num = counts.cargadoUnidades;
+          title = (counts.cargadoUnidades || 0) + ' camiones · ' + (counts.listo_despacho || 0) + ' IDC cargados';
+        }
         return '<div class="desp-lista-present-kpi desp-lista-present-kpi--' + esc(kpiCls) + '">' +
           (icon ? '<span class="desp-lista-present-kpi-iconbox" aria-hidden="true">' + icon + '</span>' : '') +
-          '<span class="desp-lista-present-kpi-num" title="' + esc(title) + '">' + esc(String(counts[id] || 0)) + '</span>' +
+          '<span class="desp-lista-present-kpi-num" title="' + esc(title) + '">' + esc(String(num)) + '</span>' +
           '<span class="desp-lista-present-kpi-lbl" title="' + esc(title) + '">' + esc(lbl) + '</span></div>';
       }).join('') +
       '</div>';
@@ -213,14 +221,14 @@
       return '<div class="desp-val-chart-row">' +
         '<span class="desp-val-chart-name" title="' + esc(r.nombre) + '">' + esc(r.nombre) + '</span>' +
         '<div class="desp-val-chart-bars" role="img" aria-label="' + esc(r.nombre) + ': ' +
-        r.validado + ' validados, ' + cargado + ' cargados">' +
+        r.validado + ' validados, ' + cargado + ' camiones cargados">' +
         '<div class="desp-val-chart-bar-row">' +
         renderBarFlex(r.validado, scaleMax, 'validado') +
         '<span class="desp-val-chart-seg-num desp-val-chart-seg-num--validado" title="IDC validados">' +
         esc(String(r.validado)) + '</span></div>' +
         '<div class="desp-val-chart-bar-row">' +
         renderBarFlex(cargado, scaleMax, 'cargado') +
-        '<span class="desp-val-chart-seg-num desp-val-chart-seg-num--cargado" title="IDC cargados">' +
+        '<span class="desp-val-chart-seg-num desp-val-chart-seg-num--cargado" title="Camiones cargados">' +
         esc(String(cargado)) + '</span></div>' +
         '</div>' +
         '</div>';
@@ -233,7 +241,7 @@
     return '<aside class="desp-val-resumen desp-val-resumen--solo-barras" aria-label="Resumen validadores">' +
       '<div class="desp-val-resumen-legend desp-val-resumen-legend--tv">' +
       '<span class="desp-val-resumen-legend-item"><span class="desp-val-swatch desp-val-swatch--validado" aria-hidden="true"></span> Validados</span>' +
-      '<span class="desp-val-resumen-legend-item"><span class="desp-val-swatch desp-val-swatch--cargado" aria-hidden="true"></span> Cargados</span>' +
+      '<span class="desp-val-resumen-legend-item"><span class="desp-val-swatch desp-val-swatch--cargado" aria-hidden="true"></span> Cargados (cam.)</span>' +
       '</div>' +
       '<div class="desp-val-chart-rows">' + rows + '</div></aside>';
   }
@@ -279,7 +287,7 @@
       '<th class="desp-lista-present-th-fecha-etapa">Validado</th>' +
       '<th class="desp-lista-present-th-fecha-etapa">Cargado</th></tr></thead>' +
       '<tbody>' + renderTableRows(pedidos) + '</tbody>' +
-      renderTableFoot(counts) +
+      renderTableFoot(counts, data.updatedAt) +
       '</table></div></div></div>';
 
     lastSig = listaSignature(share, pedidos, counts, resumen);

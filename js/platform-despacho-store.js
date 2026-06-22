@@ -1288,7 +1288,9 @@
     if (h.hacia === 'en_validacion') {
       return h.desde === 'pendiente_carga' || h.desde == null;
     }
-    if (h.hacia === 'listo_despacho') return h.desde === 'en_validacion';
+    if (h.hacia === 'listo_despacho') {
+      return h.desde === 'en_validacion' || h.desde === 'pendiente_carga' || h.desde == null;
+    }
     return false;
   }
 
@@ -1360,16 +1362,48 @@
     return validadorAsignadoEnMomentoFallback(p, h);
   }
 
+  /** Quién debe figurar en el resumen por el estado actual (quien registró el cambio). */
+  function validadorCreditoPorEstado(pedido, estadoObjetivo) {
+    if (!pedido || pedido.estado !== estadoObjetivo) return '';
+    var cicloDesde = inicioCicloValidador(pedido);
+    var hist = pedido.historial || [];
+    var i;
+    for (i = hist.length - 1; i >= 0; i--) {
+      var h = hist[i];
+      if (!h || !h.at || (cicloDesde && h.at < cicloDesde)) continue;
+      if (h.hacia !== estadoObjetivo) continue;
+      var quien = validadorCreditoHistorial(pedido, h);
+      if (quien) return quien;
+    }
+    return validadorAsignadoEnPedido(pedido);
+  }
+
+  /** Crédito de carga por validador en un IDC ya marcado cargado (camiones registrados). */
+  function creditosCargadoPorPedido(pedido) {
+    if (!pedido || pedido.estado !== 'listo_despacho') return [];
+    var expl = cargasEquipoExplicitas(pedido);
+    if (expl.length) {
+      return expl.map(function (c) {
+        return { validador: c.validador, unidades: c.camiones || 0 };
+      }).filter(function (x) { return x.unidades > 0; });
+    }
+    var quien = validadorCreditoPorEstado(pedido, 'listo_despacho') || validadorAsignadoEnPedido(pedido);
+    if (!quien) return [];
+    return [{ validador: quien, unidades: 1 }];
+  }
+
   /** Totales visibles en el panel del validador (activos, no retirados). */
   function countResumenValidador(pedidos) {
     var activos = getPedidosVisiblesValidador(pedidos);
-    var counts = { total: activos.length, totalCamiones: 0 };
+    var counts = { total: activos.length, totalCamiones: 0, cargadoUnidades: 0 };
     VALIDADOR_ESTADOS.forEach(function (id) {
       counts[id] = activos.filter(function (p) { return p.estado === id; }).length;
     });
     activos.forEach(function (p) {
-      cargasEquipoExplicitas(p).forEach(function (c) {
-        counts.totalCamiones += c.camiones || 0;
+      if (p.estado !== 'listo_despacho') return;
+      creditosCargadoPorPedido(p).forEach(function (c) {
+        counts.cargadoUnidades += c.unidades || 0;
+        counts.totalCamiones += c.unidades || 0;
       });
     });
     return counts;
@@ -1386,17 +1420,11 @@
       return byName[name];
     }
     activos.forEach(function (p) {
-      cargasEquipoExplicitas(p).forEach(function (c) {
-        if (!c || !c.validador) return;
-        ensureRow(c.validador).camiones += c.camiones || 0;
-      });
-    });
-    activos.forEach(function (p) {
-      var name = validadorAsignadoEnPedido(p);
       var etapas = fechasEtapasValidador(p);
       if (p.estado === 'en_validacion') {
-        if (name) {
-          var rowVal = ensureRow(name);
+        var nameVal = validadorCreditoPorEstado(p, 'en_validacion');
+        if (nameVal) {
+          var rowVal = ensureRow(nameVal);
           rowVal.validado += 1;
           var tsVal = etapas.en_validacion;
           if (tsVal && (!rowVal.ultimaValidacion || tsVal > rowVal.ultimaValidacion)) {
@@ -1404,32 +1432,32 @@
           }
         }
       } else if (p.estado === 'listo_despacho') {
-        if (name) {
-          var rowCar = ensureRow(name);
-          rowCar.cargado += 1;
+        var creditos = creditosCargadoPorPedido(p);
+        creditos.forEach(function (cred) {
+          if (!cred || !cred.validador) return;
+          var rowCar = ensureRow(cred.validador);
+          rowCar.cargado += cred.unidades || 0;
           var tsCar = etapas.listo_despacho;
           if (tsCar && (!rowCar.ultimaValidacion || tsCar > rowCar.ultimaValidacion)) {
             rowCar.ultimaValidacion = tsCar;
           }
-        }
+        });
       }
     });
     var list = Object.keys(byName).map(function (n) { return byName[n]; });
     list.sort(function (a, b) {
-      var ta = (a.validado || 0) + (a.camiones || 0) + (a.cargado || 0);
-      var tb = (b.validado || 0) + (b.camiones || 0) + (b.cargado || 0);
+      var ta = (a.validado || 0) + (a.cargado || 0);
+      var tb = (b.validado || 0) + (b.cargado || 0);
       if (tb !== ta) return tb - ta;
       return String(a.nombre).localeCompare(String(b.nombre), 'es');
     });
     var totValidado = 0;
     var totCargado = 0;
-    var totCamiones = 0;
     list.forEach(function (r) {
       totValidado += r.validado;
       totCargado += r.cargado;
-      totCamiones += r.camiones || 0;
     });
-    return { filas: list, totalValidado: totValidado, totalCargado: totCargado, totalCamiones: totCamiones };
+    return { filas: list, totalValidado: totValidado, totalCargado: totCargado, totalCamiones: totCargado };
   }
 
   function getPedidosActivos(pedidos) {
