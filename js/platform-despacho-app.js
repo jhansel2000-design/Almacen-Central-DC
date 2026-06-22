@@ -245,6 +245,8 @@
     }
     state.despachoArea = session.despachoArea === 'validador' ? 'validador' : 'preparador';
     user.despachoArea = state.despachoArea;
+    if (session.registeredRole) user.registeredRole = session.registeredRole;
+    if (session.isPrimaryAdmin) user.isPrimaryAdmin = true;
     state.screen = state.despachoArea === 'validador' ? 'validador' : 'registro';
     enterApp(user);
     return true;
@@ -283,6 +285,7 @@
     global.PlatformDespachoUI.render(host, global.PlatformDespachoStore.load(), {
       user: state.user,
       canValidate: state.despachoArea === 'validador',
+      isDespachoAdmin: Auth.isDespachoAdmin ? Auth.isDespachoAdmin(state.user) : false,
       despachoArea: state.despachoArea || 'preparador',
       screen: state.screen,
       onScreenChange: function (s) {

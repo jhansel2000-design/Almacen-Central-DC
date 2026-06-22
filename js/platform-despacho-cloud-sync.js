@@ -142,7 +142,8 @@
   function initSupabase() {
     if (!hasSupabaseConfig() || !global.PlatformSupabaseBridge.subscribe) return;
     global.PlatformSupabaseBridge.subscribe('despacho', function (remote) {
-      if (remote) applyRemote(remote, 'supabase');
+      if (!remote) return;
+      applyRemote(mergeDespacho(getLocalData(), remote), 'supabase');
     });
   }
 
@@ -264,6 +265,17 @@
         liveShareLista: win.liveShareLista && win.liveShareLista.active ? win.liveShareLista : null
       };
     }
+    var lActive = !!(local.liveShareLista && local.liveShareLista.active);
+    var rActive = !!(remote.liveShareLista && remote.liveShareLista.active);
+    if (!lActive && !rActive) {
+      return { liveShareSeq: lSeq, liveShareLista: null };
+    }
+    if (!lActive) {
+      return { liveShareSeq: lSeq, liveShareLista: null };
+    }
+    if (!rActive) {
+      return { liveShareSeq: lSeq, liveShareLista: local.liveShareLista };
+    }
     return {
       liveShareSeq: lSeq,
       liveShareLista: pickNewerShare(local.liveShareLista, remote.liveShareLista)
@@ -382,6 +394,17 @@
 
   function applyRemote(data, source) {
     if (!global.localStorage || !data) return false;
+    var local = getLocalData();
+    if (local && data) {
+      var listaPick = pickNewerShareLista(local, data);
+      var barcodePick = pickNewerShareBarcode(local, data);
+      data = Object.assign({}, data, {
+        liveShareLista: listaPick.liveShareLista,
+        liveShareSeq: listaPick.liveShareSeq,
+        liveShare: barcodePick.liveShare,
+        liveShareBarcodeSeq: barcodePick.liveShareBarcodeSeq
+      });
+    }
     var sig = dataSignature(data);
     if (sig === lastAppliedSig) return false;
     applyingRemote = true;

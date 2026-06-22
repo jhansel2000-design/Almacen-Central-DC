@@ -127,6 +127,31 @@
     return false;
   }
 
+  /** Administrador de plataforma (incl. administrador general): puede detener pantalla TV ajena. */
+  function isDespachoAdmin(user) {
+    if (!user) return false;
+    if (user.isPrimaryAdmin === true) return true;
+    if (global.PlatformAdmin) {
+      if (global.PlatformAdmin.isPrimaryAdminUser && global.PlatformAdmin.isPrimaryAdminUser(user)) {
+        return true;
+      }
+      if (user.id && global.PlatformAdmin.findUserById) {
+        var wms = global.PlatformAdmin.findUserById(user.id);
+        if (wms && global.PlatformAdmin.isPrimaryAdminUser(wms)) return true;
+      }
+    }
+    var role = user.registeredRole || user.role;
+    if (role === 'administrador') return true;
+    if (global.PlatformAdmin && global.PlatformAdmin.canAccessAdminModal) {
+      return global.PlatformAdmin.canAccessAdminModal(user);
+    }
+    if (global.PlatformAdmin && global.PlatformAdmin.can) {
+      return global.PlatformAdmin.can(role, 'admin.panel', user) ||
+        global.PlatformAdmin.can(role, 'data.import', user);
+    }
+    return false;
+  }
+
   function getUsers() {
     return LEGACY_USERS.slice();
   }
@@ -138,6 +163,7 @@
     getRoleLabel: getRoleLabel,
     authenticate: authenticate,
     getUserById: getUserById,
-    canValidate: canValidate
+    canValidate: canValidate,
+    isDespachoAdmin: isDespachoAdmin
   };
 })(typeof window !== 'undefined' ? window : this);

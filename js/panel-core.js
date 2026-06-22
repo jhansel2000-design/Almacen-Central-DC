@@ -302,6 +302,8 @@
       username: user.username,
       name: user.name,
       role: user.role,
+      registeredRole: user.registeredRole || user.role || '',
+      isPrimaryAdmin: user.isPrimaryAdmin === true,
       despachoArea: area,
       fp: deviceFingerprint(),
       expiresAt: Date.now() + SESSION_MS

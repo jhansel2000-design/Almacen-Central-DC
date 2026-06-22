@@ -100,7 +100,7 @@
     }
     restoreFocusSnap(host, focusSnap);
     if (screen === 'barcode') updateShareScreenUi(host, fresh);
-    if (screen === 'validador') updateShareListaUi(host, fresh);
+    if (screen === 'validador') updateShareListaUi(host, fresh, opts);
   }
 
   function flushPendingSync(host, screen, opts) {
@@ -729,11 +729,62 @@
       '</tbody></table></div>';
   }
 
+  function listaSharePermisosUi(data, opts) {
+    opts = opts || {};
+    var isAdmin = false;
+    if (global.PlatformDespachoAuth && opts.user) {
+      isAdmin = global.PlatformDespachoAuth.isDespachoAdmin(opts.user);
+    } else if (opts.isDespachoAdmin) {
+      isAdmin = true;
+    }
+    if (DS && DS.listaSharePermisos) {
+      return DS.listaSharePermisos(data, opts.userName || '', isAdmin);
+    }
+    var sharing = DS ? DS.getLiveShareLista(data) : null;
+    return {
+      active: !!(sharing && sharing.active),
+      sharing: sharing,
+      own: false,
+      canStart: !sharing,
+      canStop: !!(sharing && sharing.active),
+      sharedBy: sharing ? String(sharing.sharedBy || '').trim() : ''
+    };
+  }
+
+  function renderListaShareActions(data, opts) {
+    var perms = listaSharePermisosUi(data, opts);
+    var html = '<div class="desp-lista-share-actions">';
+    if (perms.active && !perms.canStop) {
+      html += '<p class="desp-share-status desp-share-status--locked" id="despListaShareLocked">' +
+        'En pantalla TV · compartido por <strong>' + esc(perms.sharedBy || 'otro usuario') + '</strong>' +
+        ' · solo un <strong>administrador</strong> puede detenerlo</p>';
+    } else if (perms.canStop) {
+      var stopLbl = perms.active
+        ? (perms.isAdmin ? 'Dejar de compartir en pantalla TV (admin)' : 'Dejar de compartir en pantalla TV')
+        : 'Compartir seguimiento en pantalla TV';
+      html += '<button type="button" class="btn desp-action-btn desp-btn-share-lista' +
+        (perms.active ? ' is-live' : '') + '" id="despBtnShareLista">' +
+        '<span class="desp-action-btn-icon" aria-hidden="true">' + (perms.active ? '⏹' : '📺') + '</span>' +
+        '<span class="desp-action-btn-text">' + esc(stopLbl) + '</span></button>';
+    } else if (perms.canStart) {
+      html += '<button type="button" class="btn desp-action-btn desp-btn-share-lista" id="despBtnShareLista">' +
+        '<span class="desp-action-btn-icon" aria-hidden="true">📺</span>' +
+        '<span class="desp-action-btn-text">Compartir seguimiento en pantalla TV</span></button>';
+    }
+    html += '</div>';
+    return html;
+  }
+
   function renderPanelValidador(data, opts) {
     var sharing = DS.getLiveShareLista(data);
+    var perms = listaSharePermisosUi(data, opts);
     var pedidos = DS.getPedidosVisiblesValidador(data.pedidos);
     opts = opts || {};
     var canRemove = !!opts.canValidate;
+    var statusTxt = sharing
+      ? 'En pantalla TV · ' + esc(String(pedidos.length)) + ' IDC en seguimiento validador' +
+        (perms.sharedBy ? ' · ' + esc(perms.sharedBy) : '')
+      : '';
     return '<div class="desp-validador-stack">' +
       '<section class="desp-panel desp-panel--val-share" aria-labelledby="despValShareTitle">' +
       '<header class="desp-panel-head">' +
@@ -742,15 +793,11 @@
       '<p class="desp-panel-sub">Lo que comparte en TV · cada validador indica <strong>cuántos camiones cargó</strong> (ej. Juan 2 · Pedro 1)</p></div>' +
       '</header>' +
       '<p class="desp-share-status desp-share-status--lista" id="despListaShareStatus"' + (sharing ? '' : ' hidden') + '>' +
-      (sharing ? 'En pantalla TV · ' + esc(String(pedidos.length)) + ' IDC en seguimiento validador' : '') +
-      '</p>' +
+      statusTxt + '</p>' +
       renderResumenCamionesValidador(data.pedidos) +
       renderListaEnVivoSeguimiento(pedidos, canRemove, (opts && opts.userName) || '') +
-      '<div class="desp-lista-share-actions">' +
-      '<button type="button" class="btn desp-action-btn desp-btn-share-lista' + (sharing ? ' is-live' : '') + '" id="despBtnShareLista">' +
-      '<span class="desp-action-btn-icon" aria-hidden="true">' + (sharing ? '⏹' : '📺') + '</span>' +
-      '<span class="desp-action-btn-text">' + (sharing ? 'Dejar de compartir en pantalla TV' : 'Compartir seguimiento en pantalla TV') + '</span></button>' +
-      '</div></section>' +
+      renderListaShareActions(data, opts) +
+      '</section>' +
       renderTablaValidacion(data, opts) +
       '</div>';
   }
@@ -843,23 +890,39 @@
     }
   }
 
-  function updateShareListaUi(host, data) {
+  function updateShareListaUi(host, data, opts) {
     var btn = host.querySelector('#despBtnShareLista');
     var status = host.querySelector('#despListaShareStatus');
-    if (!btn) return;
+    var locked = host.querySelector('#despListaShareLocked');
     data = data || DS.load();
-    var live = DS.getLiveShareLista(data);
-    var active = !!(live && live.active);
+    opts = opts || lastOpts || {};
+    var perms = listaSharePermisosUi(data, opts);
     var count = DS.getPedidosVisiblesValidador(data.pedidos).length;
-    btn.classList.toggle('is-live', active);
-    btn.innerHTML = active
-      ? '<span class="desp-action-btn-icon" aria-hidden="true">⏹</span><span class="desp-action-btn-text">Dejar de compartir en pantalla TV</span>'
-      : '<span class="desp-action-btn-icon" aria-hidden="true">📺</span><span class="desp-action-btn-text">Compartir seguimiento en pantalla TV</span>';
     if (status) {
-      status.hidden = !active;
-      status.textContent = active
-        ? 'Lista en pantalla · ' + count + ' IDC en seguimiento'
+      status.hidden = !perms.active;
+      status.textContent = perms.active
+        ? 'En pantalla TV · ' + count + ' IDC en seguimiento' +
+          (perms.sharedBy ? ' · ' + perms.sharedBy : '')
         : '';
+    }
+    if (locked) {
+      locked.hidden = !(perms.active && !perms.canStop);
+      if (perms.active && !perms.canStop) {
+        locked.innerHTML = 'En pantalla TV · compartido por <strong>' +
+          esc(perms.sharedBy || 'otro usuario') + '</strong> · solo un <strong>administrador</strong> puede detenerlo';
+      }
+    }
+    if (!btn) return;
+    btn.classList.toggle('is-live', perms.active && perms.canStop);
+    if (perms.active && perms.canStop) {
+      var stopLbl = perms.isAdmin && !perms.own
+        ? 'Dejar de compartir en pantalla TV (admin)'
+        : 'Dejar de compartir en pantalla TV';
+      btn.innerHTML = '<span class="desp-action-btn-icon" aria-hidden="true">⏹</span>' +
+        '<span class="desp-action-btn-text">' + esc(stopLbl) + '</span>';
+    } else if (!perms.active) {
+      btn.innerHTML = '<span class="desp-action-btn-icon" aria-hidden="true">📺</span>' +
+        '<span class="desp-action-btn-text">Compartir seguimiento en pantalla TV</span>';
     }
   }
 
@@ -1067,12 +1130,21 @@
     data = data || DS.load();
     var despachoArea = opts.despachoArea === 'validador' ? 'validador' : 'preparador';
     var canValidate = despachoArea === 'validador' || !!opts.canValidate;
-    opts = Object.assign({}, opts, { canValidate: canValidate, despachoArea: despachoArea, userName: userName });
+    var Auth = global.PlatformDespachoAuth;
+    var isDespachoAdmin = Auth && Auth.isDespachoAdmin && opts.user
+      ? Auth.isDespachoAdmin(opts.user)
+      : !!opts.isDespachoAdmin;
+    opts = Object.assign({}, opts, {
+      canValidate: canValidate,
+      despachoArea: despachoArea,
+      isDespachoAdmin: isDespachoAdmin,
+      userName: (opts.user && (opts.user.name || opts.user.username)) || opts.userName || 'Usuario'
+    });
     var screen = resolveScreenForRole(opts.screen, despachoArea);
     if (opts.onScreenChange && screen !== normalizeScreen(opts.screen)) {
       opts.onScreenChange(screen);
     }
-    var userName = (opts.user && (opts.user.name || opts.user.username)) || 'Usuario';
+    var userName = opts.userName;
 
     if (unbindSync) {
       unbindSync();
@@ -1128,7 +1200,7 @@
     }
 
     if (screen === 'validador') {
-      updateShareListaUi(host, data);
+      updateShareListaUi(host, data, opts);
     }
 
     syncDespWakeLock(data);
@@ -1260,21 +1332,35 @@
     if (btnShareLista) {
       btnShareLista.addEventListener('click', function () {
         if (btnShareLista.disabled) return;
+        var fresh = DS.load();
+        var perms = listaSharePermisosUi(fresh, opts);
+        if (perms.active) {
+          if (!perms.canStop) {
+            toast('Solo un administrador puede detener la pantalla que compartió otro usuario.', 'warn');
+            return;
+          }
+        } else if (!perms.canStart) {
+          toast('Otro usuario ya comparte en pantalla TV.', 'warn');
+          return;
+        }
         btnShareLista.disabled = true;
-        var wasActive = DS.isLiveShareListaActive();
-        var res = DS.toggleLiveShareLista(userName);
+        var wasActive = perms.active;
+        var forceGlobal = !!perms.isAdmin;
+        var res = wasActive
+          ? DS.stopLiveShareLista(userName, { forceGlobal: forceGlobal })
+          : DS.startLiveShareLista(userName);
         btnShareLista.disabled = false;
         if (!res.ok) {
           toast(res.error, 'warn');
           return;
         }
         syncDespWakeLock(res.data);
-        updateShareListaUi(host, res.data);
+        updateShareListaUi(host, res.data, opts);
         if (!wasActive && DS.isLiveShareListaActive(res.data)) {
           ensureDisplayWindow('lista');
           toast('Seguimiento en pantalla TV', 'success');
-        } else {
-          toast('Pantalla TV desactivada', 'info');
+        } else if (wasActive) {
+          toast(forceGlobal ? 'Pantalla TV detenida (admin)' : 'Pantalla TV desactivada', 'info');
         }
         render(host, res.data, opts);
       });

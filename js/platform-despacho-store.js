@@ -1128,9 +1128,42 @@
     return !!getLiveShareLista(data);
   }
 
+  function normalizeShareUserKey(name) {
+    return String(name || '').trim().toLowerCase().replace(/\s+/g, ' ');
+  }
+
+  function isListaShareByUser(share, usuario) {
+    if (!share || !usuario) return false;
+    var who = normalizeShareUserKey(share.sharedBy);
+    var me = normalizeShareUserKey(usuario);
+    if (!who || who === '—' || !me) return false;
+    if (who === me) return true;
+    var whoFirst = who.split(' ')[0];
+    var meFirst = me.split(' ')[0];
+    return !!(whoFirst && meFirst && whoFirst.length > 2 && whoFirst === meFirst);
+  }
+
+  function listaSharePermisos(data, usuario, isAdmin) {
+    var sharing = getLiveShareLista(data);
+    var active = !!(sharing && sharing.active);
+    var own = active && isListaShareByUser(sharing, usuario);
+    return {
+      active: active,
+      sharing: sharing,
+      own: own,
+      canStart: !active,
+      canStop: active && (own || !!isAdmin),
+      isAdmin: !!isAdmin,
+      sharedBy: sharing ? String(sharing.sharedBy || '').trim() : ''
+    };
+  }
+
   function startLiveShareLista(usuario) {
     var data = load();
-    var seq = (data.liveShareSeq || 0) + 1;
+    if (isLiveShareListaActive(data)) {
+      return { ok: false, error: 'Otro usuario ya comparte en pantalla TV.' };
+    }
+    var seq = Math.max(data.liveShareSeq || 0, Date.now());
     var ts = nowIso();
     data.liveShareSeq = seq;
     data.liveShareLista = {
@@ -1144,9 +1177,16 @@
     return { ok: true, data: data, liveShareLista: data.liveShareLista };
   }
 
-  function stopLiveShareLista(usuario) {
+  function stopLiveShareLista(usuario, opts) {
+    opts = opts || {};
     var data = load();
-    var seq = (data.liveShareSeq || 0) + 1;
+    if (!isLiveShareListaActive(data)) {
+      return { ok: true, data: data, unchanged: true };
+    }
+    var seq = Math.max(data.liveShareSeq || 0, Date.now());
+    if (opts.forceGlobal) {
+      seq = Math.max(seq, Date.now() + 1);
+    }
     data.liveShareSeq = seq;
     data.liveShareLista = null;
     persistData(data, { shareListaToggle: true });
@@ -1154,9 +1194,10 @@
     return { ok: true, data: data, stoppedBy: usuario };
   }
 
-  function toggleLiveShareLista(usuario) {
+  function toggleLiveShareLista(usuario, opts) {
+    opts = opts || {};
     if (isLiveShareListaActive()) {
-      return stopLiveShareLista(usuario);
+      return stopLiveShareLista(usuario, opts);
     }
     return startLiveShareLista(usuario);
   }
@@ -1671,6 +1712,8 @@
     startLiveShareLista: startLiveShareLista,
     stopLiveShareLista: stopLiveShareLista,
     toggleLiveShareLista: toggleLiveShareLista,
+    isListaShareByUser: isListaShareByUser,
+    listaSharePermisos: listaSharePermisos,
     getPedidosActivos: getPedidosActivos,
     bindSync: bindSync,
     wipeAll: wipeAll,

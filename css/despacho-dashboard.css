@@ -2215,6 +2215,21 @@ html[data-theme="light"] .desp-btn-send-validador {
   animation: despShareGlow 2.4s ease-in-out infinite;
 }
 
+.desp-share-status--locked {
+  margin: 0;
+  padding: 0.85rem 1rem;
+  border-radius: 10px;
+  background: rgba(21, 101, 192, 0.12);
+  border: 1px solid rgba(144, 202, 249, 0.28);
+  color: #90caf9;
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.desp-share-status--locked strong {
+  color: #e3f2fd;
+}
+
 html[data-theme="light"] .desp-entrada-btn {
   border-color: rgba(15, 36, 64, 0.1);
   background: linear-gradient(145deg, #ffffff 0%, #f4f7fb 100%);
