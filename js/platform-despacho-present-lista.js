@@ -199,18 +199,23 @@
 
     var rows = filas.map(function (r) {
       var camiones = r.camiones != null ? r.camiones : 0;
+      var cargado = r.cargado != null ? r.cargado : 0;
       return '<div class="desp-val-chart-row">' +
         '<span class="desp-val-chart-name" title="' + esc(r.nombre) + '">' + esc(r.nombre) + '</span>' +
         '<div class="desp-val-chart-bars" role="img" aria-label="' + esc(r.nombre) + ': ' +
-        r.validado + ' validados, ' + camiones + ' camiones">' +
+        cargado + ' IDC cargados, ' + r.validado + ' validados, ' + camiones + ' camiones">' +
         '<div class="desp-val-chart-bar-row">' +
-        renderBarFlex(camiones, scaleMax, 'cargado') +
-        '<span class="desp-val-chart-seg-num desp-val-chart-seg-num--cargado" title="Camiones cargados">' +
-        esc(String(camiones)) + '</span></div>' +
+        renderBarFlex(cargado, scaleMax, 'cargado') +
+        '<span class="desp-val-chart-seg-num desp-val-chart-seg-num--cargado" title="IDC cargados">' +
+        esc(String(cargado)) + '</span></div>' +
         '<div class="desp-val-chart-bar-row">' +
         renderBarFlex(r.validado, scaleMax, 'validado') +
         '<span class="desp-val-chart-seg-num desp-val-chart-seg-num--validado" title="IDC validados">' +
         esc(String(r.validado)) + '</span></div>' +
+        '<div class="desp-val-chart-bar-row">' +
+        renderBarFlex(camiones, scaleMax, 'camiones') +
+        '<span class="desp-val-chart-seg-num desp-val-chart-seg-num--camiones" title="Camiones registrados">' +
+        esc(String(camiones)) + '</span></div>' +
         '</div>' +
         '</div>';
     }).join('');
@@ -221,8 +226,9 @@
 
     return '<aside class="desp-val-resumen desp-val-resumen--solo-barras" aria-label="Resumen validadores">' +
       '<div class="desp-val-resumen-legend desp-val-resumen-legend--tv">' +
-      '<span class="desp-val-resumen-legend-item"><span class="desp-val-swatch desp-val-swatch--cargado" aria-hidden="true"></span> Camiones</span>' +
+      '<span class="desp-val-resumen-legend-item"><span class="desp-val-swatch desp-val-swatch--cargado" aria-hidden="true"></span> IDC carg.</span>' +
       '<span class="desp-val-resumen-legend-item"><span class="desp-val-swatch desp-val-swatch--validado" aria-hidden="true"></span> Validados</span>' +
+      '<span class="desp-val-resumen-legend-item"><span class="desp-val-swatch desp-val-swatch--camiones" aria-hidden="true"></span> Camiones</span>' +
       '</div>' +
       '<div class="desp-val-chart-rows">' + rows + '</div></aside>';
   }

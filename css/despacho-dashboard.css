@@ -1772,6 +1772,7 @@ body.desp-controller-mode .desp-lista-present-totales,
 
 .desp-val-swatch--validado { background: #fbbf24; }
 .desp-val-swatch--cargado { background: #34d399; }
+.desp-val-swatch--camiones { background: #60a5fa; }
 
 .desp-val-chart-name {
   color: #e2e8f0;
