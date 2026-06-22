@@ -79,8 +79,28 @@ body.desp-display-mode .desp-lista-present-toolbar .desp-val-resumen {
 
 body.desp-display-mode .desp-val-resumen--solo-barras {
   justify-content: center;
-  gap: 0;
-  padding: clamp(0.22rem, 0.45vh, 0.45rem) clamp(0.35rem, 0.8vw, 0.75rem);
+  gap: clamp(0.1rem, 0.2vh, 0.16rem);
+  padding: clamp(0.2rem, 0.42vh, 0.42rem) clamp(0.35rem, 0.8vw, 0.75rem);
+}
+
+body.desp-display-mode .desp-val-resumen-legend--tv {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: clamp(0.35rem, 0.75vw, 0.7rem);
+  font-size: calc(var(--desp-table-fs) * 0.68);
+  color: #94a3b8;
+  flex-shrink: 0;
+  line-height: 1.15;
+  width: 100%;
+}
+
+body.desp-display-mode .desp-val-resumen-legend--tv .desp-val-swatch {
+  width: clamp(0.55rem, 1vmin, 0.85rem);
+  height: clamp(0.55rem, 1vmin, 0.85rem);
+  border-radius: 3px;
+  flex-shrink: 0;
 }
 
 body.desp-display-mode .desp-val-resumen--solo-barras .desp-val-chart-rows {
@@ -185,8 +205,10 @@ body.desp-display-mode .desp-val-chart-seg-num {
   font-size: 1em;
   font-weight: 800;
   line-height: 1.15;
-  min-width: 1.5em;
+  min-width: 2ch;
+  flex-shrink: 0;
   text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 
 body.desp-display-mode .desp-lista-present-table-wrap {
@@ -413,18 +435,27 @@ body.desp-display-mode .desp-lista-present-estado .desp-estado-icon {
 }
 
 body.desp-display-mode .desp-lista-present-kpi-lbl {
-  font-size: clamp(0.92rem, 1.65vmin, 1.75rem);
+  font-size: clamp(0.82rem, 1.45vmin, 1.55rem);
   font-weight: 700;
-  line-height: 1.12;
+  line-height: 1.1;
   letter-spacing: 0.02em;
   text-align: center;
   width: 100%;
   white-space: normal;
   flex: 0 0 auto;
-  min-height: clamp(2.2em, 3.6vmin, 2.55em);
+  min-height: clamp(1.5em, 2.4vmin, 1.85em);
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: center;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  hyphens: auto;
+  padding: 0 0.1em;
+  text-transform: none;
+}
+
+body.desp-display-mode .desp-lista-present-kpi--cargado .desp-lista-present-kpi-num {
+  color: #34d399;
 }
 
 body.desp-display-mode .desp-lista-present-validador-pill {

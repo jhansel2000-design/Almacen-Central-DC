@@ -27,7 +27,7 @@
   };
 
   var KPI_LABELS = {
-    pendiente_carga: 'Pendiente por validar',
+    pendiente_carga: 'Pendiente',
     en_validacion: 'Validado',
     listo_despacho: 'Cargado'
   };
@@ -70,7 +70,8 @@
         etapas.pendiente_carga, etapas.en_validacion, etapas.listo_despacho].join(':');
     }).join('|');
     var countSig = counts
-      ? [counts.pendiente_carga, counts.en_validacion, counts.listo_despacho, counts.total].join(',')
+      ? [counts.pendiente_carga, counts.en_validacion, counts.listo_despacho,
+        counts.totalCamiones, counts.total].join(',')
       : '';
     var valSig = '';
     if (resumen && resumen.filas) {
@@ -188,7 +189,9 @@
     var store = DS();
     if (!store || !store.resumenPorValidador) return '';
     var resumen = store.resumenPorValidador(pedidos || []);
-    var filas = resumen.filas || [];
+    var filas = (resumen.filas || []).filter(function (r) {
+      return (r.camiones || 0) > 0 || (r.validado || 0) > 0 || (r.cargado || 0) > 0;
+    });
     var scaleMax = barScaleGlobal(filas);
 
     var rows = filas.map(function (r) {
@@ -214,6 +217,10 @@
     }
 
     return '<aside class="desp-val-resumen desp-val-resumen--solo-barras" aria-label="Resumen validadores">' +
+      '<div class="desp-val-resumen-legend desp-val-resumen-legend--tv">' +
+      '<span class="desp-val-resumen-legend-item"><span class="desp-val-swatch desp-val-swatch--cargado" aria-hidden="true"></span> Camiones</span>' +
+      '<span class="desp-val-resumen-legend-item"><span class="desp-val-swatch desp-val-swatch--validado" aria-hidden="true"></span> Validados</span>' +
+      '</div>' +
       '<div class="desp-val-chart-rows">' + rows + '</div></aside>';
   }
 

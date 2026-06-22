@@ -742,7 +742,7 @@ body.desp-display-mode .desp-lista-present-kpis {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
-body.desp-display-mode .desp-lista-present-kpi {
+body.desp-display-mode:not(.desp-live-lista-on) .desp-lista-present-kpi {
   min-height: auto;
 }
 
@@ -760,7 +760,7 @@ body.desp-display-mode .desp-val-resumen-legend {
   font-size: clamp(0.58rem, 1vw, 0.66rem);
 }
 
-body.desp-display-mode .desp-val-chart-row {
+body.desp-display-mode:not(.desp-live-lista-on) .desp-val-chart-row {
   font-size: clamp(0.62rem, 1.05vw, 0.72rem);
 }
 
@@ -856,22 +856,21 @@ body.desp-display-mode .desp-lista-present-validador-pill {
   font-size: 0.85em;
 }
 
-body.desp-display-mode .desp-lista-present-kpi-num,
-body.desp-display-mode .desp-lista-present-kpi-iconbox {
+body.desp-display-mode:not(.desp-live-lista-on) .desp-lista-present-kpi-iconbox {
   width: clamp(1.45rem, 2.8vw, 1.85rem);
   height: clamp(1.45rem, 2.8vw, 1.85rem);
 }
 
-body.desp-display-mode .desp-lista-present-kpi-num {
+body.desp-display-mode:not(.desp-live-lista-on) .desp-lista-present-kpi-num {
   font-size: clamp(1.45rem, 2.8vw, 1.85rem);
   width: auto;
   height: auto;
 }
 
-body.desp-display-mode .desp-lista-present-kpi-lbl {
+body.desp-display-mode:not(.desp-live-lista-on) .desp-lista-present-kpi-lbl {
   font-size: clamp(0.48rem, 0.9vw, 0.58rem);
 }
 
-body.desp-display-mode .desp-lista-present-kpi {
+body.desp-display-mode:not(.desp-live-lista-on) .desp-lista-present-kpi {
   padding: clamp(0.22rem, 0.45vh, 0.3rem) clamp(0.28rem, 0.6vw, 0.36rem);
 }

@@ -679,7 +679,7 @@
     if (!DS.resumenPorValidador) return '';
     var resumen = DS.resumenPorValidador(pedidos || []);
     var activos = (resumen.filas || []).filter(function (r) {
-      return (r.camiones || 0) > 0 || (r.validado || 0) > 0;
+      return (r.camiones || 0) > 0;
     });
     if (!activos.length) {
       return '<p class="desp-muted desp-resumen-camiones-empty">Sin camiones registrados todavía.</p>';
