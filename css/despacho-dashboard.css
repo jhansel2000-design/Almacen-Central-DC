@@ -2320,6 +2320,48 @@ body.desp-controller-mode .desp-live-present-lista {
   margin: 0.75rem 0 1rem;
 }
 
+.desp-resumen-camiones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem 0.65rem;
+  margin: 0.5rem 0 0.75rem;
+  padding: 0.65rem 0.75rem;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.desp-resumen-camiones-empty {
+  margin: 0.35rem 0 0.75rem;
+  font-size: 0.82rem;
+}
+
+.desp-resumen-camiones-item {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  padding: 0.35rem 0.55rem;
+  border-radius: 999px;
+  background: rgba(52, 211, 153, 0.1);
+  border: 1px solid rgba(52, 211, 153, 0.28);
+  font-size: 0.78rem;
+}
+
+.desp-resumen-camiones-name {
+  font-weight: 700;
+  color: var(--text);
+}
+
+.desp-resumen-camiones-val {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.desp-resumen-camiones-val strong {
+  color: #34d399;
+  font-weight: 800;
+}
+
 .desp-table--lista-vivo .desp-btn-archive--live {
   font-weight: 700;
   color: #f85149;

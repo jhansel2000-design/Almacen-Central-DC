@@ -75,7 +75,7 @@
     var valSig = '';
     if (resumen && resumen.filas) {
       valSig = resumen.filas.map(function (r) {
-        return r.nombre + ':' + r.validado + '/' + r.cargado + '@' + (r.ultimaValidacion || '');
+        return r.nombre + ':' + r.validado + '/' + r.cargado + '/' + (r.camiones || 0) + '@' + (r.ultimaValidacion || '');
       }).join(';');
     }
     return share.updatedAt + '::' + countSig + '::' + valSig + '::' + rows;
@@ -158,7 +158,11 @@
   var BAR_SCALE_MAX = 10;
 
   function barScaleGlobal(filas) {
-    return BAR_SCALE_MAX;
+    var max = BAR_SCALE_MAX;
+    (filas || []).forEach(function (r) {
+      max = Math.max(max, r.validado || 0, r.camiones || 0, r.cargado || 0);
+    });
+    return Math.min(250, max);
   }
 
   function barFlexClass(n) {
@@ -188,16 +192,19 @@
     var scaleMax = barScaleGlobal(filas);
 
     var rows = filas.map(function (r) {
+      var camiones = r.camiones != null ? r.camiones : 0;
       return '<div class="desp-val-chart-row">' +
         '<span class="desp-val-chart-name" title="' + esc(r.nombre) + '">' + esc(r.nombre) + '</span>' +
         '<div class="desp-val-chart-bars" role="img" aria-label="' + esc(r.nombre) + ': ' +
-        r.validado + ' validados, ' + r.cargado + ' cargados">' +
+        r.validado + ' validados, ' + camiones + ' camiones">' +
         '<div class="desp-val-chart-bar-row">' +
-        renderBarFlex(r.cargado, scaleMax, 'cargado') +
-        '<span class="desp-val-chart-seg-num desp-val-chart-seg-num--cargado">' + esc(String(r.cargado)) + '</span></div>' +
+        renderBarFlex(camiones, scaleMax, 'cargado') +
+        '<span class="desp-val-chart-seg-num desp-val-chart-seg-num--cargado" title="Camiones cargados">' +
+        esc(String(camiones)) + '</span></div>' +
         '<div class="desp-val-chart-bar-row">' +
         renderBarFlex(r.validado, scaleMax, 'validado') +
-        '<span class="desp-val-chart-seg-num desp-val-chart-seg-num--validado">' + esc(String(r.validado)) + '</span></div>' +
+        '<span class="desp-val-chart-seg-num desp-val-chart-seg-num--validado" title="IDC validados">' +
+        esc(String(r.validado)) + '</span></div>' +
         '</div>' +
         '</div>';
     }).join('');

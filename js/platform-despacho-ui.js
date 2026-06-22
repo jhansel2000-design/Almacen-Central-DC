@@ -675,6 +675,27 @@
     return html;
   }
 
+  function renderResumenCamionesValidador(pedidos) {
+    if (!DS.resumenPorValidador) return '';
+    var resumen = DS.resumenPorValidador(pedidos || []);
+    var activos = (resumen.filas || []).filter(function (r) {
+      return (r.camiones || 0) > 0 || (r.validado || 0) > 0;
+    });
+    if (!activos.length) {
+      return '<p class="desp-muted desp-resumen-camiones-empty">Sin camiones registrados todavía.</p>';
+    }
+    return '<div class="desp-resumen-camiones" aria-label="Camiones por validador">' +
+      activos.map(function (r) {
+        var short = String(r.nombre || '').split(' ')[0];
+        return '<div class="desp-resumen-camiones-item" title="' + esc(r.nombre) + '">' +
+          '<span class="desp-resumen-camiones-name">' + esc(short) + '</span>' +
+          '<span class="desp-resumen-camiones-val"><strong>' + esc(String(r.camiones || 0)) + '</strong> cam.</span>' +
+          '<span class="desp-resumen-camiones-val">' + esc(String(r.validado || 0)) + ' val.</span>' +
+          '</div>';
+      }).join('') +
+      '</div>';
+  }
+
   function renderListaEnVivoSeguimiento(pedidos, canRemove, userName) {
     pedidos = pedidos || [];
     if (!pedidos.length) {
@@ -721,6 +742,7 @@
       '<p class="desp-share-status desp-share-status--lista" id="despListaShareStatus"' + (sharing ? '' : ' hidden') + '>' +
       (sharing ? 'En pantalla TV · ' + esc(String(pedidos.length)) + ' IDC en seguimiento validador' : '') +
       '</p>' +
+      renderResumenCamionesValidador(data.pedidos) +
       renderListaEnVivoSeguimiento(pedidos, canRemove, (opts && opts.userName) || '') +
       '<div class="desp-lista-share-actions">' +
       '<button type="button" class="btn desp-action-btn desp-btn-share-lista' + (sharing ? ' is-live' : '') + '" id="despBtnShareLista">' +

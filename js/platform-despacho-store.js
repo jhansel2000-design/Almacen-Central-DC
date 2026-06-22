@@ -1326,20 +1326,29 @@
     return counts;
   }
 
-  /** Resumen por validador: IDC activos asignados, según estado actual (validado / cargado). */
+  /** Resumen por validador: IDC validados/cargados + camiones sumados por persona. */
   function resumenPorValidador(pedidos) {
     var activos = getPedidosVisiblesValidador(pedidos);
     var byName = {};
+    function ensureRow(name) {
+      if (!byName[name]) {
+        byName[name] = { nombre: name, validado: 0, cargado: 0, camiones: 0, ultimaValidacion: null };
+      }
+      return byName[name];
+    }
     VALIDADORES_ASIGNABLES.forEach(function (name) {
-      byName[name] = { nombre: name, validado: 0, cargado: 0, ultimaValidacion: null };
+      ensureRow(name);
+    });
+    activos.forEach(function (p) {
+      normalizeCargasEquipo(p).forEach(function (c) {
+        if (!c || !c.validador) return;
+        ensureRow(c.validador).camiones += c.camiones || 0;
+      });
     });
     activos.forEach(function (p) {
       var name = validadorAsignadoEnPedido(p);
       if (!name) return;
-      if (!byName[name]) {
-        byName[name] = { nombre: name, validado: 0, cargado: 0, ultimaValidacion: null };
-      }
-      var row = byName[name];
+      var row = ensureRow(name);
       var etapas = fechasEtapasValidador(p);
       if (p.estado === 'en_validacion') {
         row.validado += 1;
@@ -1356,24 +1365,26 @@
       }
     });
     var list = VALIDADORES_ASIGNABLES.map(function (n) {
-      return byName[n] || { nombre: n, validado: 0, cargado: 0, ultimaValidacion: null };
+      return byName[n] || { nombre: n, validado: 0, cargado: 0, camiones: 0, ultimaValidacion: null };
     });
     Object.keys(byName).forEach(function (n) {
       if (VALIDADORES_ASIGNABLES.indexOf(n) < 0) list.push(byName[n]);
     });
     list.sort(function (a, b) {
-      var ta = (a.validado + a.cargado);
-      var tb = (b.validado + b.cargado);
+      var ta = (a.validado || 0) + (a.camiones || 0);
+      var tb = (b.validado || 0) + (b.camiones || 0);
       if (tb !== ta) return tb - ta;
       return String(a.nombre).localeCompare(String(b.nombre), 'es');
     });
     var totValidado = 0;
     var totCargado = 0;
+    var totCamiones = 0;
     list.forEach(function (r) {
       totValidado += r.validado;
       totCargado += r.cargado;
+      totCamiones += r.camiones || 0;
     });
-    return { filas: list, totalValidado: totValidado, totalCargado: totCargado };
+    return { filas: list, totalValidado: totValidado, totalCargado: totCargado, totalCamiones: totCamiones };
   }
 
   function getPedidosActivos(pedidos) {
