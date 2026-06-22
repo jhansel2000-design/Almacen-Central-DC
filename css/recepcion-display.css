@@ -32,6 +32,15 @@ body.rec-display-mode {
   color: rgba(255, 255, 255, 0.78);
 }
 
+.rec-display-wait-sub {
+  margin: 0.35rem 0 0.5rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(255, 205, 210, 0.7);
+}
+
 body.rec-live-on .rec-display-waiting {
   display: none;
 }

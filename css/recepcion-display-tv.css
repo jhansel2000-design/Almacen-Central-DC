@@ -210,6 +210,15 @@
 .rec-present-fecha-etapa--ent { color: #a5d6a7; }
 .rec-present-fecha-etapa--ubi { color: #80cbc4; }
 
+.rec-present-sub {
+  margin: 0.2rem 0 0;
+  font-size: clamp(0.72rem, 1.2vw, 0.95rem);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 205, 210, 0.75);
+}
+
 .rec-present-shell--tv .rec-present-table-wrap {
   max-height: calc(100vh - clamp(9rem, 22vh, 14rem));
   overflow: auto;

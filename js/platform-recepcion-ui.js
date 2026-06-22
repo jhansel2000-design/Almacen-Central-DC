@@ -73,7 +73,7 @@
       '<img class="jc-logo-img jc-logo-img--hero rbl-f-logo-img" src="assets/img/jc-logo.svg?v=1" alt="Almacén Central AC" width="52" height="52">' +
       '<div class="rbl-f-logo-text">' +
       '<h1>Gestión de Recepción y Ubicación</h1>' +
-      '<p>Almacén Central DC · Patio de contenedores</p>' +
+      '<p>Almacén Central DC · Recepción de contenedores</p>' +
       '</div></div></div></header>';
   }
 

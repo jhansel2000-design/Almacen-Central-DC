@@ -83,7 +83,7 @@
     ]
   };
 
-  var currentView = 'v1';
+  var currentView = 'v5';
   var mountEl = null;
 
   function viewFromUrl() {
@@ -93,7 +93,7 @@
       var h = String(global.location.hash || '').replace(/^#/, '');
       if (h && VIEWS[h]) return h;
     } catch (e) { /* noop */ }
-    return 'v1';
+    return 'v5';
   }
 
   function esc(s) {
@@ -144,7 +144,8 @@
     return '<header class="rec-present-header">' +
       '<img class="jc-logo-img jc-logo-img--present" src="assets/img/jc-logo.png?v=5" alt="AC" width="44" height="44">' +
       '<div><p class="rec-present-eyebrow">Almacén Central DC · EN VIVO</p>' +
-      '<h1 class="rec-present-title">Gestión de Recepción y Ubicación</h1></div>' +
+      '<h1 class="rec-present-title">Gestión de Recepción y Ubicación</h1>' +
+      '<p class="rec-present-sub">Recepción de contenedores</p></div>' +
       '</header>';
   }
 
@@ -194,7 +195,7 @@
   function renderChart(mode) {
     var html = '<aside class="rec-tv-chart' + (mode === 'triple' ? ' rec-tv-chart--triple' : '') + '" aria-label="Productividad operadores">';
     if (mode === 'triple') {
-      html += '<p class="rec-tv-chart-title">Equipo en patio</p>';
+      html += '<p class="rec-tv-chart-title">Equipo en recepción</p>';
       html += '<div class="rec-tv-chart-section"><div class="rec-tv-chart-section-lbl">Operadores sentado</div><div class="rec-tv-chart-rows">';
       CHART.operadores.slice(0, 3).forEach(function (x) {
         html += renderChartRow(x, maxN(CHART.operadores), '');

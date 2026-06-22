@@ -85,7 +85,8 @@
   }
 
   function renderChartSection(label, rows, fillCls, limit) {
-    rows = (rows || []).slice(0, limit || 3);
+    rows = (rows || []).slice();
+    if (limit > 0) rows = rows.slice(0, limit);
     if (!rows.length) {
       return '<div class="rec-tv-chart-section"><div class="rec-tv-chart-section-lbl">' + esc(label) +
         '</div><div class="rec-tv-chart-rows"><div class="rec-tv-chart-empty">Sin datos</div></div></div>';
@@ -117,10 +118,10 @@
       '<div class="rec-tv-kpi-body"><span class="rec-tv-kpi-num">' + esc(String(counts.conUbicado || 0)) +
       '</span><span class="rec-tv-kpi-lbl">Ubicados</span></div></div></div>' +
       '<aside class="rec-tv-chart rec-tv-chart--triple" aria-label="Productividad equipo">' +
-      '<p class="rec-tv-chart-title">Equipo en patio</p>' +
-      renderChartSection('Operadores sentado', chart.operadores, '', 4) +
-      renderChartSection('Validadores', chart.validadores, 'rec-tv-chart-fill--val', 4) +
-      renderChartSection('Ubicadores', chart.ubicadores, 'rec-tv-chart-fill--ubi', 4) +
+      '<p class="rec-tv-chart-title">Equipo en recepción</p>' +
+      renderChartSection('Operadores sentado', chart.operadores, '', 3) +
+      renderChartSection('Validadores', chart.validadores, 'rec-tv-chart-fill--val', 3) +
+      renderChartSection('Ubicadores', chart.ubicadores, 'rec-tv-chart-fill--ubi', 0) +
       '</aside></div>';
   }
 
@@ -194,7 +195,8 @@
       '<header class="rec-present-header">' +
       '<img class="jc-logo-img jc-logo-img--present" src="assets/img/jc-logo.png?v=5" alt="AC" width="44" height="44">' +
       '<div><p class="rec-present-eyebrow">Almacén Central DC · EN VIVO</p>' +
-      '<h1 class="rec-present-title">Gestión de Recepción y Ubicación</h1></div></header>' +
+      '<h1 class="rec-present-title">Gestión de Recepción y Ubicación</h1>' +
+      '<p class="rec-present-sub">Recepción de contenedores</p></div></header>' +
       renderToolbar(counts, chart) +
       '<div class="rec-present-table-wrap">' +
       '<table class="rec-present-table rec-present-table--tv" aria-label="Manifiesto recepción en vivo">' +
