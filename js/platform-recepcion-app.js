@@ -89,6 +89,7 @@
       onEntrada: handleEntrada,
       onUbicar: handleUbicar,
       onCloseMuelleModal: closeMuelleModal,
+      onClosePersonaModal: closePersonaModal,
       onEliminar: handleEliminar,
       onToggleShare: handleToggleShare,
       onOpenDisplay: openDisplayWindow,
@@ -98,6 +99,10 @@
     var modalConfirm = $('recMuelleModalConfirm');
     if (modalConfirm) {
       modalConfirm.onclick = confirmMuelleModalEntrada;
+    }
+    var personaConfirm = $('recPersonaModalConfirm');
+    if (personaConfirm) {
+      personaConfirm.onclick = confirmPersonaModal;
     }
     var modalInput = $('recMuelleModalInput');
     if (modalInput) {
@@ -134,13 +139,75 @@
   }
 
   function handleValidar(id) {
-    var res = global.PlatformRecepcionStore.marcarValidado(id, Auth.getDisplayName(state.user));
+    openPersonaModal('validar', id);
+  }
+
+  var pendingEntradaId = null;
+  var pendingPersonaAction = null;
+
+  function closePersonaModal() {
+    pendingPersonaAction = null;
+    var modal = $('recPersonaModal');
+    if (modal) modal.classList.add('is-hidden');
+  }
+
+  function openPersonaModal(kind, id) {
+    var store = global.PlatformRecepcionStore;
+    var data = store.load();
+    var item = (data.contenedores || []).find(function (c) { return c.id === id; });
+    var list = kind === 'ubicar' ? store.UBICADORES_RECEPCION : store.VALIDADORES_RECEPCION;
+    var title = kind === 'ubicar' ? 'Ubicador' : 'Validador';
+    var label = kind === 'ubicar' ? 'Ubicador' : 'Validador';
+    pendingPersonaAction = { kind: kind, id: id };
+    var modal = $('recPersonaModal');
+    var titleEl = $('recPersonaModalTitle');
+    var subEl = $('recPersonaModalSub');
+    var labelEl = $('recPersonaModalLabel');
+    var select = $('recPersonaModalSelect');
+    if (titleEl) titleEl.textContent = 'Seleccionar ' + title.toLowerCase();
+    if (subEl) {
+      subEl.textContent = item && item.contenedor
+        ? 'Contenedor ' + item.contenedor + ' — elija ' + title.toLowerCase() + ' para el resumen en TV.'
+        : 'Elija ' + title.toLowerCase() + ' para el resumen en pantalla TV.';
+    }
+    if (labelEl) labelEl.textContent = label;
+    if (select) {
+      select.innerHTML = '<option value="">Seleccione…</option>' +
+        (list || []).map(function (n) {
+          return '<option value="' + String(n).replace(/"/g, '&quot;') + '">' + n + '</option>';
+        }).join('');
+      select.value = '';
+      select.focus();
+    }
+    if (modal) modal.classList.remove('is-hidden');
+  }
+
+  function confirmPersonaModal() {
+    if (!pendingPersonaAction) return;
+    var select = $('recPersonaModalSelect');
+    var nombre = select ? String(select.value || '').trim() : '';
+    if (!nombre) {
+      toast('Seleccione una persona de la lista.', 'err');
+      if (select) select.focus();
+      return;
+    }
+    var action = pendingPersonaAction;
+    closePersonaModal();
+    if (action.kind === 'validar') {
+      completeValidar(action.id, nombre);
+    } else if (action.kind === 'ubicar') {
+      completeUbicar(action.id, nombre);
+    }
+  }
+
+  function completeValidar(id, validadorNombre) {
+    var res = global.PlatformRecepcionStore.marcarValidado(
+      id, Auth.getDisplayName(state.user), validadorNombre
+    );
     if (!res.ok) { toast(res.error, 'err'); return; }
     if (!res.unchanged) toast('Contenedor validado.', 'ok');
     renderApp();
   }
-
-  var pendingEntradaId = null;
 
   function closeMuelleModal() {
     pendingEntradaId = null;
@@ -163,26 +230,35 @@
       input.focus();
       input.select();
     }
+    var entradaSel = $('recMuelleModalEntradaPor');
+    if (entradaSel) entradaSel.value = '';
     if (modal) modal.classList.remove('is-hidden');
   }
 
   function confirmMuelleModalEntrada() {
     if (!pendingEntradaId) return;
     var input = $('recMuelleModalInput');
+    var entradaSel = $('recMuelleModalEntradaPor');
     var muelle = input ? String(input.value || '').trim() : '';
+    var entradaPor = entradaSel ? String(entradaSel.value || '').trim() : '';
     if (!muelle) {
       toast('Indique el muelle.', 'err');
       if (input) input.focus();
       return;
     }
+    if (!entradaPor) {
+      toast('Seleccione quién da la entrada.', 'err');
+      if (entradaSel) entradaSel.focus();
+      return;
+    }
     var id = pendingEntradaId;
     closeMuelleModal();
-    completeEntrada(id, muelle);
+    completeEntrada(id, muelle, entradaPor);
   }
 
-  function completeEntrada(id, muelle) {
+  function completeEntrada(id, muelle, entradaPor) {
     var store = global.PlatformRecepcionStore;
-    var res = store.marcarEntrada(id, muelle, Auth.getDisplayName(state.user));
+    var res = store.marcarEntrada(id, muelle, Auth.getDisplayName(state.user), entradaPor);
     if (!res.ok) { toast(res.error, 'err'); return; }
     if (!res.unchanged) toast('Entrada registrada en muelle ' + res.item.muelle + '.', 'ok');
     renderApp();
@@ -196,14 +272,10 @@
   }
 
   function handleEntrada(id, muelleHint) {
-    muelleHint = String(muelleHint || '').trim();
-    if (muelleHint) {
-      completeEntrada(id, muelleHint);
-      return;
-    }
     var data = global.PlatformRecepcionStore.load();
     var item = (data.contenedores || []).find(function (c) { return c.id === id; });
-    openMuelleModal(id, item && item.muelle ? item.muelle : '', item && item.contenedor);
+    var muelle = String(muelleHint || (item && item.muelle) || '').trim();
+    openMuelleModal(id, muelle, item && item.contenedor);
   }
 
   function handleEliminar(id) {
@@ -215,7 +287,13 @@
   }
 
   function handleUbicar(id) {
-    var res = global.PlatformRecepcionStore.marcarUbicado(id, Auth.getDisplayName(state.user));
+    openPersonaModal('ubicar', id);
+  }
+
+  function completeUbicar(id, ubicadorNombre) {
+    var res = global.PlatformRecepcionStore.marcarUbicado(
+      id, Auth.getDisplayName(state.user), ubicadorNombre
+    );
     if (!res.ok) { toast(res.error, 'err'); return; }
     if (!res.unchanged) toast('Contenedor ubicado.', 'ok');
     renderApp();

@@ -14,6 +14,24 @@
 
   var DIVISIONES = ['COA/CP', 'COASIS', 'CPH', 'LIMENT', 'OTRO'];
 
+  /** Listas del equipo — recepción elige el nombre; la TV suma lo registrado. */
+  var OPERADORES_SENTADO = [
+    'Pedro Rodriguez',
+    'Robert Diaz'
+  ];
+  var VALIDADORES_RECEPCION = [
+    'Julio Lugo',
+    'Handerson Ogando',
+    'Nelson Flete',
+    'Richard Ortiz'
+  ];
+  var UBICADORES_RECEPCION = [
+    'Rolando Corporan',
+    'Obispo Abad',
+    'Yeuri Paniagua',
+    'Yeison Perez'
+  ];
+
   var broadcast = typeof global.BroadcastChannel !== 'undefined'
     ? new global.BroadcastChannel('recepcion-live-board')
     : null;
@@ -261,6 +279,8 @@
     if (!contenedor) return { ok: false, error: 'Ingrese el número de contenedor.' };
     if (!String(payload.division || '').trim()) return { ok: false, error: 'Seleccione la división.' };
     if (!String(payload.descripcion || '').trim()) return { ok: false, error: 'Ingrese la descripción.' };
+    var operador = validarPersonaEnRoster(payload.operadorDescarga, OPERADORES_SENTADO, 'el operador sentado');
+    if (!operador.ok) return operador;
 
     var data = load();
     var dup = (data.contenedores || []).some(function (c) {
@@ -283,7 +303,7 @@
       entrada: 'pendiente',
       ubicado: 'pendiente',
       atDescargado: ts,
-      operadorDescarga: usuario,
+      operadorDescarga: operador.nombre,
       createdAt: ts,
       createdBy: usuario,
       updatedAt: ts,
@@ -305,7 +325,9 @@
     return (data.contenedores || []).findIndex(function (c) { return c.id === id; });
   }
 
-  function marcarValidado(id, usuario) {
+  function marcarValidado(id, usuario, validadorNombre) {
+    var val = validarPersonaEnRoster(validadorNombre, VALIDADORES_RECEPCION, 'el validador');
+    if (!val.ok) return val;
     var data = load();
     var idx = findById(data, id);
     if (idx < 0) return { ok: false, error: 'Contenedor no encontrado.' };
@@ -314,7 +336,7 @@
     var ts = nowIso();
     item.validado = 'ok';
     item.atValidado = ts;
-    item.validadorPor = usuario || '—';
+    item.validadorPor = val.nombre;
     item.updatedAt = ts;
     item.updatedBy = usuario || '—';
     pushHistorial(item, { at: ts, usuario: usuario, accion: 'validado', nota: 'Validación OK' });
@@ -349,7 +371,9 @@
     return { ok: true, data: data, item: item };
   }
 
-  function marcarEntrada(id, muelle, usuario) {
+  function marcarEntrada(id, muelle, usuario, entradaNombre) {
+    var ent = validarPersonaEnRoster(entradaNombre, VALIDADORES_RECEPCION, 'quien da la entrada');
+    if (!ent.ok) return ent;
     var data = load();
     var idx = findById(data, id);
     if (idx < 0) return { ok: false, error: 'Contenedor no encontrado.' };
@@ -364,7 +388,7 @@
     item.entrada = 'ok';
     item.muelle = muelle;
     item.atEntrada = ts;
-    item.entradaPor = usuario || '—';
+    item.entradaPor = ent.nombre;
     item.updatedAt = ts;
     item.updatedBy = usuario || '—';
     pushHistorial(item, { at: ts, usuario: usuario, accion: 'entrada', nota: 'Entrada OK · muelle ' + muelle });
@@ -372,7 +396,9 @@
     return { ok: true, data: data, item: item };
   }
 
-  function marcarUbicado(id, usuario) {
+  function marcarUbicado(id, usuario, ubicadorNombre) {
+    var ubi = validarPersonaEnRoster(ubicadorNombre, UBICADORES_RECEPCION, 'el ubicador');
+    if (!ubi.ok) return ubi;
     var data = load();
     var idx = findById(data, id);
     if (idx < 0) return { ok: false, error: 'Contenedor no encontrado.' };
@@ -382,7 +408,7 @@
     var ts = nowIso();
     item.ubicado = 'ok';
     item.atUbicado = ts;
-    item.ubicadorPor = usuario || '—';
+    item.ubicadorPor = ubi.nombre;
     item.updatedAt = ts;
     item.updatedBy = usuario || '—';
     pushHistorial(item, { at: ts, usuario: usuario, accion: 'ubicado', nota: 'Ubicación OK' });
@@ -451,6 +477,66 @@
     return out;
   }
 
+  function normalizarNombreRoster(nombre) {
+    return String(nombre || '').trim().toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\./g, '').replace(/\s+/g, ' ');
+  }
+
+  function resolverNombreEnRoster(usuario, roster) {
+    var u = String(usuario || '').trim();
+    if (!u || u === '—') return '';
+    if (roster.indexOf(u) >= 0) return u;
+    var uNorm = normalizarNombreRoster(u);
+    var i;
+    for (i = 0; i < roster.length; i++) {
+      if (normalizarNombreRoster(roster[i]) === uNorm) return roster[i];
+    }
+    var uFirst = uNorm.split(' ')[0];
+    if (uFirst && uFirst.length > 2) {
+      for (i = 0; i < roster.length; i++) {
+        var rFirst = normalizarNombreRoster(roster[i]).split(' ')[0];
+        if (rFirst === uFirst) return roster[i];
+      }
+    }
+    return '';
+  }
+
+  function validarPersonaEnRoster(nombre, roster, label) {
+    var resolved = resolverNombreEnRoster(nombre, roster);
+    if (!resolved) {
+      return { ok: false, error: 'Seleccione ' + (label || 'una persona') + ' de la lista.' };
+    }
+    return { ok: true, nombre: resolved };
+  }
+
+  function tallyCampo(contenedores, field, filterFn) {
+    var map = Object.create(null);
+    (contenedores || []).forEach(function (c) {
+      if (filterFn && !filterFn(c)) return;
+      var name = String(c[field] || '').trim();
+      if (!name || name === '—') return;
+      map[name] = (map[name] || 0) + 1;
+    });
+    return Object.keys(map).map(function (k) {
+      return { name: k, n: map[k] };
+    }).sort(function (a, b) {
+      if (b.n !== a.n) return b.n - a.n;
+      return String(a.name).localeCompare(String(b.name), 'es');
+    });
+  }
+
+  function resumenEquipoTv(contenedores) {
+    return {
+      operadores: tallyCampo(contenedores, 'operadorDescarga'),
+      validadores: tallyCampo(contenedores, 'validadorPor', function (c) {
+        return c.validado === 'ok';
+      }),
+      ubicadores: tallyCampo(contenedores, 'ubicadorPor', function (c) {
+        return c.ubicado === 'ok';
+      })
+    };
+  }
+
   function getLiveShareBoard(data) {
     data = data || load();
     return data.liveShareBoard || null;
@@ -515,6 +601,9 @@
     STORAGE_KEY: STORAGE_KEY,
     TIPOS: TIPOS,
     DIVISIONES: DIVISIONES,
+    OPERADORES_SENTADO: OPERADORES_SENTADO,
+    VALIDADORES_RECEPCION: VALIDADORES_RECEPCION,
+    UBICADORES_RECEPCION: UBICADORES_RECEPCION,
     load: load,
     save: save,
     formatFecha: formatFecha,
@@ -531,6 +620,9 @@
     eliminarContenedor: eliminarContenedor,
     getContenedoresActivos: getContenedoresActivos,
     countResumen: countResumen,
+    resumenEquipoTv: resumenEquipoTv,
+    validarPersonaEnRoster: validarPersonaEnRoster,
+    resolverNombreEnRoster: resolverNombreEnRoster,
     getLiveShareBoard: getLiveShareBoard,
     isLiveShareBoardActive: isLiveShareBoardActive,
     startLiveShareBoard: startLiveShareBoard,

@@ -55,6 +55,10 @@
   }
 
   function buildChartStats(contenedores) {
+    var store = S();
+    if (store && store.resumenEquipoTv) {
+      return store.resumenEquipoTv(contenedores);
+    }
     return {
       operadores: tallyByField(contenedores, 'operadorDescarga'),
       validadores: tallyByField(contenedores, 'validadorPor', function (c) {
@@ -119,8 +123,8 @@
       '</span><span class="rec-tv-kpi-lbl">Ubicados</span></div></div></div>' +
       '<aside class="rec-tv-chart rec-tv-chart--triple" aria-label="Productividad equipo">' +
       '<p class="rec-tv-chart-title">Equipo en recepción</p>' +
-      renderChartSection('Operadores sentado', chart.operadores, '', 3) +
-      renderChartSection('Validadores', chart.validadores, 'rec-tv-chart-fill--val', 3) +
+      renderChartSection('Operadores sentado', chart.operadores, '', 0) +
+      renderChartSection('Validadores', chart.validadores, 'rec-tv-chart-fill--val', 0) +
       renderChartSection('Ubicadores', chart.ubicadores, 'rec-tv-chart-fill--ubi', 0) +
       '</aside></div>';
   }

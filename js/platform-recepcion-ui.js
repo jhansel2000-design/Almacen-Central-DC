@@ -68,6 +68,14 @@
       '<span></span><span></span><span></span></button>';
   }
 
+  function renderEquipoSelect(id, label, names) {
+    var opts = '<option value="">Seleccione…</option>' + (names || []).map(function (n) {
+      return '<option value="' + esc(n) + '">' + esc(n) + '</option>';
+    }).join('');
+    return '<label class="rec-field" for="' + esc(id) + '"><span>' + esc(label) + '</span>' +
+      '<select id="' + esc(id) + '" class="rec-input" required>' + opts + '</select></label>';
+  }
+
   function renderTorreHero() {
     return '<header class="rbl-f-hero rbl-f-hero--h4">' +
       '<span class="rbl-f-hero-glow" aria-hidden="true"></span>' +
@@ -138,6 +146,7 @@
     var divOpts = (store.DIVISIONES || []).map(function (d) {
       return '<option value="' + esc(d) + '">' + esc(d) + '</option>';
     }).join('');
+    var operadorField = renderEquipoSelect('recOperadorSentado', 'Operador sentado', store.OPERADORES_SENTADO);
     return '<div class="rbl-card rbl-f-form">' +
       '<div class="rbl-card-head"><h3>Nuevo contenedor</h3>' +
       (nextReg ? '<span class="rbl-reg">' + esc(nextReg) + '</span>' : '') + '</div>' +
@@ -151,6 +160,7 @@
       '<label class="rec-field"><span>División</span><select id="recDivision" class="rec-input" required>' +
       '<option value="">Seleccione…</option>' + divOpts + '</select></label>' +
       '<label class="rec-field rec-field--wide"><span>Descripción</span><input type="text" id="recDescripcion" class="rec-input" placeholder="PAMPERS / GATORADE…" maxlength="120" required></label>' +
+      operadorField +
       '<div class="rec-form-row-pair">' +
       '<label class="rec-field"><span>Paletas</span><input type="number" id="recPaletas" class="rec-input" min="0" max="999" value="0"></label>' +
       '<label class="rec-field"><span>Muelle (opcional)</span><input type="text" id="recMuelle" class="rec-input" placeholder="J9" maxlength="12" autocapitalize="characters"></label>' +
@@ -212,6 +222,7 @@
     var divOpts = (store.DIVISIONES || []).map(function (d) {
       return '<option value="' + esc(d) + '">' + esc(d) + '</option>';
     }).join('');
+    var operadorField = renderEquipoSelect('recOperadorSentado', 'Operador sentado', store.OPERADORES_SENTADO);
     return '<section class="rec-panel rec-panel--form" aria-labelledby="recFormTitle">' +
       '<h2 id="recFormTitle" class="rec-panel-title">Registrar contenedor</h2>' +
       (nextReg ? '<p class="rec-next-registro">Próximo registro: <strong>' + esc(nextReg) + '</strong></p>' : '') +
@@ -224,6 +235,7 @@
       '<label class="rec-field"><span>División</span><select id="recDivision" class="rec-input" required>' +
       '<option value="">Seleccione…</option>' + divOpts + '</select></label>' +
       '<label class="rec-field rec-field--wide"><span>Descripción</span><input type="text" id="recDescripcion" class="rec-input" placeholder="PAMPERS / GATORADE…" maxlength="120" required></label>' +
+      operadorField +
       '<div class="rec-form-row-pair">' +
       '<label class="rec-field"><span>Paletas</span><input type="number" id="recPaletas" class="rec-input" min="0" max="999" value="0"></label>' +
       '<label class="rec-field"><span>Muelle (opcional)</span><input type="text" id="recMuelle" class="rec-input" placeholder="J9" maxlength="12" autocapitalize="characters"></label>' +
@@ -264,7 +276,9 @@
       'data-rec-id="' + esc(item.id) + '">Guardar</button></div>';
   }
 
-  function renderMuelleModal() {
+  function renderMuelleModal(store) {
+    store = store || S();
+    var entradaField = renderEquipoSelect('recMuelleModalEntradaPor', 'Entrada por (validador)', store.VALIDADORES_RECEPCION);
     return '<div class="rec-muelle-modal is-hidden" id="recMuelleModal" role="dialog" aria-modal="true" aria-labelledby="recMuelleModalTitle">' +
       '<div class="rec-muelle-modal__backdrop" data-rec-action="cerrar-muelle-modal"></div>' +
       '<div class="rec-muelle-modal__panel">' +
@@ -272,9 +286,24 @@
       '<p class="rec-muelle-modal__sub" id="recMuelleModalSub">Indique el muelle antes de confirmar la entrada.</p>' +
       '<label class="rec-field" for="recMuelleModalInput"><span>Muelle</span>' +
       '<input type="text" id="recMuelleModalInput" class="rec-input" placeholder="J9" maxlength="12" autocapitalize="characters"></label>' +
+      entradaField +
       '<div class="rec-muelle-modal__actions">' +
       '<button type="button" class="rec-btn rec-btn--ghost" data-rec-action="cerrar-muelle-modal">Cancelar</button>' +
       '<button type="button" class="rec-btn rec-btn--primary" id="recMuelleModalConfirm">Confirmar entrada</button>' +
+      '</div></div></div>';
+  }
+
+  function renderPersonaModal() {
+    return '<div class="rec-muelle-modal is-hidden" id="recPersonaModal" role="dialog" aria-modal="true" aria-labelledby="recPersonaModalTitle">' +
+      '<div class="rec-muelle-modal__backdrop" data-rec-action="cerrar-persona-modal"></div>' +
+      '<div class="rec-muelle-modal__panel">' +
+      '<h3 id="recPersonaModalTitle" class="rec-muelle-modal__title">Seleccionar persona</h3>' +
+      '<p class="rec-muelle-modal__sub" id="recPersonaModalSub">Elija quién realizó esta acción para el resumen en pantalla TV.</p>' +
+      '<label class="rec-field" for="recPersonaModalSelect"><span id="recPersonaModalLabel">Persona</span>' +
+      '<select id="recPersonaModalSelect" class="rec-input" required></select></label>' +
+      '<div class="rec-muelle-modal__actions">' +
+      '<button type="button" class="rec-btn rec-btn--ghost" data-rec-action="cerrar-persona-modal">Cancelar</button>' +
+      '<button type="button" class="rec-btn rec-btn--primary" id="recPersonaModalConfirm">Confirmar</button>' +
       '</div></div></div>';
   }
 
@@ -390,7 +419,8 @@
       '<div class="rbl-f-screen" data-rec-screen="hist">' + renderRegistroLogCard(data) + '</div>' +
       renderTorreCfg(user, liveActive) +
       '</div></div>' +
-      renderMuelleModal() +
+      renderMuelleModal(store) +
+      renderPersonaModal() +
       '</div>';
   }
 
@@ -470,7 +500,8 @@
           division: root.querySelector('#recDivision') && root.querySelector('#recDivision').value,
           descripcion: root.querySelector('#recDescripcion') && root.querySelector('#recDescripcion').value,
           paletas: root.querySelector('#recPaletas') && root.querySelector('#recPaletas').value,
-          muelle: root.querySelector('#recMuelle') && root.querySelector('#recMuelle').value
+          muelle: root.querySelector('#recMuelle') && root.querySelector('#recMuelle').value,
+          operadorDescarga: root.querySelector('#recOperadorSentado') && root.querySelector('#recOperadorSentado').value
         };
         if (callbacks.onRegister) callbacks.onRegister(payload, form);
       });
@@ -491,6 +522,9 @@
       if (action === 'ubicar' && callbacks.onUbicar) callbacks.onUbicar(id);
       if (action === 'cerrar-muelle-modal' && callbacks.onCloseMuelleModal) {
         callbacks.onCloseMuelleModal();
+      }
+      if (action === 'cerrar-persona-modal' && callbacks.onClosePersonaModal) {
+        callbacks.onClosePersonaModal();
       }
       if (action === 'eliminar' && callbacks.onEliminar) callbacks.onEliminar(id);
     });

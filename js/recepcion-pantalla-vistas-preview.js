@@ -65,21 +65,20 @@
 
   var CHART = {
     operadores: [
-      { name: 'Pedro R.', n: 12 },
-      { name: 'María S.', n: 9 },
-      { name: 'José P.', n: 7 },
-      { name: 'Eduardo L.', n: 5 }
+      { name: 'Pedro Rodriguez', n: 0 },
+      { name: 'Robert Diaz', n: 0 }
     ],
     validadores: [
-      { name: 'Kelvin P.', n: 8 },
-      { name: 'Francisco Gil', n: 6 },
-      { name: 'Franklin M.', n: 4 },
-      { name: 'Raul M.', n: 3 }
+      { name: 'Julio Lugo', n: 0 },
+      { name: 'Handerson Ogando', n: 0 },
+      { name: 'Nelson Flete', n: 0 },
+      { name: 'Richard Ortiz', n: 0 }
     ],
     ubicadores: [
-      { name: 'Ramón M.', n: 6 },
-      { name: 'Ana L.', n: 4 },
-      { name: 'Kelvin P.', n: 2 }
+      { name: 'Rolando Corporan', n: 0 },
+      { name: 'Obispo Abad', n: 0 },
+      { name: 'Yeuri Paniagua', n: 0 },
+      { name: 'Yeison Perez', n: 0 }
     ]
   };
 
