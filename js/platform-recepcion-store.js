@@ -95,7 +95,7 @@
 
   function normalizeContenedor(c) {
     c = c || {};
-    return {
+    var item = {
       id: c.id || uid(),
       registro: String(c.registro || '').trim().toUpperCase(),
       fecha: c.fecha || c.createdAt || nowIso(),
@@ -107,12 +107,23 @@
       muelle: String(c.muelle || '').trim().toUpperCase(),
       validado: c.validado === 'ok' ? 'ok' : 'pendiente',
       entrada: c.entrada === 'ok' ? 'ok' : 'pendiente',
+      ubicado: c.ubicado === 'ok' ? 'ok' : 'pendiente',
+      atDescargado: c.atDescargado || c.createdAt || '',
+      operadorDescarga: c.operadorDescarga || c.createdBy || '—',
+      atValidado: c.atValidado || '',
+      validadorPor: c.validadorPor || '',
+      atEntrada: c.atEntrada || '',
+      entradaPor: c.entradaPor || '',
+      atUbicado: c.atUbicado || '',
+      ubicadorPor: c.ubicadorPor || '',
       createdAt: c.createdAt || nowIso(),
       createdBy: c.createdBy || '—',
       updatedAt: c.updatedAt || c.createdAt || nowIso(),
       updatedBy: c.updatedBy || c.createdBy || '—',
       historial: Array.isArray(c.historial) ? c.historial.slice(0, 40) : []
     };
+    syncEtapasFromHistorial(item);
+    return item;
   }
 
   function normalizeLiveShare(share) {
@@ -190,6 +201,59 @@
     }
   }
 
+  function formatFechaEtapa(iso) {
+    if (!iso) return '—';
+    try {
+      var d = new Date(iso);
+      var fecha = new Intl.DateTimeFormat('es-DO', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+        timeZone: TZ
+      }).format(d);
+      var hora = new Intl.DateTimeFormat('es-DO', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+        timeZone: TZ
+      }).format(d);
+      return fecha + ' · ' + hora;
+    } catch (e) {
+      return formatFecha(iso);
+    }
+  }
+
+  function historialEtapa(item, accion) {
+    var rows = (item.historial || []).slice().sort(function (a, b) {
+      return String(a.at || '').localeCompare(String(b.at || ''));
+    });
+    for (var i = 0; i < rows.length; i++) {
+      if (rows[i].accion === accion) return rows[i];
+    }
+    return null;
+  }
+
+  function syncEtapasFromHistorial(item) {
+    if (!item.atDescargado) item.atDescargado = item.createdAt || '';
+    if (!item.operadorDescarga) item.operadorDescarga = item.createdBy || '—';
+    var hv = historialEtapa(item, 'validado');
+    if (hv) {
+      if (!item.atValidado) item.atValidado = hv.at;
+      if (!item.validadorPor) item.validadorPor = hv.usuario;
+    }
+    var he = historialEtapa(item, 'entrada');
+    if (he) {
+      if (!item.atEntrada) item.atEntrada = he.at;
+      if (!item.entradaPor) item.entradaPor = he.usuario;
+    }
+    var hu = historialEtapa(item, 'ubicado');
+    if (hu) {
+      if (!item.atUbicado) item.atUbicado = hu.at;
+      if (!item.ubicadorPor) item.ubicadorPor = hu.usuario;
+      if (item.ubicado !== 'ok') item.ubicado = 'ok';
+    }
+  }
+
   function registrarContenedor(payload, usuario) {
     payload = payload || {};
     usuario = usuario || '—';
@@ -217,6 +281,9 @@
       muelle: payload.muelle || '',
       validado: 'pendiente',
       entrada: 'pendiente',
+      ubicado: 'pendiente',
+      atDescargado: ts,
+      operadorDescarga: usuario,
       createdAt: ts,
       createdBy: usuario,
       updatedAt: ts,
@@ -246,6 +313,8 @@
     if (item.validado === 'ok') return { ok: true, data: data, item: item, unchanged: true };
     var ts = nowIso();
     item.validado = 'ok';
+    item.atValidado = ts;
+    item.validadorPor = usuario || '—';
     item.updatedAt = ts;
     item.updatedBy = usuario || '—';
     pushHistorial(item, { at: ts, usuario: usuario, accion: 'validado', nota: 'Validación OK' });
@@ -294,9 +363,29 @@
     var ts = nowIso();
     item.entrada = 'ok';
     item.muelle = muelle;
+    item.atEntrada = ts;
+    item.entradaPor = usuario || '—';
     item.updatedAt = ts;
     item.updatedBy = usuario || '—';
     pushHistorial(item, { at: ts, usuario: usuario, accion: 'entrada', nota: 'Entrada OK · muelle ' + muelle });
+    save(data);
+    return { ok: true, data: data, item: item };
+  }
+
+  function marcarUbicado(id, usuario) {
+    var data = load();
+    var idx = findById(data, id);
+    if (idx < 0) return { ok: false, error: 'Contenedor no encontrado.' };
+    var item = data.contenedores[idx];
+    if (item.entrada !== 'ok') return { ok: false, error: 'Debe dar entrada antes de ubicar.' };
+    if (item.ubicado === 'ok') return { ok: true, data: data, item: item, unchanged: true };
+    var ts = nowIso();
+    item.ubicado = 'ok';
+    item.atUbicado = ts;
+    item.ubicadorPor = usuario || '—';
+    item.updatedAt = ts;
+    item.updatedBy = usuario || '—';
+    pushHistorial(item, { at: ts, usuario: usuario, accion: 'ubicado', nota: 'Ubicación OK' });
     save(data);
     return { ok: true, data: data, item: item };
   }
@@ -346,7 +435,8 @@
       local: 0,
       pendienteValidar: 0,
       validado: 0,
-      conEntrada: 0
+      conEntrada: 0,
+      conUbicado: 0
     };
     list.forEach(function (c) {
       if (c.tipo === 'local') out.local += 1;
@@ -354,6 +444,7 @@
       if (c.validado !== 'ok') out.pendienteValidar += 1;
       else out.validado += 1;
       if (c.entrada === 'ok') out.conEntrada += 1;
+      if (c.ubicado === 'ok') out.conUbicado += 1;
     });
     return out;
   }
@@ -426,6 +517,7 @@
     save: save,
     formatFecha: formatFecha,
     formatFechaSolo: formatFechaSolo,
+    formatFechaEtapa: formatFechaEtapa,
     formatRegistroNum: formatRegistroNum,
     peekNextRegistro: peekNextRegistro,
     getRegistroActividad: getRegistroActividad,
@@ -433,6 +525,7 @@
     marcarValidado: marcarValidado,
     actualizarMuelle: actualizarMuelle,
     marcarEntrada: marcarEntrada,
+    marcarUbicado: marcarUbicado,
     eliminarContenedor: eliminarContenedor,
     getContenedoresActivos: getContenedoresActivos,
     countResumen: countResumen,
