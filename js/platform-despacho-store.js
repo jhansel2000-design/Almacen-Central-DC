@@ -195,8 +195,10 @@
       data.pedidos = (data.pedidos || []).map(function (p) {
         var before = p.estado;
         var beforeSeg = p.seguimientoValidador;
+        var beforeCargas = JSON.stringify(p.cargasEquipo || []);
         var n = normalizePedido(p);
         if (n.estado !== before || n.seguimientoValidador !== beforeSeg) migrated = true;
+        if (JSON.stringify(n.cargasEquipo || []) !== beforeCargas) migrated = true;
         return n;
       });
       data.liveShare = normalizeLiveShare(data.liveShare);
@@ -250,7 +252,7 @@
       updatedBy: p.updatedBy || p.createdBy || '—',
       historial: Array.isArray(p.historial) ? p.historial : []
     };
-    pedido.cargasEquipo = normalizeCargasEquipo(p);
+    pedido.cargasEquipo = reconcileCargasEquipo(p);
     syncCargasLegacyFields(pedido);
     return pedido;
   }
@@ -335,6 +337,47 @@
       camiones: normalizeCantidadCamiones(raw.camiones != null ? raw.camiones : 0),
       explicit: !!raw.explicit
     };
+  }
+
+  /** ¿El validador registró camiones a mano? (historial del IDC) */
+  function cargaRegistradaEnHistorial(pedido, validador) {
+    var nombre = String(validador || '').trim();
+    if (!nombre) return false;
+    var first = nombre.split(' ')[0];
+    var hist = (pedido && pedido.historial) || [];
+    for (var i = hist.length - 1; i >= 0; i--) {
+      var h = hist[i];
+      var nota = String(h.nota || '');
+      if (nota.indexOf('cargó') < 0 && nota.indexOf('sumó carga') < 0) continue;
+      var who = String(h.validadorAsignado || h.usuario || '').trim();
+      if (who && who.toLowerCase() === nombre.toLowerCase()) return true;
+      if (nota.indexOf(nombre) >= 0) return true;
+      if (first && first.length > 2 && nota.indexOf(first) >= 0) return true;
+    }
+    return false;
+  }
+
+  function reconcileCargasEquipo(raw) {
+    raw = raw || {};
+    var out = [];
+    var seen = {};
+    if (!Array.isArray(raw.cargasEquipo)) return out;
+    raw.cargasEquipo.forEach(function (item) {
+      var c = normalizeCargaItem(item);
+      if (!c || !c.validador || (c.camiones || 0) <= 0) return;
+      var key = c.validador.toLowerCase();
+      if (seen[key]) return;
+      if (!c.explicit) {
+        if (cargaRegistradaEnHistorial(raw, c.validador)) {
+          c.explicit = true;
+        } else {
+          return;
+        }
+      }
+      seen[key] = true;
+      out.push(c);
+    });
+    return out;
   }
 
   function migrateCargasEquipo(p) {

@@ -29,7 +29,7 @@
   var KPI_LABELS = {
     pendiente_carga: 'Pendiente',
     en_validacion: 'Validado',
-    listo_despacho: 'Cargado'
+    listo_despacho: 'IDC carg.'
   };
 
   function DS() {
@@ -147,10 +147,13 @@
         var icon = store.renderEstadoIconSvg ? store.renderEstadoIconSvg(id, { compact: true }) : '';
         var lbl = KPI_LABELS[id] || e.kpiLabel || e.short || e.label;
         var kpiCls = id === 'pendiente_carga' ? 'pendiente' : (id === 'en_validacion' ? 'validado' : 'cargado');
+        var title = id === 'listo_despacho'
+          ? 'IDC marcados como cargados (estado listo despacho)'
+          : (id === 'en_validacion' ? 'IDC en validación' : 'IDC pendientes por validar');
         return '<div class="desp-lista-present-kpi desp-lista-present-kpi--' + esc(kpiCls) + '">' +
           (icon ? '<span class="desp-lista-present-kpi-iconbox" aria-hidden="true">' + icon + '</span>' : '') +
-          '<span class="desp-lista-present-kpi-num">' + esc(String(counts[id] || 0)) + '</span>' +
-          '<span class="desp-lista-present-kpi-lbl">' + esc(lbl) + '</span></div>';
+          '<span class="desp-lista-present-kpi-num" title="' + esc(title) + '">' + esc(String(counts[id] || 0)) + '</span>' +
+          '<span class="desp-lista-present-kpi-lbl" title="' + esc(title) + '">' + esc(lbl) + '</span></div>';
       }).join('') +
       '</div>';
   }
