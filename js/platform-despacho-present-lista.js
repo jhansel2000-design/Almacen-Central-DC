@@ -65,6 +65,7 @@
         ? store.fechasEtapasValidador(p)
         : {};
       return [p.idc, p.cliente, p.jaula, p.estado, p.validadorAsignado,
+        p.cantidadCamiones, (p.validadoresTrabajo || []).join(','),
         etapas.pendiente_carga, etapas.en_validacion, etapas.listo_despacho].join(':');
     }).join('|');
     var countSig = counts

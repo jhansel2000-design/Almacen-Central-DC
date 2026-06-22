@@ -12,9 +12,11 @@
   var mountEl = null;
   var lastSig = '';
   var displayMode = false;
-  var LAYOUT_REV = '15';
-  var BARCODE_REV = 'notext-hq-xxl';
+  var LAYOUT_REV = '16';
+  var BARCODE_REV = 'notext-hq-xxl-v3';
   var fitBound = false;
+  var fitRaf = 0;
+  var lastBarcodeKey = '';
 
   function ensureAmbientEl() {
     if (!mountEl || !shouldShowOnThisPage()) return null;
@@ -91,33 +93,54 @@
   function fitPresentToViewport() {
     if (!mountEl || mountEl.hidden || !shouldShowOnThisPage()) return;
     var inner = mountEl.querySelector('.desp-present-inner--tv');
-    var block = mountEl.querySelector('.desp-present-content');
-    if (!inner || !block) return;
+    var content = mountEl.querySelector('.desp-present-content');
+    var stage = mountEl.querySelector('.desp-present-stage');
+    if (!inner || !content || !stage) return;
 
-    block.style.transform = 'none';
-    block.style.marginBottom = '0';
+    content.style.transform = 'none';
+    content.style.marginBottom = '0';
+    stage.style.transform = 'none';
+    stage.style.marginBottom = '0';
 
-    var availH = inner.clientHeight - 8;
-    var availW = inner.clientWidth - 8;
-    var natH = block.offsetHeight;
-    var natW = block.offsetWidth;
+    /* Solo escalar el bloque del código de barras — el IDC en texto queda a tamaño real */
+    var meta = mountEl.querySelector('.desp-present-meta--tv');
+    var badge = mountEl.querySelector('.desp-present-badge');
+    var reserve = 12;
+    if (badge && badge.offsetHeight) reserve += badge.offsetHeight + 8;
+    if (meta && meta.offsetHeight) reserve += meta.offsetHeight + 10;
+
+    var availH = inner.clientHeight - reserve;
+    var availW = inner.clientWidth - 16;
+    var natH = stage.offsetHeight;
+    var natW = stage.offsetWidth;
     if (!natH || !availH || !natW || !availW) return;
 
     var scale = Math.min(1, availH / natH, availW / natW);
     if (scale < 0.995) {
-      block.style.transform = 'scale(' + scale.toFixed(4) + ')';
-      block.style.transformOrigin = 'center top';
-      block.style.marginBottom = String(Math.round(natH * (scale - 1))) + 'px';
+      stage.style.transform = 'scale(' + scale.toFixed(4) + ')';
+      stage.style.transformOrigin = 'center top';
+      stage.style.marginBottom = String(Math.round(natH * (scale - 1))) + 'px';
     }
   }
 
+  function fitIdcLabel(shell, idc) {
+    var el = shell && shell.querySelector('.desp-present-idc-value');
+    if (!el) return;
+    var len = String(idc || '').trim().length;
+    var vmin = len <= 8 ? 8.8 : len <= 12 ? 7.4 : len <= 16 ? 6.2 : 5.2;
+    var vw = len <= 8 ? 5.8 : len <= 12 ? 4.9 : len <= 16 ? 4.1 : 3.4;
+    el.style.fontSize = 'min(' + vmin + 'vmin, ' + vw + 'vw)';
+  }
+
   function schedulePresentFit() {
+    if (fitRaf) return;
     if (!global.requestAnimationFrame) {
       fitPresentToViewport();
       return;
     }
-    global.requestAnimationFrame(function () {
-      global.requestAnimationFrame(fitPresentToViewport);
+    fitRaf = global.requestAnimationFrame(function () {
+      fitRaf = 0;
+      fitPresentToViewport();
     });
   }
 
@@ -136,12 +159,6 @@
       imgEl.setAttribute('data-fit-wired', '1');
       imgEl.addEventListener('load', function onBarcodeLoad() {
         schedulePresentFit();
-        if (!shouldShowOnThisPage()) return;
-        var targetH = barcodeRenderHeight(imgEl);
-        var prevH = Number(imgEl.getAttribute('data-render-h') || 0);
-        if (targetH - prevH > 24) {
-          renderBarcode(imgEl, imgEl.alt);
-        }
       });
     }
     schedulePresentFit();
@@ -155,10 +172,7 @@
   function refreshBarcodeFromShare(share) {
     if (!mountEl || !share || !share.active) return;
     var img = mountEl.querySelector('#despPresentBarcode');
-    if (img) {
-      renderBarcode(img, share.idc);
-      wireBarcodeFit(img);
-    }
+    if (img) renderBarcode(img, share.idc);
   }
 
   function barcodeRenderHeight(imgEl) {
@@ -174,15 +188,19 @@
     } else if (inner && inner.clientHeight > 180) {
       var reserve = 0;
       if (meta && meta.offsetHeight) reserve += meta.offsetHeight + 10;
-      else reserve += 120;
+      else reserve += 100;
       if (badge && badge.offsetHeight) reserve += badge.offsetHeight + 12;
       else reserve += 32;
-      reserve += 64;
-      avail = Math.max(220, inner.clientHeight - reserve);
+      reserve += 48;
+      avail = Math.max(240, inner.clientHeight - reserve);
+    }
+
+    if (inner && inner.clientWidth > 1400) {
+      avail = Math.max(avail || 0, Math.round(inner.clientWidth * 0.2));
     }
 
     if (!avail) return 400;
-    return Math.min(720, Math.max(300, Math.round(avail * 0.98)));
+    return Math.min(640, Math.max(280, Math.round(avail * 0.96)));
   }
 
   function renderBarcode(imgEl, idc) {
@@ -190,19 +208,25 @@
     var code = DS().formatIdc(idc);
     if (!code) {
       imgEl.removeAttribute('src');
+      imgEl.removeAttribute('data-barcode-key');
       imgEl.alt = '';
+      lastBarcodeKey = '';
       return;
     }
     var tv = shouldShowOnThisPage();
     var barH = tv ? barcodeRenderHeight(imgEl) : 100;
+    var renderKey = [BARCODE_REV, code, barH, tv ? 'tv' : 'panel'].join('|');
+    if (imgEl.getAttribute('data-barcode-key') === renderKey || lastBarcodeKey === renderKey) {
+      return;
+    }
     global.PlatformDespachoBarcode.render(imgEl, code, tv ? {
       tv: true,
       height: barH,
       fontSize: 44,
-      width: 6,
+      width: 5.5,
       margin: 12,
       showText: false,
-      scale: 5
+      scale: 4
     } : {
       height: 100,
       fontSize: 24,
@@ -210,6 +234,8 @@
       showText: true
     });
     if (tv) imgEl.setAttribute('data-render-h', String(barH));
+    imgEl.setAttribute('data-barcode-key', renderKey);
+    lastBarcodeKey = renderKey;
   }
 
   function renderMount(share) {
@@ -277,6 +303,7 @@
 
     renderBarcode(shell.querySelector('#despPresentBarcode'), idc);
     wireBarcodeFit(shell.querySelector('#despPresentBarcode'));
+    fitIdcLabel(shell, idc);
     schedulePresentFit();
     lastSig = shareSignature(share);
   }
@@ -290,10 +317,7 @@
     }
     var share = store.getLiveShare ? store.getLiveShare() : null;
     var sig = shareSignature(share);
-    if (sig === lastSig) {
-      refreshBarcodeFromShare(share);
-      return;
-    }
+    if (sig === lastSig) return;
     renderMount(share);
   }
 
@@ -322,7 +346,11 @@
     ensureMount();
     ensureFitListeners();
 
-    function onUpdate() {
+    function onUpdate(ev) {
+      if (ev && ev.type === 'despacho-updated') {
+        var src = ev.detail && ev.detail.source;
+        if (src !== 'live-share') return;
+      }
       refreshFromStore();
     }
 
