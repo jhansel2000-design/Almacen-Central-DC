@@ -12,6 +12,7 @@
   var mountEl = null;
   var lastSig = '';
   var displayMode = false;
+  var pollTimer = null;
 
   var ETAPA_LABELS = {
     pendiente_carga: 'Pend. por validar',
@@ -275,6 +276,22 @@
     renderMount(share, data);
   }
 
+  function startListaPoll() {
+    if (pollTimer) return;
+    pollTimer = global.setInterval(function () {
+      if (!shouldShowOnThisPage()) return;
+      var store = DS();
+      if (!store || !store.isLiveShareListaActive || !store.isLiveShareListaActive()) return;
+      refreshFromStore();
+    }, 2000);
+  }
+
+  function stopListaPoll() {
+    if (!pollTimer) return;
+    global.clearInterval(pollTimer);
+    pollTimer = null;
+  }
+
   function ensureMount() {
     if (mountEl && mountEl.isConnected) return mountEl;
     mountEl = document.getElementById('despGlobalLiveLista');
@@ -311,10 +328,12 @@
     }
 
     refreshFromStore();
+    if (shouldShowOnThisPage()) startListaPoll();
   }
 
   function unbind() {
     bound = false;
+    stopListaPoll();
     if (mountEl) renderMount(null);
   }
 

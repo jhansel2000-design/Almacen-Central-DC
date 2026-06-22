@@ -1720,7 +1720,7 @@ body.desp-controller-mode .desp-lista-present-totales,
 
 .desp-val-chart-row {
   display: grid;
-  grid-template-columns: minmax(4.8rem, 5.8rem) 1fr;
+  grid-template-columns: minmax(0, 5.8rem) minmax(0, 1fr);
   gap: 0.25rem 0.4rem;
   align-items: center;
   font-size: 0.74rem;
@@ -1780,6 +1780,8 @@ body.desp-controller-mode .desp-lista-present-totales,
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .desp-val-chart-bars {
@@ -1860,7 +1862,7 @@ body.desp-controller-mode .desp-lista-present-totales,
 .desp-val-resumen-total--cargado strong { color: #34d399; }
 
 .desp-lista-present-validador-pill {
-  display: inline-block;
+  display: block;
   padding: 0.15rem 0.45rem;
   border-radius: 6px;
   background: rgba(37, 99, 235, 0.18);
@@ -1868,6 +1870,10 @@ body.desp-controller-mode .desp-lista-present-totales,
   color: #93c5fd;
   font-size: 0.78em;
   font-weight: 600;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* Entrada — secciones separadas (premium) */
@@ -2508,8 +2514,8 @@ body.desp-controller-mode .desp-live-present-lista {
 
 /* —— Carga por validador (camiones) —— */
 .desp-carga-equipo-cell {
-  min-width: 220px;
-  max-width: 340px;
+  min-width: 0;
+  max-width: 16rem;
   vertical-align: top;
 }
 
@@ -2675,4 +2681,34 @@ body.desp-controller-mode .desp-live-present-lista {
 .desp-table .desp-carga-equipo-cell {
   padding-top: 0.45rem;
   padding-bottom: 0.45rem;
+}
+
+/* Validador / lista en vivo — nombres largos no empujan columnas */
+#despValTable,
+.desp-table--lista-vivo {
+  table-layout: fixed;
+}
+
+#despValTable td.desp-cliente,
+#despValTable td.desp-validador-asignado,
+#despValTable td.desp-carga-equipo-cell,
+.desp-table--lista-vivo td.desp-cliente,
+.desp-table--lista-vivo td.desp-validador-asignado,
+.desp-table--lista-vivo td.desp-carga-equipo-cell {
+  overflow: hidden;
+  max-width: 0;
+}
+
+.desp-validador-asignado-select {
+  max-width: 100%;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.desp-carga-equipo--read {
+  min-width: 0;
+}
+
+.desp-carga-chip-name {
+  max-width: 5.5rem;
 }

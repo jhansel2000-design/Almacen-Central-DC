@@ -269,7 +269,15 @@
     return 'facturado';
   }
 
+  function touchLiveShareLista(data) {
+    if (data && data.liveShareLista && data.liveShareLista.active) {
+      data.liveShareLista = Object.assign({}, data.liveShareLista, { updatedAt: nowIso() });
+    }
+    return data;
+  }
+
   function save(data) {
+    touchLiveShareLista(data);
     return persistData(data, {});
   }
 
@@ -277,6 +285,9 @@
     try {
       global.dispatchEvent(new CustomEvent('despacho-updated', { detail: { data: data, at: nowIso() } }));
     } catch (e) { /* noop */ }
+    if (data && data.liveShareLista && data.liveShareLista.active) {
+      notifyLiveShareLista(data.liveShareLista);
+    }
   }
 
   function pushHistorial(pedido, entry) {

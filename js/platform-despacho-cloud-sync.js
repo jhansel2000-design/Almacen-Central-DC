@@ -156,6 +156,7 @@
     if (!firebaseLive()) return 120;
     try {
       var parsed = JSON.parse(value);
+      if (parsed && parsed.liveShareLista && parsed.liveShareLista.active) return 12;
       if (parsed && parsed.liveShare && parsed.liveShare.active) return 12;
     } catch (e) { /* noop */ }
     return 25;
@@ -277,11 +278,19 @@
     return merged;
   }
 
+  function pedidoSigPiece(p) {
+    if (!p) return '';
+    var cargas = (p.cargasEquipo || []).map(function (c) {
+      return String(c.validador || '') + '=' + String(c.camiones || 0);
+    }).sort().join('+');
+    return String(p.id) + ':' + String(p.estado) + '@' + String(p.updatedAt || '') +
+      '~' + String(p.validadorAsignado || '') + '~' + cargas +
+      '~' + String(p.jaula || '') + '~' + String(p.cliente || '');
+  }
+
   function dataSignature(data) {
     if (!data) return '';
-    var ped = (data.pedidos || []).map(function (p) {
-      return String(p.id) + ':' + String(p.estado) + '@' + String(p.updatedAt || '');
-    }).sort().join('|');
+    var ped = (data.pedidos || []).map(pedidoSigPiece).sort().join('|');
     var ls = data.liveShare && data.liveShare.active
       ? String(data.liveShare.idc) + '~' + String(data.liveShare.jaula) + '@' + String(data.liveShare.updatedAt)
       : '';

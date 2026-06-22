@@ -94,11 +94,12 @@ body.desp-display-mode .desp-val-chart-rows {
 }
 
 body.desp-display-mode .desp-val-chart-row {
-  grid-template-columns: minmax(7rem, 16vmin) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 14vmin) minmax(0, 1fr);
   width: 100%;
   font-size: calc(var(--desp-table-fs) * 1.15);
   line-height: 1.15;
   position: relative;
+  min-width: 0;
 }
 
 body.desp-display-mode .desp-val-chart-row::after {
@@ -125,6 +126,11 @@ body.desp-display-mode .desp-val-chart-name {
   letter-spacing: 0.04em;
   font-size: 1em;
   line-height: 1.15;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 body.desp-display-mode .desp-val-chart-bars {
@@ -193,6 +199,25 @@ body.desp-display-mode .desp-lista-present-table-wrap {
 body.desp-display-mode .desp-lista-present-table {
   font-size: var(--desp-table-fs);
   table-layout: fixed;
+  width: 100%;
+}
+
+body.desp-display-mode .desp-lista-present-table td {
+  padding: clamp(0.06rem, 0.18vh, 0.14rem) clamp(0.2rem, 0.45vw, 0.55rem);
+  vertical-align: top;
+  line-height: 1.15;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 0;
+}
+
+body.desp-display-mode .desp-lista-present-cliente,
+body.desp-display-mode .desp-lista-present-validador,
+body.desp-display-mode .desp-lista-present-idc,
+body.desp-display-mode .desp-lista-present-jaula {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 body.desp-display-mode .desp-lista-present-col-idc {
@@ -231,14 +256,6 @@ body.desp-display-mode .desp-lista-present-table th {
   letter-spacing: 0.05em;
 }
 
-body.desp-display-mode .desp-lista-present-table td {
-  padding: clamp(0.06rem, 0.18vh, 0.14rem) clamp(0.2rem, 0.45vw, 0.55rem);
-  vertical-align: top;
-  line-height: 1.15;
-  overflow: visible;
-  white-space: nowrap;
-}
-
 body.desp-display-mode .desp-lista-present-table th,
 body.desp-display-mode .desp-lista-present-table td {
   font-size: 1.15em;
@@ -258,6 +275,9 @@ body.desp-display-mode .desp-lista-present-carga {
   white-space: normal;
   line-height: 1.2;
   vertical-align: middle;
+  overflow: hidden;
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 body.desp-display-mode .desp-lista-present-idc {
@@ -412,6 +432,11 @@ body.desp-display-mode .desp-lista-present-validador-pill {
   font-size: 0.91em;
   font-weight: 600;
   border-radius: 0.35em;
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 body.desp-display-mode .desp-lista-present-table td .desp-lista-present-estado,
