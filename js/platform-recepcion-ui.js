@@ -210,7 +210,8 @@
       validado: 'Validación',
       entrada: 'Entrada',
       ubicado: 'Ubicación',
-      muelle: 'Muelle'
+      muelle: 'Muelle',
+      retirado: 'Retirado'
     };
     return map[accion] || String(accion || '—');
   }

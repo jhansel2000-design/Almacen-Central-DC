@@ -55,6 +55,7 @@
       updatedAt: nowIso(),
       registroCounter: 0,
       contenedores: [],
+      actividadLog: [],
       liveShareBoard: null
     };
   }
@@ -105,12 +106,34 @@
     }
   }
 
+  function migrateActividadLog(data) {
+    if (Array.isArray(data.actividadLog)) return data.actividadLog;
+    var rows = [];
+    (data.contenedores || []).forEach(function (c) {
+      (c.historial || []).forEach(function (h) {
+        rows.push({
+          at: h.at,
+          registro: c.registro,
+          contenedor: c.contenedor,
+          usuario: h.usuario,
+          accion: h.accion,
+          nota: h.nota
+        });
+      });
+    });
+    rows.sort(function (a, b) {
+      return String(b.at || '').localeCompare(String(a.at || ''));
+    });
+    return rows.slice(0, 500);
+  }
+
   function normalizePayload(data) {
     data = data || emptyPayload();
     data.module = 'recepcion';
     data.registroCounter = Math.max(0, parseInt(data.registroCounter, 10) || 0);
     data.contenedores = (data.contenedores || []).map(normalizeContenedor);
     ensureRegistroNumbers(data);
+    data.actividadLog = migrateActividadLog(data);
     data.liveShareBoard = normalizeLiveShare(data.liveShareBoard);
     return data;
   }
@@ -187,15 +210,32 @@
     } catch (e) { /* noop */ }
   }
 
-  function pushHistorial(item, entry) {
-    item.historial = item.historial || [];
-    item.historial.unshift({
+  function appendActividadLog(data, item, entry) {
+    if (!data) return;
+    data.actividadLog = data.actividadLog || [];
+    data.actividadLog.unshift({
       at: entry.at || nowIso(),
+      registro: item && item.registro ? item.registro : '—',
+      contenedor: item && item.contenedor ? item.contenedor : '—',
       usuario: entry.usuario || '—',
       accion: entry.accion || '',
       nota: entry.nota || ''
     });
+    data.actividadLog = data.actividadLog.slice(0, 500);
+  }
+
+  function pushHistorial(item, entry, data) {
+    entry = entry || {};
+    var row = {
+      at: entry.at || nowIso(),
+      usuario: entry.usuario || '—',
+      accion: entry.accion || '',
+      nota: entry.nota || ''
+    };
+    item.historial = item.historial || [];
+    item.historial.unshift(row);
     item.historial = item.historial.slice(0, 40);
+    if (data) appendActividadLog(data, item, row);
   }
 
   function formatFecha(iso) {
@@ -319,7 +359,7 @@
       usuario: usuario,
       accion: 'registro',
       nota: 'Registro ' + item.registro + ' · ' + (item.tipo === 'local' ? 'Local' : 'Importado')
-    });
+    }, data);
     data.contenedores.unshift(item);
     save(data);
     return { ok: true, data: data, item: item };
@@ -343,7 +383,7 @@
     item.validadorPor = val.nombre;
     item.updatedAt = ts;
     item.updatedBy = usuario || '—';
-    pushHistorial(item, { at: ts, usuario: usuario, accion: 'validado', nota: 'Validación OK' });
+    pushHistorial(item, { at: ts, usuario: usuario, accion: 'validado', nota: 'Validación OK' }, data);
     save(data);
     return { ok: true, data: data, item: item };
   }
@@ -370,7 +410,7 @@
       usuario: usuario,
       accion: 'muelle',
       nota: 'Muelle asignado · ' + muelle
-    });
+    }, data);
     save(data);
     return { ok: true, data: data, item: item };
   }
@@ -395,7 +435,7 @@
     item.entradaPor = ent.nombre;
     item.updatedAt = ts;
     item.updatedBy = usuario || '—';
-    pushHistorial(item, { at: ts, usuario: usuario, accion: 'entrada', nota: 'Entrada OK · muelle ' + muelle });
+    pushHistorial(item, { at: ts, usuario: usuario, accion: 'entrada', nota: 'Entrada OK · muelle ' + muelle }, data);
     save(data);
     return { ok: true, data: data, item: item };
   }
@@ -415,7 +455,7 @@
     item.ubicadorPor = ubi.nombre;
     item.updatedAt = ts;
     item.updatedBy = usuario || '—';
-    pushHistorial(item, { at: ts, usuario: usuario, accion: 'ubicado', nota: 'Ubicación OK' });
+    pushHistorial(item, { at: ts, usuario: usuario, accion: 'ubicado', nota: 'Ubicación OK' }, data);
     save(data);
     return { ok: true, data: data, item: item };
   }
@@ -424,6 +464,13 @@
     var data = load();
     var idx = findById(data, id);
     if (idx < 0) return { ok: false, error: 'Contenedor no encontrado.' };
+    var item = data.contenedores[idx];
+    pushHistorial(item, {
+      at: nowIso(),
+      usuario: usuario || '—',
+      accion: 'retirado',
+      nota: 'Retirado del seguimiento activo · ' + String(item.contenedor || '')
+    }, data);
     data.contenedores.splice(idx, 1);
     save(data);
     return { ok: true, data: data };
@@ -431,20 +478,8 @@
 
   function getRegistroActividad(data, limit) {
     data = data || load();
-    limit = limit || 60;
-    var rows = [];
-    (data.contenedores || []).forEach(function (c) {
-      (c.historial || []).forEach(function (h) {
-        rows.push({
-          at: h.at,
-          registro: c.registro,
-          contenedor: c.contenedor,
-          usuario: h.usuario,
-          accion: h.accion,
-          nota: h.nota
-        });
-      });
-    });
+    limit = limit || 80;
+    var rows = (data.actividadLog || []).slice();
     rows.sort(function (a, b) {
       return String(b.at || '').localeCompare(String(a.at || ''));
     });
