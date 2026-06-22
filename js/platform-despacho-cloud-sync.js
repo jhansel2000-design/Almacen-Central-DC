@@ -8,6 +8,7 @@
   var STORAGE_KEY = 'almacen_platform_data_despacho';
   var pollTimer = null;
   var pushing = false;
+  var pendingPush = false;
   var pulling = false;
   var applyingRemote = false;
   var siteConfig = null;
@@ -250,6 +251,44 @@
     return picked.active ? picked : null;
   }
 
+  /** Lista TV: el contador liveShareSeq gana sobre timestamps (evita reactivar al dejar de compartir). */
+  function pickNewerShareLista(local, remote) {
+    local = local || {};
+    remote = remote || {};
+    var lSeq = local.liveShareSeq || 0;
+    var rSeq = remote.liveShareSeq || 0;
+    if (lSeq !== rSeq) {
+      var win = lSeq > rSeq ? local : remote;
+      return {
+        liveShareSeq: Math.max(lSeq, rSeq),
+        liveShareLista: win.liveShareLista && win.liveShareLista.active ? win.liveShareLista : null
+      };
+    }
+    return {
+      liveShareSeq: lSeq,
+      liveShareLista: pickNewerShare(local.liveShareLista, remote.liveShareLista)
+    };
+  }
+
+  /** Barcode IDC: mismo criterio con liveShareBarcodeSeq. */
+  function pickNewerShareBarcode(local, remote) {
+    local = local || {};
+    remote = remote || {};
+    var lSeq = local.liveShareBarcodeSeq || 0;
+    var rSeq = remote.liveShareBarcodeSeq || 0;
+    if (lSeq !== rSeq) {
+      var win = lSeq > rSeq ? local : remote;
+      return {
+        liveShareBarcodeSeq: Math.max(lSeq, rSeq),
+        liveShare: win.liveShare && win.liveShare.active ? win.liveShare : null
+      };
+    }
+    return {
+      liveShareBarcodeSeq: lSeq,
+      liveShare: pickNewerShare(local.liveShare, remote.liveShare)
+    };
+  }
+
   function mergeDespacho(local, remote) {
     if (!remote) return local;
     if (!local) return remote;
@@ -269,8 +308,12 @@
       pedidos: Object.keys(map).map(function (k) { return map[k]; })
     });
 
-    merged.liveShare = pickNewerShare(local.liveShare, remote.liveShare);
-    merged.liveShareLista = pickNewerShare(local.liveShareLista, remote.liveShareLista);
+    var listaPick = pickNewerShareLista(local, remote);
+    var barcodePick = pickNewerShareBarcode(local, remote);
+    merged.liveShareLista = listaPick.liveShareLista;
+    merged.liveShareSeq = listaPick.liveShareSeq;
+    merged.liveShare = barcodePick.liveShare;
+    merged.liveShareBarcodeSeq = barcodePick.liveShareBarcodeSeq;
 
     var tLocal = Date.parse(local.updatedAt) || 0;
     var tRemote = Date.parse(remote.updatedAt) || 0;
@@ -293,11 +336,12 @@
     if (!data) return '';
     var ped = (data.pedidos || []).map(pedidoSigPiece).sort().join('|');
     var ls = data.liveShare && data.liveShare.active
-      ? String(data.liveShare.idc) + '~' + String(data.liveShare.jaula) + '@' + String(data.liveShare.updatedAt)
-      : '';
+      ? String(data.liveShare.idc) + '~' + String(data.liveShare.jaula) + '@' + String(data.liveShare.updatedAt) +
+        '#' + String(data.liveShareBarcodeSeq || 0)
+      : 'Boff#' + String(data.liveShareBarcodeSeq || 0);
     var ll = data.liveShareLista && data.liveShareLista.active
-      ? 'L@' + String(data.liveShareLista.updatedAt)
-      : '';
+      ? 'L@' + String(data.liveShareLista.updatedAt) + '#' + String(data.liveShareSeq || 0)
+      : 'Loff#' + String(data.liveShareSeq || 0);
     return ped + '||' + ls + '||' + ll + '||' + String(data.updatedAt || '');
   }
 
@@ -317,17 +361,23 @@
     if (data && data.liveShare) {
       try {
         global.dispatchEvent(new CustomEvent('despacho-live-share', {
-          detail: { share: data.liveShare, at: nowIso(), source: source || 'cloud' }
+          detail: {
+            share: data.liveShare && data.liveShare.active ? data.liveShare : null,
+            at: nowIso(),
+            source: source || 'cloud'
+          }
         }));
       } catch (e) { /* noop */ }
     }
-    if (data && data.liveShareLista) {
-      try {
-        global.dispatchEvent(new CustomEvent('despacho-live-lista', {
-          detail: { share: data.liveShareLista, at: nowIso(), source: source || 'cloud' }
-        }));
-      } catch (e) { /* noop */ }
-    }
+    try {
+      global.dispatchEvent(new CustomEvent('despacho-live-lista', {
+        detail: {
+          share: data && data.liveShareLista && data.liveShareLista.active ? data.liveShareLista : null,
+          at: nowIso(),
+          source: source || 'cloud'
+        }
+      }));
+    } catch (e) { /* noop */ }
   }
 
   function applyRemote(data, source) {
@@ -593,8 +643,18 @@
     }
   }
 
-  function pushLocal(retries) {
-    if (pushing || applyingRemote) return Promise.resolve(false);
+  function drainPushQueue() {
+    if (!pendingPush || pushing || applyingRemote) return;
+    pendingPush = false;
+    pushLocal(5);
+  }
+
+  function pushLocal(retries, opts) {
+    opts = opts || {};
+    if (pushing || applyingRemote) {
+      if (opts.force) pendingPush = true;
+      return Promise.resolve(false);
+    }
     var local = getLocalData();
     if (!local || !hasLiveContent(local)) return Promise.resolve(false);
     if (!isCloudConfigured()) return Promise.resolve(false);
@@ -618,6 +678,7 @@
           });
         }).finally(function () {
           pushing = false;
+          drainPushQueue();
         });
       }
 
@@ -635,10 +696,12 @@
           return pushLocalFallback(retries);
         }).finally(function () {
           pushing = false;
+          drainPushQueue();
         });
       }
       return pushLocalFallback(retries).finally(function () {
         pushing = false;
+        drainPushQueue();
       });
     }
 
@@ -648,6 +711,10 @@
       });
     }
     return runPush();
+  }
+
+  function pushLocalForce() {
+    return pushLocal(5, { force: true });
   }
 
   function pushLocalFallback(retries) {
@@ -870,6 +937,7 @@
   global.PlatformDespachoCloudSync = {
     pullAll: pullAll,
     pushLocal: pushLocal,
+    pushLocalForce: pushLocalForce,
     isConfigured: isCloudConfigured,
     getLastPullAt: function () { return lastPullAt; },
     getStatus: syncStatusMessage

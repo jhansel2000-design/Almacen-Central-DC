@@ -158,7 +158,9 @@
       updatedAt: nowIso(),
       pedidos: [],
       liveShare: null,
-      liveShareLista: null
+      liveShareLista: null,
+      liveShareSeq: 0,
+      liveShareBarcodeSeq: 0
     };
   }
 
@@ -166,6 +168,7 @@
     if (!liveShare || !liveShare.active) return null;
     return {
       active: true,
+      seq: liveShare.seq != null ? liveShare.seq : null,
       idc: formatIdc(liveShare.idc || ''),
       jaula: String(liveShare.jaula || '').trim(),
       estado: ESTADOS[liveShare.estado] ? liveShare.estado : 'facturado',
@@ -178,6 +181,7 @@
     if (!liveShareLista || !liveShareLista.active) return null;
     return {
       active: true,
+      seq: liveShareLista.seq != null ? liveShareLista.seq : null,
       updatedAt: liveShareLista.updatedAt || nowIso(),
       sharedBy: liveShareLista.sharedBy || '—'
     };
@@ -203,6 +207,16 @@
       });
       data.liveShare = normalizeLiveShare(data.liveShare);
       data.liveShareLista = normalizeLiveShareLista(data.liveShareLista);
+      if (!data.liveShareSeq && data.liveShareSeq !== 0) data.liveShareSeq = 0;
+      if (!data.liveShareBarcodeSeq && data.liveShareBarcodeSeq !== 0) data.liveShareBarcodeSeq = 0;
+      if (data.liveShareLista && data.liveShareLista.active && !data.liveShareSeq) {
+        data.liveShareSeq = 1;
+        migrated = true;
+      }
+      if (data.liveShare && data.liveShare.active && !data.liveShareBarcodeSeq) {
+        data.liveShareBarcodeSeq = 1;
+        migrated = true;
+      }
       if (migrated) persistData(data, { silent: true });
       return data;
     } catch (e) {
@@ -271,15 +285,7 @@
     return 'facturado';
   }
 
-  function touchLiveShareLista(data) {
-    if (data && data.liveShareLista && data.liveShareLista.active) {
-      data.liveShareLista = Object.assign({}, data.liveShareLista, { updatedAt: nowIso() });
-    }
-    return data;
-  }
-
   function save(data) {
-    touchLiveShareLista(data);
     return persistData(data, {});
   }
 
@@ -536,8 +542,14 @@
       notify(data);
     }
     /* Compartir barcode en vivo: solo local + TVs — no empujar toda la nube en cada tecla */
-    if (!opts.silent && !opts.liveShareOnly && global.PlatformDespachoCloudSync && global.PlatformDespachoCloudSync.pushLocal) {
-      global.PlatformDespachoCloudSync.pushLocal(3);
+    if (!opts.silent && !opts.liveShareOnly && global.PlatformDespachoCloudSync) {
+      if (opts.shareListaToggle || opts.shareBarcodeToggle) {
+        if (global.PlatformDespachoCloudSync.pushLocalForce) {
+          global.PlatformDespachoCloudSync.pushLocalForce();
+        }
+      } else if (global.PlatformDespachoCloudSync.pushLocal) {
+        global.PlatformDespachoCloudSync.pushLocal(3);
+      }
     }
     return true;
   }
@@ -1034,26 +1046,28 @@
     jaula = String(jaula || '').trim();
     estado = ESTADOS[estado] && PREPARADOR_ESTADOS.indexOf(estado) >= 0 ? estado : 'facturado';
     var data = load();
+    var seq = (data.liveShareBarcodeSeq || 0) + 1;
+    var ts = nowIso();
+    data.liveShareBarcodeSeq = seq;
     data.liveShare = {
       active: true,
+      seq: seq,
       idc: idc,
       jaula: jaula,
       estado: estado,
-      updatedAt: nowIso(),
+      updatedAt: ts,
       sharedBy: usuario || '—'
     };
-    save(data);
+    persistData(data, { shareBarcodeToggle: true });
     return { ok: true, data: data, liveShare: data.liveShare };
   }
 
   function stopLiveShare(usuario) {
     var data = load();
-    data.liveShare = {
-      active: false,
-      updatedAt: nowIso(),
-      sharedBy: usuario || '—'
-    };
-    save(data);
+    var seq = (data.liveShareBarcodeSeq || 0) + 1;
+    data.liveShareBarcodeSeq = seq;
+    data.liveShare = null;
+    persistData(data, { shareBarcodeToggle: true });
     notifyLiveShare(null);
     return { ok: true, data: data, stoppedBy: usuario };
   }
@@ -1116,24 +1130,26 @@
 
   function startLiveShareLista(usuario) {
     var data = load();
+    var seq = (data.liveShareSeq || 0) + 1;
+    var ts = nowIso();
+    data.liveShareSeq = seq;
     data.liveShareLista = {
       active: true,
-      updatedAt: nowIso(),
+      seq: seq,
+      updatedAt: ts,
       sharedBy: usuario || '—'
     };
-    save(data);
+    persistData(data, { shareListaToggle: true });
     notifyLiveShareLista(data.liveShareLista);
     return { ok: true, data: data, liveShareLista: data.liveShareLista };
   }
 
   function stopLiveShareLista(usuario) {
     var data = load();
-    data.liveShareLista = {
-      active: false,
-      updatedAt: nowIso(),
-      sharedBy: usuario || '—'
-    };
-    save(data);
+    var seq = (data.liveShareSeq || 0) + 1;
+    data.liveShareSeq = seq;
+    data.liveShareLista = null;
+    persistData(data, { shareListaToggle: true });
     notifyLiveShareLista(null);
     return { ok: true, data: data, stoppedBy: usuario };
   }
@@ -1170,9 +1186,6 @@
     pedido.archivadoPasillo = pasillo;
     pedido.updatedAt = ts;
     pedido.updatedBy = usuario || '—';
-    if (data.liveShareLista && data.liveShareLista.active) {
-      data.liveShareLista = Object.assign({}, data.liveShareLista, { updatedAt: ts });
-    }
     pushHistorial(pedido, {
       at: ts,
       usuario: usuario || '—',

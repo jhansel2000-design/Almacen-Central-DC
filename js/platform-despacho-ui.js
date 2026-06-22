@@ -1229,20 +1229,27 @@
       var btnShare = host.querySelector('#despBtnShareScreen');
       if (btnShare) {
         btnShare.addEventListener('click', function () {
+          if (btnShare.disabled) return;
+          btnShare.disabled = true;
           var vals = getShareFormValues(host);
           if (DS.isLiveShareActive()) {
             var stopped = DS.stopLiveShare(userName);
+            syncDespWakeLock(stopped.data);
+            updateShareScreenUi(host, stopped.data);
             render(host, stopped.data, opts);
             toast('Pantalla externa desactivada', 'info');
+            btnShare.disabled = false;
             return;
           }
           var res = DS.startLiveShare(vals.idc, vals.jaula, vals.estado, userName);
+          btnShare.disabled = false;
           if (!res.ok) {
             toast(res.error, 'warn');
             return;
           }
           ensureDisplayWindow('barcode');
           DS.publishLiveShare(vals.idc, vals.jaula, vals.estado, userName);
+          syncDespWakeLock(res.data);
           updateShareScreenUi(host, res.data);
           toast('Pantalla externa activa — lo que escriba se ve en vivo en todas las PCs', 'success');
         });
@@ -1252,12 +1259,18 @@
     var btnShareLista = host.querySelector('#despBtnShareLista');
     if (btnShareLista) {
       btnShareLista.addEventListener('click', function () {
+        if (btnShareLista.disabled) return;
+        btnShareLista.disabled = true;
+        var wasActive = DS.isLiveShareListaActive();
         var res = DS.toggleLiveShareLista(userName);
+        btnShareLista.disabled = false;
         if (!res.ok) {
           toast(res.error, 'warn');
           return;
         }
-        if (DS.isLiveShareListaActive(res.data)) {
+        syncDespWakeLock(res.data);
+        updateShareListaUi(host, res.data);
+        if (!wasActive && DS.isLiveShareListaActive(res.data)) {
           ensureDisplayWindow('lista');
           toast('Seguimiento en pantalla TV', 'success');
         } else {
