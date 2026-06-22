@@ -436,7 +436,8 @@
       pendienteValidar: 0,
       validado: 0,
       conEntrada: 0,
-      conUbicado: 0
+      conUbicado: 0,
+      pendienteUbicar: 0
     };
     list.forEach(function (c) {
       if (c.tipo === 'local') out.local += 1;
@@ -445,6 +446,7 @@
       else out.validado += 1;
       if (c.entrada === 'ok') out.conEntrada += 1;
       if (c.ubicado === 'ok') out.conUbicado += 1;
+      if (c.entrada === 'ok' && c.ubicado !== 'ok') out.pendienteUbicar += 1;
     });
     return out;
   }

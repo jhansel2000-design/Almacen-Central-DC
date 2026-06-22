@@ -87,6 +87,7 @@
       onValidar: handleValidar,
       onGuardarMuelle: handleGuardarMuelle,
       onEntrada: handleEntrada,
+      onUbicar: handleUbicar,
       onCloseMuelleModal: closeMuelleModal,
       onEliminar: handleEliminar,
       onToggleShare: handleToggleShare,
@@ -210,6 +211,13 @@
     var res = global.PlatformRecepcionStore.eliminarContenedor(id, Auth.getDisplayName(state.user));
     if (!res.ok) { toast(res.error, 'err'); return; }
     toast('Contenedor retirado del seguimiento.', 'ok');
+    renderApp();
+  }
+
+  function handleUbicar(id) {
+    var res = global.PlatformRecepcionStore.marcarUbicado(id, Auth.getDisplayName(state.user));
+    if (!res.ok) { toast(res.error, 'err'); return; }
+    if (!res.unchanged) toast('Contenedor ubicado.', 'ok');
     renderApp();
   }
 

@@ -22,6 +22,10 @@
     return badgeValidado(val);
   }
 
+  function badgeUbicado(val) {
+    return badgeValidado(val);
+  }
+
   function badgeTipo(tipo) {
     var cls = tipo === 'local' ? 'local' : 'importado';
     var lbl = tipo === 'local' ? 'LOCAL' : 'IMPORTADO';
@@ -195,6 +199,7 @@
       registro: 'Registro',
       validado: 'Validación',
       entrada: 'Entrada',
+      ubicado: 'Ubicación',
       muelle: 'Muelle'
     };
     return map[accion] || String(accion || '—');
@@ -299,7 +304,7 @@
   function renderTableRows(contenedores, user) {
     var store = S();
     if (!contenedores.length) {
-      return '<tr><td colspan="11" class="rec-empty">Sin contenedores registrados.</td></tr>';
+      return '<tr><td colspan="12" class="rec-empty">Sin contenedores registrados.</td></tr>';
     }
     return contenedores.map(function (c) {
       var actions = '';
@@ -308,6 +313,9 @@
       }
       if (A().canValidate(user) && c.validado === 'ok' && c.entrada !== 'ok') {
         actions += '<button type="button" class="rec-btn rec-btn--sm rec-btn--ent" data-rec-action="entrada" data-rec-id="' + esc(c.id) + '">Dar entrada</button>';
+      }
+      if (A().canValidate(user) && c.entrada === 'ok' && c.ubicado !== 'ok') {
+        actions += '<button type="button" class="rec-btn rec-btn--sm rec-btn--ubi" data-rec-action="ubicar" data-rec-id="' + esc(c.id) + '">Ubicar</button>';
       }
       if (A().canRegister(user)) {
         actions += '<button type="button" class="rec-btn rec-btn--sm rec-btn--danger" data-rec-action="eliminar" data-rec-id="' + esc(c.id) + '">Quitar</button>';
@@ -323,6 +331,7 @@
         '<td class="rec-col-muelle">' + renderMuelleCell(c, user) + '</td>' +
         '<td class="rec-col-status">' + badgeValidado(c.validado) + '</td>' +
         '<td class="rec-col-status">' + badgeEntrada(c.entrada) + '</td>' +
+        '<td class="rec-col-status">' + badgeUbicado(c.ubicado) + '</td>' +
         '<td class="rec-col-actions">' + actions + '</td></tr>';
     }).join('');
   }
@@ -372,7 +381,7 @@
       '<table class="rec-table rec-table--manifest" aria-label="Contenedores en recepción">' +
       '<thead><tr>' +
       '<th>Fecha</th><th>Registro</th><th>Contenedor</th><th>Tipo</th><th>División</th><th>Descripción</th>' +
-      '<th>Paletas</th><th>Muelle</th><th>Validado</th><th>Entrada</th><th></th>' +
+      '<th>Paletas</th><th>Muelle</th><th>Validado</th><th>Entrada</th><th>Ubicado</th><th></th>' +
       '</tr></thead>' +
       '<tbody id="recTableBody">' + renderTableRows(contenedores, user) + '</tbody>' +
       '</table></div></div></div>' +
@@ -479,6 +488,7 @@
       if (action === 'entrada' && callbacks.onEntrada) {
         callbacks.onEntrada(id, readMuelleInput(root, id));
       }
+      if (action === 'ubicar' && callbacks.onUbicar) callbacks.onUbicar(id);
       if (action === 'cerrar-muelle-modal' && callbacks.onCloseMuelleModal) {
         callbacks.onCloseMuelleModal();
       }

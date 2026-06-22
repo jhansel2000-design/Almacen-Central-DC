@@ -206,8 +206,14 @@ body.rec-dash-view.rbl-theme-f.auth-locked {
 .rec-tc-app .rec-table--manifest .rec-col-desc { width: 16%; }
 .rec-tc-app .rec-table--manifest .rec-col-num { width: 6%; }
 .rec-tc-app .rec-table--manifest .rec-col-muelle { width: 14%; }
-.rec-tc-app .rec-table--manifest .rec-col-status { width: 9%; }
-.rec-tc-app .rec-table--manifest .rec-col-actions { width: 13%; }
+.rec-tc-app .rec-table--manifest .rec-col-status { width: 7%; }
+.rec-tc-app .rec-table--manifest .rec-col-actions { width: 12%; }
+
+.rec-tc-app .rec-btn--ubi {
+  background: #e0f2f1;
+  border-color: #80cbc4;
+  color: #00695c;
+}
 
 .rec-tc-app .rec-badge {
   min-width: 0;
