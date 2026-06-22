@@ -2401,11 +2401,14 @@ body.desp-controller-mode .desp-live-present-lista {
   flex-direction: column;
   gap: 0.65rem;
   max-width: 520px;
+  margin: 0.25rem 0 0.85rem;
 }
 
 .desp-lista-share-hint {
   margin: 0;
   font-size: 0.82rem;
+  color: #90caf9;
+  line-height: 1.45;
 }
 
 .desp-lista-preview h4 {

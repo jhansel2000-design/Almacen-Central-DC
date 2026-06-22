@@ -529,6 +529,8 @@
     if (!global.localStorage) return false;
     data = data || emptyPayload();
     data.module = 'despacho';
+    var listaLiveTouch = !opts.silent && !opts.shareListaToggle && !opts.liveShareOnly &&
+      touchLiveShareListaForPedidos(data);
     data.updatedAt = nowIso();
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     if (opts.liveShareOnly) {
@@ -543,7 +545,7 @@
     }
     /* Compartir barcode en vivo: solo local + TVs — no empujar toda la nube en cada tecla */
     if (!opts.silent && !opts.liveShareOnly && global.PlatformDespachoCloudSync) {
-      if (opts.shareListaToggle || opts.shareBarcodeToggle) {
+      if (opts.shareListaToggle || opts.shareBarcodeToggle || listaLiveTouch || opts.listaLivePush) {
         if (global.PlatformDespachoCloudSync.pushLocalForce) {
           global.PlatformDespachoCloudSync.pushLocalForce();
         }
@@ -1129,7 +1131,10 @@
   }
 
   function normalizeShareUserKey(name) {
-    return String(name || '').trim().toLowerCase().replace(/\s+/g, ' ');
+    return String(name || '').trim().toLowerCase()
+      .replace(/[._]+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
   }
 
   function isListaShareByUser(share, usuario) {
@@ -1140,30 +1145,48 @@
     if (who === me) return true;
     var whoFirst = who.split(' ')[0];
     var meFirst = me.split(' ')[0];
-    return !!(whoFirst && meFirst && whoFirst.length > 2 && whoFirst === meFirst);
+    if (whoFirst && meFirst && whoFirst.length > 2 && whoFirst === meFirst) return true;
+    var whoCompact = who.replace(/\s/g, '');
+    var meCompact = me.replace(/\s/g, '');
+    return !!(whoCompact && meCompact && whoCompact === meCompact);
   }
 
-  function listaSharePermisos(data, usuario, isAdmin) {
+  function listaSharePermisos(data, usuario, isAdmin, panelOpts) {
+    panelOpts = panelOpts || {};
     var sharing = getLiveShareLista(data);
     var active = !!(sharing && sharing.active);
     var own = active && isListaShareByUser(sharing, usuario);
+    var isValidatorPanel = !!panelOpts.isValidatorPanel;
     return {
       active: active,
       sharing: sharing,
       own: own,
       canStart: !active,
       canStop: active && own,
+      canTakeOver: active && !own && isValidatorPanel,
       isAdmin: !!isAdmin,
+      isValidatorPanel: isValidatorPanel,
       sharedBy: sharing ? String(sharing.sharedBy || '').trim() : ''
     };
   }
 
-  function startLiveShareLista(usuario) {
+  function touchLiveShareListaForPedidos(data) {
+    if (!data || !data.liveShareLista || !data.liveShareLista.active) return false;
+    data.liveShareLista = Object.assign({}, data.liveShareLista, { updatedAt: nowIso() });
+    return true;
+  }
+
+  function startLiveShareLista(usuario, opts) {
+    opts = opts || {};
     var data = load();
-    if (isLiveShareListaActive(data)) {
+    if (isLiveShareListaActive(data) && !opts.takeOver) {
+      if (isListaShareByUser(data.liveShareLista, usuario)) {
+        return { ok: true, data: data, unchanged: true, liveShareLista: data.liveShareLista };
+      }
       return { ok: false, error: 'Otro usuario ya comparte en pantalla TV.' };
     }
-    var seq = Math.max(data.liveShareSeq || 0, Date.now());
+    var seq = Math.max((data.liveShareSeq || 0) + 1, Date.now());
+    if (opts.takeOver) seq = Math.max(seq, Date.now() + 1);
     var ts = nowIso();
     data.liveShareSeq = seq;
     data.liveShareLista = {

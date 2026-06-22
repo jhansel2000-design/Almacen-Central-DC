@@ -171,12 +171,12 @@
   }
 
   function pushDelayMs(value) {
-    if (!firebaseLive()) return 120;
     try {
       var parsed = JSON.parse(value);
       if (parsed && parsed.liveShareLista && parsed.liveShareLista.active) return 12;
       if (parsed && parsed.liveShare && parsed.liveShare.active) return 12;
     } catch (e) { /* noop */ }
+    if (!firebaseLive()) return 80;
     return 25;
   }
 

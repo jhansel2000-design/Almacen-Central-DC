@@ -58,7 +58,7 @@
       icon + '<span>' + esc(e.short || e.label) + '</span></span>';
   }
 
-  function listaSignature(share, pedidos, counts, resumen) {
+  function listaSignature(share, pedidos, counts, resumen, dataUpdatedAt) {
     if (!share || !share.active) return '';
     var rows = (pedidos || []).map(function (p) {
       var store = DS();
@@ -79,7 +79,7 @@
         return r.nombre + ':' + r.validado + '/' + r.cargado + '/' + (r.camiones || 0) + '@' + (r.ultimaValidacion || '');
       }).join(';');
     }
-    return share.updatedAt + '::' + countSig + '::' + valSig + '::' + rows;
+    return share.updatedAt + '::' + String(dataUpdatedAt || '') + '::' + countSig + '::' + valSig + '::' + rows;
   }
 
   function fmtDtLista(iso) {
@@ -290,7 +290,7 @@
       renderTableFoot(counts, data.updatedAt) +
       '</table></div></div></div>';
 
-    lastSig = listaSignature(share, pedidos, counts, resumen);
+    lastSig = listaSignature(share, pedidos, counts, resumen, data.updatedAt);
   }
 
   function refreshFromStore() {
@@ -309,17 +309,21 @@
     var pedidos = store.getPedidosVisiblesValidador(data.pedidos);
     var counts = store.countResumenValidador ? store.countResumenValidador(data.pedidos) : null;
     var resumen = store.resumenPorValidador ? store.resumenPorValidador(data.pedidos) : null;
-    var sig = listaSignature(share, pedidos, counts, resumen);
+    var sig = listaSignature(share, pedidos, counts, resumen, data.updatedAt);
     if (sig === lastSig) return;
     renderMount(share, data);
   }
 
+  var LISTA_POLL_MS = 800;
+  var LISTA_POLL_DISPLAY_MS = 500;
+
   function startListaPoll() {
     if (pollTimer) return;
+    var interval = displayMode ? LISTA_POLL_DISPLAY_MS : LISTA_POLL_MS;
     pollTimer = global.setInterval(function () {
       if (!shouldShowOnThisPage()) return;
       refreshFromStore();
-    }, 2000);
+    }, interval);
   }
 
   function stopListaPoll() {

@@ -737,8 +737,11 @@
     } else if (opts.isDespachoAdmin) {
       isAdmin = true;
     }
+    var panelOpts = {
+      isValidatorPanel: opts.despachoArea === 'validador' || !!opts.canValidate
+    };
     if (DS && DS.listaSharePermisos) {
-      return DS.listaSharePermisos(data, opts.userName || '', isAdmin);
+      return DS.listaSharePermisos(data, opts.userName || '', isAdmin, panelOpts);
     }
     var sharing = DS ? DS.getLiveShareLista(data) : null;
     return {
@@ -747,6 +750,7 @@
       own: false,
       canStart: !sharing,
       canStop: !!(sharing && sharing.active),
+      canTakeOver: !!(sharing && sharing.active && panelOpts.isValidatorPanel),
       sharedBy: sharing ? String(sharing.sharedBy || '').trim() : ''
     };
   }
@@ -754,11 +758,12 @@
   function renderListaShareActions(data, opts) {
     var perms = listaSharePermisosUi(data, opts);
     var html = '<div class="desp-lista-share-actions">';
-    if (perms.active && !perms.canStop) {
+    if (perms.active && !perms.canStop && !perms.canTakeOver) {
       html += '<p class="desp-share-status desp-share-status--locked" id="despListaShareLocked">' +
         'En pantalla TV · compartido por <strong>' + esc(perms.sharedBy || 'otro usuario') + '</strong>' +
         ' · solo esa persona puede detenerlo</p>';
-    } else if (perms.canStop) {
+    }
+    if (perms.canStop) {
       var stopLbl = perms.active
         ? (perms.isAdmin ? 'Dejar de compartir en pantalla TV (admin)' : 'Dejar de compartir en pantalla TV')
         : 'Compartir seguimiento en pantalla TV';
@@ -766,6 +771,12 @@
         (perms.active ? ' is-live' : '') + '" id="despBtnShareLista">' +
         '<span class="desp-action-btn-icon" aria-hidden="true">' + (perms.active ? '⏹' : '📺') + '</span>' +
         '<span class="desp-action-btn-text">' + esc(stopLbl) + '</span></button>';
+    } else if (perms.canTakeOver) {
+      html += '<p class="desp-lista-share-hint" id="despListaShareHint">Pantalla TV activa con <strong>' +
+        esc(perms.sharedBy || 'otro validador') + '</strong>. Pulse para asumir el seguimiento en TV.</p>' +
+        '<button type="button" class="btn desp-action-btn desp-btn-share-lista is-live" id="despBtnShareLista">' +
+        '<span class="desp-action-btn-icon" aria-hidden="true">📺</span>' +
+        '<span class="desp-action-btn-text">Continuar en pantalla TV</span></button>';
     } else if (perms.canStart) {
       html += '<button type="button" class="btn desp-action-btn desp-btn-share-lista" id="despBtnShareLista">' +
         '<span class="desp-action-btn-icon" aria-hidden="true">📺</span>' +
@@ -792,11 +803,11 @@
       '<h3 id="despValShareTitle">Seguimiento validador</h3>' +
       '<p class="desp-panel-sub">Lo que comparte en TV · cada validador indica <strong>cuántos camiones cargó</strong> (ej. Juan 2 · Pedro 1)</p></div>' +
       '</header>' +
+      renderListaShareActions(data, opts) +
       '<p class="desp-share-status desp-share-status--lista" id="despListaShareStatus"' + (sharing ? '' : ' hidden') + '>' +
       statusTxt + '</p>' +
       renderResumenCamionesValidador(data.pedidos) +
       renderListaEnVivoSeguimiento(pedidos, canRemove, (opts && opts.userName) || '') +
-      renderListaShareActions(data, opts) +
       '</section>' +
       renderTablaValidacion(data, opts) +
       '</div>';
@@ -894,6 +905,7 @@
     var btn = host.querySelector('#despBtnShareLista');
     var status = host.querySelector('#despListaShareStatus');
     var locked = host.querySelector('#despListaShareLocked');
+    var hint = host.querySelector('#despListaShareHint');
     data = data || DS.load();
     opts = opts || lastOpts || {};
     var perms = listaSharePermisosUi(data, opts);
@@ -906,17 +918,27 @@
         : '';
     }
     if (locked) {
-      locked.hidden = !(perms.active && !perms.canStop);
-      if (perms.active && !perms.canStop) {
+      locked.hidden = !(perms.active && !perms.canStop && !perms.canTakeOver);
+      if (perms.active && !perms.canStop && !perms.canTakeOver) {
         locked.innerHTML = 'En pantalla TV · compartido por <strong>' +
           esc(perms.sharedBy || 'otro usuario') + '</strong> · solo esa persona puede detenerlo';
       }
     }
+    if (hint) {
+      hint.hidden = !perms.canTakeOver;
+      if (perms.canTakeOver) {
+        hint.innerHTML = 'Pantalla TV activa con <strong>' +
+          esc(perms.sharedBy || 'otro validador') + '</strong>. Pulse para asumir el seguimiento en TV.';
+      }
+    }
     if (!btn) return;
-    btn.classList.toggle('is-live', perms.active && perms.canStop);
+    btn.classList.toggle('is-live', !!(perms.active && (perms.canStop || perms.canTakeOver)));
     if (perms.active && perms.canStop) {
       btn.innerHTML = '<span class="desp-action-btn-icon" aria-hidden="true">⏹</span>' +
         '<span class="desp-action-btn-text">Dejar de compartir en pantalla TV</span>';
+    } else if (perms.canTakeOver) {
+      btn.innerHTML = '<span class="desp-action-btn-icon" aria-hidden="true">📺</span>' +
+        '<span class="desp-action-btn-text">Continuar en pantalla TV</span>';
     } else if (!perms.active) {
       btn.innerHTML = '<span class="desp-action-btn-icon" aria-hidden="true">📺</span>' +
         '<span class="desp-action-btn-text">Compartir seguimiento en pantalla TV</span>';
@@ -1331,20 +1353,23 @@
         if (btnShareLista.disabled) return;
         var fresh = DS.load();
         var perms = listaSharePermisosUi(fresh, opts);
-        if (perms.active) {
-          if (!perms.canStop) {
-            toast('Solo quien comparte puede detener esa pantalla TV.', 'warn');
-            return;
-          }
+        if (perms.active && perms.canStop) {
+          /* detener propia sesión TV */
+        } else if (perms.canTakeOver) {
+          /* asumir pantalla TV de otro validador */
         } else if (!perms.canStart) {
           toast('Otro usuario ya comparte en pantalla TV.', 'warn');
           return;
         }
         btnShareLista.disabled = true;
-        var wasActive = perms.active;
-        var res = wasActive
-          ? DS.stopLiveShareLista(userName)
-          : DS.startLiveShareLista(userName);
+        var res;
+        if (perms.active && perms.canStop) {
+          res = DS.stopLiveShareLista(userName);
+        } else if (perms.canTakeOver) {
+          res = DS.startLiveShareLista(userName, { takeOver: true });
+        } else {
+          res = DS.startLiveShareLista(userName);
+        }
         btnShareLista.disabled = false;
         if (!res.ok) {
           toast(res.error, 'warn');
@@ -1352,10 +1377,11 @@
         }
         syncDespWakeLock(res.data);
         updateShareListaUi(host, res.data, opts);
-        if (!wasActive && DS.isLiveShareListaActive(res.data)) {
+        var nowActive = DS.isLiveShareListaActive(res.data);
+        if (nowActive && (perms.canTakeOver || !perms.active)) {
           ensureDisplayWindow('lista');
-          toast('Seguimiento en pantalla TV', 'success');
-        } else if (wasActive) {
+          toast(perms.canTakeOver ? 'Pantalla TV asumida — seguimiento en vivo' : 'Seguimiento en pantalla TV', 'success');
+        } else if (perms.active && perms.canStop) {
           toast('Pantalla TV desactivada', 'info');
         }
         render(host, res.data, opts);
