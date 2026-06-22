@@ -80,6 +80,23 @@
       : 'Conectando con Supabase';
   }
 
+  var VIEW_IDS = {
+    home: 'tempViewHome',
+    dashboard: 'tempViewDashboard',
+    register: 'tempViewRegister',
+    history: 'tempViewHistory',
+    alerts: 'tempViewAlerts',
+    charts: 'tempViewCharts'
+  };
+
+  function renderLoadingView(host, title, sub) {
+    if (!host) return;
+    host.innerHTML =
+      '<div class="temp-view-loading">' +
+      '<p class="temp-view-loading-title">' + esc(title || 'Cargando…') + '</p>' +
+      '<p class="temp-view-loading-sub">' + esc(sub || 'Conectando con Supabase…') + '</p></div>';
+  }
+
   function renderSetupBanner() {
     var S = sync();
     if (!S.isSetupRequired || !S.isSetupRequired()) return '';
@@ -373,11 +390,14 @@
   }
 
   function showModule(mod) {
-    state.module = mod || 'home';
-    document.querySelectorAll('.temp-view').forEach(function (el) {
-      el.hidden = el.id !== 'tempView' + mod.charAt(0).toUpperCase() + mod.slice(1);
+    state.module = mod || 'dashboard';
+    mod = state.module;
+    var activeId = VIEW_IDS[mod] || VIEW_IDS.dashboard;
+    Object.keys(VIEW_IDS).forEach(function (key) {
+      var el = $(VIEW_IDS[key]);
+      if (el) el.hidden = VIEW_IDS[key] !== activeId;
     });
-    document.querySelectorAll('.drawer-item[data-module]').forEach(function (btn) {
+    document.querySelectorAll('#tempMainApp .drawer-item[data-module]').forEach(function (btn) {
       btn.classList.toggle('active', btn.dataset.module === mod);
     });
     var titles = {
@@ -397,7 +417,7 @@
     else if (mod === 'register') renderRegister();
     else if (mod === 'history') renderHistory();
     else if (mod === 'alerts') renderAlerts();
-    else     if (mod === 'charts') renderCharts();
+    else if (mod === 'charts') renderCharts();
     updateSyncHeader();
     closeDrawer();
   }
@@ -546,9 +566,16 @@
     if (state.offSync) state.offSync();
     state.offSync = sync().onChange(onSyncChange);
 
-    sync().ready().then(function () {
+    showModule('dashboard');
+
+    var syncReady = sync().ready();
+    var syncTimeout = new Promise(function (resolve) {
+      global.setTimeout(function () { resolve(null); }, 8000);
+    });
+
+    Promise.race([syncReady, syncTimeout]).then(function () {
       updateSyncHeader();
-      showModule('home');
+      showModule(state.module || 'dashboard');
       global.setInterval(updateSyncHeader, 5000);
       global.setInterval(function () {
         if (sync().isSetupRequired && sync().isSetupRequired() && sync().recheckCloud) {
@@ -559,7 +586,7 @@
       }, 12000);
     }).catch(function () {
       updateSyncHeader();
-      showModule('home');
+      showModule(state.module || 'dashboard');
       if (sync().isSetupRequired && sync().isSetupRequired()) {
         toast('Ejecute SETUP-TEMPERATURA-SUPABASE.bat una vez para guardar lecturas en vivo.', 'warn');
       } else {

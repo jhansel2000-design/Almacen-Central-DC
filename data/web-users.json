@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-06-19T18:30:00.000Z",
+  "updatedAt": "2026-06-20T12:00:00.000Z",
   "users": [
     {
       "id": "u_enmanuel_vasquez",
@@ -101,6 +101,16 @@
       "areas": [],
       "active": true,
       "extraPermissions": ["agenda.all"]
+    },
+    {
+      "id": "u_modesto_andres",
+      "username": "MODESTO.ANDRES",
+      "name": "Modesto Andres",
+      "role": "supervisor",
+      "passwordHash": "92d94e48793e03fa2f66e6d3b4922e20221ea9faefcd31866aceae1a2bfb5c76",
+      "areas": [],
+      "active": true,
+      "extraPermissions": []
     }
   ]
 }

@@ -1,6 +1,92 @@
 /* Portal Monitoreo de Temperatura — Almacén Central DC (requiere averias-portal.css) */
 body.temp-dash-view { overflow: hidden; }
 
+#tempMainApp.screen {
+  position: relative;
+  min-height: 100vh;
+}
+
+.temp-app .header,
+.temp-app .temp-main {
+  position: relative;
+  z-index: 50;
+}
+
+.temp-app .content {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.temp-view:not([hidden]) {
+  display: block;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.temp-view-loading {
+  padding: 2rem 1.25rem;
+  max-width: 520px;
+}
+
+.temp-view-loading-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin: 0 0 0.5rem;
+  color: #f3f4f6;
+}
+
+.temp-view-loading-sub {
+  margin: 0;
+  color: #9ca3af;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+@media (min-width: 1100px) {
+  body.temp-dash-view #tempMainApp.screen {
+    display: grid;
+    grid-template-columns: min(280px, 26vw) minmax(0, 1fr);
+    grid-template-rows: auto 1fr;
+    align-items: stretch;
+  }
+
+  body.temp-dash-view #tempMainApp .drawer-overlay {
+    display: none !important;
+  }
+
+  body.temp-dash-view #tempMainApp .drawer {
+    grid-column: 1;
+    grid-row: 1 / -1;
+    position: relative;
+    transform: translateX(0) !important;
+    width: auto;
+    min-width: 0;
+    max-width: none;
+    height: auto;
+    max-height: 100dvh;
+    border-right: 1px solid #333;
+    box-shadow: none;
+    z-index: 2;
+  }
+
+  body.temp-dash-view #tempMainApp .temp-corner-menu {
+    display: none;
+  }
+
+  body.temp-dash-view #tempMainApp .temp-app-header {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  body.temp-dash-view #tempMainApp .temp-main {
+    grid-column: 2;
+    grid-row: 2;
+    min-height: 0;
+  }
+}
+
 body.temp-view-home .temp-app-header {
   opacity: 0;
   pointer-events: none;

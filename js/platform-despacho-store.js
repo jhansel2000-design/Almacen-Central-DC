@@ -1152,7 +1152,7 @@
       sharing: sharing,
       own: own,
       canStart: !active,
-      canStop: active && (own || !!isAdmin),
+      canStop: active && own,
       isAdmin: !!isAdmin,
       sharedBy: sharing ? String(sharing.sharedBy || '').trim() : ''
     };
@@ -1183,7 +1183,10 @@
     if (!isLiveShareListaActive(data)) {
       return { ok: true, data: data, unchanged: true };
     }
-    var seq = Math.max(data.liveShareSeq || 0, Date.now());
+    if (!isListaShareByUser(data.liveShareLista, usuario)) {
+      return { ok: false, error: 'Solo quien comparte puede detener su pantalla TV.' };
+    }
+    var seq = Math.max((data.liveShareSeq || 0) + 1, Date.now());
     if (opts.forceGlobal) {
       seq = Math.max(seq, Date.now() + 1);
     }

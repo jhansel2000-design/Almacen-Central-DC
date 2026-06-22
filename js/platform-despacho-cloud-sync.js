@@ -105,15 +105,31 @@
     return !!(hasSupabaseConfig() && global.PlatformSupabaseBridge.isPrimary && global.PlatformSupabaseBridge.isPrimary());
   }
 
+  function persistMergedQuiet(merged, source) {
+    if (!global.localStorage || !merged) return;
+    var sig = dataSignature(merged);
+    if (sig === lastAppliedSig) return;
+    applyingRemote = true;
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+    } finally {
+      applyingRemote = false;
+    }
+    lastAppliedSig = sig;
+    notifyApplied(merged, source || 'push-merge');
+  }
+
   function prepareDataForPush(data) {
     if (!isSupabasePrimary()) return Promise.resolve(data);
+    var base = Object.assign({}, data, { module: 'despacho' });
     return pullFromSupabase().then(function (remote) {
-      var merged = mergeDespacho(data, remote);
+      var merged = mergeDespacho(base, remote);
       merged.updatedAt = nowIso();
+      persistMergedQuiet(merged, 'push-merge');
       return merged;
     }).catch(function () {
-      data.updatedAt = nowIso();
-      return data;
+      base.updatedAt = nowIso();
+      return base;
     });
   }
 
@@ -270,10 +286,10 @@
     if (!lActive && !rActive) {
       return { liveShareSeq: lSeq, liveShareLista: null };
     }
-    if (!lActive) {
-      return { liveShareSeq: lSeq, liveShareLista: null };
+    if (!lActive && rActive) {
+      return { liveShareSeq: lSeq, liveShareLista: remote.liveShareLista };
     }
-    if (!rActive) {
+    if (lActive && !rActive) {
       return { liveShareSeq: lSeq, liveShareLista: local.liveShareLista };
     }
     return {
@@ -295,10 +311,29 @@
         liveShare: win.liveShare && win.liveShare.active ? win.liveShare : null
       };
     }
+    var lBarActive = !!(local.liveShare && local.liveShare.active);
+    var rBarActive = !!(remote.liveShare && remote.liveShare.active);
+    if (!lBarActive && !rBarActive) {
+      return { liveShareBarcodeSeq: lSeq, liveShare: null };
+    }
+    if (!lBarActive && rBarActive) {
+      return { liveShareBarcodeSeq: lSeq, liveShare: remote.liveShare };
+    }
+    if (lBarActive && !rBarActive) {
+      return { liveShareBarcodeSeq: lSeq, liveShare: local.liveShare };
+    }
     return {
       liveShareBarcodeSeq: lSeq,
       liveShare: pickNewerShare(local.liveShare, remote.liveShare)
     };
+  }
+
+  function wouldResurrectListaShare(cloud, upload) {
+    if (!cloud || !upload) return false;
+    var cloudOff = !(cloud.liveShareLista && cloud.liveShareLista.active);
+    var uploadOn = !!(upload.liveShareLista && upload.liveShareLista.active);
+    if (!cloudOff || !uploadOn) return false;
+    return (upload.liveShareSeq || 0) < (cloud.liveShareSeq || 0);
   }
 
   function mergeDespacho(local, remote) {
@@ -579,10 +614,14 @@
           lastPullAt = Date.now();
           updateSyncUi();
 
-          if (isSupabasePrimary() && localBefore && hasLiveContent(localBefore)) {
-            var upload = mergeDespacho(sbData, localBefore);
-            if (!sbData || !hasLiveContent(sbData) || dataSignature(upload) !== dataSignature(sbData || {})) {
-              global.setTimeout(function () { pushLocal(2); }, 250);
+          if (isSupabasePrimary() && sbData) {
+            var localAfter = getLocalData();
+            if (localAfter && hasLiveContent(localAfter)) {
+              var upload = mergeDespacho(sbData, localAfter);
+              if (dataSignature(upload) !== dataSignature(sbData || {}) &&
+                  !wouldResurrectListaShare(sbData, upload)) {
+                global.setTimeout(function () { pushLocal(2); }, 250);
+              }
             }
           }
 

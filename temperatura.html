@@ -19,7 +19,7 @@
   <link rel="stylesheet" href="css/averias-auth.css?v=6">
   <link rel="stylesheet" href="css/averias-portal.css?v=9">
   <link rel="stylesheet" href="css/averias-responsive.css?v=13">
-  <link rel="stylesheet" href="css/temperatura-portal.css?v=3">
+  <link rel="stylesheet" href="css/temperatura-portal.css?v=4">
   <link rel="stylesheet" href="css/temperatura-auth.css?v=1">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -96,14 +96,14 @@
         </div>
         <div class="drawer-menu-label">MÓDULOS</div>
         <div class="drawer-menu">
-          <button type="button" class="drawer-item active" data-module="home">
+          <button type="button" class="drawer-item" data-module="home">
             <span class="drawer-icon-wrap home"><svg viewBox="0 0 24 24"><path d="M3 10.5L12 4l9 6.5V20a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1v-9.5z"/></svg></span>
             <span class="drawer-item-text">
               <span class="drawer-item-title">Inicio</span>
               <span class="drawer-item-desc">Tablón de noticias</span>
             </span>
           </button>
-          <button type="button" class="drawer-item" data-module="dashboard">
+          <button type="button" class="drawer-item active" data-module="dashboard">
             <span class="drawer-icon-wrap temperature"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 14.76V3.5a2.5 2.5 0 00-5 0v11.26a4.5 4.5 0 105 0z"/></svg></span>
             <span class="drawer-item-text">
               <span class="drawer-item-title">Dashboard</span>
@@ -144,7 +144,7 @@
       <button type="button" class="temp-corner-menu av-corner-menu" id="tempBtnMenu" aria-label="Menú">☰</button>
 
       <header class="header temp-app-header" id="tempAppHeader">
-        <h1 id="tempPageTitle">Tablón informativo</h1>
+        <h1 id="tempPageTitle">Dashboard de Temperatura</h1>
         <div class="user-info" id="tempHeaderSync">En vivo</div>
       </header>
 
@@ -174,7 +174,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
   <script src="js/platform-temperature-core.js?v=2"></script>
   <script src="js/platform-temperature-sync.js?v=3"></script>
-  <script src="js/platform-temperature-ui.js?v=4"></script>
+  <script src="js/platform-temperature-ui.js?v=5"></script>
   <script src="js/platform-temperature-app.js?v=5"></script>
 </body>
 </html>

@@ -757,7 +757,7 @@
     if (perms.active && !perms.canStop) {
       html += '<p class="desp-share-status desp-share-status--locked" id="despListaShareLocked">' +
         'En pantalla TV · compartido por <strong>' + esc(perms.sharedBy || 'otro usuario') + '</strong>' +
-        ' · solo un <strong>administrador</strong> puede detenerlo</p>';
+        ' · solo esa persona puede detenerlo</p>';
     } else if (perms.canStop) {
       var stopLbl = perms.active
         ? (perms.isAdmin ? 'Dejar de compartir en pantalla TV (admin)' : 'Dejar de compartir en pantalla TV')
@@ -909,17 +909,14 @@
       locked.hidden = !(perms.active && !perms.canStop);
       if (perms.active && !perms.canStop) {
         locked.innerHTML = 'En pantalla TV · compartido por <strong>' +
-          esc(perms.sharedBy || 'otro usuario') + '</strong> · solo un <strong>administrador</strong> puede detenerlo';
+          esc(perms.sharedBy || 'otro usuario') + '</strong> · solo esa persona puede detenerlo';
       }
     }
     if (!btn) return;
     btn.classList.toggle('is-live', perms.active && perms.canStop);
     if (perms.active && perms.canStop) {
-      var stopLbl = perms.isAdmin && !perms.own
-        ? 'Dejar de compartir en pantalla TV (admin)'
-        : 'Dejar de compartir en pantalla TV';
       btn.innerHTML = '<span class="desp-action-btn-icon" aria-hidden="true">⏹</span>' +
-        '<span class="desp-action-btn-text">' + esc(stopLbl) + '</span>';
+        '<span class="desp-action-btn-text">Dejar de compartir en pantalla TV</span>';
     } else if (!perms.active) {
       btn.innerHTML = '<span class="desp-action-btn-icon" aria-hidden="true">📺</span>' +
         '<span class="desp-action-btn-text">Compartir seguimiento en pantalla TV</span>';
@@ -1336,7 +1333,7 @@
         var perms = listaSharePermisosUi(fresh, opts);
         if (perms.active) {
           if (!perms.canStop) {
-            toast('Solo un administrador puede detener la pantalla que compartió otro usuario.', 'warn');
+            toast('Solo quien comparte puede detener esa pantalla TV.', 'warn');
             return;
           }
         } else if (!perms.canStart) {
@@ -1345,9 +1342,8 @@
         }
         btnShareLista.disabled = true;
         var wasActive = perms.active;
-        var forceGlobal = !!perms.isAdmin;
         var res = wasActive
-          ? DS.stopLiveShareLista(userName, { forceGlobal: forceGlobal })
+          ? DS.stopLiveShareLista(userName)
           : DS.startLiveShareLista(userName);
         btnShareLista.disabled = false;
         if (!res.ok) {
@@ -1360,7 +1356,7 @@
           ensureDisplayWindow('lista');
           toast('Seguimiento en pantalla TV', 'success');
         } else if (wasActive) {
-          toast(forceGlobal ? 'Pantalla TV detenida (admin)' : 'Pantalla TV desactivada', 'info');
+          toast('Pantalla TV desactivada', 'info');
         }
         render(host, res.data, opts);
       });

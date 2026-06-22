@@ -318,8 +318,6 @@
     if (pollTimer) return;
     pollTimer = global.setInterval(function () {
       if (!shouldShowOnThisPage()) return;
-      var store = DS();
-      if (!store || !store.isLiveShareListaActive || !store.isLiveShareListaActive()) return;
       refreshFromStore();
     }, 2000);
   }
