@@ -1393,20 +1393,24 @@
     });
     activos.forEach(function (p) {
       var name = validadorAsignadoEnPedido(p);
-      if (!name) return;
-      var row = ensureRow(name);
       var etapas = fechasEtapasValidador(p);
       if (p.estado === 'en_validacion') {
-        row.validado += 1;
-        var tsVal = etapas.en_validacion;
-        if (tsVal && (!row.ultimaValidacion || tsVal > row.ultimaValidacion)) {
-          row.ultimaValidacion = tsVal;
+        if (name) {
+          var rowVal = ensureRow(name);
+          rowVal.validado += 1;
+          var tsVal = etapas.en_validacion;
+          if (tsVal && (!rowVal.ultimaValidacion || tsVal > rowVal.ultimaValidacion)) {
+            rowVal.ultimaValidacion = tsVal;
+          }
         }
       } else if (p.estado === 'listo_despacho') {
-        row.cargado += 1;
-        var tsCar = etapas.listo_despacho;
-        if (tsCar && (!row.ultimaValidacion || tsCar > row.ultimaValidacion)) {
-          row.ultimaValidacion = tsCar;
+        if (name) {
+          var rowCar = ensureRow(name);
+          rowCar.cargado += 1;
+          var tsCar = etapas.listo_despacho;
+          if (tsCar && (!rowCar.ultimaValidacion || tsCar > rowCar.ultimaValidacion)) {
+            rowCar.ultimaValidacion = tsCar;
+          }
         }
       }
     });
@@ -1537,6 +1541,38 @@
       out.listo_despacho = null;
     } else if (pedido.estado === 'en_validacion') {
       out.listo_despacho = null;
+    }
+
+    if (pedido.estado === 'en_validacion' && !out.en_validacion) {
+      for (i = hist.length - 1; i >= 0; i--) {
+        h = hist[i];
+        if (h && h.at && h.at >= cicloDesde && h.hacia === 'en_validacion') {
+          out.en_validacion = h.at;
+          break;
+        }
+      }
+      if (!out.en_validacion) out.en_validacion = pedido.updatedAt || null;
+    }
+    if (pedido.estado === 'listo_despacho') {
+      if (!out.en_validacion) {
+        for (i = hist.length - 1; i >= 0; i--) {
+          h = hist[i];
+          if (h && h.at && h.at >= cicloDesde && h.hacia === 'en_validacion') {
+            out.en_validacion = h.at;
+            break;
+          }
+        }
+      }
+      if (!out.listo_despacho) {
+        for (i = hist.length - 1; i >= 0; i--) {
+          h = hist[i];
+          if (h && h.at && h.at >= cicloDesde && h.hacia === 'listo_despacho') {
+            out.listo_despacho = h.at;
+            break;
+          }
+        }
+        if (!out.listo_despacho) out.listo_despacho = pedido.updatedAt || null;
+      }
     }
     return out;
   }

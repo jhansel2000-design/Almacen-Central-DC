@@ -103,6 +103,17 @@
       esc(iso ? fmtDtLista(iso) : '—') + '</td>';
   }
 
+  function renderTableFoot(counts) {
+    if (!counts) return '';
+    return '<tfoot><tr class="desp-lista-present-foot">' +
+      '<td colspan="9">' +
+      '<span class="desp-lista-present-foot-item">IDC visibles: <strong>' + esc(String(counts.total || 0)) + '</strong></span>' +
+      '<span class="desp-lista-present-foot-item">Pendiente: <strong>' + esc(String(counts.pendiente_carga || 0)) + '</strong></span>' +
+      '<span class="desp-lista-present-foot-item">Validado: <strong>' + esc(String(counts.en_validacion || 0)) + '</strong></span>' +
+      '<span class="desp-lista-present-foot-item">Cargado: <strong>' + esc(String(counts.listo_despacho || 0)) + '</strong></span>' +
+      '</td></tr></tfoot>';
+  }
+
   function renderTableRows(pedidos) {
     if (!pedidos.length) {
       return '<tr><td colspan="9" class="desp-lista-present-empty">Sin IDC registrados todavía.</td></tr>';
@@ -267,7 +278,9 @@
       '<th class="desp-lista-present-th-fecha-etapa">Registro IDC</th>' +
       '<th class="desp-lista-present-th-fecha-etapa">Validado</th>' +
       '<th class="desp-lista-present-th-fecha-etapa">Cargado</th></tr></thead>' +
-      '<tbody>' + renderTableRows(pedidos) + '</tbody></table></div></div></div>';
+      '<tbody>' + renderTableRows(pedidos) + '</tbody>' +
+      renderTableFoot(counts) +
+      '</table></div></div></div>';
 
     lastSig = listaSignature(share, pedidos, counts, resumen);
   }

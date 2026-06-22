@@ -507,3 +507,22 @@ body.desp-display-mode .desp-lista-present-fecha-etapa--cargado {
 body.desp-display-mode .desp-lista-present-estado-cell-only {
   vertical-align: middle;
 }
+
+body.desp-display-mode .desp-lista-present-foot td {
+  padding: clamp(0.35rem, 0.65vh, 0.55rem) clamp(0.35rem, 0.8vw, 0.75rem);
+  font-size: calc(var(--desp-table-fs) * 0.82);
+  color: #94a3b8;
+  border-top: 1px solid rgba(148, 163, 184, 0.28);
+  background: rgba(4, 10, 20, 0.55);
+}
+
+body.desp-display-mode .desp-lista-present-foot-item {
+  display: inline-block;
+  margin-right: clamp(0.65rem, 1.4vw, 1.25rem);
+  white-space: nowrap;
+}
+
+body.desp-display-mode .desp-lista-present-foot-item strong {
+  color: #e2e8f0;
+  font-variant-numeric: tabular-nums;
+}
