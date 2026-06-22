@@ -481,7 +481,7 @@
         closeRecDrawer(root);
         return;
       }
-      var screenBtn = ev.target.closest('[data-rec-screen]');
+      var screenBtn = ev.target.closest('.rbl-drawer-link[data-rec-screen]');
       if (screenBtn) {
         var screenId = screenBtn.getAttribute('data-rec-screen');
         if (screenId) {

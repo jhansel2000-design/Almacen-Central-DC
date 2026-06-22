@@ -146,7 +146,7 @@
         }).format(new Date());
       } catch (e) { /* noop */ }
     }
-    renderApp();
+    renderApp(true);
   }
 
   function handleValidar(id) {
@@ -217,7 +217,7 @@
     );
     if (!res.ok) { toast(res.error, 'err'); return; }
     if (!res.unchanged) toast('Contenedor validado.', 'ok');
-    renderApp();
+    renderApp(true);
   }
 
   function closeMuelleModal() {
@@ -272,14 +272,14 @@
     var res = store.marcarEntrada(id, muelle, Auth.getDisplayName(state.user), entradaPor);
     if (!res.ok) { toast(res.error, 'err'); return; }
     if (!res.unchanged) toast('Entrada registrada en muelle ' + res.item.muelle + '.', 'ok');
-    renderApp();
+    renderApp(true);
   }
 
   function handleGuardarMuelle(id, muelle) {
     var res = global.PlatformRecepcionStore.actualizarMuelle(id, muelle, Auth.getDisplayName(state.user));
     if (!res.ok) { toast(res.error, 'err'); return; }
     if (!res.unchanged) toast('Muelle ' + res.item.muelle + ' guardado.', 'ok');
-    renderApp();
+    renderApp(true);
   }
 
   function handleEntrada(id, muelleHint) {
@@ -316,7 +316,7 @@
     );
     if (!res.ok) { toast(res.error, 'err'); return; }
     if (!res.unchanged) toast('Contenedor ubicado.', 'ok');
-    renderApp();
+    renderApp(true);
   }
 
   function handleToggleShare() {
@@ -325,7 +325,7 @@
     if (active) {
       store.toggleLiveShareBoard(Auth.getDisplayName(state.user));
       toast('Pantalla TV detenida.', 'info');
-      renderApp();
+      renderApp(true);
       return;
     }
     var win = openDisplayWindow();
@@ -336,7 +336,7 @@
         : 'Transmisión activada. Si no se abrió sola, use Configuraciones → Abrir pantalla TV.',
       win ? 'ok' : 'info'
     );
-    renderApp();
+    renderApp(true);
   }
 
   function enterApp(user) {
