@@ -12,7 +12,7 @@
   var mountEl = null;
   var lastSig = '';
   var displayMode = false;
-  var LAYOUT_REV = '16';
+  var LAYOUT_REV = '17';
   var BARCODE_REV = 'notext-hq-xxl-v3';
   var fitBound = false;
   var fitRaf = 0;
@@ -104,9 +104,7 @@
 
     /* Solo escalar el bloque del código de barras — el IDC en texto queda a tamaño real */
     var meta = mountEl.querySelector('.desp-present-meta--tv');
-    var badge = mountEl.querySelector('.desp-present-badge');
     var reserve = 12;
-    if (badge && badge.offsetHeight) reserve += badge.offsetHeight + 8;
     if (meta && meta.offsetHeight) reserve += meta.offsetHeight + 10;
 
     var availH = inner.clientHeight - reserve;
@@ -180,7 +178,6 @@
     var inner = mountEl && mountEl.querySelector('.desp-present-inner--tv');
     var wrap = imgEl.closest('.desp-present-barcode-wrap');
     var meta = mountEl && mountEl.querySelector('.desp-present-meta--tv');
-    var badge = mountEl && mountEl.querySelector('.desp-present-badge');
     var avail = 0;
 
     if (wrap && wrap.clientHeight > 80) {
@@ -189,9 +186,7 @@
       var reserve = 0;
       if (meta && meta.offsetHeight) reserve += meta.offsetHeight + 10;
       else reserve += 100;
-      if (badge && badge.offsetHeight) reserve += badge.offsetHeight + 12;
-      else reserve += 32;
-      reserve += 48;
+      reserve += 40;
       avail = Math.max(240, inner.clientHeight - reserve);
     }
 
@@ -277,7 +272,6 @@
     shell.className = shellCls;
     shell.innerHTML =
       '<div class="desp-present-inner desp-present-inner--tv">' +
-      '<div class="desp-present-badge"><span class="desp-present-dot"></span> EN VIVO · Código de barras IDC</div>' +
       '<div class="desp-present-grid desp-present-grid--tv">' +
       '<div class="desp-present-content">' +
       '<div class="desp-present-stage">' +

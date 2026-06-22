@@ -322,20 +322,7 @@ body.desp-display-mode .desp-present-inner--tv {
 }
 
 body.desp-display-mode .desp-present-badge {
-  flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-  margin-bottom: clamp(0.2rem, 0.65vh, 0.45rem);
-  padding: 0.32em 0.75em;
-  font-size: clamp(0.62rem, 1.05vmin, 0.82rem);
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  color: #6ee7a0;
-  border-radius: 999px;
-  background: linear-gradient(135deg, rgba(6, 14, 26, 0.92), rgba(10, 22, 38, 0.85));
-  border: 1px solid rgba(86, 211, 100, 0.38);
-  animation: despPresentBadgePulse 2.4s ease-in-out infinite;
+  display: none !important;
 }
 
 body.desp-display-mode .desp-present-dot {
