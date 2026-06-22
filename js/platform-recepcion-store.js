@@ -25,6 +25,10 @@
     'Nelson Flete',
     'Richard Ortiz'
   ];
+  var ENTRADA_RECEPCION = [
+    'Andy Fernandez',
+    'Yessica Florentino'
+  ];
   var UBICADORES_RECEPCION = [
     'Rolando Corporan',
     'Obispo Abad',
@@ -372,7 +376,7 @@
   }
 
   function marcarEntrada(id, muelle, usuario, entradaNombre) {
-    var ent = validarPersonaEnRoster(entradaNombre, VALIDADORES_RECEPCION, 'quien da la entrada');
+    var ent = validarPersonaEnRoster(entradaNombre, ENTRADA_RECEPCION, 'quien da la entrada');
     if (!ent.ok) return ent;
     var data = load();
     var idx = findById(data, id);
@@ -603,6 +607,7 @@
     DIVISIONES: DIVISIONES,
     OPERADORES_SENTADO: OPERADORES_SENTADO,
     VALIDADORES_RECEPCION: VALIDADORES_RECEPCION,
+    ENTRADA_RECEPCION: ENTRADA_RECEPCION,
     UBICADORES_RECEPCION: UBICADORES_RECEPCION,
     load: load,
     save: save,

@@ -14,6 +14,14 @@
   };
 
   var displayWindow = null;
+  var lastRenderSig = '';
+  var syncRenderTimer = null;
+
+  function dataRenderSig(data) {
+    if (!data) return '';
+    var ids = (data.contenedores || []).map(function (c) { return c.id; }).join(',');
+    return String(data.updatedAt || '') + '::' + ids;
+  }
 
   function getDisplayUrl() {
     var path = global.location.pathname.replace(/[^/]*$/, 'recepcion-pantalla.html');
@@ -75,12 +83,15 @@
     document.body.classList.toggle('rbl-theme-f', !visible);
   }
 
-  function renderApp() {
+  function renderApp(force) {
     var root = $('recApp');
     var store = global.PlatformRecepcionStore;
     var ui = global.PlatformRecepcionUI;
     if (!root || !store || !ui || !state.user) return;
     var data = store.load();
+    var sig = dataRenderSig(data);
+    if (!force && sig === lastRenderSig) return;
+    lastRenderSig = sig;
     root.innerHTML = ui.renderApp(state.user, data);
     ui.bindApp(root, state.user, {
       onRegister: handleRegister,
@@ -278,12 +289,21 @@
     openMuelleModal(id, muelle, item && item.contenedor);
   }
 
+  function scheduleSyncRender() {
+    if (syncRenderTimer) global.clearTimeout(syncRenderTimer);
+    syncRenderTimer = global.setTimeout(function () {
+      syncRenderTimer = null;
+      renderApp(false);
+    }, 100);
+  }
+
   function handleEliminar(id) {
     if (!window.confirm('¿Quitar este contenedor del seguimiento?')) return;
     var res = global.PlatformRecepcionStore.eliminarContenedor(id, Auth.getDisplayName(state.user));
     if (!res.ok) { toast(res.error, 'err'); return; }
+    lastRenderSig = '';
     toast('Contenedor retirado del seguimiento.', 'ok');
-    renderApp();
+    renderApp(true);
   }
 
   function handleUbicar(id) {
@@ -324,9 +344,9 @@
     setAuthVisible(false);
     if (state.unbindSync) state.unbindSync();
     state.unbindSync = global.PlatformRecepcionStore.bindSync(function () {
-      renderApp();
+      scheduleSyncRender();
     });
-    renderApp();
+    renderApp(true);
   }
 
   function logout() {

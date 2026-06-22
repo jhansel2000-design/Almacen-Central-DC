@@ -278,7 +278,7 @@
 
   function renderMuelleModal(store) {
     store = store || S();
-    var entradaField = renderEquipoSelect('recMuelleModalEntradaPor', 'Entrada por (validador)', store.VALIDADORES_RECEPCION);
+    var entradaField = renderEquipoSelect('recMuelleModalEntradaPor', 'Entrada por', store.ENTRADA_RECEPCION);
     return '<div class="rec-muelle-modal is-hidden" id="recMuelleModal" role="dialog" aria-modal="true" aria-labelledby="recMuelleModalTitle">' +
       '<div class="rec-muelle-modal__backdrop" data-rec-action="cerrar-muelle-modal"></div>' +
       '<div class="rec-muelle-modal__panel">' +
@@ -346,7 +346,7 @@
       if (A().canValidate(user) && c.entrada === 'ok' && c.ubicado !== 'ok') {
         actions += '<button type="button" class="rec-btn rec-btn--sm rec-btn--ubi" data-rec-action="ubicar" data-rec-id="' + esc(c.id) + '">Ubicar</button>';
       }
-      if (A().canRegister(user)) {
+      if (A().canRegister(user) || A().canValidate(user)) {
         actions += '<button type="button" class="rec-btn rec-btn--sm rec-btn--danger" data-rec-action="eliminar" data-rec-id="' + esc(c.id) + '">Quitar</button>';
       }
       return '<tr data-rec-row="' + esc(c.id) + '">' +
@@ -455,26 +455,7 @@
   }
 
   function bindTorreNav(root) {
-    if (!root) return;
-    var hubBtn = root.querySelector('#recHubBtn');
-    var drawerBd = root.querySelector('#recDrawerBd');
-    if (hubBtn) {
-      hubBtn.addEventListener('click', function () {
-        var dr = root.querySelector('#recDrawer');
-        if (dr && dr.classList.contains('is-open')) closeRecDrawer(root);
-        else openRecDrawer(root);
-      });
-    }
-    if (drawerBd) drawerBd.addEventListener('click', function () { closeRecDrawer(root); });
-    root.querySelectorAll('[data-rec-screen]').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        var id = btn.getAttribute('data-rec-screen');
-        if (id) {
-          setRecScreen(root, id);
-          closeRecDrawer(root);
-        }
-      });
-    });
+    /* Delegado en bindAppEventsOnce — evita listeners duplicados al re-renderizar. */
   }
 
   function readMuelleInput(root, id) {
@@ -483,14 +464,91 @@
     return input ? String(input.value || '').trim() : '';
   }
 
+  function bindAppEventsOnce(root) {
+    if (!root || root.__recAppEventsBound) return;
+    root.__recAppEventsBound = true;
+
+    root.addEventListener('click', function (ev) {
+      var callbacks = root.__recAppCallbacks || {};
+
+      if (ev.target.closest('#recHubBtn')) {
+        var dr = root.querySelector('#recDrawer');
+        if (dr && dr.classList.contains('is-open')) closeRecDrawer(root);
+        else openRecDrawer(root);
+        return;
+      }
+      if (ev.target.closest('#recDrawerBd')) {
+        closeRecDrawer(root);
+        return;
+      }
+      var screenBtn = ev.target.closest('[data-rec-screen]');
+      if (screenBtn) {
+        var screenId = screenBtn.getAttribute('data-rec-screen');
+        if (screenId) {
+          setRecScreen(root, screenId);
+          closeRecDrawer(root);
+        }
+        return;
+      }
+      if (ev.target.closest('#recBtnShare') || ev.target.closest('#recBtnShareCfg')) {
+        if (callbacks.onToggleShare) callbacks.onToggleShare();
+        return;
+      }
+      if (ev.target.closest('#recBtnOpenDisplay')) {
+        ev.preventDefault();
+        if (callbacks.onOpenDisplay) callbacks.onOpenDisplay();
+        return;
+      }
+      if (ev.target.closest('#recBtnLogout')) {
+        if (callbacks.onLogout) callbacks.onLogout();
+        return;
+      }
+
+      var btn = ev.target.closest('[data-rec-action]');
+      if (!btn) return;
+      var action = btn.getAttribute('data-rec-action');
+      var recId = btn.getAttribute('data-rec-id');
+      if (action === 'validar' && callbacks.onValidar) callbacks.onValidar(recId);
+      if (action === 'guardar-muelle' && callbacks.onGuardarMuelle) {
+        callbacks.onGuardarMuelle(recId, readMuelleInput(root, recId));
+      }
+      if (action === 'entrada' && callbacks.onEntrada) {
+        callbacks.onEntrada(recId, readMuelleInput(root, recId));
+      }
+      if (action === 'ubicar' && callbacks.onUbicar) callbacks.onUbicar(recId);
+      if (action === 'cerrar-muelle-modal' && callbacks.onCloseMuelleModal) {
+        callbacks.onCloseMuelleModal();
+      }
+      if (action === 'cerrar-persona-modal' && callbacks.onClosePersonaModal) {
+        callbacks.onClosePersonaModal();
+      }
+      if (action === 'eliminar' && callbacks.onEliminar) callbacks.onEliminar(recId);
+    });
+
+    root.addEventListener('keydown', function (ev) {
+      var callbacks = root.__recAppCallbacks || {};
+      if (ev.key !== 'Enter') return;
+      var input = ev.target.closest('[data-rec-muelle-input]');
+      if (!input || !callbacks.onGuardarMuelle) return;
+      ev.preventDefault();
+      callbacks.onGuardarMuelle(input.getAttribute('data-rec-muelle-input'), input.value);
+    });
+  }
+
   function bindApp(root, user, callbacks) {
     callbacks = callbacks || {};
     if (!root) return;
 
+    root.__recAppCallbacks = callbacks;
+    root.__recAppUser = user;
+    bindAppEventsOnce(root);
+
     var form = root.querySelector('#recRegistroForm');
-    if (form) {
+    if (form && !form.__recFormBound) {
+      form.__recFormBound = true;
       form.addEventListener('submit', function (ev) {
         ev.preventDefault();
+        var cbs = root.__recAppCallbacks || {};
         var fechaEl = root.querySelector('#recFecha');
         var fecha = fechaEl && fechaEl.value ? new Date(fechaEl.value + 'T12:00:00').toISOString() : new Date().toISOString();
         var payload = {
@@ -503,60 +561,9 @@
           muelle: root.querySelector('#recMuelle') && root.querySelector('#recMuelle').value,
           operadorDescarga: root.querySelector('#recOperadorSentado') && root.querySelector('#recOperadorSentado').value
         };
-        if (callbacks.onRegister) callbacks.onRegister(payload, form);
+        if (cbs.onRegister) cbs.onRegister(payload, form);
       });
     }
-
-    root.addEventListener('click', function (ev) {
-      var btn = ev.target.closest('[data-rec-action]');
-      if (!btn) return;
-      var action = btn.getAttribute('data-rec-action');
-      var id = btn.getAttribute('data-rec-id');
-      if (action === 'validar' && callbacks.onValidar) callbacks.onValidar(id);
-      if (action === 'guardar-muelle' && callbacks.onGuardarMuelle) {
-        callbacks.onGuardarMuelle(id, readMuelleInput(root, id));
-      }
-      if (action === 'entrada' && callbacks.onEntrada) {
-        callbacks.onEntrada(id, readMuelleInput(root, id));
-      }
-      if (action === 'ubicar' && callbacks.onUbicar) callbacks.onUbicar(id);
-      if (action === 'cerrar-muelle-modal' && callbacks.onCloseMuelleModal) {
-        callbacks.onCloseMuelleModal();
-      }
-      if (action === 'cerrar-persona-modal' && callbacks.onClosePersonaModal) {
-        callbacks.onClosePersonaModal();
-      }
-      if (action === 'eliminar' && callbacks.onEliminar) callbacks.onEliminar(id);
-    });
-
-    root.addEventListener('keydown', function (ev) {
-      if (ev.key !== 'Enter') return;
-      var input = ev.target.closest('[data-rec-muelle-input]');
-      if (!input || !callbacks.onGuardarMuelle) return;
-      ev.preventDefault();
-      callbacks.onGuardarMuelle(input.getAttribute('data-rec-muelle-input'), input.value);
-    });
-
-    bindTorreNav(root);
-
-    function wireShare(btn) {
-      if (btn && callbacks.onToggleShare) {
-        btn.addEventListener('click', callbacks.onToggleShare);
-      }
-    }
-    wireShare(root.querySelector('#recBtnShare'));
-    wireShare(root.querySelector('#recBtnShareCfg'));
-
-    var openDisplayBtn = root.querySelector('#recBtnOpenDisplay');
-    if (openDisplayBtn && callbacks.onOpenDisplay) {
-      openDisplayBtn.addEventListener('click', function (ev) {
-        ev.preventDefault();
-        callbacks.onOpenDisplay();
-      });
-    }
-
-    var logoutBtn = root.querySelector('#recBtnLogout');
-    if (logoutBtn && callbacks.onLogout) logoutBtn.addEventListener('click', callbacks.onLogout);
   }
 
   global.PlatformRecepcionUI = {
