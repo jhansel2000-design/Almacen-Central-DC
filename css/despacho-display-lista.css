@@ -208,11 +208,15 @@ body.desp-display-mode .desp-lista-present-col-jaula {
 }
 
 body.desp-display-mode .desp-lista-present-col-validador {
-  width: 9%;
+  width: 8%;
+}
+
+body.desp-display-mode .desp-lista-present-col-carga {
+  width: 11%;
 }
 
 body.desp-display-mode .desp-lista-present-col-estado {
-  width: 14%;
+  width: 12%;
 }
 
 body.desp-display-mode .desp-lista-present-col-f1,
@@ -244,6 +248,15 @@ body.desp-display-mode .desp-lista-present-idc,
 body.desp-display-mode .desp-lista-present-cliente,
 body.desp-display-mode .desp-lista-present-jaula,
 body.desp-display-mode .desp-lista-present-validador {
+  vertical-align: middle;
+}
+
+body.desp-display-mode .desp-lista-present-carga {
+  font-size: clamp(0.62rem, 1.05vw, 0.78rem);
+  color: #ffcc80;
+  font-weight: 600;
+  white-space: normal;
+  line-height: 1.2;
   vertical-align: middle;
 }
 

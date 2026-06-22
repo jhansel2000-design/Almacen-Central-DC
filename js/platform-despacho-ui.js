@@ -443,73 +443,75 @@
     return html + '</select>';
   }
 
-  function fmtCamiones(p) {
-    var n = DS && DS.normalizeCantidadCamiones
-      ? DS.normalizeCantidadCamiones(p && p.cantidadCamiones)
-      : (parseInt(p && p.cantidadCamiones, 10) || 1);
-    return n;
+  function listCargasEquipo(p) {
+    if (DS && DS.normalizeCargasEquipo) return DS.normalizeCargasEquipo(p);
+    return [];
   }
 
-  function listValidadoresEquipo(p) {
-    if (DS && DS.formatValidadoresTrabajo) {
-      var raw = p && p.validadoresTrabajo;
-      if (Array.isArray(raw) && raw.length) return raw.slice();
-      var asignado = p && p.validadorAsignado ? String(p.validadorAsignado).trim() : '';
-      if (asignado && asignado !== validadorSinAsignarValue()) return [asignado];
-    }
-    var one = fmtValidador(p);
-    return one && one !== '—' ? [one] : [];
+  function totalCamionesPedido(p) {
+    if (DS && DS.totalCamionesEquipo) return DS.totalCamionesEquipo(p);
+    return listCargasEquipo(p).reduce(function (s, c) { return s + (c.camiones || 0); }, 0);
   }
 
-  function renderCamionesCell(p, canEdit) {
-    var n = fmtCamiones(p);
-    if (!canEdit) {
-      return '<span class="desp-camiones-read" title="Camiones">' + esc(String(n)) + '</span>';
-    }
-    return '<label class="desp-camiones-field">' +
-      '<span class="sr-only">Camiones para ' + esc(formatIdc(p.idc)) + '</span>' +
-      '<input type="number" class="desp-camiones-input" min="1" max="99" step="1" value="' + esc(String(n)) + '" ' +
-      'inputmode="numeric" data-pedido-id="' + esc(p.id) + '" aria-label="Camiones del IDC ' + esc(formatIdc(p.idc)) + '">' +
-      '</label>';
-  }
-
-  function renderValidadoresEquipoCell(p, canEdit, userName) {
-    var equipo = listValidadoresEquipo(p);
+  function renderCargaEquipoCell(p, canEdit, userName) {
+    var cargas = listCargasEquipo(p);
     var asignado = fmtValidador(p);
-    var pills = equipo.map(function (name) {
-      var rm = canEdit
-        ? ' <button type="button" class="desp-val-equipo-rm" data-pedido-id="' + esc(p.id) +
-          '" data-validador="' + esc(name) + '" title="Quitar del equipo" aria-label="Quitar ' + esc(name) + '">×</button>'
-        : '';
-      var cls = name === asignado ? ' desp-val-equipo-pill--lead' : '';
-      return '<span class="desp-val-equipo-pill' + cls + '">' + esc(name) + rm + '</span>';
+    var total = totalCamionesPedido(p);
+
+    if (!canEdit) {
+      if (!cargas.length) return '<span class="desp-muted">—</span>';
+      return '<div class="desp-carga-equipo desp-carga-equipo--read">' +
+        cargas.map(function (c) {
+          var lead = c.validador === asignado ? ' desp-carga-chip--lead' : '';
+          return '<span class="desp-carga-chip' + lead + '">' +
+            '<span class="desp-carga-chip-name">' + esc(c.validador) + '</span>' +
+            '<span class="desp-carga-chip-num">' + esc(String(c.camiones)) + '</span>' +
+            '<span class="desp-carga-chip-unit">cam.</span></span>';
+        }).join('') +
+        (cargas.length > 1
+          ? '<span class="desp-carga-chip desp-carga-chip--total">Total <strong>' + esc(String(total)) + '</strong></span>'
+          : '') +
+        '</div>';
+    }
+
+    var rows = cargas.map(function (c) {
+      var lead = c.validador === asignado ? ' desp-carga-row--lead' : '';
+      return '<li class="desp-carga-row' + lead + '">' +
+        '<span class="desp-carga-row-name" title="' + esc(c.validador) + '">' + esc(c.validador) + '</span>' +
+        '<label class="desp-carga-row-qty">' +
+        '<input type="number" class="desp-carga-camiones-input" min="0" max="99" step="1" ' +
+        'value="' + esc(String(c.camiones)) + '" inputmode="numeric" ' +
+        'data-pedido-id="' + esc(p.id) + '" data-validador="' + esc(c.validador) + '" ' +
+        'aria-label="Camiones de ' + esc(c.validador) + '">' +
+        '<span class="desp-carga-row-unit">cam.</span></label>' +
+        '<button type="button" class="desp-carga-equipo-rm" data-pedido-id="' + esc(p.id) + '" ' +
+        'data-validador="' + esc(c.validador) + '" title="Quitar" aria-label="Quitar ' + esc(c.validador) + '">×</button>' +
+        '</li>';
     }).join('');
 
-    if (!canEdit) {
-      return pills || '<span class="desp-muted">—</span>';
-    }
-
     var opts = listValidadoresAsignables();
-    var yo = DS && DS.resolverValidadorUsuario
-      ? DS.resolverValidadorUsuario(userName)
-      : '';
-    var addSelect = '<select class="desp-val-equipo-add" data-pedido-id="' + esc(p.id) + '" ' +
-      'aria-label="Agregar validador al equipo de ' + esc(formatIdc(p.idc)) + '">' +
-      '<option value="">+ Validador…</option>' +
-      opts.filter(function (name) {
-        return equipo.indexOf(name) < 0;
-      }).map(function (name) {
-        return '<option value="' + esc(name) + '">' + esc(name) + '</option>';
-      }).join('') +
-      '</select>';
-    var meBtn = yo && equipo.indexOf(yo) < 0
-      ? '<button type="button" class="btn btn-ghost desp-val-equipo-me" data-pedido-id="' + esc(p.id) + '" ' +
-        'data-validador="' + esc(yo) + '" title="Sumarme al equipo">+ Yo</button>'
-      : '';
+    var enEquipo = cargas.map(function (c) { return c.validador; });
+    var yo = DS && DS.resolverValidadorUsuario ? DS.resolverValidadorUsuario(userName) : '';
+    var addOptions = opts.filter(function (name) { return enEquipo.indexOf(name) < 0; }).map(function (name) {
+      return '<option value="' + esc(name) + '">' + esc(name) + '</option>';
+    }).join('');
 
-    return '<div class="desp-val-equipo">' +
-      '<div class="desp-val-equipo-pills">' + (pills || '<span class="desp-muted desp-val-equipo-empty">Sin equipo</span>') + '</div>' +
-      '<div class="desp-val-equipo-actions">' + addSelect + meBtn + '</div></div>';
+    return '<div class="desp-carga-equipo" data-pedido-id="' + esc(p.id) + '">' +
+      '<ul class="desp-carga-equipo-list">' +
+      (rows || '<li class="desp-carga-empty">Sin carga registrada</li>') +
+      '</ul>' +
+      '<div class="desp-carga-equipo-foot">' +
+      '<span class="desp-carga-equipo-total">Total: <strong>' + esc(String(total || 0)) + '</strong> cam.</span>' +
+      '<div class="desp-carga-equipo-add">' +
+      '<select class="desp-val-equipo-add" data-pedido-id="' + esc(p.id) + '" aria-label="Agregar validador">' +
+      '<option value="">+ Validador…</option>' + addOptions + '</select>' +
+      '<input type="number" class="desp-carga-add-qty" min="1" max="99" value="1" inputmode="numeric" ' +
+      'data-pedido-id="' + esc(p.id) + '" aria-label="Camiones al agregar" title="Camiones">' +
+      (yo && enEquipo.indexOf(yo) < 0
+        ? '<button type="button" class="btn btn-ghost desp-val-equipo-me" data-pedido-id="' + esc(p.id) + '" ' +
+          'data-validador="' + esc(yo) + '" title="Registrar mi carga">+ Yo</button>'
+        : '') +
+      '</div></div></div>';
   }
 
   function renderPrepEstadoField(inputName) {
@@ -680,7 +682,7 @@
     }
     return '<div class="desp-table-wrap desp-lista-vivo-wrap">' +
       '<table class="desp-table desp-table--lista-vivo" aria-label="Seguimiento validador en vivo">' +
-      '<thead><tr><th>IDC</th><th>Cliente</th><th>Jaula</th><th>Cam.</th><th>Estado</th><th>Asignado</th><th>Equipo validación</th><th>Fecha y hora</th>' +
+      '<thead><tr><th>IDC</th><th>Cliente</th><th>Jaula</th><th>Estado</th><th>Asignado</th><th>Carga por validador</th><th>Fecha y hora</th>' +
       (canRemove ? '<th>Acción</th>' : '') +
       '</tr></thead><tbody>' +
       pedidos.map(function (p) {
@@ -688,10 +690,9 @@
           '<td><strong class="desp-idc">' + esc(formatIdc(p.idc)) + '</strong></td>' +
           '<td class="desp-cliente">' + esc(fmtCliente(p)) + '</td>' +
           '<td>' + esc(p.jaula || '—') + '</td>' +
-          '<td class="desp-camiones-cell">' + renderCamionesCell(p, canRemove) + '</td>' +
           '<td>' + estadoBadge(p.estado) + '</td>' +
           '<td class="desp-validador-asignado">' + renderValidadorAsignadoCell(p, canRemove) + '</td>' +
-          '<td class="desp-val-equipo-cell">' + renderValidadoresEquipoCell(p, canRemove, userName || '') + '</td>' +
+          '<td class="desp-carga-equipo-cell">' + renderCargaEquipoCell(p, canRemove, userName || '') + '</td>' +
           '<td class="desp-dt">' + esc(fmtDt(p.createdAt || p.updatedAt)) + '</td>' +
           (canRemove
             ? '<td class="desp-val-actions desp-val-actions--live">' +
@@ -715,7 +716,7 @@
       '<header class="desp-panel-head">' +
       '<div><span class="desp-eyebrow">Pantalla externa · Validador</span>' +
       '<h3 id="despValShareTitle">Seguimiento validador</h3>' +
-      '<p class="desp-panel-sub">Lo que comparte en TV · marque <strong>Cargado</strong>, indique <strong>camiones</strong> y el <strong>equipo</strong> que validó IDC grandes</p></div>' +
+      '<p class="desp-panel-sub">Lo que comparte en TV · cada validador indica <strong>cuántos camiones cargó</strong> (ej. Juan 2 · Pedro 1)</p></div>' +
       '</header>' +
       '<p class="desp-share-status desp-share-status--lista" id="despListaShareStatus"' + (sharing ? '' : ' hidden') + '>' +
       (sharing ? 'En pantalla TV · ' + esc(String(pedidos.length)) + ' IDC en seguimiento validador' : '') +
@@ -929,7 +930,7 @@
       '<header class="desp-panel-head">' +
       '<div><span class="desp-eyebrow">Validador</span>' +
       '<h3 id="despValTitle">Seguimiento validador</h3>' +
-      '<p class="desp-panel-sub">IDC del operador entran como <strong>Pend. por validar</strong>. Indique <strong>camiones</strong>, equipo de validación y marque <strong>Cargado</strong>.</p></div>' +
+      '<p class="desp-panel-sub">Marque estados y registre la carga: <strong>nombre + camiones</strong> por cada validador que trabajó el IDC.</p></div>' +
       '<span class="desp-live-badge" title="Sincronización activa"><span class="desp-live-dot"></span> En vivo</span>' +
       '</header>' +
       '<div class="desp-filters">' +
@@ -948,12 +949,12 @@
       '<div class="desp-table-wrap">' +
       '<table class="desp-table" id="despValTable">' +
       '<thead><tr>' +
-      '<th>IDC</th><th>Cliente</th><th>Jaula</th><th>Cam.</th><th>Estado</th><th>Asignado</th><th>Equipo validación</th><th>Fecha y hora</th>' +
+      '<th>IDC</th><th>Cliente</th><th>Jaula</th><th>Estado</th><th>Asignado</th><th>Carga por validador</th><th>Fecha y hora</th>' +
       (canValidate ? '<th>Acción</th>' : '') +
       '<th></th>' +
       '</tr></thead><tbody>' +
       (list.length ? list.map(function (p) { return renderValidadorRow(p, opts); }).join('') :
-        '<tr><td colspan="' + (canValidate ? 10 : 9) + '" class="desp-empty-row">No hay IDC en seguimiento validador' +
+        '<tr><td colspan="' + (canValidate ? 9 : 8) + '" class="desp-empty-row">No hay IDC en seguimiento validador' +
         (filterEstado || filterQ ? ' con este filtro' : ' — el operador debe enviarlos desde su panel') + '.</td></tr>') +
       '</tbody></table></div>' +
       renderRegistroArchivados(archivados, canValidate) +
@@ -995,10 +996,9 @@
       '<td><strong class="desp-idc">' + esc(formatIdc(p.idc)) + '</strong></td>' +
       '<td class="desp-cliente">' + esc(fmtCliente(p)) + '</td>' +
       '<td>' + esc(p.jaula) + '</td>' +
-      '<td class="desp-camiones-cell">' + renderCamionesCell(p, canValidate) + '</td>' +
       '<td>' + estadoBadge(p.estado) + '</td>' +
       '<td class="desp-validador-asignado">' + renderValidadorAsignadoCell(p, canValidate) + '</td>' +
-      '<td class="desp-val-equipo-cell">' + renderValidadoresEquipoCell(p, canValidate, userName) + '</td>' +
+      '<td class="desp-carga-equipo-cell">' + renderCargaEquipoCell(p, canValidate, userName) + '</td>' +
       '<td class="desp-dt">' + esc(fmtDt(p.createdAt || p.updatedAt)) + '<br><small>' + esc(p.updatedBy) + '</small></td>' +
       '<td class="desp-val-actions">' + renderValidadorEstadoBtns(p, canValidate, false) +
       (canValidate ? ' <button type="button" class="btn btn-ghost desp-btn-archive" data-pedido-id="' + esc(p.id) + '" data-idc="' + esc(formatIdc(p.idc)) + '" data-pasillo="' + esc(p.jaula || '') + '" title="Quitar del seguimiento validador">Quitar</button>' : '') +
@@ -1020,9 +1020,9 @@
       '<header class="desp-hist-head">' +
       '<h4>Pedido ' + esc(formatIdc(pedido.idc)) + ' · Cliente ' + esc(fmtCliente(pedido)) +
       ' · Jaula ' + esc(pedido.archivadoPasillo != null ? pedido.archivadoPasillo : pedido.jaula) +
-      ' · Camiones ' + esc(String(fmtCamiones(pedido))) + '</h4>' +
-      '<p>Estado actual: ' + estadoBadge(pedido.estado) + ' · Equipo: ' +
-      esc(DS.formatValidadoresTrabajo ? DS.formatValidadoresTrabajo(pedido) : fmtValidador(pedido)) + '</p></header>' +
+      ' · Camiones ' + esc(String(totalCamionesPedido(pedido))) + '</h4>' +
+      '<p>Estado actual: ' + estadoBadge(pedido.estado) + ' · Carga: ' +
+      esc(DS.formatCargasEquipoResumen ? DS.formatCargasEquipoResumen(pedido, { fullName: true, withTotal: true }) : '—') + '</p></header>' +
       '<div class="desp-table-wrap"><table class="desp-table desp-table--hist">' +
       '<thead><tr><th>Fecha</th><th>Usuario</th><th>Panel</th><th>Cambio</th><th>Nota</th></tr></thead>' +
       '<tbody>' + (rows || '<tr><td colspan="5" class="desp-empty-row">Sin historial.</td></tr>') + '</tbody></table></div></div>';
@@ -1344,22 +1344,22 @@
       });
     });
 
-    host.querySelectorAll('.desp-camiones-input').forEach(function (inp) {
-      function commitCamiones() {
+    host.querySelectorAll('.desp-carga-camiones-input').forEach(function (inp) {
+      function commitCarga() {
         var pedidoId = inp.getAttribute('data-pedido-id');
-        if (!pedidoId) return;
-        var res = DS.actualizarCantidadCamiones(pedidoId, inp.value, userName);
+        var validador = inp.getAttribute('data-validador');
+        if (!pedidoId || !validador) return;
+        var res = DS.actualizarCamionesValidador(pedidoId, validador, inp.value, userName);
         if (!res.ok) {
           toast(res.error, 'warn');
           return;
         }
         if (!res.unchanged) {
-          toast('Camiones actualizados: ' + fmtCamiones(res.pedido), 'success');
           render(host, res.data, opts);
         }
       }
-      inp.addEventListener('change', commitCamiones);
-      inp.addEventListener('blur', commitCamiones);
+      inp.addEventListener('change', commitCarga);
+      inp.addEventListener('blur', commitCarga);
     });
 
     host.querySelectorAll('.desp-val-equipo-add').forEach(function (sel) {
@@ -1367,13 +1367,15 @@
         var validador = sel.value;
         if (!validador) return;
         var pedidoId = sel.getAttribute('data-pedido-id');
-        var res = DS.agregarValidadorTrabajo(pedidoId, validador, userName);
+        var qtyEl = host.querySelector('.desp-carga-add-qty[data-pedido-id="' + pedidoId + '"]');
+        var camiones = qtyEl ? qtyEl.value : 1;
+        var res = DS.agregarValidadorTrabajo(pedidoId, validador, userName, camiones);
         if (!res.ok) {
           toast(res.error, 'warn');
           sel.value = '';
           return;
         }
-        if (!res.unchanged) toast('Equipo: +' + validador, 'success');
+        if (!res.unchanged) toast(validador + ': ' + (camiones || 1) + ' cam.', 'success');
         render(host, res.data, opts);
       });
     });
@@ -1382,17 +1384,19 @@
       btn.addEventListener('click', function () {
         var pedidoId = btn.getAttribute('data-pedido-id');
         var validador = btn.getAttribute('data-validador');
-        var res = DS.agregarValidadorTrabajo(pedidoId, validador, userName);
+        var qtyEl = host.querySelector('.desp-carga-add-qty[data-pedido-id="' + pedidoId + '"]');
+        var camiones = qtyEl ? qtyEl.value : 1;
+        var res = DS.agregarValidadorTrabajo(pedidoId, validador, userName, camiones);
         if (!res.ok) {
           toast(res.error, 'warn');
           return;
         }
-        if (!res.unchanged) toast('Te sumaste al equipo de este IDC', 'success');
+        if (!res.unchanged) toast('Registrado: ' + camiones + ' cam.', 'success');
         render(host, res.data, opts);
       });
     });
 
-    host.querySelectorAll('.desp-val-equipo-rm').forEach(function (btn) {
+    host.querySelectorAll('.desp-carga-equipo-rm, .desp-val-equipo-rm').forEach(function (btn) {
       btn.addEventListener('click', function () {
         var pedidoId = btn.getAttribute('data-pedido-id');
         var validador = btn.getAttribute('data-validador');

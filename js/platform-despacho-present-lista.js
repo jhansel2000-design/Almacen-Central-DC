@@ -65,7 +65,7 @@
         ? store.fechasEtapasValidador(p)
         : {};
       return [p.idc, p.cliente, p.jaula, p.estado, p.validadorAsignado,
-        p.cantidadCamiones, (p.validadoresTrabajo || []).join(','),
+        (p.cargasEquipo || []).map(function (c) { return c.validador + ':' + c.camiones; }).join(','),
         etapas.pendiente_carga, etapas.en_validacion, etapas.listo_despacho].join(':');
     }).join('|');
     var countSig = counts
@@ -103,7 +103,7 @@
 
   function renderTableRows(pedidos) {
     if (!pedidos.length) {
-      return '<tr><td colspan="8" class="desp-lista-present-empty">Sin IDC registrados todavía.</td></tr>';
+      return '<tr><td colspan="9" class="desp-lista-present-empty">Sin IDC registrados todavía.</td></tr>';
     }
     return pedidos.map(function (p) {
       var store = DS();
@@ -114,12 +114,16 @@
       var cliente = p.cliente ? String(p.cliente).trim() : '—';
       var validador = p.validadorAsignado ? String(p.validadorAsignado).trim() : '—';
       if (!validador) validador = '—';
+      var cargaTxt = store && store.formatCargasEquipoResumen
+        ? store.formatCargasEquipoResumen(p, { withTotal: true })
+        : '—';
       return '<tr>' +
         '<td class="desp-lista-present-idc">' + esc(idc) + '</td>' +
         '<td class="desp-lista-present-cliente">' + esc(cliente) + '</td>' +
         '<td class="desp-lista-present-jaula">' + esc(p.jaula || '—') + '</td>' +
         '<td class="desp-lista-present-validador">' +
         '<span class="desp-lista-present-validador-pill">' + esc(validador) + '</span></td>' +
+        '<td class="desp-lista-present-carga">' + esc(cargaTxt) + '</td>' +
         '<td class="desp-lista-present-estado-cell-only">' + estadoHtml(p.estado) + '</td>' +
         fechaEtapaCellHtml(etapas.pendiente_carga, 'pendiente_carga') +
         fechaEtapaCellHtml(etapas.en_validacion, 'en_validacion') +
@@ -238,9 +242,9 @@
       '<table class="desp-lista-present-table" aria-label="Lista IDC en seguimiento validador">' +
       '<colgroup><col class="desp-lista-present-col-idc"><col class="desp-lista-present-col-cliente">' +
       '<col class="desp-lista-present-col-jaula"><col class="desp-lista-present-col-validador">' +
-      '<col class="desp-lista-present-col-estado"><col class="desp-lista-present-col-f1">' +
+      '<col class="desp-lista-present-col-carga"><col class="desp-lista-present-col-estado"><col class="desp-lista-present-col-f1">' +
       '<col class="desp-lista-present-col-f2"><col class="desp-lista-present-col-f3"></colgroup>' +
-      '<thead><tr><th>IDC</th><th>Cliente</th><th>Jaula</th><th>Validador</th>' +
+      '<thead><tr><th>IDC</th><th>Cliente</th><th>Jaula</th><th>Validador</th><th>Carga</th>' +
       '<th class="desp-lista-present-th-estado">Estado</th>' +
       '<th class="desp-lista-present-th-fecha-etapa">Registro IDC</th>' +
       '<th class="desp-lista-present-th-fecha-etapa">Validado</th>' +

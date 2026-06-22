@@ -228,7 +228,7 @@
       estadoOperador = inferEstadoOperador(p);
     }
     if (estadoOperador === 'en_proceso') estadoOperador = 'facturado';
-    return {
+    var pedido = {
       id: p.id || uid(),
       idc: formatIdc(p.idc || ''),
       jaula: String(p.jaula || '').trim(),
@@ -243,12 +243,16 @@
       createdAt: p.createdAt || nowIso(),
       createdBy: p.createdBy || '—',
       validadorAsignado: String(p.validadorAsignado || '').trim(),
-      cantidadCamiones: normalizeCantidadCamiones(p.cantidadCamiones),
-      validadoresTrabajo: normalizeValidadoresTrabajo(p.validadoresTrabajo, p.validadorAsignado),
+      cargasEquipo: [],
+      cantidadCamiones: 0,
+      validadoresTrabajo: [],
       updatedAt: p.updatedAt || p.createdAt || nowIso(),
       updatedBy: p.updatedBy || p.createdBy || '—',
       historial: Array.isArray(p.historial) ? p.historial : []
     };
+    pedido.cargasEquipo = normalizeCargasEquipo(p);
+    syncCargasLegacyFields(pedido);
+    return pedido;
   }
 
   function inferEstadoOperador(p) {
@@ -305,9 +309,95 @@
 
   function normalizeCantidadCamiones(raw) {
     var n = parseInt(raw, 10);
-    if (!n || n < 1) return 1;
+    if (isNaN(n) || n < 0) return 0;
     if (n > 99) return 99;
     return n;
+  }
+
+  function normalizeCargaItem(raw) {
+    raw = raw || {};
+    var validador = String(raw.validador || raw.nombre || '').trim();
+    if (!validador || validador === VALIDADOR_SIN_ASIGNAR) return null;
+    if (VALIDADORES_ASIGNABLES.indexOf(validador) < 0) return null;
+    return {
+      validador: validador,
+      camiones: normalizeCantidadCamiones(raw.camiones != null ? raw.camiones : 1) || 1
+    };
+  }
+
+  function migrateCargasEquipo(p) {
+    p = p || {};
+    var names = [];
+    if (Array.isArray(p.validadoresTrabajo)) {
+      p.validadoresTrabajo.forEach(function (n) {
+        n = String(n || '').trim();
+        if (n && names.indexOf(n) < 0) names.push(n);
+      });
+    }
+    var asignado = String(p.validadorAsignado || '').trim();
+    if (asignado && asignado !== VALIDADOR_SIN_ASIGNAR && names.indexOf(asignado) < 0) {
+      names.unshift(asignado);
+    }
+    if (!names.length) return [];
+    var total = normalizeCantidadCamiones(p.cantidadCamiones) || names.length;
+    if (names.length === 1) {
+      return [{ validador: names[0], camiones: Math.max(1, total) }];
+    }
+    return names.map(function (n, i) {
+      return {
+        validador: n,
+        camiones: i === 0 ? Math.max(1, total - (names.length - 1)) : 1
+      };
+    });
+  }
+
+  function normalizeCargasEquipo(p) {
+    p = p || {};
+    var out = [];
+    var seen = {};
+    if (Array.isArray(p.cargasEquipo) && p.cargasEquipo.length) {
+      p.cargasEquipo.forEach(function (item) {
+        var row = normalizeCargaItem(item);
+        if (!row) return;
+        var key = row.validador.toLowerCase();
+        if (seen[key]) return;
+        seen[key] = true;
+        out.push(row);
+      });
+    }
+    if (!out.length) out = migrateCargasEquipo(p);
+    return out;
+  }
+
+  function syncCargasLegacyFields(pedido) {
+    var cargas = normalizeCargasEquipo(pedido);
+    pedido.cargasEquipo = cargas;
+    pedido.validadoresTrabajo = cargas.map(function (c) { return c.validador; });
+    var total = cargas.reduce(function (sum, c) { return sum + c.camiones; }, 0);
+    pedido.cantidadCamiones = total > 0 ? total : 0;
+    return cargas;
+  }
+
+  function totalCamionesEquipo(pedido) {
+    return normalizeCargasEquipo(pedido).reduce(function (sum, c) {
+      return sum + (c.camiones || 0);
+    }, 0);
+  }
+
+  function formatCargasEquipoResumen(pedido, opts) {
+    opts = opts || {};
+    var cargas = normalizeCargasEquipo(pedido);
+    if (!cargas.length) return '—';
+    var parts = cargas.map(function (c) {
+      var nombre = c.validador.split(' ')[0];
+      if (opts.fullName) nombre = c.validador;
+      return nombre + ' ' + c.camiones;
+    });
+    var txt = parts.join(' · ');
+    if (opts.withTotal && cargas.length > 1) {
+      txt += ' (total ' + totalCamionesEquipo(pedido) + ')';
+    }
+    return txt;
   }
 
   function normalizeValidadoresTrabajo(arr, validadorAsignado) {
@@ -326,6 +416,14 @@
     return out;
   }
 
+  function findCargaIndex(cargas, validadorNombre) {
+    var key = String(validadorNombre || '').trim().toLowerCase();
+    if (!key) return -1;
+    return (cargas || []).findIndex(function (c) {
+      return String(c.validador || '').toLowerCase() === key;
+    });
+  }
+
   function resolverValidadorUsuario(usuario) {
     usuario = String(usuario || '').trim();
     if (!usuario || usuario === '—') return '';
@@ -340,23 +438,23 @@
     return '';
   }
 
-  function ensureValidadorEnTrabajo(pedido, nombre) {
+  function ensureValidadorEnTrabajo(pedido, nombre, camiones) {
     nombre = String(nombre || '').trim();
     if (!nombre || nombre === VALIDADOR_SIN_ASIGNAR) return false;
-    pedido.validadoresTrabajo = normalizeValidadoresTrabajo(pedido.validadoresTrabajo, '');
-    var key = nombre.toLowerCase();
-    var exists = pedido.validadoresTrabajo.some(function (v) {
-      return String(v).toLowerCase() === key;
+    if (VALIDADORES_ASIGNABLES.indexOf(nombre) < 0) return false;
+    var cargas = normalizeCargasEquipo(pedido);
+    var idx = findCargaIndex(cargas, nombre);
+    if (idx >= 0) return false;
+    cargas.push({
+      validador: nombre,
+      camiones: normalizeCantidadCamiones(camiones != null ? camiones : 1) || 1
     });
-    if (exists) return false;
-    pedido.validadoresTrabajo.push(nombre);
+    syncCargasLegacyFields(Object.assign(pedido, { cargasEquipo: cargas }));
     return true;
   }
 
   function formatValidadoresTrabajo(pedido) {
-    pedido = pedido || {};
-    var list = normalizeValidadoresTrabajo(pedido.validadoresTrabajo, pedido.validadorAsignado);
-    return list.length ? list.join(', ') : '—';
+    return formatCargasEquipoResumen(pedido, { fullName: true });
   }
 
   function persistData(data, opts) {
@@ -450,7 +548,10 @@
       jaula: jaula,
       cliente: cliente,
       validadorAsignado: validadorAsignado,
-      cantidadCamiones: 1,
+      cargasEquipo: validadorAsignado !== VALIDADOR_SIN_ASIGNAR
+        ? [{ validador: validadorAsignado, camiones: 1 }]
+        : [],
+      cantidadCamiones: validadorAsignado !== VALIDADOR_SIN_ASIGNAR ? 1 : 0,
       validadoresTrabajo: validadorAsignado !== VALIDADOR_SIN_ASIGNAR ? [validadorAsignado] : [],
       estadoOperador: estado,
       estado: 'pendiente_carga',
@@ -523,7 +624,7 @@
     pedido.updatedAt = ts;
     pedido.updatedBy = usuario || '—';
     var quien = resolverValidadorUsuario(usuario);
-    if (quien) ensureValidadorEnTrabajo(pedido, quien);
+    if (quien) ensureValidadorEnTrabajo(pedido, quien, 1);
     pushHistorial(pedido, {
       at: ts,
       usuario: usuario || '—',
@@ -569,7 +670,7 @@
     pedido.updatedAt = ts;
     pedido.updatedBy = usuario || '—';
     if (validadorAsignado !== VALIDADOR_SIN_ASIGNAR) {
-      ensureValidadorEnTrabajo(pedido, validadorAsignado);
+      ensureValidadorEnTrabajo(pedido, validadorAsignado, 1);
     }
     pushHistorial(pedido, {
       at: ts,
@@ -586,24 +687,40 @@
     return { ok: true, data: data, pedido: pedido };
   }
 
-  function actualizarCantidadCamiones(pedidoId, cantidad, usuario) {
-    cantidad = normalizeCantidadCamiones(cantidad);
+  function actualizarCamionesValidador(pedidoId, validadorNombre, camiones, usuario) {
+    validadorNombre = String(validadorNombre || '').trim();
+    camiones = normalizeCantidadCamiones(camiones);
+    if (!validadorNombre) return { ok: false, error: 'Validador no indicado.' };
+    if (VALIDADORES_ASIGNABLES.indexOf(validadorNombre) < 0) {
+      return { ok: false, error: 'Seleccione un validador de la lista autorizada.' };
+    }
+
     var data = load();
     var idx = (data.pedidos || []).findIndex(function (p) { return p.id === pedidoId; });
     if (idx < 0) return { ok: false, error: 'Pedido no encontrado.' };
 
     var pedido = data.pedidos[idx];
     if (!pedido.seguimientoValidador || pedido.visibleValidador === false) {
-      return { ok: false, error: 'Solo puede editar camiones en IDC en seguimiento activo.' };
+      return { ok: false, error: 'Solo puede editar carga en IDC en seguimiento activo.' };
     }
 
-    var prev = normalizeCantidadCamiones(pedido.cantidadCamiones);
-    if (prev === cantidad) {
-      return { ok: true, data: data, pedido: pedido, unchanged: true };
+    var cargas = normalizeCargasEquipo(pedido);
+    var cidx = findCargaIndex(cargas, validadorNombre);
+    var prev = cidx >= 0 ? cargas[cidx].camiones : null;
+
+    if (camiones <= 0) {
+      if (cidx < 0) return { ok: true, data: data, pedido: pedido, unchanged: true };
+      cargas.splice(cidx, 1);
+    } else if (cidx >= 0) {
+      if (prev === camiones) return { ok: true, data: data, pedido: pedido, unchanged: true };
+      cargas[cidx].camiones = camiones;
+    } else {
+      cargas.push({ validador: validadorNombre, camiones: camiones });
     }
 
+    pedido.cargasEquipo = cargas;
     var ts = nowIso();
-    pedido.cantidadCamiones = cantidad;
+    syncCargasLegacyFields(pedido);
     pedido.updatedAt = ts;
     pedido.updatedBy = usuario || '—';
     pushHistorial(pedido, {
@@ -612,14 +729,33 @@
       panel: 'validador',
       desde: null,
       hacia: null,
-      nota: 'Camiones del IDC: ' + prev + ' → ' + cantidad
+      validadorAsignado: validadorNombre,
+      nota: camiones <= 0
+        ? validadorNombre + ' salió de la carga del IDC'
+        : validadorNombre + ' cargó ' + camiones + ' camión' + (camiones === 1 ? '' : 'es')
     });
     save(data);
     return { ok: true, data: data, pedido: pedido };
   }
 
-  function agregarValidadorTrabajo(pedidoId, validadorNombre, usuario) {
+  function actualizarCantidadCamiones(pedidoId, cantidad, usuario) {
+    cantidad = normalizeCantidadCamiones(cantidad);
+    if (cantidad < 1) cantidad = 1;
+    var data = load();
+    var idx = (data.pedidos || []).findIndex(function (p) { return p.id === pedidoId; });
+    if (idx < 0) return { ok: false, error: 'Pedido no encontrado.' };
+    var pedido = data.pedidos[idx];
+    var asignado = String(pedido.validadorAsignado || '').trim();
+    if (!asignado || asignado === VALIDADOR_SIN_ASIGNAR) {
+      asignado = resolverValidadorUsuario(usuario) || (normalizeCargasEquipo(pedido)[0] || {}).validador;
+    }
+    if (!asignado) return { ok: false, error: 'Asigne un validador primero.' };
+    return actualizarCamionesValidador(pedidoId, asignado, cantidad, usuario);
+  }
+
+  function agregarValidadorTrabajo(pedidoId, validadorNombre, usuario, camiones) {
     validadorNombre = String(validadorNombre || '').trim();
+    camiones = normalizeCantidadCamiones(camiones != null ? camiones : 1) || 1;
     if (!validadorNombre) {
       return { ok: false, error: 'Seleccione un validador del equipo.' };
     }
@@ -637,11 +773,15 @@
       return { ok: false, error: 'Solo puede editar el equipo en IDC en seguimiento activo.' };
     }
 
-    if (!ensureValidadorEnTrabajo(pedido, validadorNombre)) {
-      return { ok: true, data: data, pedido: pedido, unchanged: true };
+    var cargas = normalizeCargasEquipo(pedido);
+    if (findCargaIndex(cargas, validadorNombre) >= 0) {
+      return actualizarCamionesValidador(pedidoId, validadorNombre, camiones, usuario);
     }
 
     var ts = nowIso();
+    cargas.push({ validador: validadorNombre, camiones: camiones });
+    pedido.cargasEquipo = cargas;
+    syncCargasLegacyFields(pedido);
     pedido.updatedAt = ts;
     pedido.updatedBy = usuario || '—';
     pushHistorial(pedido, {
@@ -651,46 +791,14 @@
       desde: null,
       hacia: null,
       validadorAsignado: validadorNombre,
-      nota: 'Sumó al equipo de validación: ' + validadorNombre
+      nota: validadorNombre + ' sumó carga: ' + camiones + ' camión' + (camiones === 1 ? '' : 'es')
     });
     save(data);
     return { ok: true, data: data, pedido: pedido };
   }
 
   function quitarValidadorTrabajo(pedidoId, validadorNombre, usuario) {
-    validadorNombre = String(validadorNombre || '').trim();
-    if (!validadorNombre) return { ok: false, error: 'Validador no indicado.' };
-
-    var data = load();
-    var idx = (data.pedidos || []).findIndex(function (p) { return p.id === pedidoId; });
-    if (idx < 0) return { ok: false, error: 'Pedido no encontrado.' };
-
-    var pedido = data.pedidos[idx];
-    if (!pedido.seguimientoValidador || pedido.visibleValidador === false) {
-      return { ok: false, error: 'Solo puede editar el equipo en IDC en seguimiento activo.' };
-    }
-
-    var key = validadorNombre.toLowerCase();
-    var prev = normalizeValidadoresTrabajo(pedido.validadoresTrabajo, pedido.validadorAsignado);
-    var next = prev.filter(function (v) { return String(v).toLowerCase() !== key; });
-    if (next.length === prev.length) {
-      return { ok: true, data: data, pedido: pedido, unchanged: true };
-    }
-
-    var ts = nowIso();
-    pedido.validadoresTrabajo = next;
-    pedido.updatedAt = ts;
-    pedido.updatedBy = usuario || '—';
-    pushHistorial(pedido, {
-      at: ts,
-      usuario: usuario || '—',
-      panel: 'validador',
-      desde: null,
-      hacia: null,
-      nota: 'Quitó del equipo de validación: ' + validadorNombre
-    });
-    save(data);
-    return { ok: true, data: data, pedido: pedido };
+    return actualizarCamionesValidador(pedidoId, validadorNombre, 0, usuario);
   }
 
   /** Orden validador: fecha/hora de registro (no reordenar al cambiar estado). */
@@ -736,7 +844,7 @@
             String(p.jaula).toLowerCase().indexOf(q) >= 0 ||
             String(p.cliente || '').toLowerCase().indexOf(q) >= 0 ||
             String(p.validadorAsignado || '').toLowerCase().indexOf(q) >= 0 ||
-            formatValidadoresTrabajo(p).toLowerCase().indexOf(q) >= 0;
+            formatCargasEquipoResumen(p).toLowerCase().indexOf(q) >= 0;
         });
       }
     }
@@ -1385,9 +1493,13 @@
     cambiarEstado: cambiarEstado,
     asignarValidador: asignarValidador,
     actualizarCantidadCamiones: actualizarCantidadCamiones,
+    actualizarCamionesValidador: actualizarCamionesValidador,
     agregarValidadorTrabajo: agregarValidadorTrabajo,
     quitarValidadorTrabajo: quitarValidadorTrabajo,
     formatValidadoresTrabajo: formatValidadoresTrabajo,
+    formatCargasEquipoResumen: formatCargasEquipoResumen,
+    normalizeCargasEquipo: normalizeCargasEquipo,
+    totalCamionesEquipo: totalCamionesEquipo,
     normalizeCantidadCamiones: normalizeCantidadCamiones,
     resolverValidadorUsuario: resolverValidadorUsuario,
     archivarDeVistaValidador: archivarDeVistaValidador,
