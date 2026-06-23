@@ -431,14 +431,7 @@
     if (!global.localStorage || !data) return false;
     var local = getLocalData();
     if (local && data) {
-      var listaPick = pickNewerShareLista(local, data);
-      var barcodePick = pickNewerShareBarcode(local, data);
-      data = Object.assign({}, data, {
-        liveShareLista: listaPick.liveShareLista,
-        liveShareSeq: listaPick.liveShareSeq,
-        liveShare: barcodePick.liveShare,
-        liveShareBarcodeSeq: barcodePick.liveShareBarcodeSeq
-      });
+      data = mergeDespacho(local, data);
     }
     var sig = dataSignature(data);
     if (sig === lastAppliedSig) return false;

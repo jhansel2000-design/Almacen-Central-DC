@@ -397,6 +397,8 @@ td.desp-validador-asignado {
   font-weight: 600;
   border: 1px solid transparent;
   line-height: 1.2;
+  touch-action: manipulation;
+  flex-shrink: 0;
 }
 
 .desp-dashboard .desp-btn-set-estado.btn.btn-ghost.desp-btn-set-estado--red {
@@ -2334,6 +2336,10 @@ body.desp-controller-mode .desp-live-present-lista {
 
 .desp-lista-vivo-wrap {
   margin: 0.75rem 0 1rem;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  touch-action: pan-x pan-y;
 }
 
 .desp-resumen-camiones {
@@ -2546,7 +2552,16 @@ body.desp-controller-mode .desp-live-present-lista {
 }
 
 .desp-val-actions--live {
-  min-width: 14rem;
+  min-width: 11rem;
+  max-width: 100%;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+  gap: 0.3rem;
+  padding-bottom: 0.15rem;
 }
 
 .desp-val-estado-btns {
@@ -2554,6 +2569,10 @@ body.desp-controller-mode .desp-live-present-lista {
   flex-wrap: wrap;
   gap: 0.35rem;
   align-items: center;
+}
+
+.desp-val-estado-btns--compact {
+  flex-wrap: nowrap;
 }
 
 .desp-val-estado-btns--compact .desp-btn-set-estado {
@@ -2759,6 +2778,7 @@ col.desp-col-carga {
 #despValTable,
 .desp-table--lista-vivo {
   table-layout: fixed;
+  min-width: 920px;
 }
 
 #despValTable td.desp-cliente,

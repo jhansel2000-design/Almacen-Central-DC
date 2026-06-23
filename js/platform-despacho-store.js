@@ -285,8 +285,8 @@
     return 'facturado';
   }
 
-  function save(data) {
-    return persistData(data, {});
+  function save(data, opts) {
+    return persistData(data, opts || {});
   }
 
   function notify(data) {
@@ -545,7 +545,7 @@
     }
     /* Compartir barcode en vivo: solo local + TVs — no empujar toda la nube en cada tecla */
     if (!opts.silent && !opts.liveShareOnly && global.PlatformDespachoCloudSync) {
-      if (opts.shareListaToggle || opts.shareBarcodeToggle || listaLiveTouch || opts.listaLivePush) {
+      if (opts.shareListaToggle || opts.shareBarcodeToggle || listaLiveTouch || opts.listaLivePush || opts.estadoPush) {
         if (global.PlatformDespachoCloudSync.pushLocalForce) {
           global.PlatformDespachoCloudSync.pushLocalForce();
         }
@@ -709,7 +709,7 @@
           ? 'Validador cambió estado desde preparación'
           : 'Cambio de estado validador'
     });
-    save(data);
+    save(data, { estadoPush: true });
     return { ok: true, data: data, pedido: pedido };
   }
 

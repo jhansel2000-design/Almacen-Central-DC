@@ -13,6 +13,8 @@
   var lastOpts = null;
   var pendingSyncFresh = null;
   var displayWindows = { barcode: null, lista: null };
+  var lastEstadoEditAt = 0;
+  var syncRefreshTimer = null;
   var knownValidatorIds = Object.create(null);
   var voiceAlertsReady = false;
 
@@ -1224,18 +1226,83 @@
 
     syncDespWakeLock(data);
 
-    unbindSync = DS.bindSync(function (fresh) {
+    unbindSync = DS.bindSync(function () {
       if (!host.isConnected) return;
-      handleVoiceAlerts(fresh, lastOpts && lastOpts.despachoArea);
+      handleVoiceAlerts(DS.load(), lastOpts && lastOpts.despachoArea);
       if (isTypingInDespForm(host)) {
-        pendingSyncFresh = fresh;
+        pendingSyncFresh = DS.load();
         return;
       }
-      applyRemoteSyncRefresh(host, fresh, screen, opts);
+      clearTimeout(syncRefreshTimer);
+      var delay = screen === 'validador' ? 450 : 120;
+      syncRefreshTimer = global.setTimeout(function () {
+        if (Date.now() - lastEstadoEditAt < 1500) return;
+        applyRemoteSyncRefresh(host, DS.load(), screen, lastOpts || opts);
+      }, delay);
+    });
+  }
+
+  function handleEstadoClick(host, btn, userName, opts) {
+    if (!btn || btn.disabled || !DS) return;
+    var nuevo = btn.getAttribute('data-estado');
+    var pedidoId = btn.getAttribute('data-pedido-id');
+    if (!nuevo || !pedidoId) return;
+    btn.disabled = true;
+    lastEstadoEditAt = Date.now();
+    var res = DS.cambiarEstado(pedidoId, nuevo, userName);
+    if (!res.ok) {
+      toast(res.error, 'warn');
+      btn.disabled = false;
+      return;
+    }
+    if (!res.unchanged) {
+      var label = DS.ESTADOS[nuevo] ? DS.ESTADOS[nuevo].short : nuevo;
+      toast('Estado: ' + label, 'success');
+    }
+    render(host, res.data, opts);
+  }
+
+  function handleArchiveClick(host, btn, userName, opts) {
+    if (!btn || !DS) return;
+    var pedidoId = btn.getAttribute('data-pedido-id');
+    var idc = btn.getAttribute('data-idc') || '';
+    var pasillo = btn.getAttribute('data-pasillo') || '';
+    var msg = '¿Quitar ' + idc + ' del seguimiento validador?';
+    if (pasillo) msg += ' Jaula: ' + pasillo + '.';
+    msg += ' Quedará en el registro histórico.';
+    if (!global.confirm(msg)) return;
+    var res = DS.archivarDeVistaValidador(pedidoId, userName);
+    if (!res.ok) {
+      toast(res.error, 'warn');
+      return;
+    }
+    toast('IDC retirado de vista — guardado en registro histórico', 'success');
+    render(host, res.data, opts);
+  }
+
+  function bindDashboardEventsOnce(host) {
+    if (!host || host.__despDashEv) return;
+    host.__despDashEv = true;
+    host.addEventListener('click', function (ev) {
+      var ctx = host.__despEvCtx;
+      if (!ctx || !DS) return;
+      var estadoBtn = ev.target.closest('.desp-btn-set-estado');
+      if (estadoBtn) {
+        ev.preventDefault();
+        handleEstadoClick(host, estadoBtn, ctx.userName, ctx.opts);
+        return;
+      }
+      var archBtn = ev.target.closest('.desp-btn-archive');
+      if (archBtn) {
+        ev.preventDefault();
+        handleArchiveClick(host, archBtn, ctx.userName, ctx.opts);
+      }
     });
   }
 
   function bindEvents(host, data, opts, userName) {
+    host.__despEvCtx = { opts: opts, userName: userName };
+    bindDashboardEventsOnce(host);
     bindTypingSafeSync(host, normalizeScreen(opts.screen || 'registro'), opts);
 
     function onShareJaulaCleared() {
@@ -1413,28 +1480,12 @@
       });
     });
 
-    host.querySelectorAll('.desp-btn-set-estado').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        if (btn.disabled) return;
-        var nuevo = btn.getAttribute('data-estado');
-        var pedidoId = btn.getAttribute('data-pedido-id');
-        if (!nuevo || !pedidoId) return;
-        var res = DS.cambiarEstado(pedidoId, nuevo, userName);
-        if (!res.ok) {
-          toast(res.error, 'warn');
-          return;
-        }
-        var label = DS.ESTADOS[nuevo] ? DS.ESTADOS[nuevo].short : nuevo;
-        toast('Estado: ' + label, 'success');
-        render(host, res.data, opts);
-      });
-    });
-
     host.querySelectorAll('.desp-estado-select').forEach(function (sel) {
       sel.addEventListener('change', function () {
         var nuevo = sel.value;
         if (!nuevo) return;
         var pedidoId = sel.getAttribute('data-pedido-id');
+        lastEstadoEditAt = Date.now();
         var res = DS.cambiarEstado(pedidoId, nuevo, userName);
         if (!res.ok) {
           toast(res.error, 'warn');
@@ -1554,25 +1605,6 @@
           return;
         }
         if (!res.unchanged) toast('Equipo actualizado', 'info');
-        render(host, res.data, opts);
-      });
-    });
-
-    host.querySelectorAll('.desp-btn-archive').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        var pedidoId = btn.getAttribute('data-pedido-id');
-        var idc = btn.getAttribute('data-idc') || '';
-        var pasillo = btn.getAttribute('data-pasillo') || '';
-        var msg = '¿Quitar ' + idc + ' del seguimiento validador?';
-        if (pasillo) msg += ' Jaula: ' + pasillo + '.';
-        msg += ' Quedará en el registro histórico.';
-        if (!global.confirm(msg)) return;
-        var res = DS.archivarDeVistaValidador(pedidoId, userName);
-        if (!res.ok) {
-          toast(res.error, 'warn');
-          return;
-        }
-        toast('IDC retirado de vista — guardado en registro histórico', 'success');
         render(host, res.data, opts);
       });
     });
