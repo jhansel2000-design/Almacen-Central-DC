@@ -36,6 +36,22 @@
     });
   }
 
+  /** Plan gratuito: REST poll como fuente de verdad; Realtime es opcional. */
+  function preferPollOnly() {
+    var cfg = global.PlatformSupabase && global.PlatformSupabase.getConfig &&
+      global.PlatformSupabase.getConfig();
+    if (!cfg) return false;
+    if (cfg.realtime === false) return true;
+    var sb = cfg.supabase;
+    return !!(sb && (sb.preferPoll === true || sb.freeTier === true));
+  }
+
+  function safetyPollMs(baseMs, options) {
+    if (options && options.safetyPollMs != null) return Math.max(Number(options.safetyPollMs) || 0, 2000);
+    var base = Number(baseMs) || 5000;
+    return Math.max(base * 2, 8000);
+  }
+
   function nextId(prefix) {
     subSeq += 1;
     return String(prefix || 'rt') + ':' + subSeq;
@@ -198,8 +214,12 @@
       });
 
       sub.channel = ch.subscribe(function (status) {
-        if (status === 'SUBSCRIBED' && pollMs > 0 && options.pausePollOnRealtime !== false) {
-          clearPoll(sub);
+        // Nunca apagar el poll por completo: en plan gratuito Realtime puede
+        // marcar SUBSCRIBED sin entregar postgres_changes.
+        if (status === 'SUBSCRIBED' && pollMs > 0 && typeof options.pull === 'function') {
+          if (options.pausePollOnRealtime !== false) {
+            startPoll(sub, options, safetyPollMs(pollMs, options));
+          }
         }
         if ((status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') &&
             pollMs > 0 && typeof options.pull === 'function') {
@@ -232,7 +252,7 @@
 
     ensureReady().then(function (client) {
       if (sub.closed) return;
-      if (client) bindChannel(client);
+      if (client && !preferPollOnly()) bindChannel(client);
       if (pollMs > 0) startPoll(sub, options, pollMs);
     }).catch(function () {
       if (pollMs > 0) startPoll(sub, options, pollMs);
@@ -267,6 +287,7 @@
         return global.PlatformSupabaseBridge.pull(moduleKey);
       },
       pollFallbackMs: extra.pollFallbackMs != null ? extra.pollFallbackMs : 5000,
+      safetyPollMs: extra.safetyPollMs,
       pausePollOnRealtime: extra.pausePollOnRealtime !== false,
       pollWhenHidden: extra.pollWhenHidden === true
     });
@@ -293,6 +314,7 @@
 
   global.PlatformSupabaseRealtime = {
     ensureReady: ensureReady,
+    preferPollOnly: preferPollOnly,
     subscribeTable: subscribeTable,
     subscribeSnapshot: subscribeSnapshot,
     unsubscribe: unsubscribe,

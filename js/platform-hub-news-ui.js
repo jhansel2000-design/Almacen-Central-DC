@@ -265,7 +265,7 @@
     var html = '<div class="hub-news-admin">';
     html += '<p class="admin-hint">Publica avisos visibles en la <strong>web principal</strong> (tablón antes de elegir portal). Solo usuarios con rol <strong>Administrador</strong>.</p>';
     if (setupRequired) {
-      html += '<div class="admin-alert admin-alert-warn"><strong>Supabase</strong><p>Ejecute <code>SETUP-HUB-NEWS-SUPABASE.bat</code> para que todos vean las mismas noticias en la nube.</p></div>';
+      html += '<div class="admin-alert admin-alert-warn"><strong>Supabase Free</strong><p>Las noticias se sincronizan por <code>web_snapshots</code> (plan gratuito). Si prefiere tabla dedicada, ejecute <code>SETUP-HUB-NEWS-SUPABASE.bat</code>.</p></div>';
     }
     html += '<form id="hubNewsForm" class="admin-form hub-news-form">';
     html += '<input type="hidden" id="hubNewsEditId" value="">';

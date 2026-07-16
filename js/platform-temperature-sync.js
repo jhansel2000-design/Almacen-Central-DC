@@ -275,16 +275,26 @@
     if (unsubReadings) unsubReadings();
     if (unsubAlerts) unsubAlerts();
 
+    // Plan gratuito: un solo canal de poll (temp_current); lecturas/alertas al refrescar
+    var pollOnly = RT.preferPollOnly && RT.preferPollOnly();
     unsubCurrent = RT.subscribeTable({
       id: 'temp_current',
       table: 'temp_current',
       events: ['INSERT', 'UPDATE'],
       onEvent: function () {
         fetchCurrent();
+        if (pollOnly) fetchAlerts();
       },
-      pull: fetchCurrent,
-      pollFallbackMs: 8000
+      pull: function () {
+        return fetchCurrent().then(function () {
+          return pollOnly ? fetchAlerts() : null;
+        });
+      },
+      pollFallbackMs: 4000,
+      safetyPollMs: 10000
     });
+
+    if (pollOnly) return;
 
     unsubReadings = RT.subscribeTable({
       id: 'temp_readings',
@@ -298,7 +308,8 @@
       pull: function () {
         return fetchCurrent().then(function () { return fetchAlerts(); });
       },
-      pollFallbackMs: 4000
+      pollFallbackMs: 4000,
+      safetyPollMs: 10000
     });
 
     unsubAlerts = RT.subscribeTable({
@@ -309,7 +320,8 @@
         fetchAlerts();
       },
       pull: fetchAlerts,
-      pollFallbackMs: 12000
+      pollFallbackMs: 12000,
+      safetyPollMs: 20000
     });
   }
 

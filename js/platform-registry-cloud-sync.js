@@ -271,7 +271,17 @@
   }
 
   function pollIntervalMs() {
-    return 250;
+    var cfg = global.PlatformSupabase && global.PlatformSupabase.getConfig &&
+      global.PlatformSupabase.getConfig();
+    var sb = (cfg && cfg.supabase) || {};
+    if (sb.freeTier || sb.preferPoll) {
+      var freeMs = parseInt(cfg && cfg.syncTargetMs, 10);
+      if (freeMs > 0) return Math.max(3000, freeMs);
+      var freeSec = parseInt(cfg && cfg.pollSeconds, 10);
+      if (freeSec > 0) return Math.max(3000, freeSec * 1000);
+      return 4000;
+    }
+    return 4000;
   }
 
   function startPolling() {

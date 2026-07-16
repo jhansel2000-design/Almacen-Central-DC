@@ -1,15 +1,15 @@
-﻿{
+{
   "version": 1,
-  "updatedAt": "2026-06-15T19:40:00.000Z",
+  "updatedAt": "2026-07-16T22:35:00.000Z",
   "publicSyncBaseUrl": "",
   "githubPagesDataUrl": "https://jhansel2000-design.github.io/Almacen-Central-DC/data/averias.json",
   "githubPagesDespachoDataUrl": "https://jhansel2000-design.github.io/Almacen-Central-DC/data/despacho.json",
   "githubPagesPlatformDataUrl": "https://jhansel2000-design.github.io/Almacen-Central-DC/data/platform.json",
-  "pollSeconds": 1,
+  "pollSeconds": 4,
   "realtime": true,
-  "syncTargetMs": 250,
+  "syncTargetMs": 4000,
   "firebase": {
-    "enabled": true,
+    "enabled": false,
     "apiKey": "AIzaSyBzH_tp242QEDgBAIxaRfkNwPYyf9VeY6g",
     "authDomain": "janselcastro-cd748.firebaseapp.com",
     "databaseURL": "https://janselcastro-cd748-default-rtdb.firebaseio.com",
@@ -40,11 +40,13 @@
   "supabase": {
     "enabled": true,
     "primary": true,
+    "freeTier": true,
+    "preferPoll": true,
     "url": "https://pjbzbwckcbhmkeidsqjz.supabase.co",
     "anonKey": "sb_publishable_TvhOzL5kopTNty1xbNLZ6w_uKnMKJaC",
-    "help": "Sincronización en la nube para WMS, averías, despacho e inventario."
+    "help": "Plan gratuito: sync en vivo por REST cada ~4s vía web_snapshots. Sin websockets ni Firebase."
   },
-  "help": "Sync en vivo. Todos ven lo mismo en GitHub Pages. Ctrl+F5 tras cambios.",
+  "help": "Sync en vivo con Supabase Free. Ctrl+F5 tras cambios. No abrir el proyecto más de 7 días sin uso (Supabase pausa proyectos inactivos).",
   "security": {
     "turnstileSiteKey": "0x4AAAAAADhftTLJSQ0WxVnuiLp9UNRpOMc",
     "humanVerifyMinMs": 1200,

@@ -301,8 +301,15 @@
     realtimeUnsub = global.PlatformSupabaseRealtime.subscribeTable({
       table: 'inv_entries',
       events: ['INSERT', 'UPDATE', 'DELETE'],
-      pollFallbackMs: 8000,
+      pollFallbackMs: 4000,
+      safetyPollMs: 10000,
       pausePollOnRealtime: true,
+      pull: function () {
+        return fetchEntries().then(function (list) {
+          notify('sync', list);
+          return list;
+        });
+      },
       onEvent: function (ev) {
         if (ev.eventType === 'INSERT' && ev.new) {
           notify('entry', mapEntry(ev.new));

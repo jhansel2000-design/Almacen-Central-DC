@@ -34,7 +34,16 @@
 
   function pollFallbackMs() {
     var cfg = global.PlatformSupabase && global.PlatformSupabase.getConfig && global.PlatformSupabase.getConfig();
-    if (cfg && cfg.supabase && cfg.supabase.primary !== false) return 8000;
+    var sb = cfg && cfg.supabase;
+    // Plan gratuito: poll REST moderado (menos egress / sin websockets)
+    if (sb && (sb.freeTier || sb.preferPoll)) {
+      var freeMs = cfg && cfg.syncTargetMs;
+      if (typeof freeMs === 'number' && freeMs > 0) return Math.max(freeMs, 3000);
+      var freeSec = cfg && cfg.pollSeconds;
+      if (typeof freeSec === 'number' && freeSec > 0) return Math.max(freeSec * 1000, 3000);
+      return 4000;
+    }
+    if (sb && sb.primary !== false) return 8000;
     var ms = cfg && cfg.syncTargetMs;
     if (typeof ms === 'number' && ms > 0) return Math.max(ms, 2000);
     var sec = cfg && cfg.pollSeconds;
@@ -44,7 +53,11 @@
 
   function realtimeEnabled() {
     var cfg = global.PlatformSupabase && global.PlatformSupabase.getConfig && global.PlatformSupabase.getConfig();
-    return !cfg || cfg.realtime !== false;
+    if (cfg && cfg.realtime === false) return false;
+    var sb = cfg && cfg.supabase;
+    // freeTier + preferPoll: sync solo por REST (plan gratuito estable)
+    if (sb && (sb.preferPoll === true || sb.freeTier === true)) return false;
+    return true;
   }
 
   function sanitize(data) {
@@ -198,6 +211,7 @@
       if (data) callback(data);
     }, {
       pollFallbackMs: pollFallbackMs(),
+      safetyPollMs: Math.max(pollFallbackMs() * 2, 10000),
       pausePollOnRealtime: true
     });
 

@@ -22,10 +22,10 @@
     if (global.PlatformSupabase && global.PlatformSupabase.isEnabled && global.PlatformSupabase.isEnabled()) {
       if (global.PlatformSupabase.isConnected && global.PlatformSupabase.isConnected()) return true;
       if (global.PlatformSupabaseBridge && global.PlatformSupabaseBridge.getLastPullAt) {
-        var keys = ['averias', 'despacho', 'platform', 'registry'];
+        var keys = ['averias', 'despacho', 'platform', 'registry', 'turnos', 'agenda', 'hub_news'];
         for (var i = 0; i < keys.length; i++) {
           var t = global.PlatformSupabaseBridge.getLastPullAt(keys[i]);
-          if (t && (Date.now() - t) < 8000) return true;
+          if (t && (Date.now() - t) < 12000) return true;
         }
       }
     }
@@ -41,7 +41,7 @@
     var viaSupabase = global.PlatformSupabase && global.PlatformSupabase.isConnected && global.PlatformSupabase.isConnected();
     el.title = on
       ? (viaSupabase
-        ? 'Conexión en vivo — todos los portales comparten los mismos datos'
+        ? 'Sync Supabase Free — datos compartidos cada pocos segundos'
         : 'Sync en tiempo real activa')
       : '';
     if (viaSupabase) {

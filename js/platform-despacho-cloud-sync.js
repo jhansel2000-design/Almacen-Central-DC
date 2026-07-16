@@ -882,9 +882,20 @@
   }
 
   function pollIntervalMs() {
-    if (isSupabasePrimary()) return 250;
+    if (isSupabasePrimary()) {
+      var cfg = siteConfig || {};
+      var sb = cfg.supabase || {};
+      if (sb.freeTier || sb.preferPoll) {
+        var freeMs = parseInt(cfg.syncTargetMs, 10);
+        if (freeMs > 0) return Math.max(3000, freeMs);
+        var freeSec = parseInt(cfg.pollSeconds, 10);
+        if (freeSec > 0) return Math.max(3000, freeSec * 1000);
+        return 4000;
+      }
+      return 4000;
+    }
     if (firebaseLive()) return 10000;
-    var sec = (siteConfig && siteConfig.pollSeconds) || 1;
+    var sec = (siteConfig && siteConfig.pollSeconds) || 4;
     if (siteConfig && siteConfig.realtime === false) sec = 5;
     return Math.max(1, sec) * 1000;
   }
