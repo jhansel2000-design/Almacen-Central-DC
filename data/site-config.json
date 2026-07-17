@@ -42,11 +42,12 @@
     "primary": true,
     "freeTier": true,
     "preferPoll": true,
+    "keepAlive": true,
     "url": "https://pjbzbwckcbhmkeidsqjz.supabase.co",
     "anonKey": "sb_publishable_TvhOzL5kopTNty1xbNLZ6w_uKnMKJaC",
-    "help": "Plan gratuito: sync en vivo por REST cada ~4s vía web_snapshots. Sin websockets ni Firebase."
+    "help": "Plan gratuito fijado: poll REST ~4s, sin websockets ni Firebase. keepAlive vía GitHub Action evita pausa por inactividad."
   },
-  "help": "Sync en vivo con Supabase Free. Ctrl+F5 tras cambios. No abrir el proyecto más de 7 días sin uso (Supabase pausa proyectos inactivos).",
+  "help": "Sync en vivo Supabase Free (automático). keep-alive martes/viernes. No desactive freeTier/preferPoll.",
   "security": {
     "turnstileSiteKey": "0x4AAAAAADhftTLJSQ0WxVnuiLp9UNRpOMc",
     "humanVerifyMinMs": 1200,
