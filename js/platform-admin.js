@@ -77,7 +77,7 @@
 
   // Administrador general — usuario y contraseña SOLO se cambian aquí (Cursor), no en la plataforma.
   var PRIMARY_ADMIN_USERNAME = 'janselcastro51192';
-  var ADMIN_DEFAULT_PASSWORD_HASH = '0f40846e3432932756e45fc04d37eadf6035ad8e5b8a3cd67ba79cb4c74f6b5b';
+  var ADMIN_DEFAULT_PASSWORD_HASH = '4049ce7a9b71199beacc9e650f7c2fa1d8574d40f379bfb6476d097a0952c327';
   var CREDENTIALS_VERSION = 3;
   var PRIMARY_LOGIN_ALIASES = ['admin', 'administrador'];
 
